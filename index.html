@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIGA - Audio Interactive Graph Application</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Context Menu -->
+  <div id="context-menu" class="context-menu">
+    <div class="menu-item" id="ctx-link">Link Node</div>
+    <div class="menu-item" id="ctx-duplicate">Duplicate (Ctrl+D)</div>
+    <div class="menu-item" id="ctx-group">Group (Ctrl+G)</div>
+    <div class="menu-item" id="ctx-delete">Delete</div>
+    <div id="ctx-add-submenu">
+      <div class="menu-separator"></div>
+      <div class="menu-label">Add Node</div>
+      <div class="menu-item ctx-add-node" data-type="source">⚡ Source</div>
+      <div class="menu-item ctx-add-node" data-type="emitter">🔊 Emitter</div>
+      <div class="menu-item ctx-add-node" data-type="pitch">🎵 Pitch</div>
+      <div class="menu-item ctx-add-node" data-type="gain">📢 Gain</div>
+      <div class="menu-item ctx-add-node" data-type="delay">🕒 Delay</div>
+      <div class="menu-item ctx-add-node" data-type="splitter">🔀 Splitter</div>
+      <div class="menu-item ctx-add-node" data-type="gate">🚪 Gate</div>
+      <div class="menu-item ctx-add-node" data-type="filter">🌊 Filter</div>
+      <div class="menu-item ctx-add-node" data-type="polariser">🔮 Polariser</div>
+      <div class="menu-item ctx-add-node" data-type="chord">🎹 Chord</div>
+      <div class="menu-item ctx-add-node" data-type="tunnel">🚇 Tunnel (Empty)</div>
+      <div class="menu-separator"></div>
+      <div class="menu-label">Tunnel Presets</div>
+      <div class="menu-item ctx-add-tunnel" data-template="voice">🎤 Voice (Pitch+Synth)</div>
+      <div class="menu-item ctx-add-tunnel" data-template="thick">🎸 Thick (+Octave)</div>
+      <div class="menu-item ctx-add-tunnel" data-template="dark">🌑 Dark (Filter+Low)</div>
+    </div>
+  </div>
+
+  <div class="app-container">
+    <div class="canvas-wrapper">
+      <canvas id="aigaCanvas"></canvas>
+      
+      <!-- Floating Toolbar -->
+      <div class="floating-toolbar">
+        <button id="playBtn" class="toolbar-btn primary">▶ Play</button>
+        <button id="muteBtn" class="toolbar-btn">🔊</button>
+        <div class="speed-control">
+          <label for="speedInput">BPM</label>
+          <input type="number" id="speedInput" class="toolbar-input" min="20" max="300" value="120">
+        </div>
+        <select id="exampleSelect" class="toolbar-select">
+          <option value="">Examples...</option>
+          <option value="sequential_melody">Sequential Melody</option>
+          <option value="generative_ambient">Generative Ambient</option>
+          <option value="polyrhythm">Polyrhythm</option>
+          <option value="drum_pattern">Drum Pattern</option>
+          <option disabled>── Layered Instruments ──</option>
+          <option value="layered_pad">Layered Pad</option>
+          <option value="synth_bass">Synth Bass</option>
+          <option disabled>── Classical Forms ──</option>
+          <option value="canon">Canon</option>
+          <option value="fugue">Fugue</option>
+        </select>
+        <button id="saveBtn" class="toolbar-btn">💾 Save</button>
+        <button id="loadBtn" class="toolbar-btn">📂 Load</button>
+        <button id="clearBtn" class="toolbar-btn">🗑️ Clear</button>
+        <button id="settingsBtn" class="toolbar-btn">⚙️</button>
+      </div>
+      <input type="file" id="fileInput" accept=".aiga,.json">
+      
+      <!-- Property Panel -->
+      <div id="node-properties" class="prop-panel">
+        <div class="prop-header">Properties</div>
+        <div id="prop-content" class="prop-content">
+          Right-click to add nodes
+        </div>
+      </div>
+      
+      <!-- Info Panel -->
+      <div class="info-panel">
+        <span class="app-title">AIGA</span> &nbsp;|&nbsp; 
+        Right-click: Add nodes &nbsp;|&nbsp; 
+        Shift+Drag: Box select &nbsp;|&nbsp; 
+        Ctrl+G: Group into Tunnel
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h2>Global Settings</h2>
+      <div class="setting-row">
+        <label>Subdivisions per Beat</label>
+        <select id="setting-subdivisions">
+          <option value="2">2 (Eighths)</option>
+          <option value="3">3 (Triplets)</option>
+          <option value="4" selected>4 (Sixteenths)</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label>Pixels Per Beat (Zoom/Speed)</label>
+        <input type="number" id="setting-ppb" value="200" min="50" max="500" step="10">
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

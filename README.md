@@ -1,0 +1,85 @@
+# AIGA - Audio Interactive Graph Application
+
+A visual node-based audio synthesizer where you create music by building graphs. Packets flow through nodes, transforming and generating sound along the way.
+
+## Features
+
+- **Visual Graph Editor**: Create and connect nodes with intuitive drag-and-drop
+- **Real-time Audio**: Web Audio API-based synthesis with live playback
+- **Multiple Node Types**:
+  - ⚡ **Source**: Generates packets at regular intervals
+  - 🔊 **Emitter**: Outputs sound with reverb and pan control
+  - 🎵 **Pitch**: Shifts frequency by semitones
+  - 🕒 **Delay**: Holds packets for specified beats
+  - 🔀 **Splitter**: Sends packets to all outputs
+  - 🚪 **Gate**: Probabilistic pass-through
+  - 🌊 **Filter**: Low-pass frequency filter
+  - 🔮 **Polariser**: Shapes waveform with ADSR envelope
+  - 🎹 **Chord**: Creates major chord (root, 3rd, 5th)
+  - 🚇 **Tunnel**: Groups multiple nodes for instant processing
+
+- **Wave Stacking**: Combine multiple polarisers for rich, layered sounds
+- **Box Selection**: Shift+drag to select multiple nodes
+- **Grouping**: Ctrl+G to combine nodes into a Tunnel
+- **Save/Load**: Export and import compositions as .aiga files
+- **Examples**: Pre-built compositions to explore
+
+## Getting Started
+
+1. Open `index.html` in a modern browser
+2. Right-click on the canvas to add nodes
+3. Hover over a node and click the "+" handle to create connections
+4. Press Play to start the audio engine
+5. Experiment with different node combinations!
+
+## Controls
+
+- **Right-click**: Open context menu (add nodes, delete, link)
+- **Left-click + drag**: Move nodes
+- **Shift + drag**: Box select multiple nodes
+- **Ctrl + G**: Group selected nodes into a Tunnel
+- **Delete/Backspace**: Remove selected node or edge
+- **Escape**: Clear selection
+- **Mouse wheel**: Zoom in/out
+- **Click + drag on empty space**: Pan canvas
+
+## Project Structure
+
+```
+aiga/
+├── index.html          # Main application
+├── styles.css          # Styling
+└── js/
+    ├── main.js         # Entry point & game loop
+    ├── examples.js     # Example compositions
+    ├── core/
+    │   ├── constants.js  # Configuration values
+    │   ├── state.js      # Global state management
+    │   └── utils.js      # Utility functions
+    ├── graph/
+    │   ├── nodes.js      # Node creation & management
+    │   ├── edges.js      # Edge connections
+    │   └── packets.js    # Packet flow & processing
+    ├── audio/
+    │   ├── engine.js     # Web Audio setup
+    │   └── synth.js      # Sound generation
+    ├── ui/
+    │   ├── canvas.js     # Canvas rendering
+    │   ├── input.js      # Mouse/keyboard handling
+    │   ├── panel.js      # Property panel
+    │   └── menu.js       # Context menu
+    └── io/
+        └── serialization.js  # Save/load functionality
+```
+
+## Browser Support
+
+Requires a modern browser with Web Audio API support:
+- Chrome 66+
+- Firefox 76+
+- Safari 14.1+
+- Edge 79+
+
+## License
+
+MIT

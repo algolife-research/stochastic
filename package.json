@@ -1,0 +1,28 @@
+{
+  "name": "aiga",
+  "version": "1.0.0",
+  "description": "A visual node-based audio synthesizer where you create music by building graphs. Packets flow through nodes, transforming and generating sound along the way.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:unit:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "serve": "serve -l 3000"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "@vitest/coverage-v8": "^4.0.15",
+    "happy-dom": "^20.0.11",
+    "serve": "^14.2.5",
+    "vitest": "^4.0.15"
+  }
+}
