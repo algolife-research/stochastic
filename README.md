@@ -10,6 +10,7 @@ A visual node-based audio synthesizer where you create music by building graphs.
   - ⚡ **Source**: Generates packets at regular intervals
   - 🔊 **Emitter**: Outputs sound with reverb and pan control
   - 🎵 **Pitch**: Shifts frequency by semitones
+  - 📢 **Gain**: Multiplies signal amplitude
   - 🕒 **Delay**: Holds packets for specified beats
   - 🔀 **Splitter**: Sends packets to all outputs
   - 🚪 **Gate**: Probabilistic pass-through
@@ -21,6 +22,7 @@ A visual node-based audio synthesizer where you create music by building graphs.
 - **Wave Stacking**: Combine multiple polarisers for rich, layered sounds
 - **Box Selection**: Shift+drag to select multiple nodes
 - **Grouping**: Ctrl+G to combine nodes into a Tunnel
+- **Node Duplication**: Ctrl+D to duplicate selected node
 - **Save/Load**: Export and import compositions as .aiga files
 - **Examples**: Pre-built compositions to explore
 
@@ -38,6 +40,7 @@ A visual node-based audio synthesizer where you create music by building graphs.
 - **Left-click + drag**: Move nodes
 - **Shift + drag**: Box select multiple nodes
 - **Ctrl + G**: Group selected nodes into a Tunnel
+- **Ctrl + D**: Duplicate selected node
 - **Delete/Backspace**: Remove selected node or edge
 - **Escape**: Clear selection
 - **Mouse wheel**: Zoom in/out
