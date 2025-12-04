@@ -27,7 +27,7 @@ describe('Serialization', () => {
       const data = {
         nodes: [
           { id: 'n1', type: 'source', x: 100, y: 100, props: { interval: 2 } },
-          { id: 'n2', type: 'emitter', x: 200, y: 100, props: { reverb: 0.3 } }
+          { id: 'n2', type: 'speaker', x: 200, y: 100, props: { reverb: 0.3 } }
         ],
         edges: []
       };
@@ -43,7 +43,7 @@ describe('Serialization', () => {
       const data = {
         nodes: [
           { id: 'n1', type: 'source', x: 100, y: 100, props: {} },
-          { id: 'n2', type: 'emitter', x: 200, y: 100, props: {} }
+          { id: 'n2', type: 'speaker', x: 200, y: 100, props: {} }
         ],
         edges: [
           { id: 'e1', from: 'n1', to: 'n2' }

@@ -12,17 +12,42 @@ export function showContextMenu(x, y, type) {
   const groupBtn = document.getElementById('ctx-group');
   const deleteBtn = document.getElementById('ctx-delete');
   const addSubmenu = document.getElementById('ctx-add-submenu');
+  const addAnnotationBtn = document.getElementById('ctx-add-annotation');
+  const addRegionBtn = document.getElementById('ctx-add-region');
+  const duplicateRegionBtn = document.getElementById('ctx-duplicate-region');
   
   menu.style.display = 'block';
-  menu.style.left = x + 'px';
-  menu.style.top = y + 'px';
+  
+  // Position menu, ensuring it stays on screen
+  const menuRect = menu.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  
+  // Adjust X if menu would go off right edge
+  let finalX = x;
+  if (x + menuRect.width > viewportWidth) {
+    finalX = Math.max(0, viewportWidth - menuRect.width - 10);
+  }
+  
+  // Adjust Y if menu would go off bottom edge
+  let finalY = y;
+  if (y + menuRect.height > viewportHeight) {
+    finalY = Math.max(0, viewportHeight - menuRect.height - 10);
+  }
+  
+  menu.style.left = finalX + 'px';
+  menu.style.top = finalY + 'px';
   
   // Check if there are groupable nodes selected
   const hasGroupableSelection = state.selectedNodes.length > 0 || 
     (state.selectedNode && 
      state.selectedNode.type !== 'source' && 
-     state.selectedNode.type !== 'emitter' && 
      state.selectedNode.type !== 'tunnel');
+  
+  // Hide optional buttons by default
+  if (addAnnotationBtn) addAnnotationBtn.style.display = 'none';
+  if (addRegionBtn) addRegionBtn.style.display = 'none';
+  if (duplicateRegionBtn) duplicateRegionBtn.style.display = 'none';
   
   if (type === 'add-from-edge') {
     // Show only add node options when dropping edge on canvas
@@ -37,13 +62,29 @@ export function showContextMenu(x, y, type) {
     groupBtn.style.display = hasGroupableSelection ? 'block' : 'none';
     deleteBtn.style.display = 'none';
     addSubmenu.style.display = 'block';
+    if (addAnnotationBtn) addAnnotationBtn.style.display = 'block';
+    if (addRegionBtn) addRegionBtn.style.display = 'block';
   } else if (type === 'edge') {
     linkBtn.style.display = 'none';
     duplicateBtn.style.display = 'none';
     groupBtn.style.display = 'none';
     deleteBtn.style.display = 'block';
     addSubmenu.style.display = 'none';
+  } else if (type === 'annotation') {
+    linkBtn.style.display = 'none';
+    duplicateBtn.style.display = 'none';
+    groupBtn.style.display = 'none';
+    deleteBtn.style.display = 'block';
+    addSubmenu.style.display = 'none';
+  } else if (type === 'region') {
+    linkBtn.style.display = 'none';
+    duplicateBtn.style.display = 'none';
+    groupBtn.style.display = 'none';
+    deleteBtn.style.display = 'block';
+    addSubmenu.style.display = 'none';
+    if (duplicateRegionBtn) duplicateRegionBtn.style.display = 'block';
   } else {
+    // node type
     linkBtn.style.display = 'block';
     duplicateBtn.style.display = 'block';
     groupBtn.style.display = hasGroupableSelection ? 'block' : 'none';

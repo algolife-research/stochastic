@@ -5,7 +5,7 @@ This document outlines the development trajectory for AIGA, moving from its curr
 ## Phase 1: Foundation (Current Status)
 **Goal:** A stable, testable, and usable graph-based audio toy.
 - [x] **Core Graph Engine:** Nodes, Edges, Packets.
-- [x] **Basic Nodes:** Source, Emitter, Pitch, Polariser.
+- [x] **Basic Nodes:** Source, speaker, Pitch, Polariser.
 - [x] **Audio Engine:** Web Audio API integration (Oscillators, Gain, Pan).
 - [x] **Serialization:** Save/Load graph state.
 - [x] **Testing:** Comprehensive Unit and E2E test suite.
@@ -25,7 +25,7 @@ This document outlines the development trajectory for AIGA, moving from its curr
 - **Wire Animation:** Edges should vibrate or light up as packets travel.
 
 ### 2.3 Audio Polish
-- **ADSR Envelopes:** More granular control over Attack/Decay/Sustain/Release in the Polariser or Emitter.
+- **ADSR Envelopes:** More granular control over Attack/Decay/Sustain/Release in the Polariser or speaker.
 - **Global Effects:** Master Reverb/Delay send controls.
 
 ## Phase 3: The Living Graph (Mid-Term)
@@ -37,13 +37,13 @@ This document outlines the development trajectory for AIGA, moving from its curr
 
 ### 3.2 The "Listener" System
 - **Key/Scale Quantizer:** A global setting or node that forces all passing pitches into a specific scale (e.g., C Minor Pentatonic).
-- **Feedback Loops:** Allow output of Emitters to feed back into Sources to trigger new events (Self-generating systems).
+- **Feedback Loops:** Allow output of speakers to feed back into Sources to trigger new events (Self-generating systems).
 
 ## Phase 4: The Ecosystem (Long-Term)
 **Goal:** Professional features and community.
 
 ### 4.1 Interoperability
-- **MIDI Out:** Emitters send MIDI Note On/Off instead of internal audio. Allows AIGA to drive Ableton/Logic.
+- **MIDI Out:** speakers send MIDI Note On/Off instead of internal audio. Allows AIGA to drive Ableton/Logic.
 - **VST/AU Plugin:** Wrap the engine (via JUCE or similar) to run inside a DAW.
 
 ### 4.2 3D / VR Interface

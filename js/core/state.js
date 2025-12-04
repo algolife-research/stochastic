@@ -20,15 +20,29 @@ export let nodes = [];
 export let edges = [];
 export let packets = [];
 
+// Annotations & Regions
+export let annotations = [];  // {id, x, y, text, fontSize, color}
+export let regions = [];      // {id, x, y, width, height, name, description, color}
+
 // Selection State
 export let currentTool = 'source';
 export let selectedNode = null;
 export let selectedNodes = [];
 export let selectedEdge = null;
+export let selectedAnnotation = null;
+export let selectedRegion = null;
 export let draggingNode = null;
+export let draggingAnnotation = null;
+export let draggingRegion = null;
+export let resizingRegion = null;      // Region being resized
+export let resizeHandle = null;        // 'nw', 'ne', 'sw', 'se' or null
+export let regionDragContents = null;  // {nodes: [], annotations: []} - captured at drag start
 export let linkingNode = null;
 export let pendingLinkNode = null;  // Node waiting for edge connection after node creation
 export let hoveredNode = null;
+export let hoveredAnnotation = null;
+export let hoveredRegion = null;
+export let hoveredRegionHandle = null;
 export let isHoveringHandle = false;
 
 // Mouse & Input
@@ -72,14 +86,27 @@ export function setNodes(n) { nodes = n; }
 export function setEdges(e) { edges = e; }
 export function setPackets(p) { packets = p; }
 
+export function setAnnotations(a) { annotations = a; }
+export function setRegions(r) { regions = r; }
+
 export function setCurrentTool(t) { currentTool = t; }
 export function setSelectedNode(n) { selectedNode = n; }
 export function setSelectedNodes(n) { selectedNodes = n; }
 export function setSelectedEdge(e) { selectedEdge = e; }
+export function setSelectedAnnotation(a) { selectedAnnotation = a; }
+export function setSelectedRegion(r) { selectedRegion = r; }
 export function setDraggingNode(n) { draggingNode = n; }
+export function setDraggingAnnotation(a) { draggingAnnotation = a; }
+export function setDraggingRegion(r) { draggingRegion = r; }
+export function setResizingRegion(r) { resizingRegion = r; }
+export function setResizeHandle(h) { resizeHandle = h; }
+export function setRegionDragContents(c) { regionDragContents = c; }
 export function setLinkingNode(n) { linkingNode = n; }
 export function setPendingLinkNode(n) { pendingLinkNode = n; }
 export function setHoveredNode(n) { hoveredNode = n; }
+export function setHoveredAnnotation(a) { hoveredAnnotation = a; }
+export function setHoveredRegion(r) { hoveredRegion = r; }
+export function setHoveredRegionHandle(h) { hoveredRegionHandle = h; }
 export function setIsHoveringHandle(val) { isHoveringHandle = val; }
 
 export function setMousePos(p) { mousePos = p; }
@@ -103,9 +130,13 @@ export function clearGraph() {
   nodes = [];
   edges = [];
   packets = [];
+  annotations = [];
+  regions = [];
   selectedNode = null;
   selectedNodes = [];
   selectedEdge = null;
+  selectedAnnotation = null;
+  selectedRegion = null;
 }
 
 export function resetView() {

@@ -93,7 +93,7 @@ describe('Constants', () => {
 
   describe('Node Colors', () => {
     it('should have colors for all node types', () => {
-      const expectedTypes = ['source', 'emitter', 'filter', 'polariser', 'pitch', 'splitter', 'gate', 'delay', 'tunnel', 'chord'];
+      const expectedTypes = ['source', 'speaker', 'filter', 'polariser', 'pitch', 'splitter', 'gate', 'delay', 'tunnel', 'chord'];
       expectedTypes.forEach(type => {
         expect(NODE_COLORS[type]).toBeDefined();
         expect(typeof NODE_COLORS[type]).toBe('string');
@@ -104,7 +104,7 @@ describe('Constants', () => {
 
   describe('Node Icons', () => {
     it('should have icons for all node types', () => {
-      const expectedTypes = ['source', 'emitter', 'filter', 'polariser', 'pitch', 'splitter', 'gate', 'delay', 'tunnel', 'chord'];
+      const expectedTypes = ['source', 'speaker', 'filter', 'polariser', 'pitch', 'splitter', 'gate', 'delay', 'tunnel', 'chord'];
       expectedTypes.forEach(type => {
         expect(NODE_ICONS[type]).toBeDefined();
         expect(typeof NODE_ICONS[type]).toBe('string');

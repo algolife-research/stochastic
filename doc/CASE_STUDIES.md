@@ -12,13 +12,13 @@ In a linear sequencer, you copy-paste MIDI clips. In AIGA, you **fork the geomet
 #### The Canon
 1.  **The Subject:** A `Source` node feeds into a sequence of `Pitch` nodes that define the melody (e.g., C -> G -> A -> G).
 2.  **The Fork:** A `Splitter` node is placed immediately after the Source.
-3.  **Voice 1 (Leader):** Path A goes directly to `Emitter 1` (Left Channel).
+3.  **Voice 1 (Leader):** Path A goes directly to `speaker 1` (Left Channel).
 4.  **Voice 2 (Follower):** Path B travels through a long, winding chain of `Edge` segments (or a dedicated `Delay` node). This physical distance creates the temporal delay (e.g., 2 bars).
 5.  **Result:** The melody plays against itself perfectly.
 
 #### The Fugue (Transposition)
 1.  **Subject:** Same as above.
-2.  **Answer:** The delayed path (Voice 2) passes through a `Pitch` node set to **+7 semitones** (Perfect 5th) before reaching `Emitter 2`.
+2.  **Answer:** The delayed path (Voice 2) passes through a `Pitch` node set to **+7 semitones** (Perfect 5th) before reaching `speaker 2`.
 3.  **Result:** A real-time generative fugue where changing the Source interval automatically updates both the Subject and the Answer.
 
 ---
@@ -37,7 +37,7 @@ Xenakis used manual calculations. AIGA uses **Topology**.
     *   **Path A-D:** Pass through `Pitch` nodes with random values (if Randomizer exists) or fixed dissonant intervals.
     *   **Path E-H:** Pass through `Gate` nodes set to 30% probability.
     *   **Path I-P:** Pass through `Polariser` nodes modulating timbre.
-4.  **The Collision:** All paths converge on a cluster of `Emitter` nodes placed spatially around the canvas.
+4.  **The Collision:** All paths converge on a cluster of `speaker` nodes placed spatially around the canvas.
 5.  **Result:** A granular cloud of sound. The "density" of the cloud is controlled by the Source rate. The "texture" is controlled by the probability Gates.
 
 ---
@@ -66,8 +66,8 @@ In AIGA, **Distance = Time**.
 1.  **The Clock:** A very slow `Source` (1 trigger every 10 seconds).
 2.  **The Bloom:** The Source feeds a `Splitter` with 4 outputs.
 3.  **The Paths:**
-    *   Path 1: Short delay -> Low Pitch -> Reverb Emitter.
-    *   Path 2: Medium delay -> High Pitch -> Filter -> Emitter.
-    *   Path 3: Long delay -> Chord Node -> Emitter.
+    *   Path 1: Short delay -> Low Pitch -> Reverb speaker.
+    *   Path 2: Medium delay -> High Pitch -> Filter -> speaker.
+    *   Path 3: Long delay -> Chord Node -> speaker.
 4.  **The Feedback:** The output of Path 3 loops back to the beginning but with a `Gate` (50% chance).
 5.  **Result:** A sparse, evolving soundscape that never repeats exactly the same way, as packets occasionally recirculate to create layers.

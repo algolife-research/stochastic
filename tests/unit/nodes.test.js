@@ -102,7 +102,7 @@ describe('Nodes', () => {
     });
 
     it('should initialize emitter with reverb', () => {
-      const node = createNode('emitter', 100, 100);
+      const node = createNode('speaker', 100, 100);
       expect(node.props.reverb).toBe(0);
     });
 
@@ -147,7 +147,7 @@ describe('Nodes', () => {
 
     it('should remove connected edges', () => {
       const source = createNode('source', 0, 0);
-      const emitter = createNode('emitter', 100, 0);
+      const emitter = createNode('speaker', 100, 0);
       state.edges.push({ id: 'edge1', from: source.id, to: emitter.id });
       
       deleteNode(source);
@@ -179,7 +179,7 @@ describe('Nodes', () => {
   describe('getNodeColor()', () => {
     it('should return correct color for known types', () => {
       expect(getNodeColor('source')).toBe(NODE_COLORS.source);
-      expect(getNodeColor('emitter')).toBe(NODE_COLORS.emitter);
+      expect(getNodeColor('speaker')).toBe(NODE_COLORS.speaker);
     });
 
     it('should return default color for unknown type', () => {
@@ -190,7 +190,7 @@ describe('Nodes', () => {
   describe('getNodeIcon()', () => {
     it('should return correct icon for known types', () => {
       expect(getNodeIcon('source')).toBe(NODE_ICONS.source);
-      expect(getNodeIcon('emitter')).toBe(NODE_ICONS.emitter);
+      expect(getNodeIcon('speaker')).toBe(NODE_ICONS.speaker);
     });
 
     it('should return ? for unknown type', () => {

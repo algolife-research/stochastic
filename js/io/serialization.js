@@ -20,7 +20,25 @@ export function saveGraph() {
       y: n.y,
       props: n.props
     })),
-    edges: state.edges
+    edges: state.edges,
+    annotations: state.annotations.map(a => ({
+      id: a.id,
+      x: a.x,
+      y: a.y,
+      text: a.text,
+      fontSize: a.fontSize,
+      color: a.color
+    })),
+    regions: state.regions.map(r => ({
+      id: r.id,
+      x: r.x,
+      y: r.y,
+      width: r.width,
+      height: r.height,
+      name: r.name,
+      description: r.description,
+      color: r.color
+    }))
   };
   
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -70,6 +88,28 @@ export function loadData(data) {
   state.setEdges(data.edges);
   state.setPackets([]);
   
+  // Restore annotations (with defaults for older files)
+  state.setAnnotations((data.annotations || []).map(a => ({
+    id: a.id,
+    x: a.x,
+    y: a.y,
+    text: a.text || '',
+    fontSize: a.fontSize || 14,
+    color: a.color || '#cccccc'
+  })));
+  
+  // Restore regions (with defaults for older files)
+  state.setRegions((data.regions || []).map(r => ({
+    id: r.id,
+    x: r.x,
+    y: r.y,
+    width: r.width,
+    height: r.height,
+    name: r.name || 'Region',
+    description: r.description || '',
+    color: r.color || 'rgba(60, 60, 80, 0.3)'
+  })));
+  
   // Update speed
   if (data.bpm) {
     state.setMasterSpeed(data.bpm);
@@ -80,6 +120,8 @@ export function loadData(data) {
   // Reset UI
   state.setSelectedNode(null);
   state.setSelectedEdge(null);
+  state.setSelectedAnnotation(null);
+  state.setSelectedRegion(null);
   state.resetView();
   updatePropPanel(null);
 }

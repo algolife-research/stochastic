@@ -12,12 +12,15 @@
     <div class="menu-item" id="ctx-link">Link Node</div>
     <div class="menu-item" id="ctx-duplicate">Duplicate (Ctrl+D)</div>
     <div class="menu-item" id="ctx-group">Group (Ctrl+G)</div>
+    <div class="menu-item" id="ctx-duplicate-region">Duplicate Region</div>
     <div class="menu-item" id="ctx-delete">Delete</div>
+    <div class="menu-item" id="ctx-add-annotation">📝 Add Text</div>
+    <div class="menu-item" id="ctx-add-region">▢ Add Region</div>
     <div id="ctx-add-submenu">
       <div class="menu-separator"></div>
       <div class="menu-label">Add Node</div>
       <div class="menu-item ctx-add-node" data-type="source">⚡ Source</div>
-      <div class="menu-item ctx-add-node" data-type="emitter">🔊 Emitter</div>
+      <div class="menu-item ctx-add-node" data-type="speaker">🔊 Speaker</div>
       <div class="menu-item ctx-add-node" data-type="pitch">🎵 Pitch</div>
       <div class="menu-item ctx-add-node" data-type="gain">📢 Gain</div>
       <div class="menu-item ctx-add-node" data-type="delay">🕒 Delay</div>
@@ -65,6 +68,8 @@
           <option disabled>── Classical Forms ──</option>
           <option value="canon">Canon</option>
           <option value="fugue">Fugue</option>
+          <option disabled>── Tunnel Patterns ──</option>
+          <option value="tunnel_melody">Tunnel Melody (Arpeggio)</option>
         </select>
         <button id="saveBtn" class="toolbar-btn">💾 Save</button>
         <button id="loadBtn" class="toolbar-btn">📂 Load</button>
@@ -85,6 +90,7 @@
       <div class="info-panel">
         <span class="app-title">AIGA</span> &nbsp;|&nbsp; 
         Right-click: Add nodes &nbsp;|&nbsp; 
+        Double-click: Add text &nbsp;|&nbsp;
         Shift+Drag: Box select &nbsp;|&nbsp; 
         Ctrl+G: Group into Tunnel
       </div>

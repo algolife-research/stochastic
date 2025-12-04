@@ -8,7 +8,7 @@ A visual node-based audio synthesizer where you create music by building graphs.
 - **Real-time Audio**: Web Audio API-based synthesis with live playback
 - **Multiple Node Types**:
   - ⚡ **Source**: Generates packets at regular intervals (set note, intensity)
-  - 🔊 **Emitter**: Outputs sound with volume, reverb, and pan control
+  - 🔊 **Speaker**: Outputs sound with volume, reverb, and pan control
   - 🎵 **Pitch**: Shifts frequency by semitones
   - 📢 **Gain**: Multiplies packet intensity/volume
   - 🕒 **Delay**: Holds packets for specified beats
@@ -23,6 +23,10 @@ A visual node-based audio synthesizer where you create music by building graphs.
   - 🌀 **Teleporter**: Instant packet routing across the graph (channel-based linking)
   - 🚇 **Tunnel**: Groups multiple nodes for instant processing
 
+- **Canvas Annotations**:
+  - **Text Annotations**: Double-click to add notes, labels, and documentation
+  - **Regions**: Group and organize nodes visually with named regions
+  
 - **Realistic Synthesis**: 
   - **Harmonics**: Stack harmonic nodes for authentic instrument timbres
   - **Modulator/Vibrato**: Delayed pitch modulation for expressive playing

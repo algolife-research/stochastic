@@ -4,9 +4,10 @@ import * as state from '../core/state.js';
 import { 
   NODE_RADIUS, HANDLE_OFFSET_X, HANDLE_RADIUS, GRID_SIZE,
   SNAP_STEP, GRID_ATTRACT_STRENGTH, EDGE_ATTRACT_STRENGTH,
-  EDGE_SNAP_INTERVAL, ATTRACT_RADIUS, MIN_ZOOM, MAX_ZOOM
+  EDGE_SNAP_INTERVAL, ATTRACT_RADIUS, MIN_ZOOM, MAX_ZOOM,
+  REGION_HANDLE_SIZE, MIN_REGION_SIZE
 } from '../core/constants.js';
-import { dist, distToSegment } from '../core/utils.js';
+import { dist, distToSegment, uid } from '../core/utils.js';
 import { createNode, createTunnelFromTemplate, deleteNode, groupSelectedNodes, duplicateNode } from '../graph/nodes.js';
 import { createEdge, deleteEdge } from '../graph/edges.js';
 import { spawnPacket } from '../graph/packets.js';
@@ -25,6 +26,7 @@ export function setupInteraction() {
   canvas.addEventListener('mousedown', handleMouseDown);
   canvas.addEventListener('mousemove', handleMouseMove);
   canvas.addEventListener('mouseup', handleMouseUp);
+  canvas.addEventListener('dblclick', handleDoubleClick);
   canvas.addEventListener('contextmenu', handleContextMenu);
   canvas.addEventListener('wheel', handleWheel, { passive: false });
   
@@ -70,6 +72,235 @@ function getScreenPos(e) {
  */
 export function snapToGrid(val) {
   return Math.round(val / GRID_SIZE) * GRID_SIZE;
+}
+
+/**
+ * Check if point is inside an annotation text area
+ */
+function hitTestAnnotation(pos) {
+  const ctx = state.ctx;
+  for (let i = state.annotations.length - 1; i >= 0; i--) {
+    const ann = state.annotations[i];
+    ctx.font = `${ann.fontSize || 14}px Arial`;
+    const lines = ann.text.split('\n');
+    const lineHeight = (ann.fontSize || 14) * 1.3;
+    const maxWidth = Math.max(...lines.map(l => ctx.measureText(l).width));
+    const totalHeight = lines.length * lineHeight;
+    
+    if (pos.x >= ann.x - 4 && pos.x <= ann.x + maxWidth + 4 &&
+        pos.y >= ann.y - 4 && pos.y <= ann.y + totalHeight + 4) {
+      return ann;
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if point is inside a region
+ */
+function hitTestRegion(pos) {
+  for (let i = state.regions.length - 1; i >= 0; i--) {
+    const region = state.regions[i];
+    if (pos.x >= region.x && pos.x <= region.x + region.width &&
+        pos.y >= region.y && pos.y <= region.y + region.height) {
+      return region;
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if point is on a region resize handle
+ */
+function hitTestRegionHandle(pos, region) {
+  if (!region) return null;
+  
+  const hs = REGION_HANDLE_SIZE;
+  const handles = {
+    nw: { x: region.x, y: region.y },
+    ne: { x: region.x + region.width, y: region.y },
+    sw: { x: region.x, y: region.y + region.height },
+    se: { x: region.x + region.width, y: region.y + region.height }
+  };
+  
+  for (const [name, handle] of Object.entries(handles)) {
+    if (Math.abs(pos.x - handle.x) <= hs && Math.abs(pos.y - handle.y) <= hs) {
+      return name;
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if regions would overlap
+ */
+function wouldRegionsOverlap(newRegion, excludeId = null) {
+  for (const region of state.regions) {
+    if (region.id === excludeId) continue;
+    
+    // Check if rectangles overlap
+    const noOverlap = 
+      newRegion.x + newRegion.width <= region.x ||
+      region.x + region.width <= newRegion.x ||
+      newRegion.y + newRegion.height <= region.y ||
+      region.y + region.height <= newRegion.y;
+    
+    if (!noOverlap) return true;
+  }
+  return false;
+}
+
+/**
+ * Get nodes and edges contained within a region
+ */
+export function getRegionContents(region) {
+  const nodes = state.nodes.filter(n => 
+    n.x >= region.x && n.x <= region.x + region.width &&
+    n.y >= region.y && n.y <= region.y + region.height
+  );
+  
+  const nodeIds = new Set(nodes.map(n => n.id));
+  const edges = state.edges.filter(e => 
+    nodeIds.has(e.from) && nodeIds.has(e.to)
+  );
+  
+  return { nodes, edges };
+}
+
+/**
+ * Create a new annotation
+ */
+export function createAnnotation(x, y, text = 'Text') {
+  const annotation = {
+    id: uid(),
+    x,
+    y,
+    text,
+    fontSize: 14,
+    color: '#cccccc'
+  };
+  state.annotations.push(annotation);
+  return annotation;
+}
+
+/**
+ * Delete an annotation
+ */
+export function deleteAnnotation(annotation) {
+  const idx = state.annotations.indexOf(annotation);
+  if (idx !== -1) {
+    state.annotations.splice(idx, 1);
+  }
+  if (state.selectedAnnotation === annotation) {
+    state.setSelectedAnnotation(null);
+  }
+}
+
+/**
+ * Create a new region
+ */
+export function createRegion(x, y, width, height, name = 'Region') {
+  const region = {
+    id: uid(),
+    x,
+    y,
+    width: Math.max(MIN_REGION_SIZE, width),
+    height: Math.max(MIN_REGION_SIZE, height),
+    name,
+    description: '',
+    color: 'rgba(60, 60, 80, 0.3)'
+  };
+  
+  // Check for overlap
+  if (wouldRegionsOverlap(region)) {
+    return null;
+  }
+  
+  state.regions.push(region);
+  return region;
+}
+
+/**
+ * Delete a region
+ */
+export function deleteRegion(region) {
+  const idx = state.regions.indexOf(region);
+  if (idx !== -1) {
+    state.regions.splice(idx, 1);
+  }
+  if (state.selectedRegion === region) {
+    state.setSelectedRegion(null);
+  }
+}
+
+/**
+ * Duplicate a region with all its contents
+ */
+export function duplicateRegion(region) {
+  const { nodes, edges } = getRegionContents(region);
+  
+  // Calculate offset (try to the right first, then below)
+  const offsetX = region.width + 40;
+  const offsetY = 0;
+  
+  // Check if new position would overlap
+  const newRegionTest = {
+    x: region.x + offsetX,
+    y: region.y + offsetY,
+    width: region.width,
+    height: region.height
+  };
+  
+  if (wouldRegionsOverlap(newRegionTest, region.id)) {
+    // Try below instead
+    newRegionTest.x = region.x;
+    newRegionTest.y = region.y + region.height + 40;
+    
+    if (wouldRegionsOverlap(newRegionTest, region.id)) {
+      alert('No space to duplicate region without overlap');
+      return null;
+    }
+  }
+  
+  const finalOffsetX = newRegionTest.x - region.x;
+  const finalOffsetY = newRegionTest.y - region.y;
+  
+  // Create new region
+  const newRegion = createRegion(
+    newRegionTest.x,
+    newRegionTest.y,
+    region.width,
+    region.height,
+    region.name + ' (copy)'
+  );
+  
+  if (!newRegion) return null;
+  
+  newRegion.description = region.description;
+  newRegion.color = region.color;
+  
+  // Duplicate nodes with ID mapping
+  const nodeIdMap = {};
+  nodes.forEach(n => {
+    const newNode = createNode(n.type, n.x + finalOffsetX, n.y + finalOffsetY);
+    newNode.props = JSON.parse(JSON.stringify(n.props));
+    nodeIdMap[n.id] = newNode.id;
+  });
+  
+  // Duplicate edges
+  edges.forEach(e => {
+    const fromId = nodeIdMap[e.from];
+    const toId = nodeIdMap[e.to];
+    if (fromId && toId) {
+      const fromNode = state.nodes.find(n => n.id === fromId);
+      const toNode = state.nodes.find(n => n.id === toId);
+      if (fromNode && toNode) {
+        createEdge(fromNode, toNode);
+      }
+    }
+  });
+  
+  return newRegion;
 }
 
 /**
@@ -146,8 +377,21 @@ function handleMouseDown(e) {
     state.setLinkingNode(state.hoveredNode);
     return;
   }
+  
+  // Check for region resize handle first
+  if (state.hoveredRegion && state.hoveredRegionHandle) {
+    state.setResizingRegion(state.hoveredRegion);
+    state.setResizeHandle(state.hoveredRegionHandle);
+    state.setSelectedRegion(state.hoveredRegion);
+    state.setSelectedNode(null);
+    state.setSelectedAnnotation(null);
+    updatePropPanel(null, 'region', state.hoveredRegion);
+    return;
+  }
 
   const hitNode = state.nodes.find(n => dist(n, pos) < NODE_RADIUS);
+  const hitAnnotation = hitTestAnnotation(pos);
+  const hitRegion = hitTestRegion(pos);
   let hitEdge = null;
   
   if (!hitNode) {
@@ -183,13 +427,45 @@ function handleMouseDown(e) {
     
     state.setDraggingNode(hitNode);
     state.setSelectedEdge(null);
+    state.setSelectedAnnotation(null);
+    state.setSelectedRegion(null);
     state.setDragOffset({ x: pos.x - hitNode.x, y: pos.y - hitNode.y });
     updatePropPanel(hitNode);
+  } else if (hitAnnotation) {
+    state.setSelectedAnnotation(hitAnnotation);
+    state.setDraggingAnnotation(hitAnnotation);
+    state.setSelectedNode(null);
+    state.setSelectedNodes([]);
+    state.setSelectedEdge(null);
+    state.setSelectedRegion(null);
+    state.setDragOffset({ x: pos.x - hitAnnotation.x, y: pos.y - hitAnnotation.y });
+    updatePropPanel(null, 'annotation', hitAnnotation);
   } else if (hitEdge) {
     state.setSelectedEdge(hitEdge);
     state.setSelectedNode(null);
     state.setSelectedNodes([]);
+    state.setSelectedAnnotation(null);
+    state.setSelectedRegion(null);
     updatePropPanel(null);
+  } else if (hitRegion && !hitNode && !hitAnnotation) {
+    // Only select region if clicking in empty area of the region
+    state.setSelectedRegion(hitRegion);
+    state.setDraggingRegion(hitRegion);
+    state.setSelectedNode(null);
+    state.setSelectedNodes([]);
+    state.setSelectedEdge(null);
+    state.setSelectedAnnotation(null);
+    state.setDragOffset({ x: pos.x - hitRegion.x, y: pos.y - hitRegion.y });
+    
+    // Capture the current contents of the region at drag start
+    const { nodes: containedNodes } = getRegionContents(hitRegion);
+    const containedAnnotations = state.annotations.filter(ann => 
+      ann.x >= hitRegion.x && ann.x <= hitRegion.x + hitRegion.width &&
+      ann.y >= hitRegion.y && ann.y <= hitRegion.y + hitRegion.height
+    );
+    state.setRegionDragContents({ nodes: containedNodes, annotations: containedAnnotations });
+    
+    updatePropPanel(null, 'region', hitRegion);
   } else {
     // Empty space clicked
     if (e.shiftKey) {
@@ -203,6 +479,8 @@ function handleMouseDown(e) {
       state.setSelectedNode(null);
       state.setSelectedNodes([]);
       state.setSelectedEdge(null);
+      state.setSelectedAnnotation(null);
+      state.setSelectedRegion(null);
       updatePropPanel(null);
       
       state.setIsPanning(true);
@@ -242,6 +520,93 @@ function handleMouseMove(e) {
     return;
   }
   
+  // Handle region resizing
+  if (state.resizingRegion && state.resizeHandle) {
+    const region = state.resizingRegion;
+    const handle = state.resizeHandle;
+    
+    let newX = region.x;
+    let newY = region.y;
+    let newWidth = region.width;
+    let newHeight = region.height;
+    
+    if (handle.includes('w')) {
+      newWidth = region.x + region.width - pos.x;
+      newX = pos.x;
+    }
+    if (handle.includes('e')) {
+      newWidth = pos.x - region.x;
+    }
+    if (handle.includes('n')) {
+      newHeight = region.y + region.height - pos.y;
+      newY = pos.y;
+    }
+    if (handle.includes('s')) {
+      newHeight = pos.y - region.y;
+    }
+    
+    // Enforce minimum size
+    if (newWidth < MIN_REGION_SIZE) {
+      if (handle.includes('w')) {
+        newX = region.x + region.width - MIN_REGION_SIZE;
+      }
+      newWidth = MIN_REGION_SIZE;
+    }
+    if (newHeight < MIN_REGION_SIZE) {
+      if (handle.includes('n')) {
+        newY = region.y + region.height - MIN_REGION_SIZE;
+      }
+      newHeight = MIN_REGION_SIZE;
+    }
+    
+    // Check for overlap
+    const testRegion = { x: newX, y: newY, width: newWidth, height: newHeight };
+    if (!wouldRegionsOverlap(testRegion, region.id)) {
+      region.x = newX;
+      region.y = newY;
+      region.width = newWidth;
+      region.height = newHeight;
+    }
+    return;
+  }
+  
+  // Handle dragging region (move all contents)
+  if (state.draggingRegion && state.regionDragContents) {
+    const region = state.draggingRegion;
+    const newX = pos.x - state.dragOffset.x;
+    const newY = pos.y - state.dragOffset.y;
+    const deltaX = newX - region.x;
+    const deltaY = newY - region.y;
+    
+    // Check for overlap at new position
+    const testRegion = { x: newX, y: newY, width: region.width, height: region.height };
+    if (!wouldRegionsOverlap(testRegion, region.id)) {
+      // Move only the originally contained nodes (captured at drag start)
+      state.regionDragContents.nodes.forEach(node => {
+        node.x += deltaX;
+        node.y += deltaY;
+      });
+      
+      // Move only the originally contained annotations (captured at drag start)
+      state.regionDragContents.annotations.forEach(ann => {
+        ann.x += deltaX;
+        ann.y += deltaY;
+      });
+      
+      region.x = newX;
+      region.y = newY;
+    }
+    return;
+  }
+  
+  // Handle dragging annotation
+  if (state.draggingAnnotation) {
+    const ann = state.draggingAnnotation;
+    ann.x = snapToGrid(pos.x - state.dragOffset.x);
+    ann.y = snapToGrid(pos.y - state.dragOffset.y);
+    return;
+  }
+  
   if (state.draggingNode) {
     const rawX = pos.x - state.dragOffset.x;
     const rawY = pos.y - state.dragOffset.y;
@@ -267,9 +632,11 @@ function handleMouseMove(e) {
 
   if (state.linkingNode) return;
 
-  // Hover Logic
+  // Hover Logic - check in order of visual priority
   const hitNode = state.nodes.find(n => dist(n, pos) < NODE_RADIUS);
   const nearNode = state.nodes.find(n => dist(n, pos) < NODE_RADIUS + 30);
+  const hitAnnotation = hitTestAnnotation(pos);
+  const hitRegion = hitTestRegion(pos);
   
   let newHoveredNode = null;
   let newIsHoveringHandle = false;
@@ -291,11 +658,30 @@ function handleMouseMove(e) {
 
   state.setHoveredNode(newHoveredNode);
   state.setIsHoveringHandle(newIsHoveringHandle);
+  state.setHoveredAnnotation(hitAnnotation);
+  state.setHoveredRegion(hitRegion);
+  
+  // Check for region resize handles
+  let regionHandle = null;
+  if (hitRegion) {
+    regionHandle = hitTestRegionHandle(pos, hitRegion);
+  }
+  state.setHoveredRegionHandle(regionHandle);
 
   // Cursor
-  if (state.isHoveringHandle) {
+  if (regionHandle) {
+    if (regionHandle === 'nw' || regionHandle === 'se') {
+      state.canvas.style.cursor = 'nwse-resize';
+    } else {
+      state.canvas.style.cursor = 'nesw-resize';
+    }
+  } else if (state.isHoveringHandle) {
     state.canvas.style.cursor = 'crosshair';
   } else if (hitNode) {
+    state.canvas.style.cursor = 'move';
+  } else if (hitAnnotation) {
+    state.canvas.style.cursor = 'move';
+  } else if (hitRegion) {
     state.canvas.style.cursor = 'move';
   } else {
     state.canvas.style.cursor = 'grab';
@@ -333,8 +719,56 @@ function handleMouseUp(e) {
   }
   
   state.setDraggingNode(null);
+  state.setDraggingAnnotation(null);
+  state.setDraggingRegion(null);
+  state.setResizingRegion(null);
+  state.setResizeHandle(null);
+  state.setRegionDragContents(null);
   state.setIsPanning(false);
   state.canvas.style.cursor = 'grab';
+}
+
+/**
+ * Handle double-click event - edit annotations or create new ones
+ */
+function handleDoubleClick(e) {
+  const pos = getPos(e);
+  
+  // Check if double-clicked on an annotation - edit it
+  const hitAnnotation = hitTestAnnotation(pos);
+  if (hitAnnotation) {
+    const newText = prompt('Edit text:', hitAnnotation.text);
+    if (newText !== null) {
+      hitAnnotation.text = newText;
+      state.setSelectedAnnotation(hitAnnotation);
+      updatePropPanel(null, 'annotation', hitAnnotation);
+    }
+    return;
+  }
+  
+  // Check if double-clicked on a node - don't create annotation
+  const hitNode = state.nodes.find(n => dist(n, pos) < NODE_RADIUS);
+  if (hitNode) return;
+  
+  // Check if double-clicked on a region - edit name
+  const hitRegion = hitTestRegion(pos);
+  if (hitRegion) {
+    const newName = prompt('Edit region name:', hitRegion.name);
+    if (newName !== null) {
+      hitRegion.name = newName;
+      state.setSelectedRegion(hitRegion);
+      updatePropPanel(null, 'region', hitRegion);
+    }
+    return;
+  }
+  
+  // Double-click on empty canvas - create new annotation
+  const text = prompt('Enter annotation text:');
+  if (text) {
+    const ann = createAnnotation(snapToGrid(pos.x), snapToGrid(pos.y), text);
+    state.setSelectedAnnotation(ann);
+    updatePropPanel(null, 'annotation', ann);
+  }
 }
 
 /**
@@ -369,6 +803,8 @@ function handleContextMenu(e) {
   state.setContextMenuPos({ x: snapToGrid(pos.x), y: snapToGrid(pos.y) });
   
   const hitNode = state.nodes.find(n => dist(n, pos) < NODE_RADIUS);
+  const hitAnnotation = hitTestAnnotation(pos);
+  const hitRegion = hitTestRegion(pos);
   let hitEdge = null;
   if (!hitNode) {
     hitEdge = state.edges.find(edge => {
@@ -382,11 +818,27 @@ function handleContextMenu(e) {
   if (hitNode) {
     state.setSelectedNode(hitNode);
     state.setSelectedEdge(null);
+    state.setSelectedAnnotation(null);
+    state.setSelectedRegion(null);
     showContextMenu(e.clientX, e.clientY, 'node');
+  } else if (hitAnnotation) {
+    state.setSelectedAnnotation(hitAnnotation);
+    state.setSelectedNode(null);
+    state.setSelectedEdge(null);
+    state.setSelectedRegion(null);
+    showContextMenu(e.clientX, e.clientY, 'annotation');
   } else if (hitEdge) {
     state.setSelectedEdge(hitEdge);
     state.setSelectedNode(null);
+    state.setSelectedAnnotation(null);
+    state.setSelectedRegion(null);
     showContextMenu(e.clientX, e.clientY, 'edge');
+  } else if (hitRegion) {
+    state.setSelectedRegion(hitRegion);
+    state.setSelectedNode(null);
+    state.setSelectedEdge(null);
+    state.setSelectedAnnotation(null);
+    showContextMenu(e.clientX, e.clientY, 'region');
   } else {
     showContextMenu(e.clientX, e.clientY, 'canvas');
   }
@@ -413,6 +865,8 @@ function setupContextMenuActions() {
   document.getElementById('ctx-delete').addEventListener('click', () => {
     if (state.selectedNode) deleteNode(state.selectedNode);
     if (state.selectedEdge) deleteEdge(state.selectedEdge);
+    if (state.selectedAnnotation) deleteAnnotation(state.selectedAnnotation);
+    if (state.selectedRegion) deleteRegion(state.selectedRegion);
     hideContextMenu();
   });
   
@@ -420,6 +874,50 @@ function setupContextMenuActions() {
     groupSelectedNodes();
     hideContextMenu();
   });
+  
+  // Add Annotation
+  const addAnnotationBtn = document.getElementById('ctx-add-annotation');
+  if (addAnnotationBtn) {
+    addAnnotationBtn.addEventListener('click', () => {
+      const text = prompt('Enter annotation text:');
+      if (text) {
+        const ann = createAnnotation(state.contextMenuPos.x, state.contextMenuPos.y, text);
+        state.setSelectedAnnotation(ann);
+        updatePropPanel(null, 'annotation', ann);
+      }
+      hideContextMenu();
+    });
+  }
+  
+  // Add Region
+  const addRegionBtn = document.getElementById('ctx-add-region');
+  if (addRegionBtn) {
+    addRegionBtn.addEventListener('click', () => {
+      const region = createRegion(state.contextMenuPos.x, state.contextMenuPos.y, 200, 150, 'Region');
+      if (region) {
+        state.setSelectedRegion(region);
+        updatePropPanel(null, 'region', region);
+      } else {
+        alert('Cannot create region here - would overlap with existing region');
+      }
+      hideContextMenu();
+    });
+  }
+  
+  // Duplicate Region
+  const duplicateRegionBtn = document.getElementById('ctx-duplicate-region');
+  if (duplicateRegionBtn) {
+    duplicateRegionBtn.addEventListener('click', () => {
+      if (state.selectedRegion) {
+        const newRegion = duplicateRegion(state.selectedRegion);
+        if (newRegion) {
+          state.setSelectedRegion(newRegion);
+          updatePropPanel(null, 'region', newRegion);
+        }
+      }
+      hideContextMenu();
+    });
+  }
   
   // Add Node items
   document.querySelectorAll('.ctx-add-node').forEach(item => {
@@ -464,6 +962,9 @@ function setupContextMenuActions() {
  */
 function setupKeyboardShortcuts() {
   window.addEventListener('keydown', (e) => {
+    // Don't handle shortcuts when typing in inputs
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    
     if (e.key === 'Delete' || e.key === 'Backspace') {
       if (state.selectedNodes.length > 0) {
         state.selectedNodes.forEach(n => deleteNode(n));
@@ -472,6 +973,14 @@ function setupKeyboardShortcuts() {
         deleteNode(state.selectedNode);
       }
       if (state.selectedEdge) deleteEdge(state.selectedEdge);
+      if (state.selectedAnnotation) {
+        deleteAnnotation(state.selectedAnnotation);
+        updatePropPanel(null);
+      }
+      if (state.selectedRegion) {
+        deleteRegion(state.selectedRegion);
+        updatePropPanel(null);
+      }
     }
     
     // Ctrl+G to group
@@ -483,7 +992,9 @@ function setupKeyboardShortcuts() {
     // Ctrl+D to duplicate
     if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
       e.preventDefault();
-      if (state.selectedNodes.length > 0 || state.selectedNode) {
+      if (state.selectedRegion) {
+        duplicateRegion(state.selectedRegion);
+      } else if (state.selectedNodes.length > 0 || state.selectedNode) {
         duplicateNode(state.selectedNode);
       }
     }
@@ -492,6 +1003,8 @@ function setupKeyboardShortcuts() {
     if (e.key === 'Escape') {
       state.setSelectedNodes([]);
       state.setSelectedNode(null);
+      state.setSelectedAnnotation(null);
+      state.setSelectedRegion(null);
       updatePropPanel(null);
     }
   });

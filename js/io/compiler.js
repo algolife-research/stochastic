@@ -129,7 +129,7 @@ export function compileGraph(nodes, edges, durationSeconds, bpm, settings) {
         const result = processNodeArrival(p.payload, n2, nodes, edges, currentTime, beatDuration, heldPackets);
         
         if (result.event) {
-          // This is an emitter - record the event
+          // This is a speaker - record the event
           events.push({
             time: currentTime,
             ...result.event
@@ -165,13 +165,13 @@ function processNodeArrival(payload, node, nodes, edges, currentTime, beatDurati
   let newPayload = { ...payload };
   
   switch (node.type) {
-    case 'emitter': {
+    case 'speaker': {
       // This produces an audio event
-      const emitterVolume = node.props.volume !== undefined ? node.props.volume : 1.0;
+      const speakerVolume = node.props.volume !== undefined ? node.props.volume : 1.0;
       result.event = {
         freq: newPayload.freq,
         scaleIndex: newPayload.scaleIndex,
-        gain: (newPayload.gain || 0.5) * emitterVolume,
+        gain: (newPayload.gain || 0.5) * speakerVolume,
         waves: newPayload.waves,
         wave: newPayload.wave || 'sine',
         timbre: newPayload.timbre || 0,

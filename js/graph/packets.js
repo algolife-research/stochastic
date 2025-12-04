@@ -5,6 +5,15 @@ import { SCALE_CHROMATIC, PIXELS_PER_STEP, MAX_PACKETS } from '../core/constants
 import * as state from '../core/state.js';
 import { dist } from '../core/utils.js';
 import { playSound } from '../audio/synth.js';
+import { getDefaultPropsForType } from './nodes.js';
+
+/**
+ * Helper to get a property value with fallback to default
+ */
+function getProp(nodeOrSubNode, propName) {
+  const defaults = getDefaultPropsForType(nodeOrSubNode.type);
+  return nodeOrSubNode.props[propName] !== undefined ? nodeOrSubNode.props[propName] : defaults[propName];
+}
 
 /**
  * Spawn a packet from a source node
@@ -15,16 +24,16 @@ export function spawnPacket(sourceNode) {
   const outgoing = state.edges.filter(e => e.from === sourceNode.id);
   
   // Determine Note
+  const noteIndex = getProp(sourceNode, 'noteIndex');
   let scaleIndex;
-  if (sourceNode.props.noteIndex === -1) {
+  if (noteIndex === -1) {
     scaleIndex = Math.floor(Math.random() * SCALE_CHROMATIC.length);
   } else {
-    scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, sourceNode.props.noteIndex));
+    scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, noteIndex));
   }
   
   const freq = SCALE_CHROMATIC[scaleIndex];
-
-  const intensity = sourceNode.props.intensity !== undefined ? sourceNode.props.intensity : 0.5;
+  const intensity = getProp(sourceNode, 'intensity');
 
   outgoing.forEach(edge => {
     state.packets.push({
@@ -51,19 +60,18 @@ export function processArrival(packet, node) {
   const payload = { ...packet.payload };
   
   switch (node.type) {
-    case 'emitter': {
-      payload.reverb = node.props.reverb;
-      payload.pan = node.props.pan !== undefined ? node.props.pan : 0;
-      // Apply emitter master volume
-      const emitterVolume = node.props.volume !== undefined ? node.props.volume : 1.0;
-      payload.gain = (payload.gain || 0.5) * emitterVolume;
+    case 'speaker': {
+      payload.reverb = getProp(node, 'reverb');
+      payload.pan = getProp(node, 'pan');
+      const speakerVolume = getProp(node, 'volume');
+      payload.gain = (payload.gain || 0.5) * speakerVolume;
       playSound(payload);
       break;
     }
       
     case 'delay': {
       const msPerBeat = (60 / state.masterSpeed) * 1000;
-      const delayMs = (node.props.delayTime || 1) * msPerBeat;
+      const delayMs = getProp(node, 'delayTime') * msPerBeat;
       if (!node.heldPackets) node.heldPackets = [];
       node.heldPackets.push({
         payload: payload,
@@ -90,12 +98,12 @@ export function processArrival(packet, node) {
     }
 
     case 'filter':
-      payload.cutoff = node.props.cutoff !== undefined ? node.props.cutoff : 20000;
-      if (node.props.mod !== 0) {
+      payload.cutoff = getProp(node, 'cutoff');
+      if (getProp(node, 'mod') !== 0) {
         payload.filterEnv = {
-          attack: node.props.attack || 0,
-          decay: node.props.decay || 0,
-          mod: node.props.mod || 0
+          attack: getProp(node, 'attack'),
+          decay: getProp(node, 'decay'),
+          mod: getProp(node, 'mod')
         };
       }
       break;
@@ -105,10 +113,10 @@ export function processArrival(packet, node) {
         payload.waves = [];
       }
       payload.waves.push({
-        wave: node.props.wave,
-        attack: node.props.attack,
-        decay: node.props.decay,
-        gain: node.props.mix !== undefined ? node.props.mix : 1.0
+        wave: getProp(node, 'wave'),
+        attack: getProp(node, 'attack'),
+        decay: getProp(node, 'decay'),
+        gain: getProp(node, 'mix')
       });
       payload.timbre = 0.8;
       break;
@@ -118,10 +126,10 @@ export function processArrival(packet, node) {
         payload.waves = [];
       }
       payload.waves.push({
-        wave: node.props.wave || 'white',
-        attack: node.props.attack || 0.01,
-        decay: node.props.decay || 0.2,
-        gain: node.props.mix !== undefined ? node.props.mix : 0.2
+        wave: getProp(node, 'wave'),
+        attack: getProp(node, 'attack'),
+        decay: getProp(node, 'decay'),
+        gain: getProp(node, 'mix')
       });
       payload.timbre = 0.9;
       break;
@@ -131,38 +139,38 @@ export function processArrival(packet, node) {
         payload.waves = [];
       }
       payload.waves.push({
-        wave: node.props.wave || 'sine',
-        attack: node.props.attack || 0.01,
-        decay: node.props.decay || 0.4,
-        gain: node.props.mix !== undefined ? node.props.mix : 0.5,
-        ratio: node.props.ratio || 2
+        wave: getProp(node, 'wave'),
+        attack: getProp(node, 'attack'),
+        decay: getProp(node, 'decay'),
+        gain: getProp(node, 'mix'),
+        ratio: getProp(node, 'ratio')
       });
       payload.timbre = 0.8;
       break;
 
     case 'modulator':
-      payload.vibratoRate = node.props.rate || 5;
-      payload.vibratoDepth = node.props.depth || 20;
-      payload.vibratoDelay = node.props.delay || 0.2;
+      payload.vibratoRate = getProp(node, 'rate');
+      payload.vibratoDepth = getProp(node, 'depth');
+      payload.vibratoDelay = getProp(node, 'delay');
       break;
       
     case 'pitch':
-      if (node.props.mode === 'fixed') {
-        const fixedNote = node.props.fixedNote !== undefined ? node.props.fixedNote : 12;
+      if (getProp(node, 'mode') === 'fixed') {
+        const fixedNote = getProp(node, 'fixedNote');
         payload.scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, fixedNote));
       } else {
-        const shift = node.props.shift !== undefined ? node.props.shift : 0;
+        const shift = getProp(node, 'shift');
         payload.scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, payload.scaleIndex + shift));
       }
       payload.freq = SCALE_CHROMATIC[payload.scaleIndex] || SCALE_CHROMATIC[12];
       break;
 
     case 'gain':
-      payload.gain = (payload.gain || 0.5) * node.props.value;
+      payload.gain = (payload.gain || 0.5) * getProp(node, 'value');
       break;
       
     case 'gate':
-      if (Math.random() > node.props.prob) return;
+      if (Math.random() > getProp(node, 'prob')) return;
       break;
       
     case 'tunnel': {
@@ -216,7 +224,11 @@ export function processTunnelSubNode(subNode, payload) {
   
   switch (subNode.type) {
     case 'pitch':
-      result.scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, result.scaleIndex + (subNode.props.shift || 0)));
+      if (getProp(subNode, 'mode') === 'fixed') {
+        result.scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, getProp(subNode, 'fixedNote')));
+      } else {
+        result.scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, result.scaleIndex + getProp(subNode, 'shift')));
+      }
       result.freq = SCALE_CHROMATIC[result.scaleIndex];
       break;
       
@@ -225,10 +237,10 @@ export function processTunnelSubNode(subNode, payload) {
         result.waves = [];
       }
       result.waves.push({
-        wave: subNode.props.wave || 'sine',
-        attack: subNode.props.attack || 0.01,
-        decay: subNode.props.decay || 0.4,
-        gain: subNode.props.mix !== undefined ? subNode.props.mix : 1.0
+        wave: getProp(subNode, 'wave'),
+        attack: getProp(subNode, 'attack'),
+        decay: getProp(subNode, 'decay'),
+        gain: getProp(subNode, 'mix')
       });
       result.timbre = 0.8;
       break;
@@ -238,10 +250,10 @@ export function processTunnelSubNode(subNode, payload) {
         result.waves = [];
       }
       result.waves.push({
-        wave: subNode.props.wave || 'white',
-        attack: subNode.props.attack || 0.01,
-        decay: subNode.props.decay || 0.2,
-        gain: subNode.props.mix !== undefined ? subNode.props.mix : 0.2
+        wave: getProp(subNode, 'wave'),
+        attack: getProp(subNode, 'attack'),
+        decay: getProp(subNode, 'decay'),
+        gain: getProp(subNode, 'mix')
       });
       result.timbre = 0.9;
       break;
@@ -251,38 +263,58 @@ export function processTunnelSubNode(subNode, payload) {
         result.waves = [];
       }
       result.waves.push({
-        wave: subNode.props.wave || 'sine',
-        attack: subNode.props.attack || 0.01,
-        decay: subNode.props.decay || 0.4,
-        gain: subNode.props.mix !== undefined ? subNode.props.mix : 0.5,
-        ratio: subNode.props.ratio || 2
+        wave: getProp(subNode, 'wave'),
+        attack: getProp(subNode, 'attack'),
+        decay: getProp(subNode, 'decay'),
+        gain: getProp(subNode, 'mix'),
+        ratio: getProp(subNode, 'ratio')
       });
       result.timbre = 0.8;
       break;
 
     case 'modulator':
-      result.vibratoRate = subNode.props.rate || 5;
-      result.vibratoDepth = subNode.props.depth || 20;
-      result.vibratoDelay = subNode.props.delay || 0.2;
+      result.vibratoRate = getProp(subNode, 'rate');
+      result.vibratoDepth = getProp(subNode, 'depth');
+      result.vibratoDelay = getProp(subNode, 'delay');
       break;
       
     case 'filter':
-      result.cutoff = subNode.props.cutoff !== undefined ? subNode.props.cutoff : 20000;
-      if (subNode.props.mod !== 0) {
+      result.cutoff = getProp(subNode, 'cutoff');
+      if (getProp(subNode, 'mod') !== 0) {
         result.filterEnv = {
-          attack: subNode.props.attack || 0,
-          decay: subNode.props.decay || 0,
-          mod: subNode.props.mod || 0
+          attack: getProp(subNode, 'attack'),
+          decay: getProp(subNode, 'decay'),
+          mod: getProp(subNode, 'mod')
         };
       }
       break;
       
+    case 'gain':
+      result.gain = (result.gain || 0.5) * getProp(subNode, 'value');
+      break;
+      
+    case 'delay':
+      // Delay inside tunnel is not supported (needs async handling)
+      break;
+      
     case 'gate':
-      if (Math.random() > (subNode.props.prob || 0.5)) return null;
+      if (Math.random() > getProp(subNode, 'prob')) return null;
       break;
       
     case 'splitter':
       break;
+      
+    case 'speaker': {
+      // Speaker inside tunnel - play sound immediately with current payload
+      const speakerPayload = { ...result };
+      speakerPayload.reverb = getProp(subNode, 'reverb');
+      speakerPayload.pan = getProp(subNode, 'pan');
+      const speakerVolume = getProp(subNode, 'volume');
+      speakerPayload.gain = (speakerPayload.gain || 0.5) * speakerVolume;
+      playSound(speakerPayload);
+      // Continue processing (don't return null) so packet can still flow to connected nodes
+      break;
+    }
   }
   
   return result;

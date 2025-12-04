@@ -22,11 +22,13 @@ export function draw() {
   ctx.scale(state.zoomLevel, state.zoomLevel);
   
   drawGrid();
+  drawRegions();
   drawTeleporterLinks();
   drawEdges();
   drawLinkingLine();
   drawPackets();
   drawNodes();
+  drawAnnotations();
   drawBoxSelection();
   drawTunnelLabels();
   
@@ -328,8 +330,8 @@ function drawNode(node) {
     ctx.shadowBlur = node.flash * 40;
   }
   
-  if (node.type === 'emitter') {
-    // Rectangle for emitter
+  if (node.type === 'speaker') {
+    // Rectangle for speaker
     ctx.fillStyle = '#1e1e1e';
     ctx.fillRect(-13, -30, 26, 60);
     
@@ -526,7 +528,7 @@ function drawTunnelPreviewNode(ctx, subNode, centerX, centerY, size) {
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
 
-  if (subNode.type === 'emitter') {
+  if (subNode.type === 'speaker') {
     const w = size * 0.4;
     const h = size * 0.9;
     ctx.fillRect(-w, -h / 2, w * 2, h);
@@ -552,6 +554,108 @@ function drawTunnelPreviewNode(ctx, subNode, centerX, centerY, size) {
   ctx.textBaseline = 'middle';
   ctx.fillText(getNodeIcon(subNode.type), 0, 1);
   ctx.restore();
+}
+
+/**
+ * Draw regions (rectangle groups) on the canvas
+ */
+function drawRegions() {
+  const { ctx, regions, selectedRegion, hoveredRegion, hoveredRegionHandle } = state;
+  
+  for (const region of regions) {
+    const isSelected = region === selectedRegion;
+    const isHovered = region === hoveredRegion;
+    
+    // Draw region background
+    ctx.fillStyle = region.color || 'rgba(60, 60, 80, 0.3)';
+    ctx.beginPath();
+    ctx.roundRect(region.x, region.y, region.width, region.height, 8);
+    ctx.fill();
+    
+    // Draw border
+    ctx.strokeStyle = isSelected ? '#fff' : (isHovered ? '#888' : '#444');
+    ctx.lineWidth = isSelected ? 2 : 1;
+    ctx.setLineDash(isSelected ? [] : [5, 5]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    
+    // Draw region name
+    if (region.name) {
+      ctx.fillStyle = isSelected ? '#fff' : '#aaa';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(region.name, region.x + 8, region.y + 6);
+    }
+    
+    // Draw resize handles when selected or hovered
+    if (isSelected || isHovered) {
+      const handleSize = 8;
+      const handles = [
+        { name: 'nw', x: region.x, y: region.y },
+        { name: 'ne', x: region.x + region.width, y: region.y },
+        { name: 'sw', x: region.x, y: region.y + region.height },
+        { name: 'se', x: region.x + region.width, y: region.y + region.height }
+      ];
+      
+      handles.forEach(h => {
+        ctx.fillStyle = hoveredRegionHandle === h.name && region === hoveredRegion 
+          ? '#fff' 
+          : (isSelected ? '#888' : '#555');
+        ctx.fillRect(h.x - handleSize/2, h.y - handleSize/2, handleSize, handleSize);
+      });
+    }
+  }
+}
+
+/**
+ * Draw text annotations on the canvas
+ */
+function drawAnnotations() {
+  const { ctx, annotations, selectedAnnotation, hoveredAnnotation } = state;
+  
+  for (const annotation of annotations) {
+    const isSelected = annotation === selectedAnnotation;
+    const isHovered = annotation === hoveredAnnotation;
+    
+    ctx.fillStyle = annotation.color || '#ccc';
+    ctx.font = `${annotation.fontSize || 14}px Arial`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    
+    // Draw text with slight shadow for readability
+    if (isSelected || isHovered) {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 4;
+    }
+    
+    // Draw multi-line text
+    const lines = annotation.text.split('\n');
+    const lineHeight = (annotation.fontSize || 14) * 1.3;
+    lines.forEach((line, i) => {
+      ctx.fillText(line, annotation.x, annotation.y + i * lineHeight);
+    });
+    
+    ctx.shadowBlur = 0;
+    
+    // Draw selection indicator
+    if (isSelected) {
+      // Calculate text bounds
+      const maxWidth = Math.max(...lines.map(l => ctx.measureText(l).width));
+      const totalHeight = lines.length * lineHeight;
+      
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.strokeRect(
+        annotation.x - 4, 
+        annotation.y - 4, 
+        maxWidth + 8, 
+        totalHeight + 4
+      );
+      ctx.setLineDash([]);
+    }
+  }
 }
 
 /**

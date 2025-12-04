@@ -2,14 +2,230 @@
 
 import * as state from '../core/state.js';
 import { NOTE_NAMES } from '../core/constants.js';
+import { getDefaultPropsForType } from '../graph/nodes.js';
 
 /**
- * Update the property panel for a node
+ * Generate property HTML for a node type (reusable for standalone and tunnel sub-nodes)
+ * Uses getDefaultPropsForType() as the single source of truth for default values.
+ * @param {string} type - The node type
+ * @param {Object} props - The node's properties
+ * @param {Object} options - Options: { isTunnel: boolean, idx: number }
  */
-export function updatePropPanel(node) {
+function buildNodePropsHtml(type, props, options = {}) {
+  const { isTunnel = false, idx = 0 } = options;
+  const defaults = getDefaultPropsForType(type);
+  
+  // Helper to get prop value with fallback to default
+  const val = (propName) => props[propName] !== undefined ? props[propName] : defaults[propName];
+  
+  // For tunnel sub-nodes, use class and data attributes; for standalone use id
+  const attr = (propName) => isTunnel 
+    ? `class="tunnel-prop" data-idx="${idx}" data-prop="${propName}"`
+    : `id="prop-${propName}"`;
+  
+  let html = '';
+  
+  if (type === 'pitch') {
+    html += `
+      <div class="prop-row">
+        <label>Mode</label>
+        <select ${attr('mode')}>
+          <option value="shift" ${val('mode') !== 'fixed' ? 'selected' : ''}>Shift (+/-)</option>
+          <option value="fixed" ${val('mode') === 'fixed' ? 'selected' : ''}>Fixed Note</option>
+        </select>
+      </div>
+    `;
+    
+    if (val('mode') === 'fixed') {
+      html += `
+        <div class="prop-row">
+          <label>Note</label>
+          <select ${attr('fixedNote')}>
+            ${NOTE_NAMES.map((n, i) => `<option value="${i}" ${val('fixedNote') === i ? 'selected' : ''}>${n}</option>`).join('')}
+          </select>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="prop-row">
+          <label>Shift (Semitones)</label>
+          <input type="number" ${attr('shift')} value="${val('shift')}" min="-12" max="12" step="1">
+        </div>
+      `;
+    }
+  } else if (type === 'gate') {
+    html += `
+      <div class="prop-row">
+        <label>Open Prob.</label>
+        <input type="number" ${attr('prob')} value="${val('prob')}" min="0" max="1" step="0.1">
+      </div>
+    `;
+  } else if (type === 'gain') {
+    html += `
+      <div class="prop-row">
+        <label>Multiplier</label>
+        <input type="number" ${attr('value')} value="${val('value')}" min="0" max="4" step="0.1">
+      </div>
+    `;
+  } else if (type === 'delay') {
+    html += `
+      <div class="prop-row">
+        <label>Delay (Beats)</label>
+        <input type="number" ${attr('delayTime')} value="${val('delayTime')}" min="0.25" max="8" step="0.25">
+      </div>
+    `;
+  } else if (type === 'filter') {
+    html += `
+      <div class="prop-row">
+        <label>Cutoff (Hz)</label>
+        <input type="number" ${attr('cutoff')} value="${val('cutoff')}" min="100" max="20000" step="100">
+      </div>
+      <div class="prop-row">
+        <label>Env. Mod</label>
+        <input type="number" ${attr('mod')} value="${val('mod')}" min="-10000" max="10000" step="100">
+      </div>
+      <div class="prop-row">
+        <label>Attack (s)</label>
+        <input type="number" ${attr('attack')} value="${val('attack')}" min="0" max="2" step="0.01">
+      </div>
+      <div class="prop-row">
+        <label>Decay (s)</label>
+        <input type="number" ${attr('decay')} value="${val('decay')}" min="0" max="5" step="0.1">
+      </div>
+    `;
+  } else if (type === 'noise') {
+    html += `
+      <div class="prop-row">
+        <label>Type</label>
+        <select ${attr('wave')}>
+          <option value="white" ${val('wave') === 'white' ? 'selected' : ''}>White</option>
+          <option value="pink" ${val('wave') === 'pink' ? 'selected' : ''}>Pink</option>
+          <option value="brown" ${val('wave') === 'brown' ? 'selected' : ''}>Brown</option>
+        </select>
+      </div>
+      <div class="prop-row">
+        <label>Attack (s)</label>
+        <input type="number" ${attr('attack')} value="${val('attack')}" min="0.01" max="2" step="0.01">
+      </div>
+      <div class="prop-row">
+        <label>Decay (s)</label>
+        <input type="number" ${attr('decay')} value="${val('decay')}" min="0.1" max="5" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Mix Level</label>
+        <input type="number" ${attr('mix')} value="${val('mix')}" min="0" max="1" step="0.05">
+      </div>
+    `;
+  } else if (type === 'polariser') {
+    html += `
+      <div class="prop-row">
+        <label>Wave</label>
+        <select ${attr('wave')}>
+          <option value="sine" ${val('wave') === 'sine' ? 'selected' : ''}>Sine</option>
+          <option value="square" ${val('wave') === 'square' ? 'selected' : ''}>Square</option>
+          <option value="sawtooth" ${val('wave') === 'sawtooth' ? 'selected' : ''}>Saw</option>
+          <option value="triangle" ${val('wave') === 'triangle' ? 'selected' : ''}>Tri</option>
+        </select>
+      </div>
+      <div class="prop-row">
+        <label>Attack (s)</label>
+        <input type="number" ${attr('attack')} value="${val('attack')}" min="0.01" max="2" step="0.01">
+      </div>
+      <div class="prop-row">
+        <label>Decay (s)</label>
+        <input type="number" ${attr('decay')} value="${val('decay')}" min="0.1" max="5" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Mix Level</label>
+        <input type="number" ${attr('mix')} value="${val('mix')}" min="0" max="1" step="0.05">
+      </div>
+    `;
+  } else if (type === 'harmonic') {
+    html += `
+      <div class="prop-row">
+        <label>Ratio</label>
+        <input type="number" ${attr('ratio')} value="${val('ratio')}" min="1" max="16" step="0.5">
+      </div>
+      <div class="prop-row">
+        <label>Wave</label>
+        <select ${attr('wave')}>
+          <option value="sine" ${val('wave') === 'sine' ? 'selected' : ''}>Sine</option>
+          <option value="triangle" ${val('wave') === 'triangle' ? 'selected' : ''}>Tri</option>
+        </select>
+      </div>
+      <div class="prop-row">
+        <label>Attack (s)</label>
+        <input type="number" ${attr('attack')} value="${val('attack')}" min="0.01" max="2" step="0.01">
+      </div>
+      <div class="prop-row">
+        <label>Decay (s)</label>
+        <input type="number" ${attr('decay')} value="${val('decay')}" min="0.1" max="5" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Mix Level</label>
+        <input type="number" ${attr('mix')} value="${val('mix')}" min="0" max="1" step="0.05">
+      </div>
+    `;
+  } else if (type === 'modulator') {
+    html += `
+      <div class="prop-row">
+        <label>Rate (Hz)</label>
+        <input type="number" ${attr('rate')} value="${val('rate')}" min="0.5" max="15" step="0.5">
+      </div>
+      <div class="prop-row">
+        <label>Depth (cents)</label>
+        <input type="number" ${attr('depth')} value="${val('depth')}" min="0" max="100" step="5">
+      </div>
+      <div class="prop-row">
+        <label>Delay (s)</label>
+        <input type="number" ${attr('delay')} value="${val('delay')}" min="0" max="2" step="0.05">
+      </div>
+    `;
+  } else if (type === 'speaker') {
+    html += `
+      <div class="prop-row">
+        <label>Volume</label>
+        <input type="number" ${attr('volume')} value="${val('volume')}" min="0" max="2" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Reverb</label>
+        <input type="number" ${attr('reverb')} value="${val('reverb')}" min="0" max="1" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Pan</label>
+        <input type="number" ${attr('pan')} value="${val('pan')}" min="-1" max="1" step="0.1">
+      </div>
+    `;
+  }
+  
+  return html;
+}
+
+/**
+ * Update the property panel for a node, annotation, or region
+ * @param {Object} node - The node to show (null if showing annotation/region)
+ * @param {string} type - Optional type: 'annotation' or 'region'
+ * @param {Object} obj - The annotation or region object
+ */
+export function updatePropPanel(node, type = null, obj = null) {
   const panel = document.getElementById('prop-content');
+  
+  // Handle annotations
+  if (type === 'annotation' && obj) {
+    panel.innerHTML = buildAnnotationPanel(obj);
+    setupAnnotationListeners(obj);
+    return;
+  }
+  
+  // Handle regions
+  if (type === 'region' && obj) {
+    panel.innerHTML = buildRegionPanel(obj);
+    setupRegionListeners(obj);
+    return;
+  }
+  
   if (!node) {
-    panel.innerHTML = 'Right-click to add nodes';
+    panel.innerHTML = 'Right-click to add nodes<br><small>Double-click to add text</small>';
     return;
   }
 
@@ -144,7 +360,7 @@ export function updatePropPanel(node) {
         <canvas id="waveform-canvas" width="190" height="60"></canvas>
       </div>
     `;
-  } else if (node.type === 'emitter') {
+  } else if (node.type === 'speaker') {
     html += `
       <div class="prop-row">
         <label>Volume</label>
@@ -240,135 +456,38 @@ export function updatePropPanel(node) {
       </div>
     `;
     
-    // Show properties for each sub-node
+    // Show properties for each sub-node using the generic function
     subNodes.forEach((subNode, idx) => {
       html += `<div class="prop-section"><div class="prop-label">${idx + 1}. ${subNode.type.toUpperCase()}</div>`;
       
-      if (subNode.type === 'pitch') {
-        html += `
-          <div class="prop-row">
-            <label>Shift</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="shift" value="${subNode.props.shift || 0}" min="-12" max="12" step="1">
-          </div>
-        `;
-      } else if (subNode.type === 'polariser') {
-        html += `
-          <div class="prop-row">
-            <label>Wave</label>
-            <select class="tunnel-prop" data-idx="${idx}" data-prop="wave">
-              <option value="sine" ${subNode.props.wave === 'sine' ? 'selected' : ''}>Sine</option>
-              <option value="square" ${subNode.props.wave === 'square' ? 'selected' : ''}>Square</option>
-              <option value="sawtooth" ${subNode.props.wave === 'sawtooth' ? 'selected' : ''}>Saw</option>
-              <option value="triangle" ${subNode.props.wave === 'triangle' ? 'selected' : ''}>Tri</option>
-            </select>
-          </div>
-          <div class="prop-row">
-            <label>Attack</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="attack" value="${subNode.props.attack || 0.01}" min="0.01" max="2" step="0.01">
-          </div>
-          <div class="prop-row">
-            <label>Decay</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="decay" value="${subNode.props.decay || 0.4}" min="0.1" max="5" step="0.1">
-          </div>
-          <div class="prop-row">
-            <label>Mix</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="mix" value="${subNode.props.mix !== undefined ? subNode.props.mix : 1.0}" min="0" max="1" step="0.05">
-          </div>
-        `;
-      } else if (subNode.type === 'noise') {
-        html += `
-          <div class="prop-row">
-            <label>Type</label>
-            <select class="tunnel-prop" data-idx="${idx}" data-prop="wave">
-              <option value="white" ${subNode.props.wave === 'white' ? 'selected' : ''}>White</option>
-              <option value="pink" ${subNode.props.wave === 'pink' ? 'selected' : ''}>Pink</option>
-              <option value="brown" ${subNode.props.wave === 'brown' ? 'selected' : ''}>Brown</option>
-            </select>
-          </div>
-          <div class="prop-row">
-            <label>Attack</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="attack" value="${subNode.props.attack || 0.01}" min="0.01" max="2" step="0.01">
-          </div>
-          <div class="prop-row">
-            <label>Decay</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="decay" value="${subNode.props.decay || 0.2}" min="0.1" max="5" step="0.1">
-          </div>
-          <div class="prop-row">
-            <label>Mix</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="mix" value="${subNode.props.mix !== undefined ? subNode.props.mix : 0.2}" min="0" max="1" step="0.05">
-          </div>
-        `;
-      } else if (subNode.type === 'gate') {
-        html += `
-          <div class="prop-row">
-            <label>Prob</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="prob" value="${subNode.props.prob || 0.5}" min="0" max="1" step="0.1">
-          </div>
-        `;
-      } else if (subNode.type === 'filter') {
-        html += `
-          <div class="prop-row">
-            <label>Cutoff</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="cutoff" value="${subNode.props.cutoff || 20000}" min="100" max="20000" step="100">
-          </div>
-          <div class="prop-row">
-            <label>Env. Mod</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="mod" value="${subNode.props.mod !== undefined ? subNode.props.mod : 0}" min="-10000" max="10000" step="100">
-          </div>
-          <div class="prop-row">
-            <label>Attack</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="attack" value="${subNode.props.attack !== undefined ? subNode.props.attack : 0}" min="0" max="2" step="0.01">
-          </div>
-          <div class="prop-row">
-            <label>Decay</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="decay" value="${subNode.props.decay !== undefined ? subNode.props.decay : 0}" min="0" max="5" step="0.1">
-          </div>
-        `;
-      } else if (subNode.type === 'harmonic') {
-        html += `
-          <div class="prop-row">
-            <label>Ratio</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="ratio" value="${subNode.props.ratio !== undefined ? subNode.props.ratio : 2}" min="1" max="16" step="0.5">
-          </div>
-          <div class="prop-row">
-            <label>Wave</label>
-            <select class="tunnel-prop" data-idx="${idx}" data-prop="wave">
-              <option value="sine" ${subNode.props.wave === 'sine' ? 'selected' : ''}>Sine</option>
-              <option value="triangle" ${subNode.props.wave === 'triangle' ? 'selected' : ''}>Tri</option>
-            </select>
-          </div>
-          <div class="prop-row">
-            <label>Attack</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="attack" value="${subNode.props.attack || 0.01}" min="0.01" max="2" step="0.01">
-          </div>
-          <div class="prop-row">
-            <label>Decay</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="decay" value="${subNode.props.decay || 0.4}" min="0.1" max="5" step="0.1">
-          </div>
-          <div class="prop-row">
-            <label>Mix</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="mix" value="${subNode.props.mix !== undefined ? subNode.props.mix : 0.5}" min="0" max="1" step="0.05">
-          </div>
-        `;
-      } else if (subNode.type === 'modulator') {
-        html += `
-          <div class="prop-row">
-            <label>Rate (Hz)</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="rate" value="${subNode.props.rate !== undefined ? subNode.props.rate : 5}" min="0.5" max="15" step="0.5">
-          </div>
-          <div class="prop-row">
-            <label>Depth (cents)</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="depth" value="${subNode.props.depth !== undefined ? subNode.props.depth : 20}" min="0" max="100" step="5">
-          </div>
-          <div class="prop-row">
-            <label>Delay (s)</label>
-            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="delay" value="${subNode.props.delay !== undefined ? subNode.props.delay : 0.2}" min="0" max="2" step="0.05">
-          </div>
-        `;
-      }
+      // Use the generic buildNodePropsHtml for all sub-node types
+      html += buildNodePropsHtml(subNode.type, subNode.props, { isTunnel: true, idx });
+      
+      // Add remove button for each sub-node
+      html += `<button class="tunnel-remove-btn" data-idx="${idx}" style="width: 100%; margin-top: 4px; padding: 4px; font-size: 11px;">Remove</button>`;
       
       html += `</div>`;
     });
+    
+    // Add sub-node dropdown
+    html += `
+      <div class="prop-row" style="margin-top: 10px;">
+        <label>Add</label>
+        <select id="tunnel-add-subnode" style="flex: 1;">
+          <option value="">Select type...</option>
+          <option value="pitch">Pitch</option>
+          <option value="polariser">Polariser</option>
+          <option value="noise">Noise</option>
+          <option value="filter">Filter</option>
+          <option value="gate">Gate</option>
+          <option value="gain">Gain</option>
+          <option value="delay">Delay</option>
+          <option value="harmonic">Harmonic</option>
+          <option value="modulator">Modulator</option>
+          <option value="speaker">Speaker</option>
+        </select>
+      </div>
+    `;
   } else if (node.type === 'teleporter') {
     // Find all existing channels
     const allChannels = [...new Set(state.nodes.filter(n => n.type === 'teleporter').map(n => n.props.channel))].sort();
@@ -505,11 +624,42 @@ function attachPropListeners(node) {
       const prop = e.target.dataset.prop;
       const subNode = node.props.subNodes[idx];
       if (subNode) {
-        if (prop === 'wave') {
+        if (prop === 'wave' || prop === 'mode') {
           subNode.props[prop] = e.target.value;
+          // Re-render panel if mode changed (to show/hide shift vs fixedNote)
+          if (prop === 'mode') {
+            updatePropPanel(node);
+          }
+        } else if (prop === 'fixedNote') {
+          subNode.props[prop] = parseInt(e.target.value);
         } else {
           subNode.props[prop] = parseFloat(e.target.value);
         }
+      }
+    });
+  });
+  
+  // Tunnel add sub-node
+  const addSubNodeSelect = document.getElementById('tunnel-add-subnode');
+  if (addSubNodeSelect) {
+    addSubNodeSelect.addEventListener('change', e => {
+      const type = e.target.value;
+      if (!type) return;
+      
+      // Use getDefaultPropsForType as single source of truth
+      if (!node.props.subNodes) node.props.subNodes = [];
+      node.props.subNodes.push({ type, props: { ...getDefaultPropsForType(type) } });
+      updatePropPanel(node); // Re-render panel
+    });
+  }
+  
+  // Tunnel remove sub-node buttons
+  document.querySelectorAll('.tunnel-remove-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const idx = parseInt(e.target.dataset.idx);
+      if (node.props.subNodes && node.props.subNodes[idx]) {
+        node.props.subNodes.splice(idx, 1);
+        updatePropPanel(node); // Re-render panel
       }
     });
   });
@@ -623,4 +773,175 @@ function drawWaveformPreview(node) {
   ctx.font = '9px Arial';
   ctx.fillText('A', 4, 12);
   ctx.fillText('D', attackX + 4, 12);
+}
+
+/**
+ * Build HTML for annotation property panel
+ */
+function buildAnnotationPanel(annotation) {
+  return `
+    <div class="prop-row">
+      <label>Type</label>
+      <span>ANNOTATION</span>
+    </div>
+    <div class="prop-row">
+      <label>Text</label>
+      <textarea id="prop-ann-text" rows="3" style="width: 100%; resize: vertical;">${annotation.text}</textarea>
+    </div>
+    <div class="prop-row">
+      <label>Font Size</label>
+      <input type="number" id="prop-ann-fontsize" value="${annotation.fontSize || 14}" min="8" max="72" step="1">
+    </div>
+    <div class="prop-row">
+      <label>Color</label>
+      <input type="color" id="prop-ann-color" value="${annotation.color || '#cccccc'}" style="width: 100%;">
+    </div>
+    <div class="prop-row">
+      <label>Position</label>
+      <span>X: ${Math.round(annotation.x)}, Y: ${Math.round(annotation.y)}</span>
+    </div>
+  `;
+}
+
+/**
+ * Setup event listeners for annotation panel
+ */
+function setupAnnotationListeners(annotation) {
+  setTimeout(() => {
+    const textInput = document.getElementById('prop-ann-text');
+    const fontSizeInput = document.getElementById('prop-ann-fontsize');
+    const colorInput = document.getElementById('prop-ann-color');
+    
+    if (textInput) {
+      textInput.addEventListener('input', () => {
+        annotation.text = textInput.value;
+      });
+    }
+    
+    if (fontSizeInput) {
+      fontSizeInput.addEventListener('change', () => {
+        annotation.fontSize = parseInt(fontSizeInput.value);
+      });
+    }
+    
+    if (colorInput) {
+      colorInput.addEventListener('input', () => {
+        annotation.color = colorInput.value;
+      });
+    }
+  }, 0);
+}
+
+/**
+ * Build HTML for region property panel
+ */
+function buildRegionPanel(region) {
+  return `
+    <div class="prop-row">
+      <label>Type</label>
+      <span>REGION</span>
+    </div>
+    <div class="prop-row">
+      <label>Name</label>
+      <input type="text" id="prop-region-name" value="${region.name || ''}" style="width: 100%;">
+    </div>
+    <div class="prop-row">
+      <label>Description</label>
+      <textarea id="prop-region-desc" rows="2" style="width: 100%; resize: vertical;">${region.description || ''}</textarea>
+    </div>
+    <div class="prop-row">
+      <label>Color</label>
+      <input type="color" id="prop-region-color" value="${rgbaToHex(region.color) || '#3c3c50'}" style="width: 100%;">
+    </div>
+    <div class="prop-row">
+      <label>Opacity</label>
+      <input type="range" id="prop-region-opacity" value="${getOpacityFromRgba(region.color) * 100}" min="10" max="80" step="5" style="width: 100%;">
+    </div>
+    <div class="prop-row">
+      <label>Size</label>
+      <span>${Math.round(region.width)} × ${Math.round(region.height)}</span>
+    </div>
+    <div class="prop-row">
+      <button id="prop-region-duplicate" style="width: 100%; padding: 6px;">Duplicate Region</button>
+    </div>
+  `;
+}
+
+/**
+ * Convert rgba string to hex (for color input)
+ */
+function rgbaToHex(rgba) {
+  if (!rgba || !rgba.startsWith('rgba')) return '#3c3c50';
+  const match = rgba.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) return '#3c3c50';
+  const r = parseInt(match[1]).toString(16).padStart(2, '0');
+  const g = parseInt(match[2]).toString(16).padStart(2, '0');
+  const b = parseInt(match[3]).toString(16).padStart(2, '0');
+  return `#${r}${g}${b}`;
+}
+
+/**
+ * Get opacity from rgba string
+ */
+function getOpacityFromRgba(rgba) {
+  if (!rgba || !rgba.startsWith('rgba')) return 0.3;
+  const match = rgba.match(/rgba?\([^)]*,\s*([\d.]+)\)/);
+  return match ? parseFloat(match[1]) : 0.3;
+}
+
+/**
+ * Convert hex + opacity to rgba
+ */
+function hexToRgba(hex, opacity) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+/**
+ * Setup event listeners for region panel
+ */
+function setupRegionListeners(region) {
+  // Import duplicateRegion dynamically to avoid circular dependency
+  setTimeout(async () => {
+    const nameInput = document.getElementById('prop-region-name');
+    const descInput = document.getElementById('prop-region-desc');
+    const colorInput = document.getElementById('prop-region-color');
+    const opacityInput = document.getElementById('prop-region-opacity');
+    const duplicateBtn = document.getElementById('prop-region-duplicate');
+    
+    if (nameInput) {
+      nameInput.addEventListener('input', () => {
+        region.name = nameInput.value;
+      });
+    }
+    
+    if (descInput) {
+      descInput.addEventListener('input', () => {
+        region.description = descInput.value;
+      });
+    }
+    
+    if (colorInput) {
+      colorInput.addEventListener('input', () => {
+        const opacity = getOpacityFromRgba(region.color);
+        region.color = hexToRgba(colorInput.value, opacity);
+      });
+    }
+    
+    if (opacityInput) {
+      opacityInput.addEventListener('input', () => {
+        const hex = rgbaToHex(region.color);
+        region.color = hexToRgba(hex, opacityInput.value / 100);
+      });
+    }
+    
+    if (duplicateBtn) {
+      duplicateBtn.addEventListener('click', async () => {
+        const { duplicateRegion } = await import('./input.js');
+        duplicateRegion(region);
+      });
+    }
+  }, 0);
 }

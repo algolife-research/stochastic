@@ -104,12 +104,12 @@ function createExportModal() {
 export function showExportDialog() {
   if (!exportModal) initExportUI();
   
-  // Check if there are any sources and emitters
+  // Check if there are any sources and speakers
   const hasSources = state.nodes.some(n => n.type === 'source');
-  const hasEmitters = state.nodes.some(n => n.type === 'emitter');
+  const hasSpeakers = state.nodes.some(n => n.type === 'speaker');
   
-  if (!hasSources || !hasEmitters) {
-    alert('Your graph needs at least one Source and one Emitter to export audio.');
+  if (!hasSources || !hasSpeakers) {
+    alert('Your graph needs at least one Source and one Speaker to export audio.');
     return;
   }
   
@@ -192,7 +192,7 @@ async function startExport() {
     console.log(`Compiled ${events.length} audio events`);
     
     if (events.length === 0) {
-      alert('No audio events generated. Check that packets can flow from Sources to Emitters.');
+      alert('No audio events generated. Check that packets can flow from Sources to Speakers.');
       resetProgress();
       return;
     }

@@ -6,15 +6,15 @@ export const EXAMPLES = {
     "bpm": 120,
     "nodes": [
       { "id": "src", "type": "source", "x": 60, "y": 300, "props": { "interval": 4, "noteIndex": 12, "prob": 1 } },
-      { "id": "e1", "type": "emitter", "x": 180, "y": 300, "props": { "reverb": 0.3, "pan": -0.5 } },
+      { "id": "e1", "type": "speaker", "x": 180, "y": 300, "props": { "reverb": 0.3, "pan": -0.5 } },
       { "id": "p1", "type": "pitch", "x": 300, "y": 300, "props": { "shift": 2 } },
-      { "id": "e2", "type": "emitter", "x": 420, "y": 300, "props": { "reverb": 0.3, "pan": -0.25 } },
+      { "id": "e2", "type": "speaker", "x": 420, "y": 300, "props": { "reverb": 0.3, "pan": -0.25 } },
       { "id": "p2", "type": "pitch", "x": 540, "y": 300, "props": { "shift": 2 } },
-      { "id": "e3", "type": "emitter", "x": 660, "y": 300, "props": { "reverb": 0.3, "pan": 0 } },
+      { "id": "e3", "type": "speaker", "x": 660, "y": 300, "props": { "reverb": 0.3, "pan": 0 } },
       { "id": "p3", "type": "pitch", "x": 780, "y": 300, "props": { "shift": 1 } },
-      { "id": "e4", "type": "emitter", "x": 900, "y": 300, "props": { "reverb": 0.3, "pan": 0.25 } },
+      { "id": "e4", "type": "speaker", "x": 900, "y": 300, "props": { "reverb": 0.3, "pan": 0.25 } },
       { "id": "p4", "type": "pitch", "x": 1020, "y": 300, "props": { "shift": 2 } },
-      { "id": "e5", "type": "emitter", "x": 1140, "y": 300, "props": { "reverb": 0.5, "pan": 0.5 } }
+      { "id": "e5", "type": "speaker", "x": 1140, "y": 300, "props": { "reverb": 0.5, "pan": 0.5 } }
     ],
     "edges": [
       { "id": "e_1", "from": "src", "to": "e1" },
@@ -36,15 +36,15 @@ export const EXAMPLES = {
       { "id": "split", "type": "splitter", "x": 180, "y": 300, "props": { "prob": 1 } },
       { "id": "f1", "type": "filter", "x": 300, "y": 180, "props": { "cutoff": 600 } },
       { "id": "pol1", "type": "polariser", "x": 420, "y": 180, "props": { "wave": "sine", "attack": 1.5, "decay": 3.0 } },
-      { "id": "e1", "type": "emitter", "x": 540, "y": 180, "props": { "reverb": 0.9, "pan": -0.6 } },
+      { "id": "e1", "type": "speaker", "x": 540, "y": 180, "props": { "reverb": 0.9, "pan": -0.6 } },
       { "id": "g2", "type": "gate", "x": 300, "y": 300, "props": { "prob": 0.4 } },
       { "id": "p2", "type": "pitch", "x": 420, "y": 300, "props": { "shift": 24 } },
       { "id": "pol2", "type": "polariser", "x": 540, "y": 300, "props": { "wave": "triangle", "attack": 0.01, "decay": 0.3 } },
-      { "id": "e2", "type": "emitter", "x": 660, "y": 300, "props": { "reverb": 0.8, "pan": 0.6 } },
+      { "id": "e2", "type": "speaker", "x": 660, "y": 300, "props": { "reverb": 0.8, "pan": 0.6 } },
       { "id": "d3", "type": "delay", "x": 300, "y": 420, "props": { "delayTime": 1.5 } },
       { "id": "p3", "type": "pitch", "x": 420, "y": 420, "props": { "shift": -12 } },
       { "id": "pol3", "type": "polariser", "x": 540, "y": 420, "props": { "wave": "sine", "attack": 0.2, "decay": 1.5 } },
-      { "id": "e3", "type": "emitter", "x": 660, "y": 420, "props": { "reverb": 0.3, "pan": 0 } }
+      { "id": "e3", "type": "speaker", "x": 660, "y": 420, "props": { "reverb": 0.3, "pan": 0 } }
     ],
     "edges": [
       { "id": "e_s", "from": "src", "to": "split" },
@@ -59,13 +59,13 @@ export const EXAMPLES = {
     "nodes": [
       { "id": "src4", "type": "source", "x": 60, "y": 180, "props": { "interval": 4, "noteIndex": 12, "prob": 1 } },
       { "id": "pol4", "type": "polariser", "x": 180, "y": 180, "props": { "wave": "sine", "attack": 0.01, "decay": 0.6 } },
-      { "id": "e4", "type": "emitter", "x": 300, "y": 180, "props": { "reverb": 0.4, "pan": -0.5 } },
+      { "id": "e4", "type": "speaker", "x": 300, "y": 180, "props": { "reverb": 0.4, "pan": -0.5 } },
       { "id": "src3", "type": "source", "x": 60, "y": 300, "props": { "interval": 3, "noteIndex": 19, "prob": 1 } },
       { "id": "pol3", "type": "polariser", "x": 180, "y": 300, "props": { "wave": "triangle", "attack": 0.01, "decay": 0.4 } },
-      { "id": "e3", "type": "emitter", "x": 300, "y": 300, "props": { "reverb": 0.4, "pan": 0 } },
+      { "id": "e3", "type": "speaker", "x": 300, "y": 300, "props": { "reverb": 0.4, "pan": 0 } },
       { "id": "src5", "type": "source", "x": 60, "y": 420, "props": { "interval": 5, "noteIndex": 7, "prob": 1 } },
       { "id": "pol5", "type": "polariser", "x": 180, "y": 420, "props": { "wave": "square", "attack": 0.01, "decay": 0.3 } },
-      { "id": "e5", "type": "emitter", "x": 300, "y": 420, "props": { "reverb": 0.4, "pan": 0.5 } }
+      { "id": "e5", "type": "speaker", "x": 300, "y": 420, "props": { "reverb": 0.4, "pan": 0.5 } }
     ],
     "edges": [
       { "id": "e_4a", "from": "src4", "to": "pol4" }, { "id": "e_4b", "from": "pol4", "to": "e4" },
@@ -80,17 +80,17 @@ export const EXAMPLES = {
       { "id": "kick_src", "type": "source", "x": 60, "y": 180, "props": { "interval": 2, "noteIndex": 0, "intensity": 0.8 } },
       { "id": "kick_pol", "type": "polariser", "x": 180, "y": 180, "props": { "wave": "sine", "attack": 0.01, "decay": 0.25 } },
       { "id": "kick_p", "type": "pitch", "x": 300, "y": 180, "props": { "shift": -12 } },
-      { "id": "kick_out", "type": "emitter", "x": 420, "y": 180, "props": { "volume": 1.0, "reverb": 0.1, "pan": 0 } },
+      { "id": "kick_out", "type": "speaker", "x": 420, "y": 180, "props": { "volume": 1.0, "reverb": 0.1, "pan": 0 } },
       { "id": "snare_src", "type": "source", "x": 60, "y": 300, "props": { "interval": 2, "noteIndex": 0, "intensity": 0.6 } },
       { "id": "snare_del", "type": "delay", "x": 140, "y": 300, "props": { "delayTime": 1 } },
       { "id": "snare_pol", "type": "polariser", "x": 220, "y": 300, "props": { "wave": "sawtooth", "attack": 0.01, "decay": 0.12 } },
       { "id": "snare_p", "type": "pitch", "x": 300, "y": 300, "props": { "shift": 12 } },
-      { "id": "snare_out", "type": "emitter", "x": 420, "y": 300, "props": { "volume": 0.8, "reverb": 0.35, "pan": 0.1 } },
+      { "id": "snare_out", "type": "speaker", "x": 420, "y": 300, "props": { "volume": 0.8, "reverb": 0.35, "pan": 0.1 } },
       { "id": "hh_src", "type": "source", "x": 60, "y": 420, "props": { "interval": 0.5, "noteIndex": 0, "intensity": 0.3 } },
       { "id": "hh_gate", "type": "gate", "x": 140, "y": 420, "props": { "prob": 0.75 } },
       { "id": "hh_pol", "type": "polariser", "x": 220, "y": 420, "props": { "wave": "square", "attack": 0.005, "decay": 0.04 } },
       { "id": "hh_p", "type": "pitch", "x": 300, "y": 420, "props": { "shift": 30 } },
-      { "id": "hh_out", "type": "emitter", "x": 420, "y": 420, "props": { "volume": 0.6, "reverb": 0.15, "pan": 0.4 } }
+      { "id": "hh_out", "type": "speaker", "x": 420, "y": 420, "props": { "volume": 0.6, "reverb": 0.15, "pan": 0.4 } }
     ],
     "edges": [
       { "id": "e_k1", "from": "kick_src", "to": "kick_pol" }, { "id": "e_k2", "from": "kick_pol", "to": "kick_p" }, { "id": "e_k3", "from": "kick_p", "to": "kick_out" },
@@ -111,7 +111,7 @@ export const EXAMPLES = {
           { "type": "polariser", "props": { "wave": "sawtooth", "attack": 0.5, "decay": 2.0 } }
         ]
       }},
-      { "id": "out", "type": "emitter", "x": 340, "y": 300, "props": { "reverb": 0.8, "pan": 0 } },
+      { "id": "out", "type": "speaker", "x": 340, "y": 300, "props": { "reverb": 0.8, "pan": 0 } },
       { "id": "split", "type": "splitter", "x": 200, "y": 180, "props": {} },
       { "id": "p_hi", "type": "pitch", "x": 280, "y": 180, "props": { "shift": 12 } },
       { "id": "sparkle", "type": "tunnel", "x": 380, "y": 180, "props": {
@@ -120,7 +120,7 @@ export const EXAMPLES = {
           { "type": "polariser", "props": { "wave": "triangle", "attack": 0.01, "decay": 0.4 } }
         ]
       }},
-      { "id": "out_hi", "type": "emitter", "x": 500, "y": 180, "props": { "reverb": 0.9, "pan": 0.4 } }
+      { "id": "out_hi", "type": "speaker", "x": 500, "y": 180, "props": { "reverb": 0.9, "pan": 0.4 } }
     ],
     "edges": [
       { "id": "e1", "from": "src", "to": "pad" },
@@ -146,7 +146,7 @@ export const EXAMPLES = {
           { "type": "polariser", "props": { "wave": "square", "attack": 0.01, "decay": 0.2 } }
         ]
       }},
-      { "id": "out", "type": "emitter", "x": 420, "y": 300, "props": { "reverb": 0.15, "pan": 0 } }
+      { "id": "out", "type": "speaker", "x": 420, "y": 300, "props": { "reverb": 0.15, "pan": 0 } }
     ],
     "edges": [
       { "id": "e1", "from": "src", "to": "gate" },
@@ -161,26 +161,26 @@ export const EXAMPLES = {
       { "id": "src", "type": "source", "x": 50, "y": 300, "props": { "interval": 4, "noteIndex": 14 } },
       { "id": "split", "type": "splitter", "x": 150, "y": 300, "props": { "prob": 1 } },
       
-      { "id": "v1_e1", "type": "emitter", "x": 250, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
+      { "id": "v1_e1", "type": "speaker", "x": 250, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
       { "id": "v1_p1", "type": "pitch", "x": 350, "y": 200, "props": { "shift": 7 } },
-      { "id": "v1_e2", "type": "emitter", "x": 450, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
+      { "id": "v1_e2", "type": "speaker", "x": 450, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
       { "id": "v1_p2", "type": "pitch", "x": 550, "y": 200, "props": { "shift": -4 } },
-      { "id": "v1_e3", "type": "emitter", "x": 650, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
+      { "id": "v1_e3", "type": "speaker", "x": 650, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
       { "id": "v1_p3", "type": "pitch", "x": 750, "y": 200, "props": { "shift": -3 } },
-      { "id": "v1_e4", "type": "emitter", "x": 850, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
+      { "id": "v1_e4", "type": "speaker", "x": 850, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
       { "id": "v1_p4", "type": "pitch", "x": 950, "y": 200, "props": { "shift": -1 } },
-      { "id": "v1_e5", "type": "emitter", "x": 1050, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
+      { "id": "v1_e5", "type": "speaker", "x": 1050, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
       
       { "id": "delay", "type": "delay", "x": 250, "y": 400, "props": { "delayTime": 4.0 } },
-      { "id": "v2_e1", "type": "emitter", "x": 350, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
+      { "id": "v2_e1", "type": "speaker", "x": 350, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
       { "id": "v2_p1", "type": "pitch", "x": 450, "y": 400, "props": { "shift": 7 } },
-      { "id": "v2_e2", "type": "emitter", "x": 550, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
+      { "id": "v2_e2", "type": "speaker", "x": 550, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
       { "id": "v2_p2", "type": "pitch", "x": 650, "y": 400, "props": { "shift": -4 } },
-      { "id": "v2_e3", "type": "emitter", "x": 750, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
+      { "id": "v2_e3", "type": "speaker", "x": 750, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
       { "id": "v2_p3", "type": "pitch", "x": 850, "y": 400, "props": { "shift": -3 } },
-      { "id": "v2_e4", "type": "emitter", "x": 950, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
+      { "id": "v2_e4", "type": "speaker", "x": 950, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
       { "id": "v2_p4", "type": "pitch", "x": 1050, "y": 400, "props": { "shift": -1 } },
-      { "id": "v2_e5", "type": "emitter", "x": 1150, "y": 400, "props": { "reverb": 0, "pan": 0.6 } }
+      { "id": "v2_e5", "type": "speaker", "x": 1150, "y": 400, "props": { "reverb": 0, "pan": 0.6 } }
     ],
     "edges": [
       { "id": "e_s", "from": "src", "to": "split" },
@@ -195,27 +195,27 @@ export const EXAMPLES = {
       { "id": "src", "type": "source", "x": 50, "y": 300, "props": { "interval": 4, "noteIndex": 14 } },
       { "id": "split", "type": "splitter", "x": 150, "y": 300, "props": { "prob": 1 } },
       
-      { "id": "v1_e1", "type": "emitter", "x": 250, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
+      { "id": "v1_e1", "type": "speaker", "x": 250, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
       { "id": "v1_p1", "type": "pitch", "x": 350, "y": 200, "props": { "shift": 7 } },
-      { "id": "v1_e2", "type": "emitter", "x": 450, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
+      { "id": "v1_e2", "type": "speaker", "x": 450, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
       { "id": "v1_p2", "type": "pitch", "x": 550, "y": 200, "props": { "shift": -4 } },
-      { "id": "v1_e3", "type": "emitter", "x": 650, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
+      { "id": "v1_e3", "type": "speaker", "x": 650, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
       { "id": "v1_p3", "type": "pitch", "x": 750, "y": 200, "props": { "shift": -3 } },
-      { "id": "v1_e4", "type": "emitter", "x": 850, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
+      { "id": "v1_e4", "type": "speaker", "x": 850, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
       { "id": "v1_p4", "type": "pitch", "x": 950, "y": 200, "props": { "shift": -1 } },
-      { "id": "v1_e5", "type": "emitter", "x": 1050, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
+      { "id": "v1_e5", "type": "speaker", "x": 1050, "y": 200, "props": { "reverb": 0, "pan": -0.6 } },
       
       { "id": "delay", "type": "delay", "x": 250, "y": 400, "props": { "delayTime": 4.0 } },
       { "id": "trans", "type": "pitch", "x": 300, "y": 400, "props": { "shift": 7 } },
-      { "id": "v2_e1", "type": "emitter", "x": 350, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
+      { "id": "v2_e1", "type": "speaker", "x": 350, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
       { "id": "v2_p1", "type": "pitch", "x": 450, "y": 400, "props": { "shift": 7 } },
-      { "id": "v2_e2", "type": "emitter", "x": 550, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
+      { "id": "v2_e2", "type": "speaker", "x": 550, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
       { "id": "v2_p2", "type": "pitch", "x": 650, "y": 400, "props": { "shift": -4 } },
-      { "id": "v2_e3", "type": "emitter", "x": 750, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
+      { "id": "v2_e3", "type": "speaker", "x": 750, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
       { "id": "v2_p3", "type": "pitch", "x": 850, "y": 400, "props": { "shift": -3 } },
-      { "id": "v2_e4", "type": "emitter", "x": 950, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
+      { "id": "v2_e4", "type": "speaker", "x": 950, "y": 400, "props": { "reverb": 0, "pan": 0.6 } },
       { "id": "v2_p4", "type": "pitch", "x": 1050, "y": 400, "props": { "shift": -1 } },
-      { "id": "v2_e5", "type": "emitter", "x": 1150, "y": 400, "props": { "reverb": 0, "pan": 0.6 } }
+      { "id": "v2_e5", "type": "speaker", "x": 1150, "y": 400, "props": { "reverb": 0, "pan": 0.6 } }
     ],
     "edges": [
       { "id": "e_s", "from": "src", "to": "split" },
@@ -229,17 +229,17 @@ export const EXAMPLES = {
     "nodes": [
       { "id": "src_loud", "type": "source", "x": 60, "y": 180, "props": { "interval": 4, "noteIndex": 12, "intensity": 0.8 } },
       { "id": "pol_loud", "type": "polariser", "x": 180, "y": 180, "props": { "wave": "sawtooth", "attack": 0.01, "decay": 0.5 } },
-      { "id": "out_loud", "type": "emitter", "x": 300, "y": 180, "props": { "volume": 1.0, "reverb": 0.2, "pan": -0.3 } },
+      { "id": "out_loud", "type": "speaker", "x": 300, "y": 180, "props": { "volume": 1.0, "reverb": 0.2, "pan": -0.3 } },
       
       { "id": "src_soft", "type": "source", "x": 60, "y": 300, "props": { "interval": 2, "noteIndex": 24, "intensity": 0.2 } },
       { "id": "pol_soft", "type": "polariser", "x": 180, "y": 300, "props": { "wave": "triangle", "attack": 0.1, "decay": 0.8 } },
-      { "id": "out_soft", "type": "emitter", "x": 300, "y": 300, "props": { "volume": 0.6, "reverb": 0.6, "pan": 0.3 } },
+      { "id": "out_soft", "type": "speaker", "x": 300, "y": 300, "props": { "volume": 0.6, "reverb": 0.6, "pan": 0.3 } },
       
       { "id": "src_swell", "type": "source", "x": 60, "y": 420, "props": { "interval": 1, "noteIndex": 19, "intensity": 0.3 } },
       { "id": "gain_up", "type": "gain", "x": 160, "y": 420, "props": { "value": 1.5 } },
       { "id": "pol_swell", "type": "polariser", "x": 260, "y": 420, "props": { "wave": "sine", "attack": 0.2, "decay": 0.6 } },
       { "id": "gain_down", "type": "gain", "x": 360, "y": 420, "props": { "value": 0.5 } },
-      { "id": "out_swell", "type": "emitter", "x": 460, "y": 420, "props": { "volume": 1.0, "reverb": 0.4, "pan": 0 } }
+      { "id": "out_swell", "type": "speaker", "x": 460, "y": 420, "props": { "volume": 1.0, "reverb": 0.4, "pan": 0 } }
     ],
     "edges": [
       { "id": "e_l1", "from": "src_loud", "to": "pol_loud" }, { "id": "e_l2", "from": "pol_loud", "to": "out_loud" },
@@ -264,7 +264,7 @@ export const EXAMPLES = {
           { "type": "filter", "props": { "cutoff": 2200, "mod": 2000, "attack": 0.12, "decay": 0.5 } }
         ]
       }},
-      { "id": "v_out", "type": "emitter", "x": 340, "y": 150, "props": { "volume": 0.7, "reverb": 0.55, "pan": -0.4 } },
+      { "id": "v_out", "type": "speaker", "x": 340, "y": 150, "props": { "volume": 0.7, "reverb": 0.55, "pan": -0.4 } },
 
       { "id": "c_src", "type": "source", "x": 60, "y": 300, "props": { "interval": 8, "noteIndex": 0, "intensity": 0.8 } },
       { "id": "c_tun", "type": "tunnel", "x": 200, "y": 300, "props": {
@@ -279,7 +279,7 @@ export const EXAMPLES = {
           { "type": "filter", "props": { "cutoff": 700, "mod": 1000, "attack": 0.08, "decay": 0.5 } }
         ]
       }},
-      { "id": "c_out", "type": "emitter", "x": 340, "y": 300, "props": { "volume": 0.8, "reverb": 0.5, "pan": 0.4 } },
+      { "id": "c_out", "type": "speaker", "x": 340, "y": 300, "props": { "volume": 0.8, "reverb": 0.5, "pan": 0.4 } },
 
       { "id": "f_src", "type": "source", "x": 60, "y": 450, "props": { "interval": 2, "noteIndex": 24, "intensity": 0.5 } },
       { "id": "f_tun", "type": "tunnel", "x": 200, "y": 450, "props": {
@@ -294,12 +294,96 @@ export const EXAMPLES = {
           { "type": "filter", "props": { "cutoff": 4500, "mod": 1200, "attack": 0.05, "decay": 0.3 } }
         ]
       }},
-      { "id": "f_out", "type": "emitter", "x": 340, "y": 450, "props": { "volume": 0.5, "reverb": 0.7, "pan": 0 } }
+      { "id": "f_out", "type": "speaker", "x": 340, "y": 450, "props": { "volume": 0.5, "reverb": 0.7, "pan": 0 } }
     ],
     "edges": [
       { "id": "e_v1", "from": "v_src", "to": "v_tun" }, { "id": "e_v2", "from": "v_tun", "to": "v_out" },
       { "id": "e_c1", "from": "c_src", "to": "c_tun" }, { "id": "e_c2", "from": "c_tun", "to": "c_out" },
       { "id": "e_f1", "from": "f_src", "to": "f_tun" }, { "id": "e_f2", "from": "f_tun", "to": "f_out" }
+    ]
+  },
+  
+  "tunnel_melody": {
+    "version": "1.0",
+    "bpm": 100,
+    "description": "Demonstrates tunnels for melody making: one source feeding multiple tunnels with different pitch shifts creates arpeggios and harmonies",
+    "nodes": [
+      // Single source that triggers the whole melody pattern
+      { "id": "main_src", "type": "source", "x": 60, "y": 300, "props": { "interval": 2, "noteIndex": 12, "intensity": 0.7 } },
+      
+      // Splitter to create multiple voices from one source
+      { "id": "split", "type": "splitter", "x": 180, "y": 300, "props": {} },
+      
+      // Root note tunnel - warm pad sound
+      { "id": "root_tun", "type": "tunnel", "x": 340, "y": 180, "props": {
+        "tunnelName": "Root",
+        "subNodes": [
+          { "type": "polariser", "props": { "wave": "sine", "attack": 0.05, "decay": 0.8, "mix": 1.0 } },
+          { "type": "harmonic", "props": { "ratio": 2, "wave": "sine", "attack": 0.1, "decay": 0.6, "mix": 0.3 } },
+          { "type": "modulator", "props": { "rate": 4.5, "depth": 8, "delay": 0.3 } },
+          { "type": "filter", "props": { "cutoff": 2500, "mod": 800, "attack": 0.02, "decay": 0.3 } }
+        ]
+      }},
+      { "id": "root_out", "type": "speaker", "x": 460, "y": 180, "props": { "volume": 0.6, "reverb": 0.5, "pan": -0.4 } },
+      
+      // Third (+4 semitones) - brighter sound, delayed
+      { "id": "d1", "type": "delay", "x": 260, "y": 300, "props": { "delayTime": 0.25 } },
+      { "id": "third_tun", "type": "tunnel", "x": 340, "y": 300, "props": {
+        "tunnelName": "+3rd",
+        "subNodes": [
+          { "type": "pitch", "props": { "shift": 4 } },
+          { "type": "polariser", "props": { "wave": "triangle", "attack": 0.02, "decay": 0.5, "mix": 1.0 } },
+          { "type": "modulator", "props": { "rate": 5, "depth": 12, "delay": 0.2 } },
+          { "type": "filter", "props": { "cutoff": 3500, "mod": 1200, "attack": 0.01, "decay": 0.25 } }
+        ]
+      }},
+      { "id": "third_out", "type": "speaker", "x": 460, "y": 300, "props": { "volume": 0.5, "reverb": 0.6, "pan": 0 } },
+      
+      // Fifth (+7 semitones) - bell-like, more delay
+      { "id": "d2", "type": "delay", "x": 260, "y": 420, "props": { "delayTime": 0.5 } },
+      { "id": "fifth_tun", "type": "tunnel", "x": 340, "y": 420, "props": {
+        "tunnelName": "+5th",
+        "subNodes": [
+          { "type": "pitch", "props": { "shift": 7 } },
+          { "type": "polariser", "props": { "wave": "sine", "attack": 0.01, "decay": 0.4, "mix": 1.0 } },
+          { "type": "harmonic", "props": { "ratio": 3, "wave": "sine", "attack": 0.02, "decay": 0.25, "mix": 0.2 } },
+          { "type": "filter", "props": { "cutoff": 4000, "mod": 0, "attack": 0, "decay": 0 } }
+        ]
+      }},
+      { "id": "fifth_out", "type": "speaker", "x": 460, "y": 420, "props": { "volume": 0.4, "reverb": 0.7, "pan": 0.4 } },
+      
+      // Octave (+12 semitones) - sparkle layer, most delay
+      { "id": "d3", "type": "delay", "x": 260, "y": 540, "props": { "delayTime": 0.75 } },
+      { "id": "oct_tun", "type": "tunnel", "x": 340, "y": 540, "props": {
+        "tunnelName": "+Octave",
+        "subNodes": [
+          { "type": "pitch", "props": { "shift": 12 } },
+          { "type": "polariser", "props": { "wave": "sine", "attack": 0.005, "decay": 0.3, "mix": 0.8 } },
+          { "type": "noise", "props": { "wave": "white", "attack": 0.002, "decay": 0.05, "mix": 0.1 } },
+          { "type": "filter", "props": { "cutoff": 6000, "mod": 2000, "attack": 0.01, "decay": 0.15 } }
+        ]
+      }},
+      { "id": "oct_out", "type": "speaker", "x": 460, "y": 540, "props": { "volume": 0.3, "reverb": 0.8, "pan": 0.2 } },
+      
+      // Random variation path with gate
+      { "id": "g1", "type": "gate", "x": 260, "y": 660, "props": { "prob": 0.4 } },
+      { "id": "var_tun", "type": "tunnel", "x": 340, "y": 660, "props": {
+        "tunnelName": "Random+",
+        "subNodes": [
+          { "type": "pitch", "props": { "shift": 5 } },
+          { "type": "polariser", "props": { "wave": "sawtooth", "attack": 0.01, "decay": 0.2, "mix": 0.7 } },
+          { "type": "filter", "props": { "cutoff": 2000, "mod": 3000, "attack": 0.005, "decay": 0.15 } }
+        ]
+      }},
+      { "id": "var_out", "type": "speaker", "x": 460, "y": 660, "props": { "volume": 0.35, "reverb": 0.5, "pan": -0.3 } }
+    ],
+    "edges": [
+      { "id": "e_m1", "from": "main_src", "to": "split" },
+      { "id": "e_r1", "from": "split", "to": "root_tun" }, { "id": "e_r2", "from": "root_tun", "to": "root_out" },
+      { "id": "e_3a", "from": "split", "to": "d1" }, { "id": "e_3b", "from": "d1", "to": "third_tun" }, { "id": "e_3c", "from": "third_tun", "to": "third_out" },
+      { "id": "e_5a", "from": "split", "to": "d2" }, { "id": "e_5b", "from": "d2", "to": "fifth_tun" }, { "id": "e_5c", "from": "fifth_tun", "to": "fifth_out" },
+      { "id": "e_oa", "from": "split", "to": "d3" }, { "id": "e_ob", "from": "d3", "to": "oct_tun" }, { "id": "e_oc", "from": "oct_tun", "to": "oct_out" },
+      { "id": "e_va", "from": "split", "to": "g1" }, { "id": "e_vb", "from": "g1", "to": "var_tun" }, { "id": "e_vc", "from": "var_tun", "to": "var_out" }
     ]
   }
 };

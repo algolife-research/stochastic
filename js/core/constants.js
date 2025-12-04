@@ -18,6 +18,10 @@ export const ATTRACT_RADIUS = 30;
 export const MIN_ZOOM = 0.25;
 export const MAX_ZOOM = 3;
 
+// Regions
+export const REGION_HANDLE_SIZE = 10;
+export const MIN_REGION_SIZE = 100;
+
 // Speed
 export const DEFAULT_SPEED = 120;
 export const MIN_SPEED = 20;
@@ -43,7 +47,7 @@ for (let i = 0; i < 37; i++) {
 // Node Colors
 export const NODE_COLORS = {
   source: '#03dac6',
-  emitter: '#cf6679',
+  speaker: '#cf6679',
   filter: '#3700b3',
   polariser: '#bb86fc',
   pitch: '#ffb74d',
@@ -62,7 +66,7 @@ export const NODE_COLORS = {
 // Node Icons
 export const NODE_ICONS = {
   source: '⚡',
-  emitter: '🔊',
+  speaker: '🔊',
   filter: '🌊',
   polariser: '🔮',
   pitch: '🎵',

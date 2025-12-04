@@ -25,11 +25,11 @@ The fundamental unit of the system is the **Packet**.
 - **Superposition:** When a packet hits a **Splitter** node, it can duplicate. Conceptually, this is a single musical idea existing in multiple states simultaneously until observed.
 - **Intensity:** Each packet carries an intensity value (0-1) that determines how loud it will play when observed. This can be set at the **Source** and modified by **Gain** nodes.
 
-### 2.2 The Emitter (The Observer)
-Sound is only produced when a Packet enters an **Emitter** node.
+### 2.2 The speaker (The Observer)
+Sound is only produced when a Packet enters an **speaker** node.
 - **Collapse:** This is the "Observation Collapse." The potential energy of the packet is converted into kinetic acoustic energy.
-- **Localization:** Sound happens *at* the Emitter. This allows for spatial mixing where the location of the Emitter on the canvas could dictate stereo panning or spatial audio positioning.
-- **Master Volume:** Each emitter has a master volume control that scales the final output of all packets it receives.
+- **Localization:** Sound happens *at* the speaker. This allows for spatial mixing where the location of the speaker on the canvas could dictate stereo panning or spatial audio positioning.
+- **Master Volume:** Each speaker has a master volume control that scales the final output of all packets it receives.
 
 ### 2.3 Tunnelling
 The **Tunnel** node represents a wormhole in the graph.
@@ -57,7 +57,7 @@ As packets travel through **Modifier Nodes** (Pitch shifters, Polarisers, Harmon
 A **Filter Node** or **Gate Node** acts as an environmental pressure.
 - A "Scale Quantizer" (theoretical) would kill any packet not in the correct key.
 - A "Probability Gate" introduces stochastic survival rates.
-- Only the "fittest" musical ideas (those that navigate the graph to an Emitter) survive to be heard.
+- Only the "fittest" musical ideas (those that navigate the graph to an speaker) survive to be heard.
 
 ## 4. System Architecture
 
@@ -67,7 +67,7 @@ A **Filter Node** or **Gate Node** acts as an environmental pressure.
 - **Payloads**: The transient data structures moving through the system.
 
 ### 4.2 The Audio Engine
-The audio engine is a slave to the graph simulation. It does not "know" the song. It simply reacts to `PacketArrived` events at `Emitter` coordinates. This decouples the composition logic (Graph) from the sound generation (Synth), allowing for:
+The audio engine is a slave to the graph simulation. It does not "know" the song. It simply reacts to `PacketArrived` events at `speaker` coordinates. This decouples the composition logic (Graph) from the sound generation (Synth), allowing for:
 - **Hot-swapping synthesis engines** (e.g., switching from Web Audio to MIDI out).
 - **Visual-only modes** (silent simulation).
 
