@@ -9,6 +9,7 @@ import { updatePropPanel } from './ui/panel.js';
 import { saveGraph, loadGraph, loadData } from './io/serialization.js';
 import { spawnPacket, updatePackets } from './graph/packets.js';
 import { EXAMPLES } from './examples.js';
+import { initExportUI } from './ui/export.js';
 
 /**
  * Initialize the AIGA application
@@ -116,6 +117,9 @@ function setupUI() {
   ppbInput.addEventListener('change', (e) => {
     state.globalSettings.pixelsPerBeat = parseInt(e.target.value);
   });
+
+  // Initialize Export UI
+  initExportUI();
 }
 
 /**

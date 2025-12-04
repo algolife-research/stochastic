@@ -20,14 +20,16 @@ The framework borrows heavily from quantum mechanics to describe how sound is ge
 
 ### 2.1 The Packet (The Wavefunction)
 The fundamental unit of the system is the **Packet**.
-- **State:** It carries "DNA" or "Quantum State" — Pitch, Velocity, Timbre parameters, Waveform type.
+- **State:** It carries "DNA" or "Quantum State" — Pitch, Intensity (volume), Timbre parameters, Waveform type.
 - **Silence:** A packet traveling through the graph is **silent**. It represents *potential* energy or a probability wave.
 - **Superposition:** When a packet hits a **Splitter** node, it can duplicate. Conceptually, this is a single musical idea existing in multiple states simultaneously until observed.
+- **Intensity:** Each packet carries an intensity value (0-1) that determines how loud it will play when observed. This can be set at the **Source** and modified by **Gain** nodes.
 
 ### 2.2 The Emitter (The Observer)
 Sound is only produced when a Packet enters an **Emitter** node.
 - **Collapse:** This is the "Observation Collapse." The potential energy of the packet is converted into kinetic acoustic energy.
 - **Localization:** Sound happens *at* the Emitter. This allows for spatial mixing where the location of the Emitter on the canvas could dictate stereo panning or spatial audio positioning.
+- **Master Volume:** Each emitter has a master volume control that scales the final output of all packets it receives.
 
 ### 2.3 Tunnelling
 The **Tunnel** node represents a wormhole in the graph.
@@ -42,9 +44,14 @@ While the current implementation focuses on physics, the architecture supports a
 The properties of a packet (e.g., `{ note: "C4", wave: "sawtooth", reverb: 0.3 }`) act as its genome.
 
 ### 3.2 Mutation
-As packets travel through **Modifier Nodes** (Pitch shifters, Polarisers), their DNA is altered.
+As packets travel through **Modifier Nodes** (Pitch shifters, Polarisers, Harmonics, Modulators, Gain), their DNA is altered.
 - A **Pitch Node** is a mutation of the frequency gene.
-- A **Polariser** is a mutation of the timbre gene.
+- A **Polariser** is a mutation of the timbre gene (waveform shape).
+- A **Harmonic Node** adds overtone genes at integer frequency ratios.
+- A **Modulator Node** adds vibrato expression genes (periodic pitch variation).
+- A **Noise Node** adds textural genes (breath, bow friction, transients).
+- A **Gain Node** is a mutation of the intensity gene.
+- A **Filter Node** with envelope is an expression gene (dynamic brightness).
 
 ### 3.3 Natural Selection (Filters)
 A **Filter Node** or **Gate Node** acts as an environmental pressure.

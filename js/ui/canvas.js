@@ -22,6 +22,7 @@ export function draw() {
   ctx.scale(state.zoomLevel, state.zoomLevel);
   
   drawGrid();
+  drawTeleporterLinks();
   drawEdges();
   drawLinkingLine();
   drawPackets();
@@ -58,6 +59,56 @@ function drawGrid() {
     ctx.lineTo(endX, y);
     ctx.stroke();
   }
+}
+
+/**
+ * Draw dashed lines connecting teleporters on the same channel
+ */
+function drawTeleporterLinks() {
+  const { ctx, nodes, selectedNode, selectedNodes } = state;
+  
+  // Group teleporters by channel
+  const teleporters = nodes.filter(n => n.type === 'teleporter');
+  const channels = {};
+  teleporters.forEach(tp => {
+    const ch = tp.props.channel;
+    if (!channels[ch]) channels[ch] = [];
+    channels[ch].push(tp);
+  });
+  
+  // Draw links for each channel with 2+ teleporters
+  Object.entries(channels).forEach(([channel, tps]) => {
+    if (tps.length < 2) return;
+    
+    // Check if any teleporter in this channel is selected
+    const isActive = tps.some(tp => tp === selectedNode || selectedNodes.includes(tp));
+    
+    ctx.strokeStyle = isActive ? '#00e676' : 'rgba(0, 230, 118, 0.3)';
+    ctx.lineWidth = isActive ? 2 : 1;
+    ctx.setLineDash([8, 8]);
+    
+    // Connect all teleporters in channel (star pattern from first)
+    const hub = tps[0];
+    for (let i = 1; i < tps.length; i++) {
+      const tp = tps[i];
+      ctx.beginPath();
+      ctx.moveTo(hub.x, hub.y);
+      ctx.lineTo(tp.x, tp.y);
+      ctx.stroke();
+    }
+    
+    // Also connect consecutive pairs for visibility
+    if (tps.length > 2) {
+      for (let i = 1; i < tps.length - 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(tps[i].x, tps[i].y);
+        ctx.lineTo(tps[i + 1].x, tps[i + 1].y);
+        ctx.stroke();
+      }
+    }
+    
+    ctx.setLineDash([]);
+  });
 }
 
 /**
@@ -163,10 +214,22 @@ function drawLinkingLine() {
 }
 
 /**
+ * Get particle color based on pitch (scaleIndex)
+ * Maps 0-36 (C3-C6) to rainbow spectrum
+ */
+function getPitchColor(scaleIndex, alpha = 1) {
+  // Map scaleIndex (0-36) to hue (0-300) - avoiding red-to-red wrap
+  const hue = (scaleIndex / 36) * 300;
+  return `hsla(${hue}, 85%, 60%, ${alpha})`;
+}
+
+/**
  * Draw all packets with trails
  */
 function drawPackets() {
   const { ctx, packets, edges, nodes } = state;
+  const time = performance.now() / 1000;
+  const TRAIL_PIXEL_LENGTH = 40; // Constant trail length in pixels
   
   packets.forEach(p => {
     const edge = edges.find(e => e.id === p.edgeId);
@@ -177,19 +240,65 @@ function drawPackets() {
     const x = n1.x + (n2.x - n1.x) * p.t;
     const y = n1.y + (n2.y - n1.y) * p.t;
     
-    // Trail
-    ctx.strokeStyle = p.payload.timbre > 0.5 ? 'rgba(224, 86, 253, 0.5)' : 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    const trailX = n1.x + (n2.x - n1.x) * (p.t - 0.05);
-    const trailY = n1.y + (n2.y - n1.y) * (p.t - 0.05);
-    ctx.lineTo(trailX, trailY);
-    ctx.stroke();
+    // Calculate edge distance
+    const edgeDx = n2.x - n1.x;
+    const edgeDy = n2.y - n1.y;
+    const edgeDist = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy);
     
-    // Head
-    ctx.fillStyle = p.payload.timbre > 0.5 ? '#e056fd' : '#fff';
-    ctx.shadowColor = ctx.fillStyle;
+    // Trail length in parametric form (independent of edge length)
+    const trailPixels = TRAIL_PIXEL_LENGTH;
+    const trailT = Math.max(0, p.t - (trailPixels / (edgeDist || 1)));
+    
+    // Color based on pitch
+    const scaleIndex = p.payload.scaleIndex || 12;
+    const baseColor = getPitchColor(scaleIndex);
+    const trailColor = getPitchColor(scaleIndex, 0.5);
+    
+    // Trail shape based on timbre
+    const hasTimbre = p.payload.timbre > 0.5;
+    
+    if (hasTimbre) {
+      // Wavy trail for high timbre (polariser applied)
+      const segments = 8;
+      const waveAmplitude = 4;
+      const waveFreq = 12;
+      
+      ctx.strokeStyle = trailColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      
+      for (let i = 1; i <= segments; i++) {
+        const segT = trailT + ((p.t - trailT) * i / segments);
+        if (segT < 0 || segT > 1) continue;
+        
+        const baseX = n1.x + edgeDx * segT;
+        const baseY = n1.y + edgeDy * segT;
+        
+        // Perpendicular wave offset
+        const angle = Math.atan2(edgeDy, edgeDx);
+        const perpX = -Math.sin(angle);
+        const perpY = Math.cos(angle);
+        const wave = Math.sin(time * waveFreq + i * 0.8) * waveAmplitude * (1 - i / segments);
+        
+        ctx.lineTo(baseX + perpX * wave, baseY + perpY * wave);
+      }
+      ctx.stroke();
+    } else {
+      // Straight trail for low timbre
+      ctx.strokeStyle = trailColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      const trailX = n1.x + edgeDx * trailT;
+      const trailY = n1.y + edgeDy * trailT;
+      ctx.lineTo(trailX, trailY);
+      ctx.stroke();
+    }
+    
+    // Head - color based on pitch
+    ctx.fillStyle = baseColor;
+    ctx.shadowColor = baseColor;
     ctx.shadowBlur = 15;
     ctx.beginPath();
     ctx.arc(x, y, 6, 0, Math.PI * 2);
@@ -222,16 +331,16 @@ function drawNode(node) {
   if (node.type === 'emitter') {
     // Rectangle for emitter
     ctx.fillStyle = '#1e1e1e';
-    ctx.fillRect(-10, -30, 20, 60);
+    ctx.fillRect(-13, -30, 26, 60);
     
     ctx.strokeStyle = getNodeColor(node.type);
     ctx.lineWidth = (node === selectedNode || selectedNodes.includes(node)) ? 4 : 2;
-    ctx.strokeRect(-10, -30, 20, 60);
+    ctx.strokeRect(-13, -30, 26, 60);
     
     if (selectedNodes.includes(node)) {
       ctx.setLineDash([4, 4]);
       ctx.strokeStyle = '#fff';
-      ctx.strokeRect(-12, -32, 24, 64);
+      ctx.strokeRect(-15, -32, 30, 64);
       ctx.setLineDash([]);
     }
   } else if (node.type === 'tunnel') {
@@ -310,6 +419,13 @@ function drawNode(node) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillText(`x${node.props.value}`, 0, -NODE_RADIUS - 4);
+  } else if (node.type === 'teleporter') {
+    // Show channel label above teleporter
+    ctx.fillStyle = '#00e676';
+    ctx.font = 'bold 12px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(node.props.channel || 'A', 0, -NODE_RADIUS - 4);
   }
   
   // Link Handle (when hovering)

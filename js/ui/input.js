@@ -13,6 +13,9 @@ import { spawnPacket } from '../graph/packets.js';
 import { updatePropPanel } from './panel.js';
 import { showContextMenu, hideContextMenu } from './menu.js';
 
+// Track if menu was just shown from edge drop (to prevent immediate close)
+let menuShownFromEdgeDrop = false;
+
 /**
  * Setup all input event listeners
  */
@@ -28,6 +31,11 @@ export function setupInteraction() {
   // Hide context menu on click outside
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.context-menu')) {
+      // Skip hiding if menu was just shown from edge drop
+      if (menuShownFromEdgeDrop) {
+        menuShownFromEdgeDrop = false;
+        return;
+      }
       hideContextMenu();
     }
   });
@@ -238,8 +246,22 @@ function handleMouseMove(e) {
     const rawX = pos.x - state.dragOffset.x;
     const rawY = pos.y - state.dragOffset.y;
     const snapped = applyAttractors(state.draggingNode, rawX, rawY);
+    
+    // Calculate offset to apply to all selected nodes
+    const deltaX = snapped.x - state.draggingNode.x;
+    const deltaY = snapped.y - state.draggingNode.y;
+    
+    // Move the dragged node
     state.draggingNode.x = snapped.x;
     state.draggingNode.y = snapped.y;
+    
+    // Move all other selected nodes by the same offset
+    state.selectedNodes.forEach(node => {
+      if (node !== state.draggingNode) {
+        node.x += deltaX;
+        node.y += deltaY;
+      }
+    });
     return;
   }
 
@@ -290,8 +312,16 @@ function handleMouseUp(e) {
     const hitNode = state.nodes.find(n => dist(n, pos) < NODE_RADIUS);
     if (hitNode && hitNode !== state.linkingNode) {
       createEdge(state.linkingNode, hitNode);
+      state.setLinkingNode(null);
+    } else {
+      // Dropped on empty canvas - show node selector
+      state.setPendingLinkNode(state.linkingNode);
+      state.setLinkingNode(null);
+      state.setContextMenuPos({ x: snapToGrid(pos.x), y: snapToGrid(pos.y) });
+      menuShownFromEdgeDrop = true;
+      showContextMenu(e.clientX, e.clientY, 'add-from-edge');
+      return; // Don't reset cursor yet
     }
-    state.setLinkingNode(null);
   }
   
   if (state.isBoxSelecting) {
@@ -396,6 +426,13 @@ function setupContextMenuActions() {
     item.addEventListener('click', (e) => {
       const type = e.currentTarget.dataset.type;
       const newNode = createNode(type, state.contextMenuPos.x, state.contextMenuPos.y);
+      
+      // If there's a pending link, create the edge
+      if (state.pendingLinkNode) {
+        createEdge(state.pendingLinkNode, newNode);
+        state.setPendingLinkNode(null);
+      }
+      
       state.setSelectedNode(newNode);
       updatePropPanel(newNode);
       hideContextMenu();
@@ -408,6 +445,12 @@ function setupContextMenuActions() {
       const template = e.currentTarget.dataset.template;
       const newNode = createTunnelFromTemplate(template, state.contextMenuPos.x, state.contextMenuPos.y);
       if (newNode) {
+        // If there's a pending link, create the edge
+        if (state.pendingLinkNode) {
+          createEdge(state.pendingLinkNode, newNode);
+          state.setPendingLinkNode(null);
+        }
+        
         state.setSelectedNode(newNode);
         updatePropPanel(newNode);
       }
@@ -440,7 +483,7 @@ function setupKeyboardShortcuts() {
     // Ctrl+D to duplicate
     if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
       e.preventDefault();
-      if (state.selectedNode) {
+      if (state.selectedNodes.length > 0 || state.selectedNode) {
         duplicateNode(state.selectedNode);
       }
     }

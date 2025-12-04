@@ -8,6 +8,7 @@ import * as state from '../core/state.js';
 export function showContextMenu(x, y, type) {
   const menu = document.getElementById('context-menu');
   const linkBtn = document.getElementById('ctx-link');
+  const duplicateBtn = document.getElementById('ctx-duplicate');
   const groupBtn = document.getElementById('ctx-group');
   const deleteBtn = document.getElementById('ctx-delete');
   const addSubmenu = document.getElementById('ctx-add-submenu');
@@ -23,18 +24,28 @@ export function showContextMenu(x, y, type) {
      state.selectedNode.type !== 'emitter' && 
      state.selectedNode.type !== 'tunnel');
   
-  if (type === 'canvas') {
+  if (type === 'add-from-edge') {
+    // Show only add node options when dropping edge on canvas
     linkBtn.style.display = 'none';
+    duplicateBtn.style.display = 'none';
+    groupBtn.style.display = 'none';
+    deleteBtn.style.display = 'none';
+    addSubmenu.style.display = 'block';
+  } else if (type === 'canvas') {
+    linkBtn.style.display = 'none';
+    duplicateBtn.style.display = 'none';
     groupBtn.style.display = hasGroupableSelection ? 'block' : 'none';
     deleteBtn.style.display = 'none';
     addSubmenu.style.display = 'block';
   } else if (type === 'edge') {
     linkBtn.style.display = 'none';
+    duplicateBtn.style.display = 'none';
     groupBtn.style.display = 'none';
     deleteBtn.style.display = 'block';
     addSubmenu.style.display = 'none';
   } else {
     linkBtn.style.display = 'block';
+    duplicateBtn.style.display = 'block';
     groupBtn.style.display = hasGroupableSelection ? 'block' : 'none';
     deleteBtn.style.display = 'block';
     addSubmenu.style.display = 'none';
@@ -46,4 +57,6 @@ export function showContextMenu(x, y, type) {
  */
 export function hideContextMenu() {
   document.getElementById('context-menu').style.display = 'none';
+  // Clear pending link node when menu is dismissed
+  state.setPendingLinkNode(null);
 }

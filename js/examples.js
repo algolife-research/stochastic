@@ -77,20 +77,20 @@ export const EXAMPLES = {
     "version": "1.0",
     "bpm": 110,
     "nodes": [
-      { "id": "kick_src", "type": "source", "x": 60, "y": 180, "props": { "interval": 2, "noteIndex": 0 } },
+      { "id": "kick_src", "type": "source", "x": 60, "y": 180, "props": { "interval": 2, "noteIndex": 0, "intensity": 0.8 } },
       { "id": "kick_pol", "type": "polariser", "x": 180, "y": 180, "props": { "wave": "sine", "attack": 0.01, "decay": 0.25 } },
       { "id": "kick_p", "type": "pitch", "x": 300, "y": 180, "props": { "shift": -12 } },
-      { "id": "kick_out", "type": "emitter", "x": 420, "y": 180, "props": { "reverb": 0.1, "pan": 0 } },
-      { "id": "snare_src", "type": "source", "x": 60, "y": 300, "props": { "interval": 2, "noteIndex": 0 } },
+      { "id": "kick_out", "type": "emitter", "x": 420, "y": 180, "props": { "volume": 1.0, "reverb": 0.1, "pan": 0 } },
+      { "id": "snare_src", "type": "source", "x": 60, "y": 300, "props": { "interval": 2, "noteIndex": 0, "intensity": 0.6 } },
       { "id": "snare_del", "type": "delay", "x": 140, "y": 300, "props": { "delayTime": 1 } },
       { "id": "snare_pol", "type": "polariser", "x": 220, "y": 300, "props": { "wave": "sawtooth", "attack": 0.01, "decay": 0.12 } },
       { "id": "snare_p", "type": "pitch", "x": 300, "y": 300, "props": { "shift": 12 } },
-      { "id": "snare_out", "type": "emitter", "x": 420, "y": 300, "props": { "reverb": 0.35, "pan": 0.1 } },
-      { "id": "hh_src", "type": "source", "x": 60, "y": 420, "props": { "interval": 0.5, "noteIndex": 0 } },
+      { "id": "snare_out", "type": "emitter", "x": 420, "y": 300, "props": { "volume": 0.8, "reverb": 0.35, "pan": 0.1 } },
+      { "id": "hh_src", "type": "source", "x": 60, "y": 420, "props": { "interval": 0.5, "noteIndex": 0, "intensity": 0.3 } },
       { "id": "hh_gate", "type": "gate", "x": 140, "y": 420, "props": { "prob": 0.75 } },
       { "id": "hh_pol", "type": "polariser", "x": 220, "y": 420, "props": { "wave": "square", "attack": 0.005, "decay": 0.04 } },
       { "id": "hh_p", "type": "pitch", "x": 300, "y": 420, "props": { "shift": 30 } },
-      { "id": "hh_out", "type": "emitter", "x": 420, "y": 420, "props": { "reverb": 0.15, "pan": 0.4 } }
+      { "id": "hh_out", "type": "emitter", "x": 420, "y": 420, "props": { "volume": 0.6, "reverb": 0.15, "pan": 0.4 } }
     ],
     "edges": [
       { "id": "e_k1", "from": "kick_src", "to": "kick_pol" }, { "id": "e_k2", "from": "kick_pol", "to": "kick_p" }, { "id": "e_k3", "from": "kick_p", "to": "kick_out" },
@@ -221,6 +221,85 @@ export const EXAMPLES = {
       { "id": "e_s", "from": "src", "to": "split" },
       { "id": "e1_1", "from": "split", "to": "v1_e1" }, { "id": "e1_2", "from": "v1_e1", "to": "v1_p1" }, { "id": "e1_3", "from": "v1_p1", "to": "v1_e2" }, { "id": "e1_4", "from": "v1_e2", "to": "v1_p2" }, { "id": "e1_5", "from": "v1_p2", "to": "v1_e3" }, { "id": "e1_6", "from": "v1_e3", "to": "v1_p3" }, { "id": "e1_7", "from": "v1_p3", "to": "v1_e4" }, { "id": "e1_8", "from": "v1_e4", "to": "v1_p4" }, { "id": "e1_9", "from": "v1_p4", "to": "v1_e5" },
       { "id": "e2_0", "from": "split", "to": "delay" }, { "id": "e2_t", "from": "delay", "to": "trans" }, { "id": "e2_1", "from": "trans", "to": "v2_e1" }, { "id": "e2_2", "from": "v2_e1", "to": "v2_p1" }, { "id": "e2_3", "from": "v2_p1", "to": "v2_e2" }, { "id": "e2_4", "from": "v2_e2", "to": "v2_p2" }, { "id": "e2_5", "from": "v2_p2", "to": "v2_e3" }, { "id": "e2_6", "from": "v2_e3", "to": "v2_p3" }, { "id": "e2_7", "from": "v2_p3", "to": "v2_e4" }, { "id": "e2_8", "from": "v2_e4", "to": "v2_p4" }, { "id": "e2_9", "from": "v2_p4", "to": "v2_e5" }
+    ]
+  },
+  "dynamics": {
+    "version": "1.0",
+    "bpm": 90,
+    "nodes": [
+      { "id": "src_loud", "type": "source", "x": 60, "y": 180, "props": { "interval": 4, "noteIndex": 12, "intensity": 0.8 } },
+      { "id": "pol_loud", "type": "polariser", "x": 180, "y": 180, "props": { "wave": "sawtooth", "attack": 0.01, "decay": 0.5 } },
+      { "id": "out_loud", "type": "emitter", "x": 300, "y": 180, "props": { "volume": 1.0, "reverb": 0.2, "pan": -0.3 } },
+      
+      { "id": "src_soft", "type": "source", "x": 60, "y": 300, "props": { "interval": 2, "noteIndex": 24, "intensity": 0.2 } },
+      { "id": "pol_soft", "type": "polariser", "x": 180, "y": 300, "props": { "wave": "triangle", "attack": 0.1, "decay": 0.8 } },
+      { "id": "out_soft", "type": "emitter", "x": 300, "y": 300, "props": { "volume": 0.6, "reverb": 0.6, "pan": 0.3 } },
+      
+      { "id": "src_swell", "type": "source", "x": 60, "y": 420, "props": { "interval": 1, "noteIndex": 19, "intensity": 0.3 } },
+      { "id": "gain_up", "type": "gain", "x": 160, "y": 420, "props": { "value": 1.5 } },
+      { "id": "pol_swell", "type": "polariser", "x": 260, "y": 420, "props": { "wave": "sine", "attack": 0.2, "decay": 0.6 } },
+      { "id": "gain_down", "type": "gain", "x": 360, "y": 420, "props": { "value": 0.5 } },
+      { "id": "out_swell", "type": "emitter", "x": 460, "y": 420, "props": { "volume": 1.0, "reverb": 0.4, "pan": 0 } }
+    ],
+    "edges": [
+      { "id": "e_l1", "from": "src_loud", "to": "pol_loud" }, { "id": "e_l2", "from": "pol_loud", "to": "out_loud" },
+      { "id": "e_s1", "from": "src_soft", "to": "pol_soft" }, { "id": "e_s2", "from": "pol_soft", "to": "out_soft" },
+      { "id": "e_sw1", "from": "src_swell", "to": "gain_up" }, { "id": "e_sw2", "from": "gain_up", "to": "pol_swell" }, { "id": "e_sw3", "from": "pol_swell", "to": "gain_down" }, { "id": "e_sw4", "from": "gain_down", "to": "out_swell" }
+    ]
+  },
+  "orchestra": {
+    "version": "1.0",
+    "bpm": 80,
+    "nodes": [
+      { "id": "v_src", "type": "source", "x": 60, "y": 150, "props": { "interval": 4, "noteIndex": 12, "intensity": 0.7 } },
+      { "id": "v_tun", "type": "tunnel", "x": 200, "y": 150, "props": {
+        "tunnelName": "Violin",
+        "subNodes": [
+          { "type": "polariser", "props": { "wave": "sawtooth", "attack": 0.15, "decay": 1.2, "mix": 0.8 } },
+          { "type": "harmonic", "props": { "ratio": 2, "wave": "sine", "attack": 0.12, "decay": 1.0, "mix": 0.6 } },
+          { "type": "harmonic", "props": { "ratio": 3, "wave": "sine", "attack": 0.10, "decay": 0.8, "mix": 0.35 } },
+          { "type": "harmonic", "props": { "ratio": 4, "wave": "sine", "attack": 0.08, "decay": 0.6, "mix": 0.2 } },
+          { "type": "noise", "props": { "wave": "pink", "attack": 0.08, "decay": 0.25, "mix": 0.1 } },
+          { "type": "modulator", "props": { "rate": 5.5, "depth": 25, "delay": 0.3 } },
+          { "type": "filter", "props": { "cutoff": 2200, "mod": 2000, "attack": 0.12, "decay": 0.5 } }
+        ]
+      }},
+      { "id": "v_out", "type": "emitter", "x": 340, "y": 150, "props": { "volume": 0.7, "reverb": 0.55, "pan": -0.4 } },
+
+      { "id": "c_src", "type": "source", "x": 60, "y": 300, "props": { "interval": 8, "noteIndex": 0, "intensity": 0.8 } },
+      { "id": "c_tun", "type": "tunnel", "x": 200, "y": 300, "props": {
+        "tunnelName": "Cello",
+        "subNodes": [
+          { "type": "pitch", "props": { "shift": -12 } },
+          { "type": "polariser", "props": { "wave": "sawtooth", "attack": 0.25, "decay": 1.8, "mix": 0.85 } },
+          { "type": "harmonic", "props": { "ratio": 2, "wave": "sine", "attack": 0.20, "decay": 1.5, "mix": 0.5 } },
+          { "type": "harmonic", "props": { "ratio": 3, "wave": "triangle", "attack": 0.18, "decay": 1.2, "mix": 0.3 } },
+          { "type": "noise", "props": { "wave": "brown", "attack": 0.08, "decay": 0.4, "mix": 0.15 } },
+          { "type": "modulator", "props": { "rate": 5.0, "depth": 20, "delay": 0.4 } },
+          { "type": "filter", "props": { "cutoff": 700, "mod": 1000, "attack": 0.08, "decay": 0.5 } }
+        ]
+      }},
+      { "id": "c_out", "type": "emitter", "x": 340, "y": 300, "props": { "volume": 0.8, "reverb": 0.5, "pan": 0.4 } },
+
+      { "id": "f_src", "type": "source", "x": 60, "y": 450, "props": { "interval": 2, "noteIndex": 24, "intensity": 0.5 } },
+      { "id": "f_tun", "type": "tunnel", "x": 200, "y": 450, "props": {
+        "tunnelName": "Flute",
+        "subNodes": [
+          { "type": "pitch", "props": { "shift": 12 } },
+          { "type": "polariser", "props": { "wave": "sine", "attack": 0.08, "decay": 0.5, "mix": 1.0 } },
+          { "type": "harmonic", "props": { "ratio": 2, "wave": "sine", "attack": 0.06, "decay": 0.4, "mix": 0.25 } },
+          { "type": "harmonic", "props": { "ratio": 3, "wave": "sine", "attack": 0.05, "decay": 0.3, "mix": 0.1 } },
+          { "type": "noise", "props": { "wave": "white", "attack": 0.02, "decay": 0.15, "mix": 0.08 } },
+          { "type": "modulator", "props": { "rate": 5.0, "depth": 15, "delay": 0.2 } },
+          { "type": "filter", "props": { "cutoff": 4500, "mod": 1200, "attack": 0.05, "decay": 0.3 } }
+        ]
+      }},
+      { "id": "f_out", "type": "emitter", "x": 340, "y": 450, "props": { "volume": 0.5, "reverb": 0.7, "pan": 0 } }
+    ],
+    "edges": [
+      { "id": "e_v1", "from": "v_src", "to": "v_tun" }, { "id": "e_v2", "from": "v_tun", "to": "v_out" },
+      { "id": "e_c1", "from": "c_src", "to": "c_tun" }, { "id": "e_c2", "from": "c_tun", "to": "c_out" },
+      { "id": "e_f1", "from": "f_src", "to": "f_tun" }, { "id": "e_f2", "from": "f_tun", "to": "f_out" }
     ]
   }
 };

@@ -27,6 +27,7 @@ export let selectedNodes = [];
 export let selectedEdge = null;
 export let draggingNode = null;
 export let linkingNode = null;
+export let pendingLinkNode = null;  // Node waiting for edge connection after node creation
 export let hoveredNode = null;
 export let isHoveringHandle = false;
 
@@ -77,6 +78,7 @@ export function setSelectedNodes(n) { selectedNodes = n; }
 export function setSelectedEdge(e) { selectedEdge = e; }
 export function setDraggingNode(n) { draggingNode = n; }
 export function setLinkingNode(n) { linkingNode = n; }
+export function setPendingLinkNode(n) { pendingLinkNode = n; }
 export function setHoveredNode(n) { hoveredNode = n; }
 export function setIsHoveringHandle(val) { isHoveringHandle = val; }
 

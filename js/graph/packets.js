@@ -24,6 +24,8 @@ export function spawnPacket(sourceNode) {
   
   const freq = SCALE_CHROMATIC[scaleIndex];
 
+  const intensity = sourceNode.props.intensity !== undefined ? sourceNode.props.intensity : 0.5;
+
   outgoing.forEach(edge => {
     state.packets.push({
       id: uid(),
@@ -35,7 +37,7 @@ export function spawnPacket(sourceNode) {
         wave: 'sine',
         timbre: 0,
         cutoff: 20000,
-        gain: 0.5
+        gain: intensity
       }
     });
   });
@@ -49,11 +51,15 @@ export function processArrival(packet, node) {
   const payload = { ...packet.payload };
   
   switch (node.type) {
-    case 'emitter':
+    case 'emitter': {
       payload.reverb = node.props.reverb;
       payload.pan = node.props.pan !== undefined ? node.props.pan : 0;
+      // Apply emitter master volume
+      const emitterVolume = node.props.volume !== undefined ? node.props.volume : 1.0;
+      payload.gain = (payload.gain || 0.5) * emitterVolume;
       playSound(payload);
       break;
+    }
       
     case 'delay': {
       const msPerBeat = (60 / state.masterSpeed) * 1000;
@@ -84,7 +90,14 @@ export function processArrival(packet, node) {
     }
 
     case 'filter':
-      payload.cutoff = Math.max(100, payload.cutoff * 0.6);
+      payload.cutoff = node.props.cutoff !== undefined ? node.props.cutoff : 20000;
+      if (node.props.mod !== 0) {
+        payload.filterEnv = {
+          attack: node.props.attack || 0,
+          decay: node.props.decay || 0,
+          mod: node.props.mod || 0
+        };
+      }
       break;
       
     case 'polariser':
@@ -94,9 +107,43 @@ export function processArrival(packet, node) {
       payload.waves.push({
         wave: node.props.wave,
         attack: node.props.attack,
-        decay: node.props.decay
+        decay: node.props.decay,
+        gain: node.props.mix !== undefined ? node.props.mix : 1.0
       });
       payload.timbre = 0.8;
+      break;
+
+    case 'noise':
+      if (!payload.waves) {
+        payload.waves = [];
+      }
+      payload.waves.push({
+        wave: node.props.wave || 'white',
+        attack: node.props.attack || 0.01,
+        decay: node.props.decay || 0.2,
+        gain: node.props.mix !== undefined ? node.props.mix : 0.2
+      });
+      payload.timbre = 0.9;
+      break;
+
+    case 'harmonic':
+      if (!payload.waves) {
+        payload.waves = [];
+      }
+      payload.waves.push({
+        wave: node.props.wave || 'sine',
+        attack: node.props.attack || 0.01,
+        decay: node.props.decay || 0.4,
+        gain: node.props.mix !== undefined ? node.props.mix : 0.5,
+        ratio: node.props.ratio || 2
+      });
+      payload.timbre = 0.8;
+      break;
+
+    case 'modulator':
+      payload.vibratoRate = node.props.rate || 5;
+      payload.vibratoDepth = node.props.depth || 20;
+      payload.vibratoDelay = node.props.delay || 0.2;
       break;
       
     case 'pitch':
@@ -125,6 +172,29 @@ export function processArrival(packet, node) {
         if (currentPayload === null) return;
       }
       Object.assign(payload, currentPayload);
+      break;
+    }
+
+    case 'teleporter': {
+      // Find all other teleporters on the same channel
+      const channel = node.props.channel;
+      const linkedTeleporters = state.nodes.filter(n => 
+        n.type === 'teleporter' && 
+        n.id !== node.id && 
+        n.props.channel === channel
+      );
+      
+      // Teleport packet to all linked teleporters (instant arrival)
+      linkedTeleporters.forEach(targetNode => {
+        targetNode.flash = 1.0; // Visual feedback
+        const outgoing = state.edges.filter(e => e.from === targetNode.id);
+        outgoing.forEach(edge => {
+          if (state.packets.length >= MAX_PACKETS) return;
+          state.packets.push({ id: uid(), edgeId: edge.id, t: 0, payload: { ...payload } });
+        });
+      });
+      
+      // If this teleporter also has outgoing edges, continue normally
       break;
     }
   }
@@ -157,13 +227,54 @@ export function processTunnelSubNode(subNode, payload) {
       result.waves.push({
         wave: subNode.props.wave || 'sine',
         attack: subNode.props.attack || 0.01,
-        decay: subNode.props.decay || 0.4
+        decay: subNode.props.decay || 0.4,
+        gain: subNode.props.mix !== undefined ? subNode.props.mix : 1.0
       });
       result.timbre = 0.8;
       break;
+
+    case 'noise':
+      if (!result.waves) {
+        result.waves = [];
+      }
+      result.waves.push({
+        wave: subNode.props.wave || 'white',
+        attack: subNode.props.attack || 0.01,
+        decay: subNode.props.decay || 0.2,
+        gain: subNode.props.mix !== undefined ? subNode.props.mix : 0.2
+      });
+      result.timbre = 0.9;
+      break;
+
+    case 'harmonic':
+      if (!result.waves) {
+        result.waves = [];
+      }
+      result.waves.push({
+        wave: subNode.props.wave || 'sine',
+        attack: subNode.props.attack || 0.01,
+        decay: subNode.props.decay || 0.4,
+        gain: subNode.props.mix !== undefined ? subNode.props.mix : 0.5,
+        ratio: subNode.props.ratio || 2
+      });
+      result.timbre = 0.8;
+      break;
+
+    case 'modulator':
+      result.vibratoRate = subNode.props.rate || 5;
+      result.vibratoDepth = subNode.props.depth || 20;
+      result.vibratoDelay = subNode.props.delay || 0.2;
+      break;
       
     case 'filter':
-      result.cutoff = Math.max(100, (result.cutoff || 20000) * 0.6);
+      result.cutoff = subNode.props.cutoff !== undefined ? subNode.props.cutoff : 20000;
+      if (subNode.props.mod !== 0) {
+        result.filterEnv = {
+          attack: subNode.props.attack || 0,
+          decay: subNode.props.decay || 0,
+          mod: subNode.props.mod || 0
+        };
+      }
       break;
       
     case 'gate':

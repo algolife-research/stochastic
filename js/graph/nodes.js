@@ -4,6 +4,7 @@ import { uid } from '../core/utils.js';
 import { TUNNEL_TEMPLATES, NODE_COLORS, NODE_ICONS } from '../core/constants.js';
 import * as state from '../core/state.js';
 import { updatePropPanel } from '../ui/panel.js';
+import { createEdge } from './edges.js';
 
 /**
  * Get default properties for a node type
@@ -11,11 +12,14 @@ import { updatePropPanel } from '../ui/panel.js';
 export function getDefaultPropsForType(type) {
   const defaults = {
     pitch: { shift: 0 },
-    polariser: { wave: 'sawtooth', attack: 0.01, decay: 0.4 },
-    filter: { cutoff: 20000 },
+    polariser: { wave: 'sawtooth', attack: 0.01, decay: 0.4, mix: 1.0 },
+    filter: { cutoff: 20000, attack: 0, decay: 0, mod: 0 },
     gate: { prob: 0.5 },
     delay: { delayTime: 1 },
-    gain: { value: 1.0 }
+    gain: { value: 1.0 },
+    noise: { type: 'white', attack: 0.01, decay: 0.2, mix: 0.2 },
+    harmonic: { ratio: 2, wave: 'sine', attack: 0.01, decay: 0.4, mix: 0.5 },
+    modulator: { rate: 5, depth: 20, delay: 0.2 }
   };
   return defaults[type] || {};
 }
@@ -39,6 +43,7 @@ export function createNode(type, x, y) {
       prob: 0.5,
       timbre: 0,
       cutoff: 20000,
+      mod: 0, // Filter envelope modulation amount
       shift: 2,
       mode: 'shift', // 'shift' or 'fixed'
       fixedNote: 12, // C4
@@ -49,6 +54,7 @@ export function createNode(type, x, y) {
       wave: 'sine',
       attack: 0.01,
       decay: 0.4,
+      mix: 1.0, // Layer mix volume
       value: 1.0 // Gain multiplier
     }
   };
@@ -56,12 +62,35 @@ export function createNode(type, x, y) {
   // Initialize specific defaults
   if (type === 'source') {
     node.props.noteIndex = -1;
+    node.props.intensity = 0.5;
   } else if (type === 'polariser') {
     node.props.wave = 'sawtooth';
+    node.props.mix = 1.0;
+  } else if (type === 'noise') {
+    node.props.wave = 'white'; // Reusing 'wave' prop for noise type
+    node.props.attack = 0.01;
+    node.props.decay = 0.2;
+    node.props.mix = 0.2; // Default noise to be subtle
+  } else if (type === 'harmonic') {
+    node.props.ratio = 2; // 2 = octave, 3 = fifth+octave, etc.
+    node.props.wave = 'sine';
+    node.props.attack = 0.01;
+    node.props.decay = 0.4;
+    node.props.mix = 0.5;
+  } else if (type === 'modulator') {
+    node.props.rate = 5;    // Hz (vibrato speed)
+    node.props.depth = 20;  // cents (vibrato amount)
+    node.props.delay = 0.2; // seconds before modulation starts
+  } else if (type === 'filter') {
+    node.props.cutoff = 20000;
+    node.props.attack = 0;
+    node.props.decay = 0;
+    node.props.mod = 0;
   } else if (type === 'delay') {
     node.props.delayTime = 1.0;
   } else if (type === 'emitter') {
     node.props.reverb = 0;
+    node.props.volume = 1.0;
   } else if (type === 'tunnel') {
     node.props.subNodes = [];
     node.props.tunnelName = 'Custom';
@@ -70,6 +99,24 @@ export function createNode(type, x, y) {
     node.props.shift = 2;
   } else if (type === 'gain') {
     node.props.value = 1.0;
+  } else if (type === 'teleporter') {
+    // Auto-assign channel based on existing teleporters
+    const existingChannels = state.nodes
+      .filter(n => n.type === 'teleporter')
+      .map(n => n.props.channel);
+    
+    // Find first available channel letter
+    const channelLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let channel = 'A';
+    for (let i = 0; i < channelLetters.length; i++) {
+      if (!existingChannels.includes(channelLetters[i])) {
+        channel = channelLetters[i];
+        break;
+      }
+    }
+    
+    node.props.channel = channel;
+    node.props.isEntry = true; // true = entry point, false = exit point
   }
   
   state.nodes.push(node);
@@ -103,20 +150,49 @@ export function createTunnelFromTemplate(templateKey, x, y) {
 }
 
 /**
- * Duplicate a node
+ * Duplicate a node or multiple selected nodes
  */
 export function duplicateNode(node) {
-  const newNode = createNode(node.type, node.x + 50, node.y + 50);
+  const nodesToDuplicate = state.selectedNodes.length > 0 ? state.selectedNodes : [node];
   
-  // Deep copy props
-  newNode.props = JSON.parse(JSON.stringify(node.props));
+  // Create mapping from old node IDs to new nodes
+  const idMap = new Map();
+  const newNodes = [];
   
-  // Select the new node
-  state.setSelectedNode(newNode);
-  state.setSelectedNodes([newNode]);
-  updatePropPanel(newNode);
+  // Create all new nodes
+  nodesToDuplicate.forEach(oldNode => {
+    const newNode = createNode(oldNode.type, oldNode.x + 50, oldNode.y + 50);
+    newNode.props = JSON.parse(JSON.stringify(oldNode.props));
+    idMap.set(oldNode.id, newNode);
+    newNodes.push(newNode);
+  });
   
-  return newNode;
+  // Get IDs of duplicated nodes for edge filtering
+  const oldNodeIds = new Set(nodesToDuplicate.map(n => n.id));
+  
+  // Duplicate edges that connect duplicated nodes (internal edges)
+  state.edges.forEach(edge => {
+    if (oldNodeIds.has(edge.from) && oldNodeIds.has(edge.to)) {
+      const newFromNode = idMap.get(edge.from);
+      const newToNode = idMap.get(edge.to);
+      if (newFromNode && newToNode) {
+        createEdge(newFromNode, newToNode);
+      }
+    }
+  });
+  
+  // Select the new nodes
+  if (newNodes.length === 1) {
+    state.setSelectedNode(newNodes[0]);
+    state.setSelectedNodes([newNodes[0]]);
+    updatePropPanel(newNodes[0]);
+  } else {
+    state.setSelectedNodes(newNodes);
+    state.setSelectedNode(newNodes[newNodes.length - 1]);
+    updatePropPanel(newNodes[newNodes.length - 1]);
+  }
+  
+  return newNodes.length === 1 ? newNodes[0] : newNodes;
 }
 
 /**

@@ -52,7 +52,11 @@ export const NODE_COLORS = {
   delay: '#9e9e9e',
   tunnel: '#00bcd4',
   chord: '#e91e63',
-  gain: '#ffeb3b'
+  gain: '#ffeb3b',
+  noise: '#90a4ae',
+  harmonic: '#ff7043',
+  modulator: '#7c4dff',
+  teleporter: '#18ffff'
 };
 
 // Node Icons
@@ -67,7 +71,11 @@ export const NODE_ICONS = {
   delay: '🕒',
   chord: '🎹',
   tunnel: '🚇',
-  gain: '📢'
+  gain: '📢',
+  noise: '🌫️',
+  harmonic: '🎻',
+  modulator: '〰️',
+  teleporter: '🞆'
 };
 
 export const MAX_PACKETS = 500;

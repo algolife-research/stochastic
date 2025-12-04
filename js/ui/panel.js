@@ -45,6 +45,10 @@ export function updatePropPanel(node) {
           ${NOTE_NAMES.map((n, i) => `<option value="${i}" ${node.props.noteIndex === i ? 'selected' : ''}>${n}</option>`).join('')}
         </select>
       </div>
+      <div class="prop-row">
+        <label>Intensity</label>
+        <input type="number" id="prop-intensity" value="${node.props.intensity !== undefined ? node.props.intensity : 0.5}" min="0" max="1" step="0.1">
+      </div>
     `;
   } else if (node.type === 'gate') {
     html += `
@@ -95,8 +99,57 @@ export function updatePropPanel(node) {
         <input type="number" id="prop-delay" value="${node.props.delayTime}" min="0.25" max="8" step="0.25">
       </div>
     `;
+  } else if (node.type === 'filter') {
+    html += `
+      <div class="prop-row">
+        <label>Cutoff (Hz)</label>
+        <input type="number" id="prop-cutoff" value="${node.props.cutoff}" min="100" max="20000" step="100">
+      </div>
+      <div class="prop-row">
+        <label>Env. Mod</label>
+        <input type="number" id="prop-mod" value="${node.props.mod !== undefined ? node.props.mod : 0}" min="-10000" max="10000" step="100">
+      </div>
+      <div class="prop-row">
+        <label>Attack (s)</label>
+        <input type="number" id="prop-attack" value="${node.props.attack !== undefined ? node.props.attack : 0}" min="0" max="2" step="0.01">
+      </div>
+      <div class="prop-row">
+        <label>Decay (s)</label>
+        <input type="number" id="prop-decay" value="${node.props.decay !== undefined ? node.props.decay : 0}" min="0" max="5" step="0.1">
+      </div>
+    `;
+  } else if (node.type === 'noise') {
+    html += `
+      <div class="prop-row">
+        <label>Type</label>
+        <select id="prop-wave">
+          <option value="white" ${node.props.wave === 'white' ? 'selected' : ''}>White</option>
+          <option value="pink" ${node.props.wave === 'pink' ? 'selected' : ''}>Pink</option>
+          <option value="brown" ${node.props.wave === 'brown' ? 'selected' : ''}>Brown</option>
+        </select>
+      </div>
+      <div class="prop-row">
+        <label>Attack (s)</label>
+        <input type="number" id="prop-attack" value="${node.props.attack}" min="0.01" max="2" step="0.01">
+      </div>
+      <div class="prop-row">
+        <label>Decay (s)</label>
+        <input type="number" id="prop-decay" value="${node.props.decay}" min="0.1" max="5" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Mix Level</label>
+        <input type="number" id="prop-mix" value="${node.props.mix !== undefined ? node.props.mix : 0.2}" min="0" max="1" step="0.05">
+      </div>
+      <div class="waveform-preview">
+        <canvas id="waveform-canvas" width="190" height="60"></canvas>
+      </div>
+    `;
   } else if (node.type === 'emitter') {
     html += `
+      <div class="prop-row">
+        <label>Volume</label>
+        <input type="number" id="prop-volume" value="${node.props.volume !== undefined ? node.props.volume : 1.0}" min="0" max="2" step="0.1">
+      </div>
       <div class="prop-row">
         <label>Reverb Send</label>
         <input type="number" id="prop-reverb" value="${node.props.reverb}" min="0" max="1" step="0.1">
@@ -104,6 +157,21 @@ export function updatePropPanel(node) {
       <div class="prop-row">
         <label>Pan (L/R)</label>
         <input type="number" id="prop-pan" value="${node.props.pan !== undefined ? node.props.pan : 0}" min="-1" max="1" step="0.1">
+      </div>
+    `;
+  } else if (node.type === 'modulator') {
+    html += `
+      <div class="prop-row">
+        <label>Rate (Hz)</label>
+        <input type="number" id="prop-mod-rate" value="${node.props.rate !== undefined ? node.props.rate : 5}" min="0.5" max="15" step="0.5">
+      </div>
+      <div class="prop-row">
+        <label>Depth (cents)</label>
+        <input type="number" id="prop-mod-depth" value="${node.props.depth !== undefined ? node.props.depth : 20}" min="0" max="100" step="5">
+      </div>
+      <div class="prop-row">
+        <label>Delay (s)</label>
+        <input type="number" id="prop-mod-delay" value="${node.props.delay !== undefined ? node.props.delay : 0.2}" min="0" max="2" step="0.05">
       </div>
     `;
   } else if (node.type === 'polariser') {
@@ -125,8 +193,38 @@ export function updatePropPanel(node) {
         <label>Decay (s)</label>
         <input type="number" id="prop-decay" value="${node.props.decay}" min="0.1" max="5" step="0.1">
       </div>
+      <div class="prop-row">
+        <label>Mix Level</label>
+        <input type="number" id="prop-mix" value="${node.props.mix !== undefined ? node.props.mix : 1.0}" min="0" max="1" step="0.05">
+      </div>
       <div class="waveform-preview">
         <canvas id="waveform-canvas" width="190" height="60"></canvas>
+      </div>
+    `;
+  } else if (node.type === 'harmonic') {
+    html += `
+      <div class="prop-row">
+        <label>Ratio</label>
+        <input type="number" id="prop-ratio" value="${node.props.ratio !== undefined ? node.props.ratio : 2}" min="1" max="16" step="0.5">
+      </div>
+      <div class="prop-row">
+        <label>Wave</label>
+        <select id="prop-wave">
+          <option value="sine" ${node.props.wave === 'sine' ? 'selected' : ''}>Sine</option>
+          <option value="triangle" ${node.props.wave === 'triangle' ? 'selected' : ''}>Tri</option>
+        </select>
+      </div>
+      <div class="prop-row">
+        <label>Attack (s)</label>
+        <input type="number" id="prop-attack" value="${node.props.attack}" min="0.01" max="2" step="0.01">
+      </div>
+      <div class="prop-row">
+        <label>Decay (s)</label>
+        <input type="number" id="prop-decay" value="${node.props.decay}" min="0.1" max="5" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Mix Level</label>
+        <input type="number" id="prop-mix" value="${node.props.mix !== undefined ? node.props.mix : 0.5}" min="0" max="1" step="0.05">
       </div>
     `;
   } else if (node.type === 'tunnel') {
@@ -172,6 +270,33 @@ export function updatePropPanel(node) {
             <label>Decay</label>
             <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="decay" value="${subNode.props.decay || 0.4}" min="0.1" max="5" step="0.1">
           </div>
+          <div class="prop-row">
+            <label>Mix</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="mix" value="${subNode.props.mix !== undefined ? subNode.props.mix : 1.0}" min="0" max="1" step="0.05">
+          </div>
+        `;
+      } else if (subNode.type === 'noise') {
+        html += `
+          <div class="prop-row">
+            <label>Type</label>
+            <select class="tunnel-prop" data-idx="${idx}" data-prop="wave">
+              <option value="white" ${subNode.props.wave === 'white' ? 'selected' : ''}>White</option>
+              <option value="pink" ${subNode.props.wave === 'pink' ? 'selected' : ''}>Pink</option>
+              <option value="brown" ${subNode.props.wave === 'brown' ? 'selected' : ''}>Brown</option>
+            </select>
+          </div>
+          <div class="prop-row">
+            <label>Attack</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="attack" value="${subNode.props.attack || 0.01}" min="0.01" max="2" step="0.01">
+          </div>
+          <div class="prop-row">
+            <label>Decay</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="decay" value="${subNode.props.decay || 0.2}" min="0.1" max="5" step="0.1">
+          </div>
+          <div class="prop-row">
+            <label>Mix</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="mix" value="${subNode.props.mix !== undefined ? subNode.props.mix : 0.2}" min="0" max="1" step="0.05">
+          </div>
         `;
       } else if (subNode.type === 'gate') {
         html += `
@@ -186,11 +311,81 @@ export function updatePropPanel(node) {
             <label>Cutoff</label>
             <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="cutoff" value="${subNode.props.cutoff || 20000}" min="100" max="20000" step="100">
           </div>
+          <div class="prop-row">
+            <label>Env. Mod</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="mod" value="${subNode.props.mod !== undefined ? subNode.props.mod : 0}" min="-10000" max="10000" step="100">
+          </div>
+          <div class="prop-row">
+            <label>Attack</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="attack" value="${subNode.props.attack !== undefined ? subNode.props.attack : 0}" min="0" max="2" step="0.01">
+          </div>
+          <div class="prop-row">
+            <label>Decay</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="decay" value="${subNode.props.decay !== undefined ? subNode.props.decay : 0}" min="0" max="5" step="0.1">
+          </div>
+        `;
+      } else if (subNode.type === 'harmonic') {
+        html += `
+          <div class="prop-row">
+            <label>Ratio</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="ratio" value="${subNode.props.ratio !== undefined ? subNode.props.ratio : 2}" min="1" max="16" step="0.5">
+          </div>
+          <div class="prop-row">
+            <label>Wave</label>
+            <select class="tunnel-prop" data-idx="${idx}" data-prop="wave">
+              <option value="sine" ${subNode.props.wave === 'sine' ? 'selected' : ''}>Sine</option>
+              <option value="triangle" ${subNode.props.wave === 'triangle' ? 'selected' : ''}>Tri</option>
+            </select>
+          </div>
+          <div class="prop-row">
+            <label>Attack</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="attack" value="${subNode.props.attack || 0.01}" min="0.01" max="2" step="0.01">
+          </div>
+          <div class="prop-row">
+            <label>Decay</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="decay" value="${subNode.props.decay || 0.4}" min="0.1" max="5" step="0.1">
+          </div>
+          <div class="prop-row">
+            <label>Mix</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="mix" value="${subNode.props.mix !== undefined ? subNode.props.mix : 0.5}" min="0" max="1" step="0.05">
+          </div>
+        `;
+      } else if (subNode.type === 'modulator') {
+        html += `
+          <div class="prop-row">
+            <label>Rate (Hz)</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="rate" value="${subNode.props.rate !== undefined ? subNode.props.rate : 5}" min="0.5" max="15" step="0.5">
+          </div>
+          <div class="prop-row">
+            <label>Depth (cents)</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="depth" value="${subNode.props.depth !== undefined ? subNode.props.depth : 20}" min="0" max="100" step="5">
+          </div>
+          <div class="prop-row">
+            <label>Delay (s)</label>
+            <input type="number" class="tunnel-prop" data-idx="${idx}" data-prop="delay" value="${subNode.props.delay !== undefined ? subNode.props.delay : 0.2}" min="0" max="2" step="0.05">
+          </div>
         `;
       }
       
       html += `</div>`;
     });
+  } else if (node.type === 'teleporter') {
+    // Find all existing channels
+    const allChannels = [...new Set(state.nodes.filter(n => n.type === 'teleporter').map(n => n.props.channel))].sort();
+    const linkedCount = state.nodes.filter(n => n.type === 'teleporter' && n.id !== node.id && n.props.channel === node.props.channel).length;
+    
+    html += `
+      <div class="prop-row">
+        <label>Channel</label>
+        <select id="prop-channel">
+          ${allChannels.map(ch => `<option value="${ch}" ${node.props.channel === ch ? 'selected' : ''}>${ch}</option>`).join('')}
+        </select>
+      </div>
+      <div class="prop-row">
+        <label>Linked</label>
+        <span style="font-size: 11px;">${linkedCount} other teleporter${linkedCount !== 1 ? 's' : ''} on channel ${node.props.channel}</span>
+      </div>
+    `;
   }
 
   panel.innerHTML = html;
@@ -198,8 +393,8 @@ export function updatePropPanel(node) {
   // Attach Listeners
   attachPropListeners(node);
   
-  // Draw initial waveform preview for polariser
-  if (node.type === 'polariser') {
+  // Draw initial waveform preview for polariser or noise
+  if (node.type === 'polariser' || node.type === 'noise') {
     drawWaveformPreview(node);
   }
 }
@@ -216,6 +411,9 @@ function attachPropListeners(node) {
 
   const noteInput = document.getElementById('prop-note');
   if (noteInput) noteInput.addEventListener('change', e => node.props.noteIndex = parseInt(e.target.value));
+
+  const intensityInput = document.getElementById('prop-intensity');
+  if (intensityInput) intensityInput.addEventListener('change', e => node.props.intensity = parseFloat(e.target.value));
 
   const probInput = document.getElementById('prop-prob');
   if (probInput) probInput.addEventListener('change', e => node.props.prob = parseFloat(e.target.value));
@@ -241,11 +439,32 @@ function attachPropListeners(node) {
   const delayInput = document.getElementById('prop-delay');
   if (delayInput) delayInput.addEventListener('change', e => node.props.delayTime = parseFloat(e.target.value));
 
+  const cutoffInput = document.getElementById('prop-cutoff');
+  if (cutoffInput) cutoffInput.addEventListener('change', e => node.props.cutoff = parseFloat(e.target.value));
+
+  const modInput = document.getElementById('prop-mod');
+  if (modInput) modInput.addEventListener('change', e => node.props.mod = parseFloat(e.target.value));
+
+  const ratioInput = document.getElementById('prop-ratio');
+  if (ratioInput) ratioInput.addEventListener('change', e => node.props.ratio = parseFloat(e.target.value));
+
   const reverbInput = document.getElementById('prop-reverb');
   if (reverbInput) reverbInput.addEventListener('change', e => node.props.reverb = parseFloat(e.target.value));
 
+  const volumeInput = document.getElementById('prop-volume');
+  if (volumeInput) volumeInput.addEventListener('change', e => node.props.volume = parseFloat(e.target.value));
+
   const panInput = document.getElementById('prop-pan');
   if (panInput) panInput.addEventListener('change', e => node.props.pan = parseFloat(e.target.value));
+
+  const modRateInput = document.getElementById('prop-mod-rate');
+  if (modRateInput) modRateInput.addEventListener('change', e => node.props.rate = parseFloat(e.target.value));
+
+  const modDepthInput = document.getElementById('prop-mod-depth');
+  if (modDepthInput) modDepthInput.addEventListener('change', e => node.props.depth = parseFloat(e.target.value));
+
+  const modDelayInput = document.getElementById('prop-mod-delay');
+  if (modDelayInput) modDelayInput.addEventListener('change', e => node.props.delay = parseFloat(e.target.value));
 
   const waveInput = document.getElementById('prop-wave');
   if (waveInput) {
@@ -294,6 +513,15 @@ function attachPropListeners(node) {
       }
     });
   });
+  
+  // Teleporter channel
+  const channelInput = document.getElementById('prop-channel');
+  if (channelInput) {
+    channelInput.addEventListener('change', e => {
+      node.props.channel = e.target.value;
+      updatePropPanel(node); // Re-render to update linked count
+    });
+  }
 }
 
 /**
@@ -369,6 +597,11 @@ function drawWaveformPreview(node) {
       case 'triangle':
         const p = (phase % (Math.PI * 2)) / (Math.PI * 2);
         waveVal = 4 * Math.abs(p - 0.5) - 1;
+        break;
+      case 'white':
+      case 'pink':
+      case 'brown':
+        waveVal = (Math.random() * 2) - 1;
         break;
       default:
         waveVal = Math.sin(phase);
