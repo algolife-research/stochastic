@@ -1,0 +1,113 @@
+/* Phonon v2 - Transport Bar Styles */
+
+.transportBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #1a1a1a;
+  border-top: 1px solid #333;
+}
+
+.transportButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #aaa;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.transportButton:hover {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.playButton.active {
+  background: #4caf50;
+  border-color: #4caf50;
+  color: #fff;
+}
+
+.transportButton.muted {
+  color: #f44336;
+}
+
+.separator {
+  width: 1px;
+  height: 30px;
+  background: #333;
+}
+
+.bpmControl {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bpmLabel {
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bpmInput {
+  width: 60px;
+  padding: 6px 8px;
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 14px;
+  font-family: monospace;
+  text-align: center;
+  outline: none;
+}
+
+.bpmInput:focus {
+  border-color: #4caf50;
+}
+
+.bpmSlider {
+  width: 120px;
+  height: 4px;
+  -webkit-appearance: none;
+  background: #333;
+  border-radius: 2px;
+  outline: none;
+}
+
+.bpmSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #4caf50;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.hints {
+  display: flex;
+  gap: 16px;
+}
+
+.hint {
+  font-size: 11px;
+  color: #555;
+}
+
+.hint::before {
+  content: '⌨ ';
+}

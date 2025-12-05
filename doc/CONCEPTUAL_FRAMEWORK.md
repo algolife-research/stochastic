@@ -1,15 +1,15 @@
-# AIGA / Qbeat: Conceptual & Theoretical Framework
+# Phonon: Conceptual & Theoretical Framework
 
 ## 1. Core Philosophy: Music as Graph Physics
 
-The Audio Interactive Graph Application (AIGA), conceptually known as **Qbeat**, represents a paradigm shift from linear, timeline-based music creation (DAWs, Piano Rolls) to a **spatial, discrete-event simulation**.
+Phonon represents a paradigm shift from linear, timeline-based music creation (DAWs, Piano Rolls) to a **spatial, discrete-event simulation**.
 
 In this framework, music is not "played back" from a recording; it is **simulated** in real-time. The composition is a living system defined by topology (connections) and physics (rules of travel), rather than a fixed sequence of events.
 
 ### 1.1 The Fundamental Equation
 $$ Rhythm = \frac{Distance}{Velocity} $$
 
-In AIGA, **Space is Time**.
+In Phonon, **Space is Time**.
 - An **Edge** is not just a connection; it is a duration.
 - A **Packet** traveling along an edge represents a rhythmic interval.
 - Changing the visual layout of the graph inherently changes the musical rhythm.

@@ -1,10 +1,10 @@
-# AIGA Musical Model
+# Phonon Musical Model
 
-This document describes the formal musical model underlying AIGA's graph-based audio synthesis system.
+This document describes the formal musical model underlying Phonon's graph-based audio synthesis system.
 
 ## Overview
 
-AIGA implements a **dataflow model** for sound synthesis where discrete **packets** carry musical information through a directed graph of **nodes** connected by **edges**. This model bridges the gap between traditional music notation (discrete events) and modular synthesis (continuous signal flow).
+Phonon implements a **dataflow model** for sound synthesis where discrete **packets** carry musical information through a directed graph of **nodes** connected by **edges**. This model bridges the gap between traditional music notation (discrete events) and modular synthesis (continuous signal flow).
 
 ## Core Abstractions
 

@@ -1,0 +1,71 @@
+/* Phonon v2 - Status Bar Styles */
+
+.statusBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #151515;
+  border-top: 1px solid #252525;
+  font-size: 11px;
+}
+
+.section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.separator {
+  width: 1px;
+  height: 14px;
+  background: #333;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.projectName {
+  color: #888;
+  font-weight: 500;
+}
+
+.dirty {
+  color: #ff9800;
+  margin-left: 4px;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.statLabel {
+  color: #555;
+}
+
+.statValue {
+  color: #888;
+  font-family: monospace;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ready {
+  color: #4caf50;
+}
+
+.notReady {
+  color: #ff9800;
+}
+
+.version {
+  color: #444;
+  font-family: monospace;
+}

@@ -1,28 +1,36 @@
 {
-  "name": "aiga",
-  "version": "1.0.0",
-  "description": "A visual node-based audio synthesizer where you create music by building graphs. Packets flow through nodes, transforming and generating sound along the way.",
-  "main": "index.js",
+  "name": "phonon",
+  "version": "2.0.0",
+  "description": "Phonon - Algorithmic Interactive Graph Audio (Production Build)",
   "type": "module",
   "scripts": {
-    "test": "npm run test:unit && npm run test:e2e",
-    "test:unit": "vitest run",
-    "test:unit:watch": "vitest",
-    "test:unit:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug",
-    "serve": "serve -l 3000"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "typecheck": "tsc --noEmit"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zustand": "^4.4.7",
+    "immer": "^10.0.3"
+  },
   "devDependencies": {
-    "@playwright/test": "^1.57.0",
-    "@vitest/coverage-v8": "^4.0.15",
-    "happy-dom": "^20.0.11",
-    "serve": "^14.2.5",
-    "vitest": "^4.0.15"
+    "@tauri-apps/api": "^1.5.3",
+    "@tauri-apps/cli": "^1.5.9",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.17",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
   }
 }

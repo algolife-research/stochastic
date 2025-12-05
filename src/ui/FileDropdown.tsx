@@ -1,0 +1,251 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useGraphStore } from '@core/store';
+import { loadGraphFromFile } from '../io/file-io';
+import { fs, isTauri } from '../io/filesystem';
+import { SCALES } from '@core/constants';
+import type { ScaleName } from '@core/types';
+import { NewCompositionDialog, LoadCompositionDialog } from './ProjectDialogs';
+import styles from './FileDropdown.module.css';
+
+interface FileDropdownProps {
+  onShowSettings: () => void;
+  onShowExport: () => void;
+}
+
+export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps): React.ReactElement {
+  const [isOpen, setIsOpen] = useState(false);
+  const [showNewDialog, setShowNewDialog] = useState(false);
+  const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const project = useGraphStore(state => state.project);
+  
+  const loadGraph = useGraphStore(state => state.loadGraph);
+  const setMusicalContext = useGraphStore(state => state.setMusicalContext);
+  const setGlobalSettings = useGraphStore(state => state.setGlobalSettings);
+  const setProjectMeta = useGraphStore(state => state.setProjectMeta);
+  const setCompositions = useGraphStore(state => state.setCompositions);
+  const setCurrentComposition = useGraphStore(state => state.setCurrentComposition);
+  const clear = useGraphStore(state => state.clear);
+  const markClean = useGraphStore(state => state.markClean);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+      const clickedInButton = buttonRef.current?.contains(target);
+      const clickedInDropdown = dropdownRef.current?.contains(target);
+      
+      if (!clickedInButton && !clickedInDropdown) {
+        setIsOpen(false);
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Update dropdown position
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left
+      });
+    }
+  }, [isOpen]);
+
+  const loadGraphData = (data: any) => {
+    const nodesWithRuntime = data.nodes.map((n: any) => ({
+      ...n,
+      timer: 0,
+      lastTrigger: 0,
+      flash: 0,
+      heldPackets: [],
+    }));
+    
+    loadGraph(nodesWithRuntime, data.edges);
+    
+    const scaleName = data.musicalContext.scaleName as ScaleName;
+    const scale = SCALES[scaleName];
+    if (scale) {
+      setMusicalContext({
+        root: data.musicalContext.root,
+        scaleName,
+        scale,
+      });
+    }
+    
+    setGlobalSettings({
+      subdivisions: data.globalSettings.subdivisions,
+      pixelsPerBeat: data.globalSettings.pixelsPerBeat,
+      gravityConstant: data.globalSettings.gravityConstant,
+    });
+    
+    setProjectMeta({
+      ...data.projectMeta,
+      modified: Date.now(),
+    });
+    
+    markClean();
+  };
+
+  const handleNew = () => {
+    if (project.isProjectMode && isTauri()) {
+      setShowNewDialog(true);
+    } else {
+      if (confirm('Create new composition? Current work will be lost.')) {
+        clear();
+        setProjectMeta({
+          name: 'Untitled',
+          author: '',
+          created: Date.now(),
+          modified: Date.now(),
+        });
+        setCurrentComposition(null);
+        markClean();
+      }
+    }
+    setIsOpen(false);
+  };
+
+  const handleCreateNew = async (name: string) => {
+    const filename = name.endsWith('.json') ? name : `${name}.json`;
+    
+    // Clear graph
+    clear();
+    setProjectMeta({
+      name: name.replace('.json', ''),
+      author: '',
+      created: Date.now(),
+      modified: Date.now(),
+    });
+    
+    // Save immediately to create file
+    if (project.path) {
+      const state = useGraphStore.getState();
+      const data = {
+        version: '2.0.0',
+        timestamp: Date.now(),
+        projectMeta: state.projectMeta,
+        globalSettings: state.globalSettings,
+        musicalContext: state.musicalContext,
+        nodes: [],
+        edges: [],
+      };
+      
+      await fs.writeComposition(project.path, filename, JSON.stringify(data, null, 2));
+      const newFiles = await fs.listCompositions(project.path);
+      setCompositions(newFiles);
+      setCurrentComposition(filename);
+      markClean();
+    }
+    setShowNewDialog(false);
+  };
+
+  const handleLoad = async () => {
+    if (project.isProjectMode && project.path && isTauri()) {
+      setShowLoadDialog(true);
+    } else {
+      fileInputRef.current?.click();
+    }
+    setIsOpen(false);
+  };
+
+  const handleLoadFromList = async (filename: string) => {
+    if (!project.path) return;
+    
+    const content = await fs.readComposition(project.path, filename);
+    if (content) {
+      try {
+        const data = JSON.parse(content);
+        loadGraphData(data);
+        setCurrentComposition(filename);
+        setProjectMeta({ name: filename.replace('.json', '') });
+      } catch (err) {
+        console.error('Failed to parse composition:', err);
+      }
+    }
+    setShowLoadDialog(false);
+  };
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (confirm('Load file? Current work will be lost.')) {
+      try {
+        const data = await loadGraphFromFile(file);
+        loadGraphData(data);
+      } catch (err) {
+        console.error('Load failed:', err);
+        alert('Failed to load file');
+      }
+    }
+    
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  return (
+    <div className={styles.container}>
+      <button 
+        ref={buttonRef}
+        className={`${styles.menuButton} ${isOpen ? styles.active : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        File ▾
+      </button>
+
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        accept=".json"
+        onChange={handleFileSelected}
+      />
+
+      <NewCompositionDialog 
+        visible={showNewDialog} 
+        onClose={() => setShowNewDialog(false)} 
+        onCreate={handleCreateNew}
+        existingFiles={project.compositions}
+      />
+
+      <LoadCompositionDialog
+        visible={showLoadDialog}
+        onClose={() => setShowLoadDialog(false)}
+        onLoad={handleLoadFromList}
+        files={project.compositions}
+        currentFile={project.currentComposition}
+      />
+
+      {isOpen && createPortal(
+        <div 
+          ref={dropdownRef}
+          className={styles.dropdown}
+          style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
+        >
+          <button className={styles.menuItem} onClick={handleNew}>
+            <span>📄</span> New <span className={styles.shortcut}>Ctrl+N</span>
+          </button>
+
+          <button className={styles.menuItem} onClick={handleLoad}>
+            <span>📂</span> Load... <span className={styles.shortcut}>Ctrl+O</span>
+          </button>
+          
+          <div className={styles.separator} />
+          
+          <button className={styles.menuItem} onClick={() => { onShowExport(); setIsOpen(false); }}>
+            <span>📤</span> Export Audio/MIDI
+          </button>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}

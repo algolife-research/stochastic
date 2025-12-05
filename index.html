@@ -1,225 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AIGA - Audio Interactive Graph Application</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <!-- Context Menu -->
-  <div id="context-menu" class="context-menu">
-    <div class="menu-item" id="ctx-link">Link Node</div>
-    <div class="menu-item" id="ctx-duplicate">Duplicate (Ctrl+D)</div>
-    <div class="menu-item" id="ctx-group">Group (Ctrl+G)</div>
-    <div class="menu-item" id="ctx-duplicate-region">Duplicate Region</div>
-    <div class="menu-item" id="ctx-delete">Delete</div>
-    <div class="menu-item" id="ctx-add-annotation">📝 Add Text</div>
-    <div class="menu-item" id="ctx-add-region">▢ Add Region</div>
-    <div id="ctx-add-submenu">
-      <div class="menu-separator"></div>
-      <div class="menu-label">Add Node</div>
-      <div class="menu-item ctx-add-node" data-type="source">⚡ Source</div>
-      <div class="menu-item ctx-add-node" data-type="speaker">🔊 Speaker</div>
-      <div class="menu-item ctx-add-node" data-type="pitch">🎵 Pitch</div>
-      <div class="menu-item ctx-add-node" data-type="gain">📢 Gain</div>
-      <div class="menu-item ctx-add-node" data-type="delay">🕒 Delay</div>
-      <div class="menu-item ctx-add-node" data-type="splitter">🔀 Splitter</div>
-      <div class="menu-item ctx-add-node" data-type="gate">🚪 Gate</div>
-      <div class="menu-item ctx-add-node" data-type="filter">🌊 Filter</div>
-      <div class="menu-item ctx-add-node" data-type="polariser">🔮 Polariser</div>
-      <div class="menu-item ctx-add-node" data-type="harmonic">🎻 Harmonic</div>
-      <div class="menu-item ctx-add-node" data-type="modulator">〰️ Modulator</div>
-      <div class="menu-item ctx-add-node" data-type="noise">🌫️ Noise</div>
-      <div class="menu-item ctx-add-node" data-type="chord">🎹 Chord</div>
-      <div class="menu-item ctx-add-node" data-type="quantizer">🎼 Quantizer</div>
-      <div class="menu-item ctx-add-node" data-type="lfo">〰️ LFO</div>
-      <div class="menu-item ctx-add-node" data-type="midi_out">🎹 MIDI Out</div>
-      <div class="menu-item ctx-add-node" data-type="midi_cc">🎛️ MIDI CC</div>
-      <div class="menu-item ctx-add-node" data-type="teleporter">🌀 Teleporter</div>
-      <div class="menu-item ctx-add-node" data-type="tunnel">🚇 Tunnel (Empty)</div>
-      <div class="menu-separator"></div>
-      <div class="menu-label">Tunnel Presets</div>
-      <div class="menu-item ctx-add-tunnel" data-template="voice">🎤 Voice (Pitch+Synth)</div>
-      <div class="menu-item ctx-add-tunnel" data-template="thick">🎸 Thick (+Octave)</div>
-      <div class="menu-item ctx-add-tunnel" data-template="dark">🌑 Dark (Filter+Low)</div>
-    </div>
-  </div>
-
-  <div class="app-container">
-    <div class="canvas-wrapper">
-      <canvas id="aigaCanvas"></canvas>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/aiga.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phonon - The 21st Century Instrument</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
       
-      <!-- Floating Toolbar -->
-      <div class="floating-toolbar">
-        <button id="playBtn" class="toolbar-btn primary">▶ Play</button>
-        <button id="muteBtn" class="toolbar-btn">🔊</button>
-        <div class="speed-control">
-          <label for="speedInput">BPM</label>
-          <input type="number" id="speedInput" class="toolbar-input" min="20" max="300" value="120">
-        </div>
-        <select id="exampleSelect" class="toolbar-select">
-          <option value="">Examples...</option>
-          <option disabled>── Tutorials ──</option>
-          <option value="tut_01_first_sound">1. First Sound</option>
-          <option value="tut_02_changing_pitch">2. Changing Pitch</option>
-          <option value="tut_03_shaping_sound">3. Shaping Sound</option>
-          <option value="tut_04_splitting_paths">4. Splitting Paths</option>
-          <option value="tut_05_randomness">5. Randomness</option>
-          <option value="tut_06_timing_delay">6. Timing & Delay</option>
-          <option value="tut_07_filters">7. Filters</option>
-          <option value="tut_08_gain_dynamics">8. Gain & Dynamics</option>
-          <option value="tut_09_simple_melody">9. Simple Melody</option>
-          <option value="tut_10_first_song">10. Your First Song</option>
-          <option disabled>── Basic Examples ──</option>
-          <option value="sequential_melody">Sequential Melody</option>
-          <option value="generative_ambient">Generative Ambient</option>
-          <option value="polyrhythm">Polyrhythm</option>
-          <option value="drum_pattern">Drum Pattern</option>
-          <option value="dynamics">Dynamics (Volume/Gain)</option>
-          <option disabled>── Layered Instruments ──</option>
-          <option value="orchestra">Orchestra</option>
-          <option value="layered_pad">Layered Pad</option>
-          <option value="synth_bass">Synth Bass</option>
-          <option disabled>── Classical Forms ──</option>
-          <option value="canon">Canon</option>
-          <option value="fugue">Fugue</option>
-          <option disabled>── Tunnel Patterns ──</option>
-          <option value="tunnel_melody">Tunnel Melody (Arpeggio)</option>
-          <option disabled>── Advanced Features ──</option>
-          <option value="quantizer_demo">Quantizer (Harmonic Snapping)</option>
-          <option value="lfo_modulation">LFO Modulation (CV Routing)</option>
-          <option value="virtual_edges">Virtual Edges (Fixed Timing)</option>
-          <option value="gravity_tempo">Gravity Physics (Tempo Warping)</option>
-          <option value="ahd_envelopes">AHD Envelopes (Sustain)</option>
-          <option value="pentatonic_jam">Pentatonic Jam (Complete)</option>
-          <option value="cv_routing_demo">CV Routing Advanced</option>
-          <option value="blues_scale">Blues Scale Jam</option>
-          <option disabled>── Complex Ambient ──</option>
-          <option value="ambient_drone">Evolving Drone</option>
-          <option value="ambient_krell">Krell Patch (Self-Generating)</option>
-          <option value="ambient_polymetric">Polymetric Loops</option>
-        </select>
-        <button id="saveBtn" class="toolbar-btn">💾 Save</button>
-        <button id="loadBtn" class="toolbar-btn">📂 Load</button>
-        <button id="clearBtn" class="toolbar-btn">🗑️ Clear</button>
-        <button id="scenesBtn" class="toolbar-btn">🎬 Scenes</button>
-        <button id="settingsBtn" class="toolbar-btn">⚙️</button>
-      </div>
-      <input type="file" id="fileInput" accept=".aiga,.json">
+      html, body, #root {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #0a0a0a;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #e0e0e0;
+      }
       
-      <!-- Property Panel -->
-      <div id="node-properties" class="prop-panel">
-        <div class="prop-header">Properties</div>
-        <div id="prop-content" class="prop-content">
-          Right-click to add nodes
-        </div>
-      </div>
-      
-      <!-- Info Panel -->
-      <div class="info-panel">
-        <span class="app-title">AIGA</span> &nbsp;|&nbsp; 
-        Right-click: Add nodes &nbsp;|&nbsp; 
-        Double-click: Add text &nbsp;|&nbsp;
-        Shift+Drag: Box select &nbsp;|&nbsp; 
-        Ctrl+G: Group into Tunnel
-      </div>
-    </div>
-  </div>
-
-  <!-- Scenes Modal -->
-  <div id="scenes-modal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal" id="close-scenes-modal">&times;</span>
-      <h2>Scene Management</h2>
-      <div class="scene-controls">
-        <input type="text" id="new-scene-name" placeholder="Scene Name" class="toolbar-input" style="width: 150px;">
-        <button id="capture-scene-btn" class="toolbar-btn primary">Capture Scene</button>
-      </div>
-      <div id="scene-list" class="scene-list">
-        <!-- Scenes will be populated here -->
-      </div>
-    </div>
-  </div>
-
-  <!-- Settings Modal -->
-  <div id="settings-modal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal">&times;</span>
-      <h2>Global Settings</h2>
-      
-      <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14px; color: #bb86fc;">🎵 Musical Context</h3>
-      <div class="setting-row">
-        <label>Root Note</label>
-        <select id="setting-root">
-          <option value="0">C</option>
-          <option value="1">C#/Db</option>
-          <option value="2">D</option>
-          <option value="3">D#/Eb</option>
-          <option value="4">E</option>
-          <option value="5">F</option>
-          <option value="6">F#/Gb</option>
-          <option value="7">G</option>
-          <option value="8">G#/Ab</option>
-          <option value="9">A</option>
-          <option value="10">A#/Bb</option>
-          <option value="11">B</option>
-        </select>
-      </div>
-      <div class="setting-row">
-        <label>Scale</label>
-        <select id="setting-scale">
-          <option value="chromatic">Chromatic</option>
-          <option value="major" selected>Major</option>
-          <option value="minor">Minor</option>
-          <option value="dorian">Dorian</option>
-          <option value="phrygian">Phrygian</option>
-          <option value="lydian">Lydian</option>
-          <option value="mixolydian">Mixolydian</option>
-          <option value="pentatonic">Pentatonic</option>
-          <option value="minorPentatonic">Minor Pentatonic</option>
-          <option value="blues">Blues</option>
-          <option value="wholeTone">Whole Tone</option>
-        </select>
-      </div>
-      
-      <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14px; color: #bb86fc;">⚙️ Physics</h3>
-      <div class="setting-row">
-        <label>Gravity Strength</label>
-        <input type="number" id="setting-gravity" value="0" min="0" max="2" step="0.1">
-        <span style="font-size: 10px; color: #888; margin-left: 5px;">0 = off</span>
-      </div>
-
-      <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14px; color: #bb86fc;">🎹 MIDI Configuration</h3>
-      <div class="setting-row">
-        <label>MIDI Output</label>
-        <select id="setting-midi-out">
-          <option value="">None</option>
-        </select>
-        <button id="refresh-midi-btn" class="toolbar-btn" style="padding: 2px 6px; margin-left: 5px;" title="Refresh Devices">🔄</button>
-      </div>
-      <div class="setting-row">
-        <label>Clock Output</label>
-        <input type="checkbox" id="setting-midi-clock">
-        <span style="font-size: 10px; color: #888; margin-left: 5px;">Send MIDI Clock</span>
-      </div>
-      
-      <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14px; color: #bb86fc;">🎼 Timing</h3>
-      <div class="setting-row">
-        <label>Subdivisions per Beat</label>
-        <select id="setting-subdivisions">
-          <option value="2">2 (Eighths)</option>
-          <option value="3">3 (Triplets)</option>
-          <option value="4" selected>4 (Sixteenths)</option>
-        </select>
-      </div>
-      <div class="setting-row">
-        <label>Pixels Per Beat (Zoom/Speed)</label>
-        <input type="number" id="setting-ppb" value="200" min="50" max="500" step="10">
-      </div>
-    </div>
-  </div>
-
-  <script type="module" src="js/main.js"></script>
-</body>
+      /* Prevent text selection during drag */
+      .no-select {
+        user-select: none;
+        -webkit-user-select: none;
+      }
+    </style>
+  </head>
+  <body class="no-select">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

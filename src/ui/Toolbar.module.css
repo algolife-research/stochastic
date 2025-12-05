@@ -1,0 +1,135 @@
+/* Phonon v2 - Toolbar Styles */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  overflow-x: auto;
+  overflow-y: visible;
+  position: relative;
+  z-index: 1000;
+}
+
+.toolGroup {
+  display: flex;
+  gap: 4px;
+}
+
+.separator {
+  width: 1px;
+  height: 32px;
+  background: #333;
+  margin: 0 8px;
+}
+
+.toolsSection {
+  display: flex;
+  gap: 4px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.toolButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #aaa;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 50px;
+}
+
+.toolButton:hover {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.toolButton.active {
+  background: var(--tool-color, #333);
+  border-color: var(--tool-color, #555);
+  color: #fff;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--tool-color, #333) 50%, transparent);
+}
+
+.icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.actions {
+  display: flex;
+  gap: 4px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #aaa;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionButton:hover {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.actionButton .icon {
+  font-size: 18px;
+}
+
+.exampleSection {
+  margin-right: 8px;
+}
+
+.exampleSelect {
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 6px;
+  color: #ccc;
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  position: relative;
+  z-index: 1000;
+}
+
+.exampleSelect:hover {
+  background: #2a2a2a;
+  border-color: #444;
+}
+
+.exampleSelect option {
+  background: #1a1a1a;
+  color: #ccc;
+}
+
+.exampleSelect optgroup {
+  background: #252525;
+  color: #888;
+  font-weight: bold;
+}

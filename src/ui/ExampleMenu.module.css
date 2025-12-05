@@ -1,0 +1,166 @@
+/* Phonon v2 - Example Menu Styles */
+
+.nodeMenu {
+  position: relative;
+  z-index: 1000;
+}
+
+.mainButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #252525;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 140px;
+  transition: all 0.15s ease;
+}
+
+.mainButton:hover {
+  background: #303030;
+  border-color: #666;
+}
+
+.icon {
+  font-size: 16px;
+}
+
+.label {
+  flex: 1;
+  text-align: left;
+}
+
+.chevron {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+.dropdown {
+  position: fixed;
+  min-width: 220px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: slideDown 0.15s ease;
+  z-index: 9999;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.divider {
+  height: 1px;
+  background: #333;
+  margin: 4px 0;
+}
+
+.nodeButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: #ccc;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  text-align: left;
+}
+
+.nodeButton:hover {
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.nodeButton.active {
+  background: #333;
+  color: #fff;
+}
+
+.nodeIcon {
+  width: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.nodeLabel {
+  flex: 1;
+  text-align: left;
+}
+
+.category {
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.category:last-child {
+  border-bottom: none;
+}
+
+.categoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  background: #1a1a1a;
+  border: none;
+  color: #888;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.categoryHeader:hover {
+  background: #222;
+  color: #aaa;
+}
+
+.categoryHeader.expanded {
+  color: #fff;
+  background: #252525;
+}
+
+.categoryChevron {
+  font-size: 14px;
+}
+
+.categoryNodes {
+  background: #1e1e1e;
+  padding: 4px 0;
+  animation: expandDown 0.15s ease;
+}
+
+@keyframes expandDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.categoryNodes .nodeButton {
+  padding-left: 20px;
+}

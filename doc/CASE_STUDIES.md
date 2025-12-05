@@ -1,13 +1,13 @@
-# AIGA / Qbeat: Case Studies
+# Phonon: Case Studies
 
-This document explores how specific musical theories and historical compositional techniques can be implemented using the AIGA/Qbeat framework.
+This document explores how specific musical theories and historical compositional techniques can be implemented using the Phonon framework.
 
 ## Case Study 1: J.S. Bach & The Art of the Fugue
 **Concept:** Counterpoint, Canon, and Fugue.
 **Challenge:** Creating independent, interlocking melodic lines from a single thematic idea.
 
-### Implementation in AIGA
-In a linear sequencer, you copy-paste MIDI clips. In AIGA, you **fork the geometry**.
+### Implementation in Phonon
+In a linear sequencer, you copy-paste MIDI clips. In Phonon, you **fork the geometry**.
 
 #### The Canon
 1.  **The Subject:** A `Source` node feeds into a sequence of `Pitch` nodes that define the melody (e.g., C -> G -> A -> G).
