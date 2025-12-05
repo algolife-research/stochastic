@@ -27,22 +27,76 @@ export const DEFAULT_SPEED = 120;
 export const MIN_SPEED = 20;
 export const MAX_SPEED = 300;
 
-// Audio Scale (C3 to C6 - 3 Octaves)
-export const BASE_FREQ = 130.81; // C3
+// MIDI Note System (replaces limited 37-note array)
+export const MIDI_A4 = 69;
+export const MIDI_A4_FREQ = 440;
+export const MIDI_MIN = 0;   // C-1
+export const MIDI_MAX = 127; // G9
+export const DEFAULT_MIDI_NOTE = 60; // Middle C (C4)
+
+// Note labels for display
 export const NOTE_LABELS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-// Generate chromatic scale
+/**
+ * Convert MIDI note number to frequency (Hz)
+ * f = 440 × 2^((n - 69) / 12)
+ */
+export function midiToFreq(midiNote) {
+  return MIDI_A4_FREQ * Math.pow(2, (midiNote - MIDI_A4) / 12);
+}
+
+/**
+ * Convert frequency to nearest MIDI note
+ */
+export function freqToMidi(freq) {
+  return Math.round(12 * Math.log2(freq / MIDI_A4_FREQ) + MIDI_A4);
+}
+
+/**
+ * Get note name from MIDI number (e.g., 60 -> "C4")
+ */
+export function midiToNoteName(midiNote) {
+  const octave = Math.floor(midiNote / 12) - 1;
+  const noteName = NOTE_LABELS[midiNote % 12];
+  return noteName + octave;
+}
+
+/**
+ * Clamp MIDI note to valid range
+ */
+export function clampMidi(midiNote) {
+  return Math.max(MIDI_MIN, Math.min(MIDI_MAX, Math.round(midiNote)));
+}
+
+// Legacy support: Generate chromatic scale array for backwards compatibility
+// Maps old scaleIndex (0-36) to MIDI notes (36-72, C2-C5)
+export const LEGACY_SCALE_OFFSET = 36; // scaleIndex 0 = MIDI 36 (C2)
+export const BASE_FREQ = 130.81; // C3 (legacy)
 export const SCALE_CHROMATIC = [];
 export const NOTE_NAMES = [];
 
 for (let i = 0; i < 37; i++) {
-  const freq = BASE_FREQ * Math.pow(2, i / 12);
-  SCALE_CHROMATIC.push(freq);
-  
-  const octave = Math.floor(i / 12) + 3;
-  const noteName = NOTE_LABELS[i % 12] + octave;
-  NOTE_NAMES.push(noteName);
+  const midiNote = LEGACY_SCALE_OFFSET + i;
+  SCALE_CHROMATIC.push(midiToFreq(midiNote));
+  NOTE_NAMES.push(midiToNoteName(midiNote));
 }
+
+// Musical Scales (intervals from root)
+export const SCALES = {
+  chromatic:    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  major:        [0, 2, 4, 5, 7, 9, 11],
+  minor:        [0, 2, 3, 5, 7, 8, 10],
+  dorian:       [0, 2, 3, 5, 7, 9, 10],
+  phrygian:     [0, 1, 3, 5, 7, 8, 10],
+  lydian:       [0, 2, 4, 6, 7, 9, 11],
+  mixolydian:   [0, 2, 4, 5, 7, 9, 10],
+  locrian:      [0, 1, 3, 5, 6, 8, 10],
+  pentatonic:   [0, 2, 4, 7, 9],
+  minorPentatonic: [0, 3, 5, 7, 10],
+  blues:        [0, 3, 5, 6, 7, 10],
+  wholeTone:    [0, 2, 4, 6, 8, 10],
+  diminished:   [0, 2, 3, 5, 6, 8, 9, 11]
+};
 
 // Node Colors
 export const NODE_COLORS = {
@@ -60,7 +114,9 @@ export const NODE_COLORS = {
   noise: '#90a4ae',
   harmonic: '#ff7043',
   modulator: '#7c4dff',
-  teleporter: '#18ffff'
+  teleporter: '#18ffff',
+  quantizer: '#4caf50',
+  lfo: '#ff4081'
 };
 
 // Node Icons
@@ -79,7 +135,9 @@ export const NODE_ICONS = {
   noise: '🌫️',
   harmonic: '🎻',
   modulator: '〰️',
-  teleporter: '🞆'
+  teleporter: '🞆',
+  quantizer: '🎼',
+  lfo: '📈'
 };
 
 export const MAX_PACKETS = 500;

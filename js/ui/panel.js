@@ -181,6 +181,44 @@ function buildNodePropsHtml(type, props, options = {}) {
         <input type="number" ${attr('delay')} value="${val('delay')}" min="0" max="2" step="0.05">
       </div>
     `;
+  } else if (type === 'quantizer') {
+    html += `
+      <div class="prop-row">
+        <label>Strength</label>
+        <input type="number" ${attr('strength')} value="${val('strength')}" min="0" max="1" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Use Global Key</label>
+        <select ${attr('useGlobalKey')}>
+          <option value="true" ${val('useGlobalKey') !== false ? 'selected' : ''}>Yes</option>
+          <option value="false" ${val('useGlobalKey') === false ? 'selected' : ''}>No</option>
+        </select>
+      </div>
+    `;
+  } else if (type === 'lfo') {
+    html += `
+      <div class="prop-row">
+        <label>Rate (Hz)</label>
+        <input type="number" ${attr('rate')} value="${val('rate')}" min="0.1" max="20" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Shape</label>
+        <select ${attr('shape')}>
+          <option value="sine" ${val('shape') === 'sine' ? 'selected' : ''}>Sine</option>
+          <option value="triangle" ${val('shape') === 'triangle' ? 'selected' : ''}>Triangle</option>
+          <option value="square" ${val('shape') === 'square' ? 'selected' : ''}>Square</option>
+          <option value="sawtooth" ${val('shape') === 'sawtooth' ? 'selected' : ''}>Sawtooth</option>
+        </select>
+      </div>
+      <div class="prop-row">
+        <label>Min</label>
+        <input type="number" ${attr('min')} value="${val('min')}" min="0" max="1" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Max</label>
+        <input type="number" ${attr('max')} value="${val('max')}" min="0" max="1" step="0.1">
+      </div>
+    `;
   } else if (type === 'speaker') {
     html += `
       <div class="prop-row">
@@ -203,9 +241,9 @@ function buildNodePropsHtml(type, props, options = {}) {
 
 /**
  * Update the property panel for a node, annotation, or region
- * @param {Object} node - The node to show (null if showing annotation/region)
- * @param {string} type - Optional type: 'annotation' or 'region'
- * @param {Object} obj - The annotation or region object
+ * @param {Object} node - The node to show (null if showing annotation/region/edge)
+ * @param {string} type - Optional type: 'annotation', 'region', or 'edge'
+ * @param {Object} obj - The annotation, region, or edge object
  */
 export function updatePropPanel(node, type = null, obj = null) {
   const panel = document.getElementById('prop-content');
@@ -221,6 +259,13 @@ export function updatePropPanel(node, type = null, obj = null) {
   if (type === 'region' && obj) {
     panel.innerHTML = buildRegionPanel(obj);
     setupRegionListeners(obj);
+    return;
+  }
+  
+  // Handle edges
+  if (type === 'edge' && obj) {
+    panel.innerHTML = buildEdgePanel(obj);
+    setupEdgeListeners(obj);
     return;
   }
   
@@ -307,6 +352,13 @@ export function updatePropPanel(node, type = null, obj = null) {
         <label>Multiplier</label>
         <input type="number" id="prop-gain-val" value="${node.props.value}" min="0" max="4" step="0.1">
       </div>
+      <div class="prop-row">
+        <label>Mass (Gravity)</label>
+        <input type="number" id="prop-mass" value="${node.props.mass !== undefined ? node.props.mass : 1.0}" min="0" max="10" step="0.5">
+      </div>
+      <div class="prop-row" style="font-size: 10px; color: #888;">
+        Higher mass slows nearby packets (requires gravity > 0 in settings)
+      </div>
     `;
   } else if (node.type === 'delay') {
     html += `
@@ -373,6 +425,14 @@ export function updatePropPanel(node, type = null, obj = null) {
       <div class="prop-row">
         <label>Pan (L/R)</label>
         <input type="number" id="prop-pan" value="${node.props.pan !== undefined ? node.props.pan : 0}" min="-1" max="1" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Hold Time (s)</label>
+        <input type="number" id="prop-hold" value="${node.props.holdTime !== undefined ? node.props.holdTime : 0}" min="0" max="5" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Release (s)</label>
+        <input type="number" id="prop-release" value="${node.props.releaseTime !== undefined ? node.props.releaseTime : 0.1}" min="0.01" max="5" step="0.1">
       </div>
     `;
   } else if (node.type === 'modulator') {
@@ -505,6 +565,50 @@ export function updatePropPanel(node, type = null, obj = null) {
         <span style="font-size: 11px;">${linkedCount} other teleporter${linkedCount !== 1 ? 's' : ''} on channel ${node.props.channel}</span>
       </div>
     `;
+  } else if (node.type === 'quantizer') {
+    html += `
+      <div class="prop-row">
+        <label>Strength</label>
+        <input type="number" id="prop-strength" value="${node.props.strength !== undefined ? node.props.strength : 1.0}" min="0" max="1" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Use Global Key</label>
+        <select id="prop-use-global">
+          <option value="true" ${node.props.useGlobalKey !== false ? 'selected' : ''}>Yes</option>
+          <option value="false" ${node.props.useGlobalKey === false ? 'selected' : ''}>No</option>
+        </select>
+      </div>
+      <div class="prop-row" style="margin-top: 8px; font-size: 10px; color: #888;">
+        Snaps pitches to the global key/scale set in settings
+      </div>
+    `;
+  } else if (node.type === 'lfo') {
+    html += `
+      <div class="prop-row">
+        <label>Rate (Hz)</label>
+        <input type="number" id="prop-lfo-rate" value="${node.props.rate !== undefined ? node.props.rate : 1}" min="0.1" max="20" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Shape</label>
+        <select id="prop-lfo-shape">
+          <option value="sine" ${node.props.shape === 'sine' ? 'selected' : ''}>Sine</option>
+          <option value="triangle" ${node.props.shape === 'triangle' ? 'selected' : ''}>Triangle</option>
+          <option value="square" ${node.props.shape === 'square' ? 'selected' : ''}>Square</option>
+          <option value="sawtooth" ${node.props.shape === 'sawtooth' ? 'selected' : ''}>Sawtooth</option>
+        </select>
+      </div>
+      <div class="prop-row">
+        <label>Min Value</label>
+        <input type="number" id="prop-lfo-min" value="${node.props.min !== undefined ? node.props.min : 0}" min="0" max="1" step="0.1">
+      </div>
+      <div class="prop-row">
+        <label>Max Value</label>
+        <input type="number" id="prop-lfo-max" value="${node.props.max !== undefined ? node.props.max : 1}" min="0" max="1" step="0.1">
+      </div>
+      <div class="prop-row" style="margin-top: 8px; font-size: 10px; color: #888;">
+        LFO modulates connected node parameters via CV edges
+      </div>
+    `;
   }
 
   panel.innerHTML = html;
@@ -555,6 +659,9 @@ function attachPropListeners(node) {
   const gainValInput = document.getElementById('prop-gain-val');
   if (gainValInput) gainValInput.addEventListener('change', e => node.props.value = parseFloat(e.target.value));
 
+  const massInput = document.getElementById('prop-mass');
+  if (massInput) massInput.addEventListener('change', e => node.props.mass = parseFloat(e.target.value));
+
   const delayInput = document.getElementById('prop-delay');
   if (delayInput) delayInput.addEventListener('change', e => node.props.delayTime = parseFloat(e.target.value));
 
@@ -575,6 +682,12 @@ function attachPropListeners(node) {
 
   const panInput = document.getElementById('prop-pan');
   if (panInput) panInput.addEventListener('change', e => node.props.pan = parseFloat(e.target.value));
+
+  const holdInput = document.getElementById('prop-hold');
+  if (holdInput) holdInput.addEventListener('change', e => node.props.holdTime = parseFloat(e.target.value));
+
+  const releaseInput = document.getElementById('prop-release');
+  if (releaseInput) releaseInput.addEventListener('change', e => node.props.releaseTime = parseFloat(e.target.value));
 
   const modRateInput = document.getElementById('prop-mod-rate');
   if (modRateInput) modRateInput.addEventListener('change', e => node.props.rate = parseFloat(e.target.value));
@@ -670,6 +783,50 @@ function attachPropListeners(node) {
     channelInput.addEventListener('change', e => {
       node.props.channel = e.target.value;
       updatePropPanel(node); // Re-render to update linked count
+    });
+  }
+  
+  // Quantizer properties
+  const strengthInput = document.getElementById('prop-strength');
+  if (strengthInput) {
+    strengthInput.addEventListener('change', e => {
+      node.props.strength = parseFloat(e.target.value);
+    });
+  }
+  
+  const useGlobalInput = document.getElementById('prop-use-global');
+  if (useGlobalInput) {
+    useGlobalInput.addEventListener('change', e => {
+      node.props.useGlobalKey = e.target.value === 'true';
+    });
+  }
+  
+  // LFO properties
+  const lfoRateInput = document.getElementById('prop-lfo-rate');
+  if (lfoRateInput) {
+    lfoRateInput.addEventListener('change', e => {
+      node.props.rate = parseFloat(e.target.value);
+    });
+  }
+  
+  const lfoShapeInput = document.getElementById('prop-lfo-shape');
+  if (lfoShapeInput) {
+    lfoShapeInput.addEventListener('change', e => {
+      node.props.shape = e.target.value;
+    });
+  }
+  
+  const lfoMinInput = document.getElementById('prop-lfo-min');
+  if (lfoMinInput) {
+    lfoMinInput.addEventListener('change', e => {
+      node.props.min = parseFloat(e.target.value);
+    });
+  }
+  
+  const lfoMaxInput = document.getElementById('prop-lfo-max');
+  if (lfoMaxInput) {
+    lfoMaxInput.addEventListener('change', e => {
+      node.props.max = parseFloat(e.target.value);
     });
   }
 }
@@ -941,6 +1098,150 @@ function setupRegionListeners(region) {
       duplicateBtn.addEventListener('click', async () => {
         const { duplicateRegion } = await import('./input.js');
         duplicateRegion(region);
+      });
+    }
+  }, 0);
+}
+
+/**
+ * Build HTML for edge property panel
+ */
+function buildEdgePanel(edge) {
+  const fromNode = state.nodes.find(n => n.id === edge.from);
+  const toNode = state.nodes.find(n => n.id === edge.to);
+  const fromName = fromNode ? `${fromNode.type} (${fromNode.id.substr(0,4)})` : 'Unknown';
+  const toName = toNode ? `${toNode.type} (${toNode.id.substr(0,4)})` : 'Unknown';
+  
+  // Get available target parameters for modulation
+  const targetParams = getModulatableParams(toNode);
+  
+  return `
+    <div class="prop-row">
+      <label>Type</label>
+      <span>EDGE</span>
+    </div>
+    <div class="prop-row">
+      <label>From</label>
+      <span style="font-size: 11px;">${fromName}</span>
+    </div>
+    <div class="prop-row">
+      <label>To</label>
+      <span style="font-size: 11px;">${toName}</span>
+    </div>
+    <div class="prop-row" style="margin-top: 10px;">
+      <label>Timing Mode</label>
+      <select id="prop-edge-timing">
+        <option value="physical" ${edge.timingMode !== 'fixed' ? 'selected' : ''}>Physical (distance-based)</option>
+        <option value="fixed" ${edge.timingMode === 'fixed' ? 'selected' : ''}>Fixed (beat-based)</option>
+      </select>
+    </div>
+    <div class="prop-row" id="edge-duration-row" style="display: ${edge.timingMode === 'fixed' ? 'flex' : 'none'};">
+      <label>Duration (beats)</label>
+      <input type="number" id="prop-edge-duration" value="${edge.durationBeats || 1}" min="0.25" max="16" step="0.25">
+    </div>
+    <div class="prop-row" style="margin-top: 10px;">
+      <label>CV Target</label>
+      <select id="prop-edge-target">
+        <option value="" ${!edge.targetParam ? 'selected' : ''}>Audio (none)</option>
+        ${targetParams.map(p => `<option value="${p.value}" ${edge.targetParam === p.value ? 'selected' : ''}>${p.label}</option>`).join('')}
+      </select>
+    </div>
+    <div class="prop-row" style="font-size: 10px; color: #888; margin-top: 5px;">
+      CV Target routes modulation (from LFO) to a specific parameter instead of audio signal
+    </div>
+  `;
+}
+
+/**
+ * Get list of modulatable parameters for a node type
+ */
+function getModulatableParams(node) {
+  if (!node) return [];
+  
+  const params = [];
+  
+  // Common parameters
+  switch (node.type) {
+    case 'source':
+      params.push({ value: 'intensity', label: 'Intensity' });
+      params.push({ value: 'interval', label: 'Interval' });
+      break;
+    case 'gain':
+      params.push({ value: 'value', label: 'Gain Value' });
+      break;
+    case 'filter':
+      params.push({ value: 'cutoff', label: 'Cutoff Frequency' });
+      params.push({ value: 'mod', label: 'Envelope Mod' });
+      break;
+    case 'gate':
+      params.push({ value: 'prob', label: 'Probability' });
+      break;
+    case 'delay':
+      params.push({ value: 'delayTime', label: 'Delay Time' });
+      break;
+    case 'pitch':
+      params.push({ value: 'shift', label: 'Pitch Shift' });
+      break;
+    case 'speaker':
+      params.push({ value: 'volume', label: 'Volume' });
+      params.push({ value: 'pan', label: 'Pan' });
+      params.push({ value: 'reverb', label: 'Reverb' });
+      break;
+    case 'polariser':
+    case 'noise':
+    case 'harmonic':
+      params.push({ value: 'mix', label: 'Mix Level' });
+      params.push({ value: 'attack', label: 'Attack' });
+      params.push({ value: 'decay', label: 'Decay' });
+      break;
+    case 'modulator':
+      params.push({ value: 'rate', label: 'Vibrato Rate' });
+      params.push({ value: 'depth', label: 'Vibrato Depth' });
+      break;
+    case 'quantizer':
+      params.push({ value: 'strength', label: 'Quantize Strength' });
+      break;
+    case 'lfo':
+      params.push({ value: 'rate', label: 'LFO Rate' });
+      params.push({ value: 'min', label: 'Min Value' });
+      params.push({ value: 'max', label: 'Max Value' });
+      break;
+  }
+  
+  return params;
+}
+
+/**
+ * Setup event listeners for edge panel
+ */
+function setupEdgeListeners(edge) {
+  setTimeout(() => {
+    const timingSelect = document.getElementById('prop-edge-timing');
+    const durationInput = document.getElementById('prop-edge-duration');
+    const durationRow = document.getElementById('edge-duration-row');
+    const targetSelect = document.getElementById('prop-edge-target');
+    
+    if (timingSelect) {
+      timingSelect.addEventListener('change', () => {
+        edge.timingMode = timingSelect.value;
+        if (durationRow) {
+          durationRow.style.display = timingSelect.value === 'fixed' ? 'flex' : 'none';
+        }
+        if (timingSelect.value === 'fixed' && !edge.durationBeats) {
+          edge.durationBeats = 1;
+        }
+      });
+    }
+    
+    if (durationInput) {
+      durationInput.addEventListener('change', () => {
+        edge.durationBeats = parseFloat(durationInput.value);
+      });
+    }
+    
+    if (targetSelect) {
+      targetSelect.addEventListener('change', () => {
+        edge.targetParam = targetSelect.value || null;
       });
     }
   }, 0);

@@ -67,8 +67,25 @@ export let masterSpeed = DEFAULT_SPEED;
 // Global Settings
 export let globalSettings = {
   subdivisions: 4,
-  pixelsPerBeat: 200
+  pixelsPerBeat: 200,
+  gravityConstant: 0.5  // For tempo warping effect
 };
+
+// Musical Context (Global Key)
+export let musicalContext = {
+  root: 0,                           // C = 0, C# = 1, ... B = 11
+  scale: [0, 2, 4, 5, 7, 9, 11],    // Major scale intervals
+  scaleName: 'major'
+};
+
+// Setters for musical context
+export function setMusicalContext(ctx) {
+  musicalContext = { ...musicalContext, ...ctx };
+}
+
+export function setGravityConstant(val) {
+  globalSettings.gravityConstant = val;
+}
 
 // --- State Setters ---
 

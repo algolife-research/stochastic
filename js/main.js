@@ -117,6 +117,29 @@ function setupUI() {
   ppbInput.addEventListener('change', (e) => {
     state.globalSettings.pixelsPerBeat = parseInt(e.target.value);
   });
+  
+  // Musical Context Settings
+  const rootInput = document.getElementById('setting-root');
+  rootInput.addEventListener('change', (e) => {
+    state.setMusicalContext({ root: parseInt(e.target.value) });
+  });
+  
+  const scaleInput = document.getElementById('setting-scale');
+  scaleInput.addEventListener('change', (e) => {
+    const scaleName = e.target.value;
+    // Import SCALES from constants if not already available
+    import('./core/constants.js').then(({ SCALES }) => {
+      if (SCALES[scaleName]) {
+        state.setMusicalContext({ scale: SCALES[scaleName] });
+      }
+    });
+  });
+  
+  // Gravity Settings
+  const gravityInput = document.getElementById('setting-gravity');
+  gravityInput.addEventListener('change', (e) => {
+    state.globalSettings.gravityConstant = parseFloat(e.target.value);
+  });
 
   // Initialize Export UI
   initExportUI();

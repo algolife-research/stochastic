@@ -144,16 +144,28 @@ export function playSound(params) {
       filter.frequency.exponentialRampToValueAtTime(Math.max(20, baseFreq), t + fEnv.attack + fEnv.decay);
     }
     
-    // Amplitude Envelope
+    // AHD Amplitude Envelope (Attack-Hold-Decay)
+    // holdTime = 0 reverts to original AD behavior
+    const holdTime = params.holdTime || 0;
+    const releaseTime = params.releaseTime || decay;
+    const totalDuration = attack + holdTime + releaseTime;
+    
     gain.gain.setValueAtTime(0, t);
     gain.gain.linearRampToValueAtTime(gainPerLayer * layerMix, t + attack);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + attack + decay);
+    
+    if (holdTime > 0) {
+      // Sustain at peak level during hold time
+      gain.gain.setValueAtTime(gainPerLayer * layerMix, t + attack + holdTime);
+    }
+    
+    // Release/Decay phase
+    gain.gain.exponentialRampToValueAtTime(0.001, t + attack + holdTime + releaseTime);
     
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(panner);
     
     osc.start(t);
-    osc.stop(t + attack + decay + 0.1);
+    osc.stop(t + totalDuration + 0.1);
   });
 }

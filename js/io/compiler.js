@@ -311,6 +311,27 @@ function processNodeArrival(payload, node, nodes, edges, currentTime, beatDurati
     case 'tunnel': {
       let currentPayload = newPayload;
       for (const subNode of (node.props.subNodes || [])) {
+        if (subNode.type === 'speaker') {
+          // Speaker inside tunnel generates an event
+          const speakerVolume = subNode.props.volume !== undefined ? subNode.props.volume : 1.0;
+          result.event = {
+            freq: currentPayload.freq,
+            scaleIndex: currentPayload.scaleIndex,
+            gain: (currentPayload.gain || 0.5) * speakerVolume,
+            waves: currentPayload.waves,
+            wave: currentPayload.wave || 'sine',
+            timbre: currentPayload.timbre || 0,
+            cutoff: currentPayload.cutoff || 20000,
+            filterEnv: currentPayload.filterEnv,
+            reverb: subNode.props.reverb || 0,
+            pan: subNode.props.pan !== undefined ? subNode.props.pan : 0,
+            vibratoRate: currentPayload.vibratoRate || 0,
+            vibratoDepth: currentPayload.vibratoDepth || 0,
+            vibratoDelay: currentPayload.vibratoDelay || 0
+          };
+          // Speaker is a terminus - don't continue processing sub-nodes after it
+          return result;
+        }
         currentPayload = processTunnelSubNodeCompile(subNode, currentPayload);
         if (currentPayload === null) return result;
       }

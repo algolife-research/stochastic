@@ -1,7 +1,10 @@
 // AIGA - Packet System
 
 import { uid } from '../core/utils.js';
-import { SCALE_CHROMATIC, PIXELS_PER_STEP, MAX_PACKETS } from '../core/constants.js';
+import { 
+  SCALE_CHROMATIC, PIXELS_PER_STEP, MAX_PACKETS, LEGACY_SCALE_OFFSET,
+  midiToFreq, clampMidi, SCALES
+} from '../core/constants.js';
 import * as state from '../core/state.js';
 import { dist } from '../core/utils.js';
 import { playSound } from '../audio/synth.js';
@@ -16,6 +19,74 @@ function getProp(nodeOrSubNode, propName) {
 }
 
 /**
+ * Quantize a MIDI note to the nearest note in the global key
+ * @param {number} midiNote - Input MIDI note
+ * @param {number} strength - 0-1, likelihood of quantizing (1 = always)
+ * @returns {number} Quantized MIDI note
+ */
+export function quantizeToKey(midiNote, strength = 1.0) {
+  if (Math.random() > strength) return midiNote;
+  
+  const { root, scale } = state.musicalContext;
+  const chroma = midiNote % 12;
+  const octave = Math.floor(midiNote / 12);
+  
+  // Find nearest scale degree
+  let minDist = 12;
+  let nearestChroma = chroma;
+  
+  for (const interval of scale) {
+    const scaleChroma = (root + interval) % 12;
+    const dist = Math.min(
+      Math.abs(chroma - scaleChroma),
+      12 - Math.abs(chroma - scaleChroma)
+    );
+    if (dist < minDist) {
+      minDist = dist;
+      nearestChroma = scaleChroma;
+    }
+  }
+  
+  // Reconstruct MIDI note with quantized chroma
+  let quantized = octave * 12 + nearestChroma;
+  
+  // Handle edge case where quantization crosses octave boundary
+  if (nearestChroma > chroma + 6) quantized -= 12;
+  else if (nearestChroma < chroma - 6) quantized += 12;
+  
+  return clampMidi(quantized);
+}
+
+/**
+ * Calculate gravity drag based on nearby nodes
+ * @param {Object} packet - The packet
+ * @param {Object} edge - The edge the packet is on
+ * @returns {number} Drag coefficient (>= 0)
+ */
+function calculateGravityDrag(packet, edge) {
+  const fromNode = state.nodes.find(n => n.id === edge.from);
+  const toNode = state.nodes.find(n => n.id === edge.to);
+  if (!fromNode || !toNode) return 0;
+  
+  // Calculate packet position
+  const px = fromNode.x + (toNode.x - fromNode.x) * packet.t;
+  const py = fromNode.y + (toNode.y - fromNode.y) * packet.t;
+  
+  const gravityRadius = 150; // Pixels
+  let drag = 0;
+  
+  for (const node of state.nodes) {
+    const d = dist(px, py, node.x, node.y);
+    if (d < gravityRadius && d > 0) {
+      const mass = node.props?.mass || 1.0;
+      drag += mass / (d * d);
+    }
+  }
+  
+  return drag;
+}
+
+/**
  * Spawn a packet from a source node
  */
 export function spawnPacket(sourceNode) {
@@ -23,16 +94,26 @@ export function spawnPacket(sourceNode) {
 
   const outgoing = state.edges.filter(e => e.from === sourceNode.id);
   
-  // Determine Note
+  // Determine MIDI note
+  // Priority: 1) explicit noteIndex (legacy), 2) explicit midiNote, 3) random
   const noteIndex = getProp(sourceNode, 'noteIndex');
-  let scaleIndex;
-  if (noteIndex === -1) {
-    scaleIndex = Math.floor(Math.random() * SCALE_CHROMATIC.length);
+  let midiNote;
+  
+  if (noteIndex >= 0) {
+    // Legacy: convert noteIndex (scaleIndex) to MIDI
+    midiNote = LEGACY_SCALE_OFFSET + Math.min(36, noteIndex);
+  } else if (noteIndex === -1) {
+    // Random note - use musical octaves C2-C6
+    midiNote = 36 + Math.floor(Math.random() * 49);
+  } else if (sourceNode.props._explicitMidiNote !== undefined) {
+    // Use explicitly set MIDI note (not from defaults)
+    midiNote = clampMidi(sourceNode.props._explicitMidiNote);
   } else {
-    scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, noteIndex));
+    // Fallback to default
+    midiNote = getProp(sourceNode, 'midiNote') || 60;
   }
   
-  const freq = SCALE_CHROMATIC[scaleIndex];
+  const freq = midiToFreq(midiNote);
   const intensity = getProp(sourceNode, 'intensity');
 
   outgoing.forEach(edge => {
@@ -42,11 +123,14 @@ export function spawnPacket(sourceNode) {
       t: 0,
       payload: {
         freq: freq,
-        scaleIndex: scaleIndex,
+        midiNote: midiNote,
+        scaleIndex: midiNote - LEGACY_SCALE_OFFSET, // Legacy compatibility
         wave: 'sine',
         timbre: 0,
         cutoff: 20000,
-        gain: intensity
+        gain: intensity,
+        holdTime: 0,
+        releaseTime: 0.1
       }
     });
   });
@@ -59,12 +143,27 @@ export function processArrival(packet, node) {
   node.flash = 1.0;
   const payload = { ...packet.payload };
   
+  // Get edge info for modulation check
+  const edge = state.edges.find(e => e.id === packet.edgeId);
+  
+  // Handle modulation edges (CV routing)
+  if (edge && edge.targetParam) {
+    // This is a modulation connection - apply value to node property
+    const value = payload.modulationValue !== undefined ? payload.modulationValue : payload.gain;
+    node.props[edge.targetParam] = value;
+    node.flash = 0.5; // Different visual feedback
+    return; // Don't forward modulation packets
+  }
+  
   switch (node.type) {
     case 'speaker': {
       payload.reverb = getProp(node, 'reverb');
       payload.pan = getProp(node, 'pan');
       const speakerVolume = getProp(node, 'volume');
       payload.gain = (payload.gain || 0.5) * speakerVolume;
+      // Enhanced envelope support
+      payload.holdTime = getProp(node, 'holdTime');
+      payload.releaseTime = getProp(node, 'releaseTime');
       playSound(payload);
       break;
     }
@@ -82,12 +181,17 @@ export function processArrival(packet, node) {
 
     case 'chord': {
       const offsets = [0, 4, 7]; // Major chord
-      const outgoingChord = state.edges.filter(e => e.from === node.id);
+      const outgoingChord = state.edges.filter(e => e.from === node.id && !e.targetParam);
       
       offsets.forEach(semitones => {
-        const newIndex = Math.min(SCALE_CHROMATIC.length - 1, payload.scaleIndex + semitones);
-        const newFreq = SCALE_CHROMATIC[newIndex];
-        const chordPayload = { ...payload, freq: newFreq, scaleIndex: newIndex };
+        const newMidi = clampMidi((payload.midiNote || 60) + semitones);
+        const newFreq = midiToFreq(newMidi);
+        const chordPayload = { 
+          ...payload, 
+          freq: newFreq, 
+          midiNote: newMidi,
+          scaleIndex: newMidi - LEGACY_SCALE_OFFSET
+        };
         
         outgoingChord.forEach(edge => {
           if (state.packets.length >= MAX_PACKETS) return;
@@ -154,16 +258,22 @@ export function processArrival(packet, node) {
       payload.vibratoDelay = getProp(node, 'delay');
       break;
       
-    case 'pitch':
-      if (getProp(node, 'mode') === 'fixed') {
+    case 'pitch': {
+      const mode = getProp(node, 'mode');
+      if (mode === 'fixed') {
+        // Priority: explicit fixedNote (legacy), then derive from fixedMidiNote
         const fixedNote = getProp(node, 'fixedNote');
-        payload.scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, fixedNote));
+        const fixedMidi = LEGACY_SCALE_OFFSET + fixedNote;
+        payload.midiNote = clampMidi(fixedMidi);
       } else {
+        // Shift mode - transpose by semitones
         const shift = getProp(node, 'shift');
-        payload.scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, payload.scaleIndex + shift));
+        payload.midiNote = clampMidi((payload.midiNote || 60) + shift);
       }
-      payload.freq = SCALE_CHROMATIC[payload.scaleIndex] || SCALE_CHROMATIC[12];
+      payload.freq = midiToFreq(payload.midiNote);
+      payload.scaleIndex = payload.midiNote - LEGACY_SCALE_OFFSET; // Legacy compat
       break;
+    }
 
     case 'gain':
       payload.gain = (payload.gain || 0.5) * getProp(node, 'value');
@@ -172,6 +282,38 @@ export function processArrival(packet, node) {
     case 'gate':
       if (Math.random() > getProp(node, 'prob')) return;
       break;
+    
+    case 'quantizer': {
+      // Snap pitch to global key
+      const strength = getProp(node, 'strength');
+      payload.midiNote = quantizeToKey(payload.midiNote || 60, strength);
+      payload.freq = midiToFreq(payload.midiNote);
+      payload.scaleIndex = payload.midiNote - LEGACY_SCALE_OFFSET;
+      break;
+    }
+    
+    case 'lfo': {
+      // LFO generates modulation packets, not audio
+      const rate = getProp(node, 'rate');
+      const shape = getProp(node, 'shape');
+      const min = getProp(node, 'min');
+      const max = getProp(node, 'max');
+      const phase = getProp(node, 'phase');
+      
+      // Calculate current LFO value based on time
+      const t = (performance.now() / 1000) * rate + phase;
+      let value;
+      switch (shape) {
+        case 'sine': value = (Math.sin(t * Math.PI * 2) + 1) / 2; break;
+        case 'triangle': value = Math.abs((t % 1) * 2 - 1); break;
+        case 'square': value = (t % 1) < 0.5 ? 1 : 0; break;
+        case 'sawtooth': value = t % 1; break;
+        default: value = 0.5;
+      }
+      
+      payload.modulationValue = min + value * (max - min);
+      break;
+    }
       
     case 'tunnel': {
       let currentPayload = payload;
@@ -223,14 +365,20 @@ export function processTunnelSubNode(subNode, payload) {
   const result = { ...payload };
   
   switch (subNode.type) {
-    case 'pitch':
-      if (getProp(subNode, 'mode') === 'fixed') {
-        result.scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, getProp(subNode, 'fixedNote')));
+    case 'pitch': {
+      const mode = getProp(subNode, 'mode');
+      if (mode === 'fixed') {
+        const fixedMidi = subNode.props.fixedMidiNote !== undefined 
+          ? subNode.props.fixedMidiNote 
+          : LEGACY_SCALE_OFFSET + getProp(subNode, 'fixedNote');
+        result.midiNote = clampMidi(fixedMidi);
       } else {
-        result.scaleIndex = Math.max(0, Math.min(SCALE_CHROMATIC.length - 1, result.scaleIndex + getProp(subNode, 'shift')));
+        result.midiNote = clampMidi((result.midiNote || 60) + getProp(subNode, 'shift'));
       }
-      result.freq = SCALE_CHROMATIC[result.scaleIndex];
+      result.freq = midiToFreq(result.midiNote);
+      result.scaleIndex = result.midiNote - LEGACY_SCALE_OFFSET;
       break;
+    }
       
     case 'polariser':
       if (!result.waves) {
@@ -324,6 +472,8 @@ export function processTunnelSubNode(subNode, payload) {
  * Update all packets (called each frame)
  */
 export function updatePackets(dt, msPerBeat) {
+  const gravityConstant = state.globalSettings.gravityConstant || 0;
+  
   for (let i = state.packets.length - 1; i >= 0; i--) {
     const p = state.packets[i];
     const edge = state.edges.find(e => e.id === p.edgeId);
@@ -341,14 +491,30 @@ export function updatePackets(dt, msPerBeat) {
       continue; 
     }
     
-    const d = dist(n1, n2);
-    // Allow fractional steps for smoother, faster flow on short distances
-    const pixelsPerBeat = state.globalSettings.pixelsPerBeat;
-    const steps = Math.max(0.1, d / pixelsPerBeat);
-    const totalDuration = steps * (msPerBeat / 1000);
+    let totalDuration;
     
-    const step = (dt / 1000) / totalDuration;
-    p.t += step;
+    // Check for virtual edge (fixed timing mode)
+    if (edge.timingMode === 'fixed' && edge.durationBeats) {
+      // Fixed timing: duration is specified in beats, independent of physical distance
+      totalDuration = edge.durationBeats * (msPerBeat / 1000);
+    } else {
+      // Physical timing: duration based on edge length
+      const d = dist(n1, n2);
+      const pixelsPerBeat = state.globalSettings.pixelsPerBeat;
+      const steps = Math.max(0.1, d / pixelsPerBeat);
+      totalDuration = steps * (msPerBeat / 1000);
+    }
+    
+    // Calculate base speed
+    let speed = (dt / 1000) / totalDuration;
+    
+    // Apply gravity drag (tempo warping)
+    if (gravityConstant > 0) {
+      const drag = calculateGravityDrag(p, edge);
+      speed = speed / (1 + drag * gravityConstant);
+    }
+    
+    p.t += speed;
     
     if (p.t >= 1.0) {
       processArrival(p, n2);

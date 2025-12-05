@@ -446,7 +446,7 @@ function handleMouseDown(e) {
     state.setSelectedNodes([]);
     state.setSelectedAnnotation(null);
     state.setSelectedRegion(null);
-    updatePropPanel(null);
+    updatePropPanel(null, 'edge', hitEdge);
   } else if (hitRegion && !hitNode && !hitAnnotation) {
     // Only select region if clicking in empty area of the region
     state.setSelectedRegion(hitRegion);

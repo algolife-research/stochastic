@@ -5,6 +5,7 @@ import * as state from '../core/state.js';
 import { compileGraph } from '../io/compiler.js';
 import { renderToBuffer } from '../audio/renderer.js';
 import { encodeWAV, encodeMIDI, downloadBlob } from '../io/encoder.js';
+import { initVideoExportUI, showVideoExportDialog } from '../video/export.js';
 
 // Export settings
 const EXPORT_DEFAULTS = {
@@ -22,6 +23,7 @@ let exportModal = null;
  */
 export function initExportUI() {
   createExportModal();
+  initVideoExportUI(); // Initialize video export modal
   
   // Add export button to toolbar
   const toolbar = document.querySelector('.floating-toolbar');
@@ -35,6 +37,15 @@ export function initExportUI() {
       exportBtn.title = 'Export as WAV or MIDI';
       exportBtn.addEventListener('click', showExportDialog);
       saveBtn.parentNode.insertBefore(exportBtn, saveBtn);
+      
+      // Add video export button
+      const videoExportBtn = document.createElement('button');
+      videoExportBtn.id = 'videoExportBtn';
+      videoExportBtn.className = 'toolbar-btn';
+      videoExportBtn.innerHTML = '🎨 Video';
+      videoExportBtn.title = 'Export as generative art video';
+      videoExportBtn.addEventListener('click', showVideoExportDialog);
+      exportBtn.parentNode.insertBefore(videoExportBtn, saveBtn);
     }
   }
 }
@@ -104,9 +115,12 @@ function createExportModal() {
 export function showExportDialog() {
   if (!exportModal) initExportUI();
   
-  // Check if there are any sources and speakers
+  // Check if there are any sources and speakers (including inside tunnels)
   const hasSources = state.nodes.some(n => n.type === 'source');
-  const hasSpeakers = state.nodes.some(n => n.type === 'speaker');
+  const hasSpeakers = state.nodes.some(n => 
+    n.type === 'speaker' || 
+    (n.type === 'tunnel' && n.props.subNodes?.some(sub => sub.type === 'speaker'))
+  );
   
   if (!hasSources || !hasSpeakers) {
     alert('Your graph needs at least one Source and one Speaker to export audio.');

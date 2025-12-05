@@ -13,19 +13,21 @@ import { createEdge } from './edges.js';
  */
 export function getDefaultPropsForType(type) {
   const defaults = {
-    source: { interval: 1, noteIndex: -1, autoTrigger: true, intensity: 0.5 },
-    pitch: { shift: 0, mode: 'shift', fixedNote: 12 },
+    source: { interval: 1, noteIndex: -1, midiNote: 60, autoTrigger: true, intensity: 0.5 },
+    pitch: { shift: 0, mode: 'shift', fixedNote: 12, fixedMidiNote: 60 },
     polariser: { wave: 'sawtooth', attack: 0.01, decay: 0.4, mix: 1.0 },
     filter: { cutoff: 20000, attack: 0, decay: 0, mod: 0 },
     gate: { prob: 0.5 },
     delay: { delayTime: 1 },
-    gain: { value: 1.0 },
+    gain: { value: 1.0, mass: 1.0 },  // mass for gravity physics
     noise: { wave: 'white', attack: 0.01, decay: 0.2, mix: 0.2 },
     harmonic: { ratio: 2, wave: 'sine', attack: 0.01, decay: 0.4, mix: 0.5 },
     modulator: { rate: 5, depth: 20, delay: 0.2 },
-    speaker: { volume: 1.0, reverb: 0, pan: 0 },
+    speaker: { volume: 1.0, reverb: 0, pan: 0, holdTime: 0, releaseTime: 0.1 },
     tunnel: { tunnelName: 'Custom', subNodes: [] },
-    teleporter: { channel: 'A' }
+    teleporter: { channel: 'A' },
+    quantizer: { strength: 1.0, useGlobalKey: true },
+    lfo: { rate: 1, shape: 'sine', min: 0, max: 1, phase: 0 }
   };
   return defaults[type] || {};
 }
