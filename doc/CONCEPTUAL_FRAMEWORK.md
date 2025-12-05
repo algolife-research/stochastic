@@ -7,6 +7,7 @@ Phonon represents a paradigm shift from linear, timeline-based music creation (D
 In this framework, music is not "played back" from a recording; it is **simulated** in real-time. The composition is a living system defined by topology (connections) and physics (rules of travel), rather than a fixed sequence of events.
 
 ### 1.1 The Fundamental Equation
+
 $$ Rhythm = \frac{Distance}{Velocity} $$
 
 In Phonon, **Space is Time**.
@@ -14,79 +15,171 @@ In Phonon, **Space is Time**.
 - A **Packet** traveling along an edge represents a rhythmic interval.
 - Changing the visual layout of the graph inherently changes the musical rhythm.
 
+### 1.2 Gravity Physics
+
+Phonon introduces **node mass** as a musical parameter:
+
+$$ EffectiveSpeed = BaseSpeed \times (1 - GravityConstant \times Mass) $$
+
+Heavy nodes slow down approaching packets, creating natural ritardando effects. This allows tempo variations to emerge organically from the graph structure.
+
 ## 2. The Quantum Metaphor
 
-The framework borrows heavily from quantum mechanics to describe how sound is generated and manipulated.
+The framework borrows from quantum mechanics to describe sound generation and manipulation.
 
 ### 2.1 The Packet (The Wavefunction)
+
 The fundamental unit of the system is the **Packet**.
-- **State:** It carries "DNA" or "Quantum State" — Pitch, Intensity (volume), Timbre parameters, Waveform type.
-- **Silence:** A packet traveling through the graph is **silent**. It represents *potential* energy or a probability wave.
-- **Superposition:** When a packet hits a **Splitter** node, it can duplicate. Conceptually, this is a single musical idea existing in multiple states simultaneously until observed.
-- **Intensity:** Each packet carries an intensity value (0-1) that determines how loud it will play when observed. This can be set at the **Source** and modified by **Gain** nodes.
 
-### 2.2 The speaker (The Observer)
-Sound is only produced when a Packet enters an **speaker** node.
-- **Collapse:** This is the "Observation Collapse." The potential energy of the packet is converted into kinetic acoustic energy.
-- **Localization:** Sound happens *at* the speaker. This allows for spatial mixing where the location of the speaker on the canvas could dictate stereo panning or spatial audio positioning.
-- **Master Volume:** Each speaker has a master volume control that scales the final output of all packets it receives.
+| Concept | Musical Interpretation |
+|---------|----------------------|
+| **State** | Carries "DNA" — Pitch, Intensity, Timbre, Waveform |
+| **Silence** | A traveling packet is silent (potential energy) |
+| **Superposition** | Splitting creates multiple simultaneous states |
+| **Intensity** | Packet gain (0-1) determines final loudness |
 
-### 2.3 Tunnelling
+### 2.2 The Speaker (The Observer)
+
+Sound is only produced when a Packet enters a **Speaker** node.
+
+- **Collapse:** Potential energy converts to acoustic energy
+- **Localization:** Sound happens *at* the speaker — position can dictate stereo panning
+- **Master Volume:** Each speaker scales all incoming packets
+
+### 2.3 Tunneling
+
 The **Tunnel** node represents a wormhole in the graph.
-- It encapsulates complex logic (sub-graphs).
-- Travel through a Tunnel is instantaneous (or strictly defined), decoupling the internal complexity from the external rhythmic structure.
+- Encapsulates complex sub-node chains
+- Travel through is sequential but instantaneous
+- Decouples internal complexity from external rhythm
 
-## 3. The Biological Metaphor (Theoretical Extension)
+## 3. The Biological Metaphor
 
-While the current implementation focuses on physics, the architecture supports an evolutionary biology interpretation ("The Living Graph").
+The architecture supports an evolutionary biology interpretation.
 
 ### 3.1 Sound as DNA
-The properties of a packet (e.g., `{ note: "C4", wave: "sawtooth", reverb: 0.3 }`) act as its genome.
 
-### 3.2 Mutation
-As packets travel through **Modifier Nodes** (Pitch shifters, Polarisers, Harmonics, Modulators, Gain), their DNA is altered.
-- A **Pitch Node** is a mutation of the frequency gene.
-- A **Polariser** is a mutation of the timbre gene (waveform shape).
-- A **Harmonic Node** adds overtone genes at integer frequency ratios.
-- A **Modulator Node** adds vibrato expression genes (periodic pitch variation).
-- A **Noise Node** adds textural genes (breath, bow friction, transients).
-- A **Gain Node** is a mutation of the intensity gene.
-- A **Filter Node** with envelope is an expression gene (dynamic brightness).
+The packet payload acts as a genome:
+```typescript
+{
+  midiNote: 60,
+  wave: 'sawtooth',
+  cutoff: 2000,
+  gain: 0.8,
+  waves: [...]  // Accumulated layers
+}
+```
 
-### 3.3 Natural Selection (Filters)
-A **Filter Node** or **Gate Node** acts as an environmental pressure.
-- A "Scale Quantizer" (theoretical) would kill any packet not in the correct key.
-- A "Probability Gate" introduces stochastic survival rates.
-- Only the "fittest" musical ideas (those that navigate the graph to an speaker) survive to be heard.
+### 3.2 Mutation (Transformer Nodes)
+
+As packets travel through modifier nodes, their DNA is altered:
+
+| Node | Mutation |
+|------|----------|
+| **Pitch** | Frequency gene shift |
+| **Polariser** | Adds waveform layer gene |
+| **Harmonic** | Adds overtone gene at frequency ratio |
+| **Modulator** | Adds vibrato expression gene |
+| **Noise** | Adds textural gene (breath, friction) |
+| **Gain** | Intensity gene multiplier |
+| **Filter** | Brightness gene with envelope |
+
+### 3.3 Natural Selection
+
+- **Gate Node:** Probabilistic survival (0-100% pass rate)
+- **Quantizer Node:** Only "correct" pitches survive (snap to scale)
+- **Dead Ends:** Packets without speaker paths are discarded
 
 ## 4. System Architecture
 
 ### 4.1 The Graph Topology
-- **Nodes**: Operators. They transform state or generate events.
-- **Edges**: Transport rails. They define the temporal structure.
-- **Payloads**: The transient data structures moving through the system.
 
-### 4.2 The Audio Engine
-The audio engine is a slave to the graph simulation. It does not "know" the song. It simply reacts to `PacketArrived` events at `speaker` coordinates. This decouples the composition logic (Graph) from the sound generation (Synth), allowing for:
-- **Hot-swapping synthesis engines** (e.g., switching from Web Audio to MIDI out).
-- **Visual-only modes** (silent simulation).
+```
+┌──────────┐     ┌──────────┐     ┌──────────┐
+│  SOURCE  │────▶│   NODE   │────▶│ SPEAKER  │
+│ (Generator)    │(Transformer)   │ (Output) │
+└──────────┘     └──────────┘     └──────────┘
+```
 
-## 5. Theoretical Improvements & Novel Ideas
+- **Nodes:** Operators that transform state or generate events
+- **Edges:** Transport rails defining temporal structure
+- **Payloads:** Transient data structures moving through the system
 
-### 5.1 Entanglement Nodes
-**Concept:** Two nodes (A and B) are "entangled."
-**Mechanism:** When a packet passes through Node A and its pitch is shifted, the *next* packet passing through Node B is automatically shifted by the inverse amount, regardless of distance.
-**Musical Result:** Instantaneous counter-balancing of melody lines without direct connection.
+### 4.2 Timing Modes
 
-### 5.2 Gravity Wells (Tempo Warping)
-**Concept:** High-density clusters of nodes create "gravity."
-**Mechanism:** Packets slow down (edges effectively lengthen) when passing near complex clusters.
-**Musical Result:** Rubato and organic tempo fluctuations that emerge naturally from the complexity of the composition.
+Phonon supports two edge timing modes:
 
-### 5.3 The "Heisenberg" Uncertainty Node
-**Concept:** You can know the Pitch or the Rhythm, but not both precisely.
-**Mechanism:** A node that quantizes pitch perfectly but adds random timing jitter, OR quantizes timing perfectly but adds random pitch drift.
+| Mode | Behavior |
+|------|----------|
+| **Physical** | Duration = Edge Length ÷ Speed (spatial) |
+| **Fixed** | Duration = N beats (musical, regardless of visual length) |
 
-### 5.4 Retrograde Travel (Time Reversal)
-**Concept:** Edges that allow bi-directional flow.
-**Mechanism:** A "Bounce" node that sends a packet back the way it came, inverting its transformations (e.g., a +5 semitone shift becomes -5 on the way back).
+### 4.3 CV Modulation Routing
+
+Edges can route control signals instead of audio:
+
+```
+[LFO] ──(targetParam:'cutoff')──▶ [Filter] ──▶ [Speaker]
+```
+
+The `targetParam` property enables parameter automation: `'cutoff'`, `'gain'`, `'pan'`, `'pitch'`, `'rate'`.
+
+## 5. Node Categories
+
+### Generators
+| Node | Function |
+|------|----------|
+| `source` | Emits packets at regular intervals |
+| `lfo` | Generates continuous modulation signal |
+
+### Transformers
+| Node | Function |
+|------|----------|
+| `pitch` | Shift or set frequency |
+| `gain` | Multiply amplitude, add mass |
+| `filter` | Lowpass with envelope |
+| `polariser` | Add oscillator layer |
+| `noise` | Add noise texture |
+| `harmonic` | Add overtone at ratio |
+| `modulator` | Add vibrato |
+| `quantizer` | Snap to scale |
+
+### Routers
+| Node | Function |
+|------|----------|
+| `gate` | Probabilistic pass/block |
+| `delay` | Hold for N beats |
+| `splitter` | Duplicate to outputs |
+| `teleporter` | Instant transport |
+
+### Outputs
+| Node | Function |
+|------|----------|
+| `speaker` | Render audio |
+| `midi_out` | Send MIDI Note |
+| `midi_cc` | Send MIDI CC |
+
+### Containers
+| Node | Function |
+|------|----------|
+| `tunnel` | Sequential sub-node chain |
+
+## 6. Theoretical Extensions
+
+### 6.1 Entanglement Nodes (Future)
+
+Two nodes linked by quantum entanglement: modifying one instantly affects the other regardless of graph distance.
+
+### 6.2 Gravity Wells (Implemented)
+
+High-mass nodes create "gravitational" drag:
+- Packets slow down approaching heavy nodes
+- Creates natural rubato effects
+- Adjustable via `gravityConstant` global setting
+
+### 6.3 Scenes (Implemented)
+
+The scene system allows multiple graph configurations:
+- `scene_trigger` nodes switch between scenes
+- Enables song sections (verse/chorus/bridge)
+- Supports `'jump'` or `'crossfade'` transitions
