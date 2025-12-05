@@ -4,7 +4,7 @@
 /**
  * Add a node to the canvas via context menu
  * @param {Page} page - Playwright page object
- * @param {string} type - Node type (source, emitter, pitch, etc.)
+ * @param {string} type - Node type (source, speaker, pitch, etc.)
  * @param {number} x - X position
  * @param {number} y - Y position
  */

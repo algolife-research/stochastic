@@ -24,7 +24,7 @@ test.describe('AIGA Context Menu', () => {
     
     // Check for node type options
     await expect(page.locator('[data-type="source"]')).toBeVisible();
-    await expect(page.locator('[data-type="emitter"]')).toBeVisible();
+    await expect(page.locator('[data-type="speaker"]')).toBeVisible();
     await expect(page.locator('[data-type="pitch"]')).toBeVisible();
     await expect(page.locator('[data-type="delay"]')).toBeVisible();
   });
@@ -47,11 +47,11 @@ test.describe('AIGA Context Menu', () => {
     await expect(page.locator('#prop-content')).not.toContainText('Right-click to add nodes');
   });
 
-  test('should add emitter node via context menu', async ({ page }) => {
+  test('should add speaker node via context menu', async ({ page }) => {
     const canvas = page.locator('#aigaCanvas');
     
     await canvas.click({ button: 'right', position: { x: 400, y: 300 } });
-    await page.locator('[data-type="emitter"]').click();
+    await page.locator('[data-type="speaker"]').click();
     
     await expect(page.locator('#context-menu')).not.toBeVisible();
   });

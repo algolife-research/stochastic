@@ -39,8 +39,8 @@ test.describe('AIGA Node Interactions', () => {
     await expect(propContent).toContainText('Mode');
   });
 
-  test('should show property panel for emitter node', async ({ page }) => {
-    await addNode(page, 'emitter', 300, 300);
+  test('should show property panel for speaker node', async ({ page }) => {
+    await addNode(page, 'speaker', 300, 300);
     
     const canvas = page.locator('#aigaCanvas');
     await canvas.click({ position: { x: 300, y: 300 } });

@@ -84,10 +84,11 @@ describe('Constants', () => {
     });
 
     it('should have note names with correct octave numbers', () => {
-      expect(NOTE_NAMES[0]).toBe('C3');
-      expect(NOTE_NAMES[12]).toBe('C4');
-      expect(NOTE_NAMES[24]).toBe('C5');
-      expect(NOTE_NAMES[36]).toBe('C6');
+      // scaleIndex maps to MIDI: scaleIndex 0 = MIDI 36 (C2 in standard MIDI notation)
+      expect(NOTE_NAMES[0]).toBe('C2');   // MIDI 36
+      expect(NOTE_NAMES[12]).toBe('C3');  // MIDI 48
+      expect(NOTE_NAMES[24]).toBe('C4');  // MIDI 60
+      expect(NOTE_NAMES[36]).toBe('C5');  // MIDI 72
     });
   });
 

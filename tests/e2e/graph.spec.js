@@ -15,12 +15,12 @@ test.describe('AIGA Graph Building', () => {
     await page.waitForTimeout(100);
   }
 
-  test('should create a simple source-emitter graph', async ({ page }) => {
+  test('should create a simple source-speaker graph', async ({ page }) => {
     // Add source node
     await addNode(page, 'source', 200, 300);
     
-    // Add emitter node
-    await addNode(page, 'emitter', 400, 300);
+    // Add speaker node
+    await addNode(page, 'speaker', 400, 300);
     
     const canvas = page.locator('#aigaCanvas');
     
@@ -28,7 +28,7 @@ test.describe('AIGA Graph Building', () => {
     await canvas.click({ position: { x: 200, y: 300 } });
     await expect(page.locator('#prop-content')).toContainText('Interval');
     
-    // Select emitter node and verify
+    // Select speaker node and verify
     await canvas.click({ position: { x: 400, y: 300 } });
     await expect(page.locator('#prop-content')).toContainText('Reverb');
   });
@@ -36,7 +36,7 @@ test.describe('AIGA Graph Building', () => {
   test('should connect nodes by hovering and using handle', async ({ page }) => {
     // Create two nodes
     await addNode(page, 'source', 200, 300);
-    await addNode(page, 'emitter', 400, 300);
+    await addNode(page, 'speaker', 400, 300);
     
     const canvas = page.locator('#aigaCanvas');
     
@@ -47,7 +47,7 @@ test.describe('AIGA Graph Building', () => {
     // Click on the connection handle (offset to the right of the node center)
     await canvas.click({ position: { x: 235, y: 300 } });
     
-    // Click on emitter node to complete connection
+    // Click on speaker node to complete connection
     await canvas.click({ position: { x: 400, y: 300 } });
     
     // Start playback to verify connection works
@@ -59,11 +59,11 @@ test.describe('AIGA Graph Building', () => {
   });
 
   test('should create complex graph with multiple node types', async ({ page }) => {
-    // Build: Source -> Pitch -> Polariser -> Emitter with more spacing
+    // Build: Source -> Pitch -> Polariser -> Speaker with more spacing
     await addNode(page, 'source', 100, 300);
     await addNode(page, 'pitch', 250, 300);
     await addNode(page, 'polariser', 400, 300);
-    await addNode(page, 'emitter', 550, 300);
+    await addNode(page, 'speaker', 550, 300);
     
     const canvas = page.locator('#aigaCanvas');
     
@@ -78,13 +78,13 @@ test.describe('AIGA Graph Building', () => {
     await expect(page.locator('#prop-content')).toContainText('POLARISER');
     
     await canvas.click({ position: { x: 550, y: 300 } });
-    await expect(page.locator('#prop-content')).toContainText('EMITTER');
+    await expect(page.locator('#prop-content')).toContainText('SPEAKER');
   });
 
   test('should clear all nodes with Clear button', async ({ page }) => {
     // Add some nodes
     await addNode(page, 'source', 200, 300);
-    await addNode(page, 'emitter', 400, 300);
+    await addNode(page, 'speaker', 400, 300);
     
     // Verify nodes exist
     const canvas = page.locator('#aigaCanvas');

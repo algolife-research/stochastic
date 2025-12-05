@@ -19,7 +19,7 @@ test.describe('AIGA Box Selection', () => {
     // Add multiple nodes
     await addNode(page, 'source', 200, 300);
     await addNode(page, 'pitch', 300, 300);
-    await addNode(page, 'emitter', 400, 300);
+    await addNode(page, 'speaker', 400, 300);
     
     const canvas = page.locator('#aigaCanvas');
     
