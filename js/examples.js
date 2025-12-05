@@ -1,6 +1,236 @@
 // AIGA - Example Compositions
 
 export const EXAMPLES = {
+  // ============================================
+  // TUTORIALS - Learn the basics step by step
+  // ============================================
+
+  "tut_01_first_sound": {
+    "version": "1.0",
+    "bpm": 120,
+    "description": "Tutorial 1: Your first sound! A Source emits packets, and a Speaker plays them. Press Play to hear it. Try changing the Source's interval (beats between notes) in the properties panel.",
+    "nodes": [
+      { "id": "src", "type": "source", "x": 150, "y": 300, "props": { "interval": 1, "midiNote": 60, "intensity": 0.7 } },
+      { "id": "spk", "type": "speaker", "x": 350, "y": 300, "props": { "reverb": 0.3, "pan": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "from": "src", "to": "spk" }
+    ]
+  },
+
+  "tut_02_changing_pitch": {
+    "version": "1.0",
+    "bpm": 120,
+    "description": "Tutorial 2: Changing pitch. Add a Pitch node between Source and Speaker to shift notes up or down. This one shifts up 7 semitones (a fifth). Try changing the shift value!",
+    "nodes": [
+      { "id": "src", "type": "source", "x": 100, "y": 300, "props": { "interval": 1, "midiNote": 48, "intensity": 0.6 } },
+      { "id": "p1", "type": "pitch", "x": 250, "y": 300, "props": { "shift": 7 } },
+      { "id": "spk", "type": "speaker", "x": 400, "y": 300, "props": { "reverb": 0.3, "pan": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "from": "src", "to": "p1" },
+      { "id": "e2", "from": "p1", "to": "spk" }
+    ]
+  },
+
+  "tut_03_shaping_sound": {
+    "version": "1.0",
+    "bpm": 100,
+    "description": "Tutorial 3: Shaping your sound. A Polariser gives packets a waveform (sine, saw, square, triangle) and envelope (attack/decay). Compare the soft sine vs harsh sawtooth!",
+    "nodes": [
+      { "id": "src1", "type": "source", "x": 100, "y": 200, "props": { "interval": 2, "midiNote": 60, "intensity": 0.6 } },
+      { "id": "pol1", "type": "polariser", "x": 250, "y": 200, "props": { "wave": "sine", "attack": 0.1, "decay": 0.8 } },
+      { "id": "spk1", "type": "speaker", "x": 400, "y": 200, "props": { "reverb": 0.4, "pan": -0.5 } },
+      
+      { "id": "src2", "type": "source", "x": 100, "y": 400, "props": { "interval": 2, "midiNote": 60, "intensity": 0.6 } },
+      { "id": "pol2", "type": "polariser", "x": 250, "y": 400, "props": { "wave": "sawtooth", "attack": 0.01, "decay": 0.3 } },
+      { "id": "spk2", "type": "speaker", "x": 400, "y": 400, "props": { "reverb": 0.2, "pan": 0.5 } }
+    ],
+    "edges": [
+      { "id": "e1", "from": "src1", "to": "pol1" }, { "id": "e2", "from": "pol1", "to": "spk1" },
+      { "id": "e3", "from": "src2", "to": "pol2" }, { "id": "e4", "from": "pol2", "to": "spk2" }
+    ]
+  },
+
+  "tut_04_splitting_paths": {
+    "version": "1.0",
+    "bpm": 90,
+    "description": "Tutorial 4: Splitting paths. A Splitter sends packets to ALL connected outputs. One source can trigger multiple sounds at once - creating chords or layers!",
+    "nodes": [
+      { "id": "src", "type": "source", "x": 100, "y": 300, "props": { "interval": 2, "midiNote": 60, "intensity": 0.6 } },
+      { "id": "split", "type": "splitter", "x": 220, "y": 300, "props": {} },
+      
+      { "id": "pol1", "type": "polariser", "x": 340, "y": 180, "props": { "wave": "sine", "attack": 0.05, "decay": 0.6 } },
+      { "id": "spk1", "type": "speaker", "x": 460, "y": 180, "props": { "reverb": 0.5, "pan": -0.5 } },
+      
+      { "id": "p2", "type": "pitch", "x": 340, "y": 300, "props": { "shift": 4 } },
+      { "id": "pol2", "type": "polariser", "x": 420, "y": 300, "props": { "wave": "triangle", "attack": 0.05, "decay": 0.6 } },
+      { "id": "spk2", "type": "speaker", "x": 540, "y": 300, "props": { "reverb": 0.5, "pan": 0 } },
+      
+      { "id": "p3", "type": "pitch", "x": 340, "y": 420, "props": { "shift": 7 } },
+      { "id": "pol3", "type": "polariser", "x": 420, "y": 420, "props": { "wave": "sine", "attack": 0.05, "decay": 0.6 } },
+      { "id": "spk3", "type": "speaker", "x": 540, "y": 420, "props": { "reverb": 0.5, "pan": 0.5 } }
+    ],
+    "edges": [
+      { "id": "e_s", "from": "src", "to": "split" },
+      { "id": "e1", "from": "split", "to": "pol1" }, { "id": "e1b", "from": "pol1", "to": "spk1" },
+      { "id": "e2", "from": "split", "to": "p2" }, { "id": "e2b", "from": "p2", "to": "pol2" }, { "id": "e2c", "from": "pol2", "to": "spk2" },
+      { "id": "e3", "from": "split", "to": "p3" }, { "id": "e3b", "from": "p3", "to": "pol3" }, { "id": "e3c", "from": "pol3", "to": "spk3" }
+    ]
+  },
+
+  "tut_05_randomness": {
+    "version": "1.0",
+    "bpm": 100,
+    "description": "Tutorial 5: Adding randomness. A Gate randomly blocks packets (probability 0-1). Set noteIndex to -1 on Source for random pitches. This creates generative music!",
+    "nodes": [
+      { "id": "src", "type": "source", "x": 100, "y": 300, "props": { "interval": 0.5, "noteIndex": -1, "intensity": 0.5 } },
+      { "id": "gate", "type": "gate", "x": 220, "y": 300, "props": { "prob": 0.6 } },
+      { "id": "pol", "type": "polariser", "x": 340, "y": 300, "props": { "wave": "triangle", "attack": 0.01, "decay": 0.25 } },
+      { "id": "spk", "type": "speaker", "x": 460, "y": 300, "props": { "reverb": 0.4, "pan": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "from": "src", "to": "gate" },
+      { "id": "e2", "from": "gate", "to": "pol" },
+      { "id": "e3", "from": "pol", "to": "spk" }
+    ]
+  },
+
+  "tut_06_timing_delay": {
+    "version": "1.0",
+    "bpm": 90,
+    "description": "Tutorial 6: Timing with Delay. A Delay node holds packets for a set number of beats before releasing them. Great for echoes, arpeggios, and rhythmic patterns!",
+    "nodes": [
+      { "id": "src", "type": "source", "x": 80, "y": 300, "props": { "interval": 4, "midiNote": 60, "intensity": 0.6 } },
+      { "id": "split", "type": "splitter", "x": 180, "y": 300, "props": {} },
+      
+      { "id": "pol1", "type": "polariser", "x": 300, "y": 180, "props": { "wave": "sine", "attack": 0.02, "decay": 0.4 } },
+      { "id": "spk1", "type": "speaker", "x": 420, "y": 180, "props": { "reverb": 0.3, "pan": -0.4 } },
+      
+      { "id": "d2", "type": "delay", "x": 280, "y": 300, "props": { "delayTime": 1 } },
+      { "id": "pol2", "type": "polariser", "x": 380, "y": 300, "props": { "wave": "sine", "attack": 0.02, "decay": 0.4 } },
+      { "id": "spk2", "type": "speaker", "x": 480, "y": 300, "props": { "reverb": 0.3, "pan": 0 } },
+      
+      { "id": "d3", "type": "delay", "x": 280, "y": 420, "props": { "delayTime": 2 } },
+      { "id": "pol3", "type": "polariser", "x": 380, "y": 420, "props": { "wave": "sine", "attack": 0.02, "decay": 0.4 } },
+      { "id": "spk3", "type": "speaker", "x": 480, "y": 420, "props": { "reverb": 0.3, "pan": 0.4 } }
+    ],
+    "edges": [
+      { "id": "e_s", "from": "src", "to": "split" },
+      { "id": "e1", "from": "split", "to": "pol1" }, { "id": "e1b", "from": "pol1", "to": "spk1" },
+      { "id": "e2", "from": "split", "to": "d2" }, { "id": "e2b", "from": "d2", "to": "pol2" }, { "id": "e2c", "from": "pol2", "to": "spk2" },
+      { "id": "e3", "from": "split", "to": "d3" }, { "id": "e3b", "from": "d3", "to": "pol3" }, { "id": "e3c", "from": "pol3", "to": "spk3" }
+    ]
+  },
+
+  "tut_07_filters": {
+    "version": "1.0",
+    "bpm": 80,
+    "description": "Tutorial 7: Filters shape tone. A Filter removes high frequencies (low cutoff = darker sound). Add envelope modulation for 'wah' effects. Try adjusting cutoff!",
+    "nodes": [
+      { "id": "src", "type": "source", "x": 100, "y": 300, "props": { "interval": 2, "midiNote": 48, "intensity": 0.7 } },
+      { "id": "pol", "type": "polariser", "x": 220, "y": 300, "props": { "wave": "sawtooth", "attack": 0.02, "decay": 1.0 } },
+      { "id": "flt", "type": "filter", "x": 340, "y": 300, "props": { "cutoff": 800, "mod": 2000, "attack": 0.01, "decay": 0.4 } },
+      { "id": "spk", "type": "speaker", "x": 460, "y": 300, "props": { "reverb": 0.4, "pan": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "from": "src", "to": "pol" },
+      { "id": "e2", "from": "pol", "to": "flt" },
+      { "id": "e3", "from": "flt", "to": "spk" }
+    ]
+  },
+
+  "tut_08_gain_dynamics": {
+    "version": "1.0",
+    "bpm": 100,
+    "description": "Tutorial 8: Volume control. A Gain node multiplies the volume. Use it to make some notes louder or softer. Values above 1 = louder, below 1 = quieter.",
+    "nodes": [
+      { "id": "src", "type": "source", "x": 80, "y": 300, "props": { "interval": 2, "midiNote": 60, "intensity": 0.5 } },
+      { "id": "split", "type": "splitter", "x": 180, "y": 300, "props": {} },
+      
+      { "id": "g1", "type": "gain", "x": 280, "y": 200, "props": { "value": 0.3 } },
+      { "id": "pol1", "type": "polariser", "x": 380, "y": 200, "props": { "wave": "sine", "attack": 0.02, "decay": 0.4 } },
+      { "id": "spk1", "type": "speaker", "x": 480, "y": 200, "props": { "reverb": 0.3, "pan": -0.3 } },
+      
+      { "id": "pol2", "type": "polariser", "x": 330, "y": 300, "props": { "wave": "sine", "attack": 0.02, "decay": 0.4 } },
+      { "id": "spk2", "type": "speaker", "x": 450, "y": 300, "props": { "reverb": 0.3, "pan": 0 } },
+      
+      { "id": "g3", "type": "gain", "x": 280, "y": 400, "props": { "value": 1.5 } },
+      { "id": "pol3", "type": "polariser", "x": 380, "y": 400, "props": { "wave": "sine", "attack": 0.02, "decay": 0.4 } },
+      { "id": "spk3", "type": "speaker", "x": 480, "y": 400, "props": { "reverb": 0.3, "pan": 0.3 } }
+    ],
+    "edges": [
+      { "id": "e_s", "from": "src", "to": "split" },
+      { "id": "e1", "from": "split", "to": "g1" }, { "id": "e1b", "from": "g1", "to": "pol1" }, { "id": "e1c", "from": "pol1", "to": "spk1" },
+      { "id": "e2", "from": "split", "to": "pol2" }, { "id": "e2b", "from": "pol2", "to": "spk2" },
+      { "id": "e3", "from": "split", "to": "g3" }, { "id": "e3b", "from": "g3", "to": "pol3" }, { "id": "e3c", "from": "pol3", "to": "spk3" }
+    ]
+  },
+
+  "tut_09_simple_melody": {
+    "version": "1.0",
+    "bpm": 100,
+    "description": "Tutorial 9: Building a melody! Chain pitch nodes after speakers to create sequences. Each speaker plays, then passes to the next pitch shift. This creates a 4-note pattern!",
+    "nodes": [
+      { "id": "src", "type": "source", "x": 60, "y": 300, "props": { "interval": 2, "midiNote": 60, "intensity": 0.6 } },
+      { "id": "pol", "type": "polariser", "x": 160, "y": 300, "props": { "wave": "triangle", "attack": 0.02, "decay": 0.3 } },
+      { "id": "spk1", "type": "speaker", "x": 260, "y": 300, "props": { "reverb": 0.3, "pan": -0.4 } },
+      { "id": "p1", "type": "pitch", "x": 360, "y": 300, "props": { "shift": 4 } },
+      { "id": "spk2", "type": "speaker", "x": 460, "y": 300, "props": { "reverb": 0.3, "pan": -0.1 } },
+      { "id": "p2", "type": "pitch", "x": 560, "y": 300, "props": { "shift": 3 } },
+      { "id": "spk3", "type": "speaker", "x": 660, "y": 300, "props": { "reverb": 0.3, "pan": 0.1 } },
+      { "id": "p3", "type": "pitch", "x": 760, "y": 300, "props": { "shift": -2 } },
+      { "id": "spk4", "type": "speaker", "x": 860, "y": 300, "props": { "reverb": 0.4, "pan": 0.4 } }
+    ],
+    "edges": [
+      { "id": "e1", "from": "src", "to": "pol" },
+      { "id": "e2", "from": "pol", "to": "spk1" },
+      { "id": "e3", "from": "spk1", "to": "p1" },
+      { "id": "e4", "from": "p1", "to": "spk2" },
+      { "id": "e5", "from": "spk2", "to": "p2" },
+      { "id": "e6", "from": "p2", "to": "spk3" },
+      { "id": "e7", "from": "spk3", "to": "p3" },
+      { "id": "e8", "from": "p3", "to": "spk4" }
+    ]
+  },
+
+  "tut_10_first_song": {
+    "version": "1.0",
+    "bpm": 90,
+    "description": "Tutorial 10: Your first song! Combines everything: bass line, melody with randomness, and a simple beat. Experiment by changing values and adding more nodes!",
+    "nodes": [
+      { "id": "bass_src", "type": "source", "x": 60, "y": 150, "props": { "interval": 2, "midiNote": 36, "intensity": 0.8 } },
+      { "id": "bass_pol", "type": "polariser", "x": 180, "y": 150, "props": { "wave": "sawtooth", "attack": 0.02, "decay": 0.5 } },
+      { "id": "bass_flt", "type": "filter", "x": 300, "y": 150, "props": { "cutoff": 500, "mod": 800, "attack": 0.01, "decay": 0.3 } },
+      { "id": "bass_spk", "type": "speaker", "x": 420, "y": 150, "props": { "reverb": 0.15, "pan": 0 } },
+      
+      { "id": "mel_src", "type": "source", "x": 60, "y": 300, "props": { "interval": 0.5, "noteIndex": -1, "intensity": 0.5 } },
+      { "id": "mel_gate", "type": "gate", "x": 160, "y": 300, "props": { "prob": 0.5 } },
+      { "id": "mel_pol", "type": "polariser", "x": 260, "y": 300, "props": { "wave": "triangle", "attack": 0.01, "decay": 0.2 } },
+      { "id": "mel_spk", "type": "speaker", "x": 380, "y": 300, "props": { "reverb": 0.5, "pan": 0.3 } },
+      
+      { "id": "beat_src", "type": "source", "x": 60, "y": 450, "props": { "interval": 1, "midiNote": 36, "intensity": 0.7 } },
+      { "id": "beat_p", "type": "pitch", "x": 160, "y": 450, "props": { "shift": -24 } },
+      { "id": "beat_pol", "type": "polariser", "x": 260, "y": 450, "props": { "wave": "sine", "attack": 0.005, "decay": 0.15 } },
+      { "id": "beat_spk", "type": "speaker", "x": 380, "y": 450, "props": { "reverb": 0.1, "pan": 0 } }
+    ],
+    "edges": [
+      { "id": "e_b1", "from": "bass_src", "to": "bass_pol" },
+      { "id": "e_b2", "from": "bass_pol", "to": "bass_flt" },
+      { "id": "e_b3", "from": "bass_flt", "to": "bass_spk" },
+      { "id": "e_m1", "from": "mel_src", "to": "mel_gate" },
+      { "id": "e_m2", "from": "mel_gate", "to": "mel_pol" },
+      { "id": "e_m3", "from": "mel_pol", "to": "mel_spk" },
+      { "id": "e_k1", "from": "beat_src", "to": "beat_p" },
+      { "id": "e_k2", "from": "beat_p", "to": "beat_pol" },
+      { "id": "e_k3", "from": "beat_pol", "to": "beat_spk" }
+    ]
+  },
+
+  // ============================================
+  // EXAMPLE COMPOSITIONS
+  // ============================================
+
   "sequential_melody": {
     "version": "1.0",
     "bpm": 120,
@@ -384,6 +614,281 @@ export const EXAMPLES = {
       { "id": "e_5a", "from": "split", "to": "d2" }, { "id": "e_5b", "from": "d2", "to": "fifth_tun" }, { "id": "e_5c", "from": "fifth_tun", "to": "fifth_out" },
       { "id": "e_oa", "from": "split", "to": "d3" }, { "id": "e_ob", "from": "d3", "to": "oct_tun" }, { "id": "e_oc", "from": "oct_tun", "to": "oct_out" },
       { "id": "e_va", "from": "split", "to": "g1" }, { "id": "e_vb", "from": "g1", "to": "var_tun" }, { "id": "e_vc", "from": "var_tun", "to": "var_out" }
+    ]
+  },
+
+  // ============================================
+  // NEW FEATURE EXAMPLES
+  // ============================================
+
+  "quantizer_demo": {
+    "version": "1.0",
+    "bpm": 90,
+    "description": "Demonstrates the Quantizer node - random pitches are snapped to the global key/scale. Change root note and scale in Settings to hear different harmonies.",
+    "musicalContext": { "root": 0, "scale": [0, 2, 4, 5, 7, 9, 11] },
+    "nodes": [
+      { "id": "src1", "type": "source", "x": 60, "y": 200, "props": { "interval": 1, "noteIndex": -1, "intensity": 0.6 } },
+      { "id": "quant1", "type": "quantizer", "x": 180, "y": 200, "props": { "strength": 1.0, "useGlobalKey": true } },
+      { "id": "pol1", "type": "polariser", "x": 300, "y": 200, "props": { "wave": "sine", "attack": 0.02, "decay": 0.4 } },
+      { "id": "out1", "type": "speaker", "x": 420, "y": 200, "props": { "reverb": 0.4, "pan": -0.5 } },
+      
+      { "id": "src2", "type": "source", "x": 60, "y": 350, "props": { "interval": 0.75, "noteIndex": -1, "intensity": 0.5 } },
+      { "id": "quant2", "type": "quantizer", "x": 180, "y": 350, "props": { "strength": 0.5, "useGlobalKey": true } },
+      { "id": "pol2", "type": "polariser", "x": 300, "y": 350, "props": { "wave": "triangle", "attack": 0.01, "decay": 0.3 } },
+      { "id": "out2", "type": "speaker", "x": 420, "y": 350, "props": { "reverb": 0.5, "pan": 0.5 } },
+      
+      { "id": "src3", "type": "source", "x": 60, "y": 500, "props": { "interval": 2, "noteIndex": -1, "intensity": 0.4 } },
+      { "id": "p_oct", "type": "pitch", "x": 140, "y": 500, "props": { "shift": -12 } },
+      { "id": "quant3", "type": "quantizer", "x": 220, "y": 500, "props": { "strength": 1.0, "useGlobalKey": true } },
+      { "id": "pol3", "type": "polariser", "x": 320, "y": 500, "props": { "wave": "sawtooth", "attack": 0.1, "decay": 0.8 } },
+      { "id": "out3", "type": "speaker", "x": 440, "y": 500, "props": { "reverb": 0.3, "pan": 0 } }
+    ],
+    "edges": [
+      { "id": "e1a", "from": "src1", "to": "quant1" }, { "id": "e1b", "from": "quant1", "to": "pol1" }, { "id": "e1c", "from": "pol1", "to": "out1" },
+      { "id": "e2a", "from": "src2", "to": "quant2" }, { "id": "e2b", "from": "quant2", "to": "pol2" }, { "id": "e2c", "from": "pol2", "to": "out2" },
+      { "id": "e3a", "from": "src3", "to": "p_oct" }, { "id": "e3b", "from": "p_oct", "to": "quant3" }, { "id": "e3c", "from": "quant3", "to": "pol3" }, { "id": "e3d", "from": "pol3", "to": "out3" }
+    ]
+  },
+
+  "lfo_modulation": {
+    "version": "1.0",
+    "bpm": 80,
+    "description": "Demonstrates LFO nodes for modulation. LFOs generate continuous values that can modulate filter cutoff, gain, or pan via CV routing.",
+    "nodes": [
+      { "id": "src", "type": "source", "x": 60, "y": 300, "props": { "interval": 2, "midiNote": 48, "intensity": 0.7 } },
+      { "id": "pol", "type": "polariser", "x": 180, "y": 300, "props": { "wave": "sawtooth", "attack": 0.5, "decay": 2.0 } },
+      { "id": "flt", "type": "filter", "x": 300, "y": 300, "props": { "cutoff": 800, "mod": 0 } },
+      { "id": "out", "type": "speaker", "x": 420, "y": 300, "props": { "reverb": 0.6, "pan": 0 } },
+      
+      { "id": "lfo1", "type": "lfo", "x": 300, "y": 180, "props": { "rate": 0.5, "shape": "sine", "min": 200, "max": 2000, "phase": 0 } },
+      
+      { "id": "lfo2", "type": "lfo", "x": 420, "y": 180, "props": { "rate": 0.25, "shape": "triangle", "min": -0.8, "max": 0.8, "phase": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "from": "src", "to": "pol" },
+      { "id": "e2", "from": "pol", "to": "flt" },
+      { "id": "e3", "from": "flt", "to": "out" },
+      { "id": "e_lfo1", "from": "lfo1", "to": "flt", "props": { "targetParam": "cutoff" } },
+      { "id": "e_lfo2", "from": "lfo2", "to": "out", "props": { "targetParam": "pan" } }
+    ]
+  },
+
+  "virtual_edges": {
+    "version": "1.0",
+    "bpm": 120,
+    "description": "Demonstrates virtual edges with fixed timing. Unlike physical edges where travel time depends on distance, virtual edges arrive exactly after the specified beats.",
+    "nodes": [
+      { "id": "src", "type": "source", "x": 100, "y": 300, "props": { "interval": 4, "midiNote": 60, "intensity": 0.7 } },
+      { "id": "split", "type": "splitter", "x": 200, "y": 300, "props": {} },
+      
+      { "id": "pol1", "type": "polariser", "x": 500, "y": 150, "props": { "wave": "sine", "attack": 0.01, "decay": 0.3 } },
+      { "id": "out1", "type": "speaker", "x": 620, "y": 150, "props": { "reverb": 0.3, "pan": -0.6 } },
+      
+      { "id": "pol2", "type": "polariser", "x": 500, "y": 250, "props": { "wave": "sine", "attack": 0.01, "decay": 0.3 } },
+      { "id": "out2", "type": "speaker", "x": 620, "y": 250, "props": { "reverb": 0.3, "pan": -0.3 } },
+      
+      { "id": "pol3", "type": "polariser", "x": 500, "y": 350, "props": { "wave": "sine", "attack": 0.01, "decay": 0.3 } },
+      { "id": "out3", "type": "speaker", "x": 620, "y": 350, "props": { "reverb": 0.3, "pan": 0 } },
+      
+      { "id": "pol4", "type": "polariser", "x": 500, "y": 450, "props": { "wave": "sine", "attack": 0.01, "decay": 0.3 } },
+      { "id": "out4", "type": "speaker", "x": 620, "y": 450, "props": { "reverb": 0.3, "pan": 0.3 } }
+    ],
+    "edges": [
+      { "id": "e_s", "from": "src", "to": "split" },
+      { "id": "e_v1", "from": "split", "to": "pol1", "props": { "timingMode": "fixed", "durationBeats": 0 } },
+      { "id": "e_v2", "from": "split", "to": "pol2", "props": { "timingMode": "fixed", "durationBeats": 1 } },
+      { "id": "e_v3", "from": "split", "to": "pol3", "props": { "timingMode": "fixed", "durationBeats": 2 } },
+      { "id": "e_v4", "from": "split", "to": "pol4", "props": { "timingMode": "fixed", "durationBeats": 3 } },
+      { "id": "e_o1", "from": "pol1", "to": "out1" },
+      { "id": "e_o2", "from": "pol2", "to": "out2" },
+      { "id": "e_o3", "from": "pol3", "to": "out3" },
+      { "id": "e_o4", "from": "pol4", "to": "out4" }
+    ]
+  },
+
+  "gravity_tempo": {
+    "version": "1.0",
+    "bpm": 100,
+    "description": "Demonstrates gravity physics - heavy nodes (high mass) slow down approaching packets, creating ritardando effects. Adjust Gravity Strength in Settings.",
+    "gravityConstant": 0.8,
+    "nodes": [
+      { "id": "src1", "type": "source", "x": 60, "y": 200, "props": { "interval": 2, "midiNote": 60, "intensity": 0.6 } },
+      { "id": "light_gain", "type": "gain", "x": 200, "y": 200, "props": { "value": 1.0, "mass": 0.2 } },
+      { "id": "pol1", "type": "polariser", "x": 340, "y": 200, "props": { "wave": "sine", "attack": 0.01, "decay": 0.4 } },
+      { "id": "out1", "type": "speaker", "x": 480, "y": 200, "props": { "reverb": 0.3, "pan": -0.5 } },
+      
+      { "id": "src2", "type": "source", "x": 60, "y": 350, "props": { "interval": 2, "midiNote": 60, "intensity": 0.6 } },
+      { "id": "heavy_gain", "type": "gain", "x": 200, "y": 350, "props": { "value": 1.0, "mass": 2.5 } },
+      { "id": "pol2", "type": "polariser", "x": 340, "y": 350, "props": { "wave": "sine", "attack": 0.01, "decay": 0.4 } },
+      { "id": "out2", "type": "speaker", "x": 480, "y": 350, "props": { "reverb": 0.3, "pan": 0.5 } },
+      
+      { "id": "src3", "type": "source", "x": 60, "y": 500, "props": { "interval": 2, "midiNote": 48, "intensity": 0.5 } },
+      { "id": "heavy_spk", "type": "speaker", "x": 300, "y": 500, "props": { "reverb": 0.4, "pan": 0, "mass": 3.0 } }
+    ],
+    "edges": [
+      { "id": "e1a", "from": "src1", "to": "light_gain" }, { "id": "e1b", "from": "light_gain", "to": "pol1" }, { "id": "e1c", "from": "pol1", "to": "out1" },
+      { "id": "e2a", "from": "src2", "to": "heavy_gain" }, { "id": "e2b", "from": "heavy_gain", "to": "pol2" }, { "id": "e2c", "from": "pol2", "to": "out2" },
+      { "id": "e3a", "from": "src3", "to": "heavy_spk" }
+    ]
+  },
+
+  "ahd_envelopes": {
+    "version": "1.0",
+    "bpm": 60,
+    "description": "Demonstrates AHD (Attack-Hold-Decay) envelopes. holdTime sustains the note at peak volume before decay. Compare short staccato vs sustained organ-like tones.",
+    "nodes": [
+      { "id": "src1", "type": "source", "x": 60, "y": 180, "props": { "interval": 4, "midiNote": 60, "intensity": 0.7 } },
+      { "id": "pol1", "type": "polariser", "x": 180, "y": 180, "props": { "wave": "sine", "attack": 0.01, "decay": 0.2 } },
+      { "id": "staccato", "type": "speaker", "x": 300, "y": 180, "props": { "reverb": 0.2, "pan": -0.5, "holdTime": 0, "releaseTime": 0.1 } },
+      
+      { "id": "src2", "type": "source", "x": 60, "y": 300, "props": { "interval": 4, "midiNote": 60, "intensity": 0.7 } },
+      { "id": "pol2", "type": "polariser", "x": 180, "y": 300, "props": { "wave": "sine", "attack": 0.3, "decay": 0.5 } },
+      { "id": "sustained", "type": "speaker", "x": 300, "y": 300, "props": { "reverb": 0.4, "pan": 0, "holdTime": 1.5, "releaseTime": 0.8 } },
+      
+      { "id": "src3", "type": "source", "x": 60, "y": 420, "props": { "interval": 4, "midiNote": 60, "intensity": 0.7 } },
+      { "id": "pol3", "type": "polariser", "x": 180, "y": 420, "props": { "wave": "triangle", "attack": 0.8, "decay": 0.1 } },
+      { "id": "organ", "type": "speaker", "x": 300, "y": 420, "props": { "reverb": 0.6, "pan": 0.5, "holdTime": 2.0, "releaseTime": 1.2 } }
+    ],
+    "edges": [
+      { "id": "e1a", "from": "src1", "to": "pol1" }, { "id": "e1b", "from": "pol1", "to": "staccato" },
+      { "id": "e2a", "from": "src2", "to": "pol2" }, { "id": "e2b", "from": "pol2", "to": "sustained" },
+      { "id": "e3a", "from": "src3", "to": "pol3" }, { "id": "e3b", "from": "pol3", "to": "organ" }
+    ]
+  },
+
+  "pentatonic_jam": {
+    "version": "1.0",
+    "bpm": 100,
+    "description": "A complete jam using quantizer for pentatonic scale, LFO modulation, and virtual edges for precise timing. Set scale to 'Pentatonic' in Settings.",
+    "musicalContext": { "root": 2, "scale": [0, 2, 4, 7, 9] },
+    "nodes": [
+      { "id": "bass_src", "type": "source", "x": 60, "y": 150, "props": { "interval": 2, "noteIndex": -1, "intensity": 0.8 } },
+      { "id": "bass_q", "type": "quantizer", "x": 160, "y": 150, "props": { "strength": 1.0 } },
+      { "id": "bass_p", "type": "pitch", "x": 260, "y": 150, "props": { "shift": -12 } },
+      { "id": "bass_pol", "type": "polariser", "x": 360, "y": 150, "props": { "wave": "sawtooth", "attack": 0.02, "decay": 0.5 } },
+      { "id": "bass_flt", "type": "filter", "x": 460, "y": 150, "props": { "cutoff": 400, "mod": 800 } },
+      { "id": "bass_out", "type": "speaker", "x": 560, "y": 150, "props": { "reverb": 0.2, "pan": 0, "holdTime": 0.1 } },
+      
+      { "id": "mel_src", "type": "source", "x": 60, "y": 300, "props": { "interval": 0.5, "noteIndex": -1, "intensity": 0.5 } },
+      { "id": "mel_gate", "type": "gate", "x": 140, "y": 300, "props": { "prob": 0.6 } },
+      { "id": "mel_q", "type": "quantizer", "x": 220, "y": 300, "props": { "strength": 1.0 } },
+      { "id": "mel_split", "type": "splitter", "x": 300, "y": 300, "props": {} },
+      
+      { "id": "mel_pol1", "type": "polariser", "x": 400, "y": 250, "props": { "wave": "triangle", "attack": 0.01, "decay": 0.25 } },
+      { "id": "mel_out1", "type": "speaker", "x": 500, "y": 250, "props": { "reverb": 0.5, "pan": -0.4 } },
+      
+      { "id": "mel_pol2", "type": "polariser", "x": 400, "y": 350, "props": { "wave": "sine", "attack": 0.01, "decay": 0.2 } },
+      { "id": "mel_out2", "type": "speaker", "x": 500, "y": 350, "props": { "reverb": 0.5, "pan": 0.4 } },
+      
+      { "id": "arp_src", "type": "source", "x": 60, "y": 480, "props": { "interval": 4, "midiNote": 72, "intensity": 0.4 } },
+      { "id": "arp_split", "type": "splitter", "x": 160, "y": 480, "props": {} },
+      { "id": "arp_q", "type": "quantizer", "x": 260, "y": 480, "props": { "strength": 1.0 } },
+      { "id": "arp_pol", "type": "polariser", "x": 360, "y": 480, "props": { "wave": "sine", "attack": 0.005, "decay": 0.15 } },
+      { "id": "arp_out", "type": "speaker", "x": 460, "y": 480, "props": { "reverb": 0.7, "pan": 0 } },
+      
+      { "id": "lfo_filter", "type": "lfo", "x": 460, "y": 80, "props": { "rate": 0.3, "shape": "sine", "min": 300, "max": 1200 } }
+    ],
+    "edges": [
+      { "id": "e_b1", "from": "bass_src", "to": "bass_q" },
+      { "id": "e_b2", "from": "bass_q", "to": "bass_p" },
+      { "id": "e_b3", "from": "bass_p", "to": "bass_pol" },
+      { "id": "e_b4", "from": "bass_pol", "to": "bass_flt" },
+      { "id": "e_b5", "from": "bass_flt", "to": "bass_out" },
+      
+      { "id": "e_m1", "from": "mel_src", "to": "mel_gate" },
+      { "id": "e_m2", "from": "mel_gate", "to": "mel_q" },
+      { "id": "e_m3", "from": "mel_q", "to": "mel_split" },
+      { "id": "e_m4", "from": "mel_split", "to": "mel_pol1" },
+      { "id": "e_m5", "from": "mel_pol1", "to": "mel_out1" },
+      { "id": "e_m6", "from": "mel_split", "to": "mel_pol2", "props": { "timingMode": "fixed", "durationBeats": 0.25 } },
+      { "id": "e_m7", "from": "mel_pol2", "to": "mel_out2" },
+      
+      { "id": "e_a1", "from": "arp_src", "to": "arp_split" },
+      { "id": "e_a2", "from": "arp_split", "to": "arp_q", "props": { "timingMode": "fixed", "durationBeats": 0 } },
+      { "id": "e_a3", "from": "arp_split", "to": "arp_q", "props": { "timingMode": "fixed", "durationBeats": 0.5 } },
+      { "id": "e_a4", "from": "arp_split", "to": "arp_q", "props": { "timingMode": "fixed", "durationBeats": 1 } },
+      { "id": "e_a5", "from": "arp_split", "to": "arp_q", "props": { "timingMode": "fixed", "durationBeats": 1.5 } },
+      { "id": "e_a6", "from": "arp_q", "to": "arp_pol" },
+      { "id": "e_a7", "from": "arp_pol", "to": "arp_out" },
+      
+      { "id": "e_lfo", "from": "lfo_filter", "to": "bass_flt", "props": { "targetParam": "cutoff" } }
+    ]
+  },
+
+  "cv_routing_demo": {
+    "version": "1.0",
+    "bpm": 70,
+    "description": "Advanced CV routing - LFOs modulate different parameters. One LFO sweeps the filter, another modulates pan for stereo movement, a third affects gain.",
+    "nodes": [
+      { "id": "src", "type": "source", "x": 80, "y": 300, "props": { "interval": 3, "midiNote": 48, "intensity": 0.7 } },
+      { "id": "pol", "type": "polariser", "x": 200, "y": 300, "props": { "wave": "sawtooth", "attack": 0.8, "decay": 2.5 } },
+      { "id": "gain", "type": "gain", "x": 320, "y": 300, "props": { "value": 0.8 } },
+      { "id": "flt", "type": "filter", "x": 440, "y": 300, "props": { "cutoff": 1000, "mod": 0, "attack": 0, "decay": 0 } },
+      { "id": "out", "type": "speaker", "x": 560, "y": 300, "props": { "reverb": 0.7, "pan": 0, "holdTime": 0.5, "releaseTime": 1.0 } },
+      
+      { "id": "lfo_cutoff", "type": "lfo", "x": 440, "y": 150, "props": { "rate": 0.2, "shape": "sine", "min": 200, "max": 3000, "phase": 0 } },
+      { "id": "lfo_pan", "type": "lfo", "x": 560, "y": 150, "props": { "rate": 0.15, "shape": "triangle", "min": -1, "max": 1, "phase": 0.25 } },
+      { "id": "lfo_gain", "type": "lfo", "x": 320, "y": 450, "props": { "rate": 0.5, "shape": "sine", "min": 0.3, "max": 1.0, "phase": 0 } },
+      
+      { "id": "src2", "type": "source", "x": 80, "y": 500, "props": { "interval": 6, "midiNote": 36, "intensity": 0.8 } },
+      { "id": "pol2", "type": "polariser", "x": 200, "y": 500, "props": { "wave": "sine", "attack": 0.5, "decay": 3.0 } },
+      { "id": "out2", "type": "speaker", "x": 320, "y": 500, "props": { "reverb": 0.5, "pan": 0, "holdTime": 1.0, "releaseTime": 1.5 } }
+    ],
+    "edges": [
+      { "id": "e1", "from": "src", "to": "pol" },
+      { "id": "e2", "from": "pol", "to": "gain" },
+      { "id": "e3", "from": "gain", "to": "flt" },
+      { "id": "e4", "from": "flt", "to": "out" },
+      { "id": "e_lfo1", "from": "lfo_cutoff", "to": "flt", "props": { "targetParam": "cutoff" } },
+      { "id": "e_lfo2", "from": "lfo_pan", "to": "out", "props": { "targetParam": "pan" } },
+      { "id": "e_lfo3", "from": "lfo_gain", "to": "gain", "props": { "targetParam": "gain" } },
+      { "id": "e5", "from": "src2", "to": "pol2" },
+      { "id": "e6", "from": "pol2", "to": "out2" }
+    ]
+  },
+
+  "blues_scale": {
+    "version": "1.0",
+    "bpm": 85,
+    "description": "Blues jam using the blues scale quantizer. Random notes snap to the blues scale for authentic bluesy feel. Try changing root note in Settings.",
+    "musicalContext": { "root": 7, "scale": [0, 3, 5, 6, 7, 10] },
+    "nodes": [
+      { "id": "lead_src", "type": "source", "x": 60, "y": 200, "props": { "interval": 0.75, "noteIndex": -1, "intensity": 0.6 } },
+      { "id": "lead_gate", "type": "gate", "x": 140, "y": 200, "props": { "prob": 0.7 } },
+      { "id": "lead_q", "type": "quantizer", "x": 220, "y": 200, "props": { "strength": 1.0 } },
+      { "id": "lead_pol", "type": "polariser", "x": 320, "y": 200, "props": { "wave": "sawtooth", "attack": 0.01, "decay": 0.3 } },
+      { "id": "lead_flt", "type": "filter", "x": 420, "y": 200, "props": { "cutoff": 1800, "mod": 2000, "attack": 0.01, "decay": 0.2 } },
+      { "id": "lead_out", "type": "speaker", "x": 520, "y": 200, "props": { "reverb": 0.4, "pan": 0.3 } },
+      
+      { "id": "bass_src", "type": "source", "x": 60, "y": 350, "props": { "interval": 2, "noteIndex": -1, "intensity": 0.8 } },
+      { "id": "bass_q", "type": "quantizer", "x": 160, "y": 350, "props": { "strength": 1.0 } },
+      { "id": "bass_p", "type": "pitch", "x": 260, "y": 350, "props": { "shift": -24 } },
+      { "id": "bass_pol", "type": "polariser", "x": 360, "y": 350, "props": { "wave": "triangle", "attack": 0.02, "decay": 0.6 } },
+      { "id": "bass_out", "type": "speaker", "x": 460, "y": 350, "props": { "reverb": 0.2, "pan": -0.2, "holdTime": 0.2 } },
+      
+      { "id": "rhythm_src", "type": "source", "x": 60, "y": 500, "props": { "interval": 0.5, "noteIndex": -1, "intensity": 0.4 } },
+      { "id": "rhythm_gate", "type": "gate", "x": 140, "y": 500, "props": { "prob": 0.5 } },
+      { "id": "rhythm_q", "type": "quantizer", "x": 220, "y": 500, "props": { "strength": 0.8 } },
+      { "id": "rhythm_pol", "type": "polariser", "x": 320, "y": 500, "props": { "wave": "square", "attack": 0.005, "decay": 0.15 } },
+      { "id": "rhythm_out", "type": "speaker", "x": 420, "y": 500, "props": { "reverb": 0.3, "pan": -0.4 } },
+      
+      { "id": "lfo_wah", "type": "lfo", "x": 420, "y": 100, "props": { "rate": 3, "shape": "sine", "min": 400, "max": 2500 } }
+    ],
+    "edges": [
+      { "id": "e_l1", "from": "lead_src", "to": "lead_gate" },
+      { "id": "e_l2", "from": "lead_gate", "to": "lead_q" },
+      { "id": "e_l3", "from": "lead_q", "to": "lead_pol" },
+      { "id": "e_l4", "from": "lead_pol", "to": "lead_flt" },
+      { "id": "e_l5", "from": "lead_flt", "to": "lead_out" },
+      { "id": "e_wah", "from": "lfo_wah", "to": "lead_flt", "props": { "targetParam": "cutoff" } },
+      { "id": "e_b1", "from": "bass_src", "to": "bass_q" },
+      { "id": "e_b2", "from": "bass_q", "to": "bass_p" },
+      { "id": "e_b3", "from": "bass_p", "to": "bass_pol" },
+      { "id": "e_b4", "from": "bass_pol", "to": "bass_out" },
+      { "id": "e_r1", "from": "rhythm_src", "to": "rhythm_gate" },
+      { "id": "e_r2", "from": "rhythm_gate", "to": "rhythm_q" },
+      { "id": "e_r3", "from": "rhythm_q", "to": "rhythm_pol" },
+      { "id": "e_r4", "from": "rhythm_pol", "to": "rhythm_out" }
     ]
   }
 };
