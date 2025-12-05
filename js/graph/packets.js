@@ -9,6 +9,8 @@ import * as state from '../core/state.js';
 import { dist } from '../core/utils.js';
 import { playSound } from '../audio/synth.js';
 import { getDefaultPropsForType } from './nodes.js';
+import { midiService } from '../io/midi.js';
+import { applyScene } from '../core/scenes.js';
 
 /**
  * Helper to get a property value with fallback to default
@@ -165,6 +167,56 @@ export function processArrival(packet, node) {
       payload.holdTime = getProp(node, 'holdTime');
       payload.releaseTime = getProp(node, 'releaseTime');
       playSound(payload);
+      break;
+    }
+
+    case 'midi_out': {
+      const channel = getProp(node, 'channel');
+      const duration = getProp(node, 'duration');
+      const velocityScale = getProp(node, 'velocityScale');
+      
+      const note = payload.midiNote || 60;
+      const velocity = (payload.gain || 0.5) * 127 * velocityScale;
+      
+      midiService.sendNoteOn(note, velocity, channel);
+      
+      // Schedule Note Off
+      setTimeout(() => {
+        midiService.sendNoteOff(note, channel);
+      }, duration);
+      break;
+    }
+
+    case 'midi_cc': {
+      const channel = getProp(node, 'channel');
+      const ccNumber = getProp(node, 'ccNumber');
+      
+      // Use modulationValue if available (from LFO), otherwise gain or 0
+      let val = 0;
+      if (payload.modulationValue !== undefined) {
+        // Map 0-1 to 0-127
+        val = payload.modulationValue * 127;
+      } else if (payload.gain !== undefined) {
+        val = payload.gain * 127;
+      }
+      
+      midiService.sendControlChange(ccNumber, val, channel);
+      break;
+    }
+
+    case 'scene_trigger': {
+      let targetIndex = getProp(node, 'targetSceneIndex');
+      
+      // -1 means "Next Scene"
+      if (targetIndex === -1) {
+        targetIndex = state.activeSceneIndex + 1;
+        // Loop back to 0 if at end
+        if (targetIndex >= state.scenes.length) {
+          targetIndex = 0;
+        }
+      }
+      
+      applyScene(targetIndex);
       break;
     }
       

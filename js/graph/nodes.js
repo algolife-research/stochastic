@@ -5,6 +5,7 @@ import { TUNNEL_TEMPLATES, NODE_COLORS, NODE_ICONS } from '../core/constants.js'
 import * as state from '../core/state.js';
 import { updatePropPanel } from '../ui/panel.js';
 import { createEdge } from './edges.js';
+import { midiService } from '../io/midi.js';
 
 /**
  * Get default properties for a node type.
@@ -27,7 +28,10 @@ export function getDefaultPropsForType(type) {
     tunnel: { tunnelName: 'Custom', subNodes: [] },
     teleporter: { channel: 'A' },
     quantizer: { strength: 1.0, useGlobalKey: true },
-    lfo: { rate: 1, shape: 'sine', min: 0, max: 1, phase: 0 }
+    lfo: { rate: 1, shape: 'sine', min: 0, max: 1, phase: 0 },
+    midi_out: { channel: 1, duration: 200, velocityScale: 1.0 },
+    midi_cc: { channel: 1, ccNumber: 74 },
+    scene_trigger: { targetSceneIndex: -1, behavior: 'jump' }
   };
   return defaults[type] || {};
 }

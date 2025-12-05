@@ -34,6 +34,8 @@
       <div class="menu-item ctx-add-node" data-type="chord">🎹 Chord</div>
       <div class="menu-item ctx-add-node" data-type="quantizer">🎼 Quantizer</div>
       <div class="menu-item ctx-add-node" data-type="lfo">〰️ LFO</div>
+      <div class="menu-item ctx-add-node" data-type="midi_out">🎹 MIDI Out</div>
+      <div class="menu-item ctx-add-node" data-type="midi_cc">🎛️ MIDI CC</div>
       <div class="menu-item ctx-add-node" data-type="teleporter">🌀 Teleporter</div>
       <div class="menu-item ctx-add-node" data-type="tunnel">🚇 Tunnel (Empty)</div>
       <div class="menu-separator"></div>
@@ -93,10 +95,15 @@
           <option value="pentatonic_jam">Pentatonic Jam (Complete)</option>
           <option value="cv_routing_demo">CV Routing Advanced</option>
           <option value="blues_scale">Blues Scale Jam</option>
+          <option disabled>── Complex Ambient ──</option>
+          <option value="ambient_drone">Evolving Drone</option>
+          <option value="ambient_krell">Krell Patch (Self-Generating)</option>
+          <option value="ambient_polymetric">Polymetric Loops</option>
         </select>
         <button id="saveBtn" class="toolbar-btn">💾 Save</button>
         <button id="loadBtn" class="toolbar-btn">📂 Load</button>
         <button id="clearBtn" class="toolbar-btn">🗑️ Clear</button>
+        <button id="scenesBtn" class="toolbar-btn">🎬 Scenes</button>
         <button id="settingsBtn" class="toolbar-btn">⚙️</button>
       </div>
       <input type="file" id="fileInput" accept=".aiga,.json">
@@ -116,6 +123,21 @@
         Double-click: Add text &nbsp;|&nbsp;
         Shift+Drag: Box select &nbsp;|&nbsp; 
         Ctrl+G: Group into Tunnel
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenes Modal -->
+  <div id="scenes-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" id="close-scenes-modal">&times;</span>
+      <h2>Scene Management</h2>
+      <div class="scene-controls">
+        <input type="text" id="new-scene-name" placeholder="Scene Name" class="toolbar-input" style="width: 150px;">
+        <button id="capture-scene-btn" class="toolbar-btn primary">Capture Scene</button>
+      </div>
+      <div id="scene-list" class="scene-list">
+        <!-- Scenes will be populated here -->
       </div>
     </div>
   </div>
@@ -166,6 +188,20 @@
         <label>Gravity Strength</label>
         <input type="number" id="setting-gravity" value="0" min="0" max="2" step="0.1">
         <span style="font-size: 10px; color: #888; margin-left: 5px;">0 = off</span>
+      </div>
+
+      <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14px; color: #bb86fc;">🎹 MIDI Configuration</h3>
+      <div class="setting-row">
+        <label>MIDI Output</label>
+        <select id="setting-midi-out">
+          <option value="">None</option>
+        </select>
+        <button id="refresh-midi-btn" class="toolbar-btn" style="padding: 2px 6px; margin-left: 5px;" title="Refresh Devices">🔄</button>
+      </div>
+      <div class="setting-row">
+        <label>Clock Output</label>
+        <input type="checkbox" id="setting-midi-clock">
+        <span style="font-size: 10px; color: #888; margin-left: 5px;">Send MIDI Clock</span>
       </div>
       
       <h3 style="margin-top: 15px; margin-bottom: 10px; font-size: 14px; color: #bb86fc;">🎼 Timing</h3>

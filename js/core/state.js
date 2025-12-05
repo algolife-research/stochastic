@@ -20,6 +20,23 @@ export let nodes = [];
 export let edges = [];
 export let packets = [];
 
+// Project & Scenes (Phase 2)
+export let projectMeta = {
+  name: "Untitled Project",
+  author: "Anonymous",
+  created: Date.now(),
+  modified: Date.now(),
+  version: "1.0.0",
+  rootNote: 0, // C
+  scale: 'major',
+  gravity: 0,
+  midiOutputId: null,
+  midiClock: false
+};
+export let scenes = [];
+export let activeSceneIndex = -1;
+export let isDirty = false;
+
 // Annotations & Regions
 export let annotations = [];  // {id, x, y, text, fontSize, color}
 export let regions = [];      // {id, x, y, width, height, name, description, color}
@@ -102,6 +119,11 @@ export function setIsMuted(val) { isMuted = val; }
 export function setNodes(n) { nodes = n; }
 export function setEdges(e) { edges = e; }
 export function setPackets(p) { packets = p; }
+
+export function setProjectMeta(m) { projectMeta = m; }
+export function setScenes(s) { scenes = s; }
+export function setActiveSceneIndex(i) { activeSceneIndex = i; }
+export function setIsDirty(val) { isDirty = val; }
 
 export function setAnnotations(a) { annotations = a; }
 export function setRegions(r) { regions = r; }

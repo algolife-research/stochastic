@@ -10,6 +10,9 @@ import { saveGraph, loadGraph, loadData } from './io/serialization.js';
 import { spawnPacket, updatePackets } from './graph/packets.js';
 import { EXAMPLES } from './examples.js';
 import { initExportUI } from './ui/export.js';
+import { initScenesUI } from './ui/scenes_ui.js';
+import { initSettingsUI } from './ui/settings_ui.js';
+import { midiService } from './io/midi.js';
 
 /**
  * Initialize the AIGA application
@@ -25,6 +28,11 @@ export function initAiga() {
   
   setupUI();
   setupInteraction();
+  initScenesUI();
+  initSettingsUI();
+  
+  // Initialize MIDI
+  midiService.init();
   
   // Start main loop
   loop();

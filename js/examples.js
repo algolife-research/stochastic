@@ -890,5 +890,96 @@ export const EXAMPLES = {
       { "id": "e_r3", "from": "rhythm_q", "to": "rhythm_pol" },
       { "id": "e_r4", "from": "rhythm_pol", "to": "rhythm_out" }
     ]
+  },
+
+  "ambient_drone": {
+    "version": "1.0",
+    "bpm": 40,
+    "description": "Deep, evolving drone textures. Uses slow LFOs to modulate filter cutoffs, creating movement within a static chord.",
+    "nodes": [
+      { "id": "src_low", "type": "source", "x": 50, "y": 200, "props": { "interval": 8, "midiNote": 36, "intensity": 0.8 } },
+      { "id": "lfo_low", "type": "lfo", "x": 50, "y": 100, "props": { "rate": 0.1, "min": 200, "max": 800, "shape": "sine" } },
+      { "id": "flt_low", "type": "filter", "x": 200, "y": 200, "props": { "cutoff": 400, "resonance": 5, "attack": 2.0, "decay": 4.0 } },
+      { "id": "pol_low", "type": "polariser", "x": 350, "y": 200, "props": { "wave": "sawtooth", "attack": 2.0, "decay": 6.0 } },
+      { "id": "spk_low", "type": "speaker", "x": 500, "y": 200, "props": { "reverb": 0.8, "pan": -0.3 } },
+
+      { "id": "src_mid", "type": "source", "x": 50, "y": 350, "props": { "interval": 6, "midiNote": 48, "intensity": 0.6 } },
+      { "id": "pol_mid", "type": "polariser", "x": 200, "y": 350, "props": { "wave": "sine", "attack": 1.5, "decay": 4.0 } },
+      { "id": "dly_mid", "type": "delay", "x": 350, "y": 350, "props": { "delayTime": 0.5, "feedback": 0.4 } },
+      { "id": "spk_mid", "type": "speaker", "x": 500, "y": 350, "props": { "reverb": 0.9, "pan": 0.3 } },
+
+      { "id": "src_hi", "type": "source", "x": 50, "y": 500, "props": { "interval": 3, "noteIndex": -1, "intensity": 0.4 } },
+      { "id": "gate_hi", "type": "gate", "x": 150, "y": 500, "props": { "prob": 0.3 } },
+      { "id": "q_hi", "type": "quantizer", "x": 250, "y": 500, "props": { "scale": "pentatonic", "key": "C" } },
+      { "id": "pol_hi", "type": "polariser", "x": 350, "y": 500, "props": { "wave": "triangle", "attack": 0.1, "decay": 1.5 } },
+      { "id": "spk_hi", "type": "speaker", "x": 500, "y": 500, "props": { "reverb": 0.7, "pan": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "from": "src_low", "to": "flt_low" },
+      { "id": "e2", "from": "lfo_low", "to": "flt_low", "props": { "targetParam": "cutoff" } },
+      { "id": "e3", "from": "flt_low", "to": "pol_low" },
+      { "id": "e4", "from": "pol_low", "to": "spk_low" },
+      
+      { "id": "e5", "from": "src_mid", "to": "pol_mid" },
+      { "id": "e6", "from": "pol_mid", "to": "dly_mid" },
+      { "id": "e7", "from": "dly_mid", "to": "spk_mid" },
+
+      { "id": "e8", "from": "src_hi", "to": "gate_hi" },
+      { "id": "e9", "from": "gate_hi", "to": "q_hi" },
+      { "id": "e10", "from": "q_hi", "to": "pol_hi" },
+      { "id": "e11", "from": "pol_hi", "to": "spk_hi" }
+    ]
+  },
+
+  "ambient_krell": {
+    "version": "1.0",
+    "bpm": 80,
+    "description": "A 'Krell' style patch. Random notes with random envelopes. The LFO modulates the decay time of the Polariser, creating notes of varying lengths.",
+    "nodes": [
+      { "id": "clock", "type": "source", "x": 50, "y": 300, "props": { "interval": 0.5, "noteIndex": -1, "intensity": 0.7 } },
+      { "id": "gate", "type": "gate", "x": 150, "y": 300, "props": { "prob": 0.4 } },
+      { "id": "quant", "type": "quantizer", "x": 250, "y": 300, "props": { "scale": "lydian", "key": "C" } },
+      
+      { "id": "lfo_decay", "type": "lfo", "x": 250, "y": 150, "props": { "rate": 0.2, "min": 0.1, "max": 2.0, "shape": "random" } },
+      
+      { "id": "pol", "type": "polariser", "x": 400, "y": 300, "props": { "wave": "sine", "attack": 0.05, "decay": 0.5 } },
+      { "id": "delay", "type": "delay", "x": 550, "y": 300, "props": { "delayTime": 0.75, "feedback": 0.5 } },
+      { "id": "spk", "type": "speaker", "x": 700, "y": 300, "props": { "reverb": 0.6, "pan": 0 } }
+    ],
+    "edges": [
+      { "id": "e1", "from": "clock", "to": "gate" },
+      { "id": "e2", "from": "gate", "to": "quant" },
+      { "id": "e3", "from": "quant", "to": "pol" },
+      { "id": "e4", "from": "lfo_decay", "to": "pol", "props": { "targetParam": "decay" } },
+      { "id": "e5", "from": "pol", "to": "delay" },
+      { "id": "e6", "from": "delay", "to": "spk" }
+    ]
+  },
+
+  "ambient_polymetric": {
+    "version": "1.0",
+    "bpm": 110,
+    "description": "Three independent loops of lengths 5, 7, and 9 beats. They phase against each other, creating a constantly shifting harmonic pattern that rarely repeats.",
+    "nodes": [
+      { "id": "src5", "type": "source", "x": 50, "y": 150, "props": { "interval": 5, "midiNote": 60, "intensity": 0.6 } },
+      { "id": "pol5", "type": "polariser", "x": 200, "y": 150, "props": { "wave": "sine", "attack": 0.1, "decay": 2.0 } },
+      { "id": "dly5", "type": "delay", "x": 350, "y": 150, "props": { "delayTime": 0.5 } },
+      { "id": "spk5", "type": "speaker", "x": 500, "y": 150, "props": { "reverb": 0.5, "pan": -0.5 } },
+
+      { "id": "src7", "type": "source", "x": 50, "y": 300, "props": { "interval": 7, "midiNote": 64, "intensity": 0.6 } },
+      { "id": "pol7", "type": "polariser", "x": 200, "y": 300, "props": { "wave": "triangle", "attack": 0.1, "decay": 2.0 } },
+      { "id": "dly7", "type": "delay", "x": 350, "y": 300, "props": { "delayTime": 0.75 } },
+      { "id": "spk7", "type": "speaker", "x": 500, "y": 300, "props": { "reverb": 0.5, "pan": 0 } },
+
+      { "id": "src9", "type": "source", "x": 50, "y": 450, "props": { "interval": 9, "midiNote": 67, "intensity": 0.6 } },
+      { "id": "pol9", "type": "polariser", "x": 200, "y": 450, "props": { "wave": "sine", "attack": 0.1, "decay": 2.0 } },
+      { "id": "dly9", "type": "delay", "x": 350, "y": 450, "props": { "delayTime": 1.0 } },
+      { "id": "spk9", "type": "speaker", "x": 500, "y": 450, "props": { "reverb": 0.5, "pan": 0.5 } }
+    ],
+    "edges": [
+      { "id": "e1", "from": "src5", "to": "pol5" }, { "id": "e2", "from": "pol5", "to": "dly5" }, { "id": "e3", "from": "dly5", "to": "spk5" },
+      { "id": "e4", "from": "src7", "to": "pol7" }, { "id": "e5", "from": "pol7", "to": "dly7" }, { "id": "e6", "from": "dly7", "to": "spk7" },
+      { "id": "e7", "from": "src9", "to": "pol9" }, { "id": "e8", "from": "pol9", "to": "dly9" }, { "id": "e9", "from": "dly9", "to": "spk9" }
+    ]
   }
 };
