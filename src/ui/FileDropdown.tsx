@@ -115,12 +115,12 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
   };
 
   const handleCreateNew = async (name: string) => {
-    const filename = name.endsWith('.json') ? name : `${name}.json`;
+    const filename = name.endsWith('.phono') ? name : `${name}.phono`;
     
     // Clear graph
     clear();
     setProjectMeta({
-      name: name.replace('.json', ''),
+      name: name.replace('.phono', ''),
       author: '',
       created: Date.now(),
       modified: Date.now(),
@@ -166,7 +166,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
         const data = JSON.parse(content);
         loadGraphData(data);
         setCurrentComposition(filename);
-        setProjectMeta({ name: filename.replace('.json', '') });
+        setProjectMeta({ name: filename.replace('.phono', '') });
       } catch (err) {
         console.error('Failed to parse composition:', err);
       }
@@ -205,7 +205,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
         type="file"
         ref={fileInputRef}
         style={{ display: 'none' }}
-        accept=".json"
+        accept=".phono,.json"
         onChange={handleFileSelected}
       />
 

@@ -335,3 +335,12 @@
   border: none;
   border-radius: 2px;
 }
+
+/* Description/hint text */
+.description {
+  font-size: 11px;
+  color: #888;
+  padding: 8px 12px;
+  line-height: 1.4;
+  font-style: italic;
+}

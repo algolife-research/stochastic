@@ -47,6 +47,7 @@ const NODE_CATEGORIES: NodeCategory[] = [
       { type: 'delay', label: 'Delay', icon: NODE_ICONS.delay, color: NODE_COLORS.delay, shortcut: '6' },
       { type: 'gain', label: 'Gain', icon: NODE_ICONS.gain, color: NODE_COLORS.gain, shortcut: '7' },
       { type: 'quantizer', label: 'Quantizer', icon: NODE_ICONS.quantizer, color: NODE_COLORS.quantizer },
+      { type: 'splitter', label: 'Splitter', icon: NODE_ICONS.splitter, color: NODE_COLORS.splitter },
     ]
   },
   {

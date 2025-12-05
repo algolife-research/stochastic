@@ -127,6 +127,8 @@ function NodeProperties({ node }: NodePropertiesProps): React.ReactElement {
       return <MidiCcProps props={node.props as MidiCcPropsType} onChange={handleChange} />;
     case 'scene_trigger':
       return <SceneTriggerProps props={node.props as SceneTriggerPropsType} onChange={handleChange} />;
+    case 'splitter':
+      return <SplitterNodeProps props={node.props as SplitterPropsType} onChange={handleChange} />;
     default:
       return <GenericProps props={node.props as unknown as Record<string, unknown>} onChange={handleChange} />;
   }
@@ -155,6 +157,7 @@ type LfoPropsType = { rate: number; shape: 'sine' | 'square' | 'sawtooth' | 'tri
 type MidiOutPropsType = { channel: number; duration: number; velocityScale: number };
 type MidiCcPropsType = { channel: number; ccNumber: number };
 type SceneTriggerPropsType = { targetSceneIndex: number; behavior: 'jump' | 'crossfade' };
+type SplitterPropsType = { entangled: boolean };
 
 // ============================================================================
 // SPECIFIC PROPERTY EDITORS
@@ -1086,6 +1089,22 @@ function SceneTriggerProps({ props, onChange }: PropsEditorProps<SceneTriggerPro
           onChange={v => onChange('behavior', v)}
         />
       </PropertyRow>
+    </>
+  );
+}
+
+function SplitterNodeProps({ props, onChange }: PropsEditorProps<SplitterPropsType>): React.ReactElement {
+  return (
+    <>
+      <PropertyRow label="Entangled">
+        <Checkbox
+          checked={props.entangled ?? false}
+          onChange={v => onChange('entangled', v)}
+        />
+      </PropertyRow>
+      <div className={styles.description}>
+        When enabled, packets split here share effects — if one passes through a pitch modifier, all entangled packets are affected.
+      </div>
     </>
   );
 }

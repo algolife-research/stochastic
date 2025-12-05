@@ -2,7 +2,7 @@
 // Handles source timers, packet movement, and game loop
 
 import { getGraphStore } from './store';
-import type { Packet, GraphNode, NodeId, PacketId, MidiNote, Frequency } from './types';
+import type { Packet, GraphNode, NodeId, PacketId, MidiNote, Frequency, AudioPayload } from './types';
 import { createPacketId } from './types';
 import { dist, midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS } from './constants';
 import { processNodeArrival, getTeleporterExits, consumePendingTunnelSpeakers } from './engine';
@@ -14,6 +14,27 @@ import { audioEngine } from '@audio/engine';
 
 let lastTime = 0;
 let tickInterval: number | null = null;
+
+// ============================================================================
+// ENTANGLEMENT SYNC
+// ============================================================================
+
+/**
+ * Sync payload changes to all packets in the same entanglement group
+ * This creates the quantum-like behavior where split packets share effects
+ */
+function syncEntangledPayloads(
+  groupId: string, 
+  newPayload: AudioPayload, 
+  store: ReturnType<typeof getGraphStore>
+): void {
+  store.packets.forEach((packet) => {
+    if (packet.entanglementGroupId === groupId) {
+      // Sync the payload - update in place for performance
+      store.updatePacket(packet.id, { payload: { ...newPayload } });
+    }
+  });
+}
 
 // ============================================================================
 // MAIN TICK FUNCTION
@@ -350,6 +371,7 @@ function updatePackets(deltaTime: number): void {
                   edgeId: outEdge.id,
                   t: 0,
                   payload: { ...processedPayload },
+                  entanglementGroupId: packet.entanglementGroupId,  // Preserve entanglement
                 });
               }
             });
@@ -366,6 +388,21 @@ function updatePackets(deltaTime: number): void {
       return; // Don't propagate immediately
     }
     
+    // Handle splitter entanglement
+    let entanglementGroupId = packet.entanglementGroupId;
+    if (node.type === 'splitter') {
+      const props = node.props as { entangled?: boolean };
+      if (props.entangled) {
+        // Create new entanglement group for packets split here
+        entanglementGroupId = crypto.randomUUID();
+      }
+    }
+    
+    // Sync payload to entangled packets (if this packet is entangled)
+    if (packet.entanglementGroupId && node.type !== 'speaker' && node.type !== 'splitter') {
+      syncEntangledPayloads(packet.entanglementGroupId, processedPayload, store);
+    }
+    
     // Propagate to outgoing edges
     const outgoingEdges = store.getOutgoingEdges(node.id);
     outgoingEdges.forEach(outEdge => {
@@ -375,6 +412,7 @@ function updatePackets(deltaTime: number): void {
           edgeId: outEdge.id,
           t: 0,
           payload: { ...processedPayload },
+          entanglementGroupId,  // Propagate entanglement
         });
       }
     });

@@ -71,7 +71,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
         const data = JSON.parse(content);
         loadGraphData(data);
         setCurrentComposition(filename);
-        setProjectMeta({ name: filename.replace('.json', '') });
+        setProjectMeta({ name: filename.replace('.phono', '') });
       } catch (err) {
         console.error('Failed to parse composition:', err);
       }
@@ -137,7 +137,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
     
     if (project.path && isTauri()) {
       // Save to project folder
-      const jsonFilename = filename.endsWith('.json') ? filename : `${filename}.json`;
+      const phonoFilename = filename.endsWith('.phono') ? filename : `${filename}.phono`;
       const data = {
         version: '2.0.0',
         timestamp: Date.now(),
@@ -148,14 +148,14 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
         edges: Array.from(edges.values()),
       };
       
-      const success = await fs.writeComposition(project.path, jsonFilename, JSON.stringify(data, null, 2));
+      const success = await fs.writeComposition(project.path, phonoFilename, JSON.stringify(data, null, 2));
       if (success) {
         markClean();
-        setCurrentComposition(jsonFilename);
+        setCurrentComposition(phonoFilename);
         // Refresh list
         const files = await fs.listCompositions(project.path);
         setCompositions(files);
-        console.log('Composition saved to project:', jsonFilename);
+        console.log('Composition saved to project:', phonoFilename);
       } else {
         alert('Failed to save to project folder');
       }
@@ -221,7 +221,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
             >
               <option value="" disabled>Select Composition...</option>
               {project.compositions.map(file => (
-                <option key={file} value={file}>{file.replace('.json', '')}</option>
+                <option key={file} value={file}>{file.replace('.phono', '')}</option>
               ))}
             </select>
           )}
@@ -253,7 +253,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
       <input
         ref={fileInputRef}
         type="file"
-        accept=".phonon,.json"
+        accept=".phono,.json"
         style={{ display: 'none' }}
         onChange={handleFileSelected}
       />

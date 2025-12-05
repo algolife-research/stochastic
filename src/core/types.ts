@@ -203,7 +203,7 @@ export interface SceneTriggerProps {
 }
 
 export interface SplitterProps {
-  // Splitter has no properties - just passes packets to all outputs
+  readonly entangled: boolean;  // Entangled packets share payload changes
 }
 
 /** Union type for all node properties */
@@ -322,6 +322,7 @@ export interface Packet {
   readonly edgeId: EdgeId;
   t: number;                // 0-1 progress along edge
   payload: AudioPayload;
+  entanglementGroupId?: string;  // Entangled packets share payload changes
 }
 
 // ============================================================================
@@ -410,7 +411,7 @@ export type Tool =
   | 'source' | 'speaker' | 'pitch' | 'polariser' | 'filter' 
   | 'gate' | 'delay' | 'gain' | 'noise' | 'harmonic' 
   | 'modulator' | 'tunnel' | 'teleporter' | 'quantizer' 
-  | 'lfo' | 'midi_out' | 'midi_cc' | 'scene_trigger'
+  | 'lfo' | 'splitter' | 'midi_out' | 'midi_cc' | 'scene_trigger'
   | 'select' | 'pan' | 'link' | 'region' | 'annotation';
 
 export interface SelectionState {

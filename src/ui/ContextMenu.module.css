@@ -47,6 +47,20 @@
   margin: 4px 0;
 }
 
+.categoryHeader {
+  padding: 4px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.categoryHeader:first-child {
+  margin-top: 0;
+}
+
 .danger {
   color: #f44336;
 }

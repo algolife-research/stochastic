@@ -36,7 +36,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
     const filename = projectMeta.name || 'untitled';
     
     if (project.isProjectMode && project.path && isTauri()) {
-      const jsonFilename = filename.endsWith('.json') ? filename : `${filename}.json`;
+      const phonoFilename = filename.endsWith('.phono') ? filename : `${filename}.phono`;
       const data = {
         version: '2.0.0',
         timestamp: Date.now(),
@@ -47,13 +47,13 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
         edges: Array.from(edges.values()),
       };
       
-      const success = await fs.writeComposition(project.path, jsonFilename, JSON.stringify(data, null, 2));
+      const success = await fs.writeComposition(project.path, phonoFilename, JSON.stringify(data, null, 2));
       if (success) {
         markClean();
-        setCurrentComposition(jsonFilename);
+        setCurrentComposition(phonoFilename);
         const files = await fs.listCompositions(project.path);
         setCompositions(files);
-        console.log('Saved to project:', jsonFilename);
+        console.log('Saved to project:', phonoFilename);
       } else {
         alert('Failed to save to project folder');
       }
@@ -99,7 +99,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
         <>
           <div className={styles['separator']} />
           <span style={{ color: '#888', fontSize: '12px' }}>
-            📁 {project.name} / {project.currentComposition?.replace('.json', '') || 'No file'}
+            📁 {project.name} / {project.currentComposition?.replace('.phono', '') || 'No file'}
           </span>
         </>
       )}

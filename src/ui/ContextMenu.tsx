@@ -20,24 +20,51 @@ interface ContextMenuState {
 }
 
 // ============================================================================
-// NODE TYPE MENU ITEMS
+// NODE TYPE CATEGORIES
 // ============================================================================
 
-const NODE_TYPES: Array<{ type: NodeType; label: string; icon: string }> = [
-  { type: 'source', label: 'Source', icon: '◉' },
-  { type: 'speaker', label: 'Speaker', icon: '🔊' },
-  { type: 'pitch', label: 'Pitch', icon: '♯' },
-  { type: 'polariser', label: 'Polariser', icon: '∿' },
-  { type: 'filter', label: 'Filter', icon: '▼' },
-  { type: 'gate', label: 'Gate', icon: '⚡' },
-  { type: 'delay', label: 'Delay', icon: '⏱' },
-  { type: 'gain', label: 'Gain', icon: '⬆' },
-  { type: 'noise', label: 'Noise', icon: '▒' },
-  { type: 'harmonic', label: 'Harmonic', icon: '∞' },
-  { type: 'modulator', label: 'Modulator', icon: '⟳' },
-  { type: 'teleporter', label: 'Teleporter', icon: '⊚' },
-  { type: 'quantizer', label: 'Quantizer', icon: '♫' },
-  { type: 'tunnel', label: 'Tunnel', icon: '▭' },
+interface NodeCategory {
+  name: string;
+  nodes: Array<{ type: NodeType; label: string; icon: string }>;
+}
+
+const NODE_CATEGORIES: NodeCategory[] = [
+  {
+    name: 'Basic',
+    nodes: [
+      { type: 'source', label: 'Source', icon: '◉' },
+      { type: 'speaker', label: 'Speaker', icon: '🔊' },
+      { type: 'pitch', label: 'Pitch', icon: '♯' },
+    ]
+  },
+  {
+    name: 'Sound',
+    nodes: [
+      { type: 'polariser', label: 'Polariser', icon: '∿' },
+      { type: 'filter', label: 'Filter', icon: '▼' },
+      { type: 'noise', label: 'Noise', icon: '▒' },
+      { type: 'harmonic', label: 'Harmonic', icon: '∞' },
+    ]
+  },
+  {
+    name: 'Control',
+    nodes: [
+      { type: 'gate', label: 'Gate', icon: '⚡' },
+      { type: 'delay', label: 'Delay', icon: '⏱' },
+      { type: 'gain', label: 'Gain', icon: '⬆' },
+      { type: 'quantizer', label: 'Quantizer', icon: '♫' },
+      { type: 'splitter', label: 'Splitter', icon: '⋈' },
+    ]
+  },
+  {
+    name: 'Advanced',
+    nodes: [
+      { type: 'tunnel', label: 'Tunnel', icon: '▭' },
+      { type: 'teleporter', label: 'Teleporter', icon: '⊚' },
+      { type: 'modulator', label: 'Modulator', icon: '⟳' },
+      { type: 'lfo', label: 'LFO', icon: '∿' },
+    ]
+  }
 ];
 
 // ============================================================================
@@ -53,6 +80,7 @@ export function ContextMenu(): React.ReactElement | null {
     type: 'canvas',
   });
   const [showAddSubmenu, setShowAddSubmenu] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   
   // Listen for context menu events
   useEffect(() => {
@@ -151,6 +179,7 @@ export function ContextMenu(): React.ReactElement | null {
         
         setState(s => ({ ...s, visible: false }));
         setShowAddSubmenu(false);
+        setActiveCategory(null);
       }
     };
     
@@ -264,17 +293,31 @@ export function ContextMenu(): React.ReactElement | null {
           <div 
             className={styles.menuItem}
             onMouseEnter={() => setShowAddSubmenu(true)}
+            onMouseLeave={() => { setShowAddSubmenu(false); setActiveCategory(null); }}
           >
             Add Node ▸
             {showAddSubmenu && (
               <div className={styles.submenu}>
-                {NODE_TYPES.map(({ type, label, icon }) => (
+                {NODE_CATEGORIES.map((category) => (
                   <div 
-                    key={type}
+                    key={category.name}
                     className={styles.menuItem}
-                    onClick={() => handleAddNode(type)}
+                    onMouseEnter={() => setActiveCategory(category.name)}
                   >
-                    <span className={styles.icon}>{icon}</span> {label}
+                    {category.name} ▸
+                    {activeCategory === category.name && (
+                      <div className={styles.submenu}>
+                        {category.nodes.map(({ type, label, icon }) => (
+                          <div 
+                            key={type}
+                            className={styles.menuItem}
+                            onClick={() => handleAddNode(type)}
+                          >
+                            <span className={styles.icon}>{icon}</span> {label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -315,13 +358,27 @@ export function ContextMenu(): React.ReactElement | null {
             Add connected node:
           </div>
           <div className={styles.divider} />
-          {NODE_TYPES.map(({ type, label, icon }) => (
+          {NODE_CATEGORIES.map((category) => (
             <div 
-              key={type}
+              key={category.name}
               className={styles.menuItem}
-              onClick={() => handleAddNode(type)}
+              onMouseEnter={() => setActiveCategory(category.name)}
+              onMouseLeave={() => setActiveCategory(null)}
             >
-              <span className={styles.icon}>{icon}</span> {label}
+              {category.name} ▸
+              {activeCategory === category.name && (
+                <div className={styles.submenu}>
+                  {category.nodes.map(({ type, label, icon }) => (
+                    <div 
+                      key={type}
+                      className={styles.menuItem}
+                      onClick={() => handleAddNode(type)}
+                    >
+                      <span className={styles.icon}>{icon}</span> {label}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </>

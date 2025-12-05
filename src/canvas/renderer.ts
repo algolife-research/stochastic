@@ -178,7 +178,7 @@ export class CanvasRenderer {
     const viewLeft = -viewport.panOffset.x / viewport.zoomLevel;
     const viewTop = -viewport.panOffset.y / viewport.zoomLevel;
     
-    ctx.fillStyle = 'rgba(100, 150, 255, 0.8)';
+    ctx.fillStyle = 'rgba(242, 177, 86, 0.8)';
     
     for (let i = 0; i < numStars; i++) {
       // Deterministic position based on index

@@ -237,7 +237,7 @@ export const DEFAULT_LFO_PROPS: LfoProps = {
 };
 
 export const DEFAULT_SPLITTER_PROPS: SplitterProps = {
-  // No properties for splitter
+  entangled: false,  // When true, split packets share payload changes
 };
 
 export const DEFAULT_MIDI_OUT_PROPS: MidiOutProps = {

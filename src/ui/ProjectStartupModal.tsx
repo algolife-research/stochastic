@@ -96,12 +96,12 @@ export function ProjectStartupModal(): React.ReactElement | null {
 
   const createNewComposition = async () => {
     const name = newCompName.trim() || 'Untitled';
-    const filename = name.endsWith('.json') ? name : `${name}.json`;
+    const filename = name.endsWith('.phono') ? name : `${name}.phono`;
     
     // Clear graph
     clear();
     setProjectMeta({
-      name: name.replace('.json', ''),
+      name: name.replace('.phono', ''),
       author: '',
       created: Date.now(),
       modified: Date.now(),
@@ -156,7 +156,7 @@ export function ProjectStartupModal(): React.ReactElement | null {
                     style={{ padding: '8px 12px', width: '100%', border: 'none', borderBottom: '1px solid #333' }}
                     onClick={() => loadComposition(file)}
                   >
-                    📄 {file.replace('.json', '')}
+                    📄 {file.replace('.phono', '')}
                   </button>
                 ))}
               </div>

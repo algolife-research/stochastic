@@ -136,7 +136,7 @@ export async function saveGraphToFile(
   
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename.endsWith('.phonon') ? filename : `${filename}.phonon`;
+  a.download = filename.endsWith('.phono') ? filename : `${filename}.phono`;
   a.click();
   
   URL.revokeObjectURL(url);
