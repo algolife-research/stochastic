@@ -306,6 +306,33 @@ When asked to explain or debug:
 - Fixed timing edges with sequential durationBeats
 - Pitch nodes for intervals (+4, +7, etc.)
 
+**User:** "Create a song with verse and chorus"
+- Use scene system (not just one graph)
+- Scene 1: Verse (simpler, longer duration)
+- Scene 2: Chorus (fuller, more voices)
+- Build arrangement: Verse → Chorus → Verse → Chorus
+
+---
+
+## Scene System
+
+Phonon supports multi-scene compositions for creating songs with distinct sections.
+
+### Scene Properties
+
+Each scene can have:
+- **Name:** Descriptive label (e.g., "Intro", "Verse", "Chorus")
+- **Duration:** Length in beats (used in Arrangement mode)
+- **Loop Count:** How many times to repeat (1 = play once)
+- **Local Overrides:** Per-scene BPM, root note, scale (null = inherit global)
+
+### Playback Modes
+
+| Mode | Behavior |
+|------|----------|
+| **Arrangement** | Scenes play for defined duration, auto-advance |
+| **Jam** | Scenes play indefinitely, user triggers changes |
+
 ---
 
 ## Source Node Special Values

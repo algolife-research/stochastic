@@ -922,6 +922,102 @@ Precise timing creates arpeggiated chord.
 
 ---
 
+## Scene System
+
+Phonon v3 supports multi-scene compositions for creating songs with distinct sections (verse, chorus, bridge, etc.).
+
+### Scene Data Structure
+
+```typescript
+interface Scene {
+  id: string;                    // Unique identifier
+  name: string;                  // Display name ("Intro", "Verse", etc.)
+  color: string;                 // Hex color for UI
+  
+  // Graph content
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  annotations: Annotation[];
+  regions: Region[];
+  
+  // Timing
+  durationBeats: number;         // Length in beats
+  loopCount: number;             // Repetitions (1 = play once)
+  
+  // Local overrides (null = inherit global)
+  localBpm: number | null;
+  localRoot: number | null;      // 0-11 (C=0)
+  localScale: ScaleName | null;
+  
+  // Transitions
+  enterTransition: { type: 'cut' | 'crossfade' | 'fade', durationBeats: number };
+  exitTransition: { type: 'cut' | 'crossfade' | 'fade', durationBeats: number };
+}
+```
+
+### Playback Modes
+
+| Mode | Description |
+|------|-------------|
+| **Arrangement** | Scenes play in sequence with enforced durations, auto-advance |
+| **Jam** | Scenes play indefinitely until user triggers change |
+
+### Arrangement Slots
+
+```typescript
+interface ArrangementSlot {
+  id: string;
+  sceneId: string;              // Reference to scene
+  startBeat: number;            // Position in arrangement
+  instanceLoopCount?: number;   // Override scene's loop count
+  instanceBpm?: number;         // Override BPM for this instance
+}
+```
+
+### Export Behavior
+
+- **Arrangement Export:** Renders all scenes in order, calculates total duration automatically
+- **Canvas Export:** Renders current canvas with user-specified duration
+
+### Example Multi-Scene Composition
+
+```json
+{
+  "meta": { "version": "3.0.0", "name": "Simple Song" },
+  "global": { "bpm": 120, "rootNote": 0, "scaleName": "minor" },
+  "scenes": [
+    {
+      "id": "scene-verse",
+      "name": "Verse",
+      "color": "#2196F3",
+      "durationBeats": 32,
+      "loopCount": 1,
+      "localBpm": null,
+      "nodes": [ /* verse graph */ ],
+      "edges": [ /* verse edges */ ]
+    },
+    {
+      "id": "scene-chorus",
+      "name": "Chorus", 
+      "color": "#FF9800",
+      "durationBeats": 16,
+      "loopCount": 1,
+      "localScale": "major",
+      "nodes": [ /* chorus graph - fuller sound */ ],
+      "edges": [ /* chorus edges */ ]
+    }
+  ],
+  "arrangement": [
+    { "id": "slot-1", "sceneId": "scene-verse", "startBeat": 0 },
+    { "id": "slot-2", "sceneId": "scene-chorus", "startBeat": 32 },
+    { "id": "slot-3", "sceneId": "scene-verse", "startBeat": 48 },
+    { "id": "slot-4", "sceneId": "scene-chorus", "startBeat": 80 }
+  ]
+}
+```
+
+---
+
 ## Quick Reference
 
 ### Minimal Valid Composition

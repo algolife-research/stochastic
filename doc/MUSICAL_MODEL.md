@@ -312,14 +312,60 @@ GraphState = {
   packets: Map<PacketId, Packet>,    // Max: 1000
   annotations: Map<AnnotationId, Annotation>,
   regions: Map<RegionId, Region>,
-  scenes: Map<SceneId, Scene>,
   
+  // Scene System
+  scenes: Map<SceneId, Scene>,
+  arrangement: ArrangementSlot[],
+  activeSceneId: SceneId | null,
+  editingSceneId: SceneId | null,
+  scenePlayback: ScenePlaybackState,
+
   masterSpeed: BPM,
   isRunning: boolean,
   musicalContext: MusicalContext,
   globalSettings: { gravityConstant, ... }
 }
 ```
+
+## Scene System
+
+Phonon supports multi-section compositions through the Scene System.
+
+### Scene Structure
+
+```typescript
+Scene = {
+  id: SceneId,
+  name: string,                    // "Intro", "Verse", "Chorus"
+  color: string,                   // UI visualization
+  
+  // Graph snapshot
+  nodes: GraphNode[],
+  edges: GraphEdge[],
+  
+  // Timing
+  durationBeats: number,           // Length in beats
+  loopCount: number,               // Repetitions (1 = play once)
+  
+  // Musical overrides (null = inherit global)
+  localBpm: number | null,
+  localRoot: number | null,        // 0-11
+  localScale: ScaleName | null
+}
+```
+
+### Playback Modes
+
+| Mode | Duration | Advancement | Use Case |
+|------|----------|-------------|----------|
+| **Arrangement** | Enforced | Auto-advance | Composed pieces |
+| **Jam** | Infinite | User-triggered | Live performance |
+
+### Settings Inheritance
+
+Global settings cascade to scenes, with per-scene overrides winning:
+- `localBpm: null` → Use global BPM
+- `localScale: "major"` → Override global scale
 
 ## Extension Points
 
@@ -330,6 +376,7 @@ The model supports extension through:
 3. **New synthesis:** AudioWorklet supports custom DSP
 4. **New routing:** Custom packet flow decisions
 5. **MIDI output:** `midi_out` and `midi_cc` nodes for external gear
+6. **Scene features:** Transitions, triggers, automation
 
 ## References
 

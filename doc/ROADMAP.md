@@ -2,7 +2,7 @@
 
 This document outlines the development trajectory for Phonon, moving from its current stable desktop release to a fully realized "Quantum Music Engine."
 
-## Phase 1: Foundation (Completed)
+## Phase 1: Foundation (Completed ✓)
 **Goal:** A stable, testable, and usable graph-based audio application.
 - [x] **Core Graph Engine:** Nodes, Edges, Packets.
 - [x] **Basic Nodes:** Source, Speaker, Pitch, Polariser.
@@ -13,28 +13,84 @@ This document outlines the development trajectory for Phonon, moving from its cu
 - [x] **Export:** Render compositions to WAV audio files.
 - [x] **Testing:** Comprehensive Unit and E2E test suite.
 
-## Phase 2: The Living Graph (Current Focus)
+## Phase 2: Scene System (Completed ✓)
+**Goal:** Multi-section compositions with arrangement and live performance modes.
+
+### 2.1 Core Scene Features
+- [x] **Scene Data Model:** Scenes store graph snapshots (nodes, edges, annotations, regions)
+- [x] **Scene Panel UI:** List view, create/duplicate/delete, properties editor
+- [x] **Scene Properties:** Name, color, duration (beats), loop count
+- [x] **Local Overrides:** Per-scene BPM, root note, and scale settings
+- [x] **Auto-save:** Canvas auto-saves to scene when switching
+
+### 2.2 Playback Modes
+- [x] **Arrangement Mode:** Scenes play in defined order with enforced durations
+- [x] **Jam Mode:** Scenes play indefinitely until user triggers change
+- [x] **Mode Toggle:** Transport bar switch between modes
+
+### 2.3 Transport Controls
+- [x] **Play/Pause/Stop:** Full transport with pause (preserves state) and stop (resets)
+- [x] **Scene Triggering:** Click to load, double-click for immediate switch
+- [x] **Scene Queuing:** Queue next scene in Jam mode
+
+### 2.4 Arrangement
+- [x] **Arrangement Timeline:** Visual timeline showing scene sequence
+- [x] **Add to Arrangement:** Add scenes with automatic position calculation
+- [x] **Slot Management:** Reorder, remove arrangement slots
+
+### 2.5 Export
+- [x] **Arrangement Export:** Export entire arrangement to WAV/MIDI
+- [x] **Duration Calculation:** Auto-calculate total duration from scenes
+- [x] **Export Mode Toggle:** Choose between canvas or arrangement export
+
+## Phase 3: The Living Graph (Current Focus)
 **Goal:** Introduce biological/evolutionary metaphors and deeper modulation.
 
-### 2.1 Mutators & LFOs
-- **LFO Node:** Does not process packets but connects to *properties* of other nodes (e.g., modulating the "Shift" of a Pitch node over time).
-- **Randomizer Node:** Randomly alters specific properties of passing packets (e.g., +/- 12 semitones).
+### 3.1 Mutators & LFOs
+- [x] **LFO Node:** Continuous modulation of node properties
+- [ ] **Randomizer Node:** Random property mutations on packets
 
-### 2.2 Visual Feedback Polish
-- **Particle Trails:** Visual history of where packets have been.
-- **Pulse Animation:** Nodes should pulse visually when processing a packet.
-- **Wire Animation:** Edges should vibrate or light up as packets travel.
+### 3.2 Visual Feedback Polish
+- [ ] **Particle Trails:** Visual history of where packets have been
+- [x] **Pulse Animation:** Nodes flash visually when processing a packet
+- [x] **Wire Animation:** Edges animate as packets travel
 
-### 2.3 Audio Polish
-- **ADSR Envelopes:** More granular control over Attack/Decay/Sustain/Release in the Polariser or Speaker.
-- **Global Effects:** Master Reverb/Delay send controls.
+### 3.3 Audio Polish
+- [x] **AHD Envelopes:** Attack-Hold-Decay control on Polariser and Speaker
+- [x] **Global Reverb:** Master reverb send with convolution
+- [ ] **Per-Scene Transitions:** Crossfade/fade audio during scene changes
 
-## Phase 3: The Ecosystem (Long-Term)
+## Phase 4: Advanced Scene Features (Planned)
+**Goal:** Professional-grade scene orchestration.
+
+### 4.1 Transitions
+- [ ] **Crossfade Transitions:** Smooth audio blend between scenes
+- [ ] **BPM Ramping:** Gradual tempo changes during transitions
+- [ ] **Transition Curves:** Configurable fade curves
+
+### 4.2 Live Performance
+- [ ] **MIDI Triggering:** Trigger scenes via MIDI notes
+- [ ] **Keyboard Shortcuts:** Number keys for scene selection
+- [ ] **Phrase Quantization:** Queue triggers to next bar/phrase
+
+### 4.3 Advanced Arrangement
+- [ ] **Drag-and-Drop:** Reorder scenes in timeline
+- [ ] **Per-Slot Overrides:** Instance-specific BPM and loop count
+- [ ] **Markers/Cue Points:** Annotation markers in arrangement
+
+## Phase 5: The Ecosystem (Long-Term)
 **Goal:** Professional features and community.
 
-### 3.1 Interoperability
-- **MIDI Out:** Speakers send MIDI Note On/Off instead of internal audio. Allows Phonon to drive Ableton/Logic.
-- **VST/AU Plugin:** Wrap the engine (via JUCE or similar) to run inside a DAW.
+### 5.1 Interoperability
+- [x] **MIDI Out:** Speakers can send MIDI Note On/Off
+- [ ] **VST/AU Plugin:** Wrap the engine to run inside a DAW
+- [ ] **OSC Support:** Control Phonon from external applications
 
-### 3.2 3D / VR Interface
-- Move from 2D Canvas to 3D Space (Three.js).
+### 5.2 3D / VR Interface
+- [ ] Move from 2D Canvas to 3D Space (Three.js)
+- [ ] VR composition environment
+
+### 5.3 Collaboration
+- [ ] **Cloud Sync:** Save compositions to cloud
+- [ ] **Sharing:** Publish and discover community compositions
+- [ ] **Real-time Collaboration:** Multi-user editing

@@ -1,8 +1,14 @@
 # Phonon: Scene System Design
 
+> **Implementation Status: COMPLETE (v3.0)**
+> 
+> This document describes the Scene System that has been fully implemented in Phonon.
+> Core features including scene management, arrangement mode, jam mode, transport controls,
+> and export support are all functional.
+
 ## Executive Summary
 
-This document proposes a comprehensive **Scene System** that transforms Phonon from a single-graph musical instrument into a **multi-scene composition environment**, enabling the creation of complex pieces with distinct sections (intro, verse, chorus, bridge, outro, etc.).
+This document describes the comprehensive **Scene System** that transforms Phonon from a single-graph musical instrument into a **multi-scene composition environment**, enabling the creation of complex pieces with distinct sections (intro, verse, chorus, bridge, outro, etc.).
 
 ---
 
@@ -1069,5 +1075,52 @@ Arrangement:
 
 ---
 
-*Document Version: 1.0*  
+## Implementation Status
+
+> **Version 3.0 - December 2024**
+
+### ✅ Fully Implemented
+
+| Feature | Location | Notes |
+|---------|----------|-------|
+| Scene Data Model | `types.ts` | Scene, ArrangementSlot, ScenePlaybackState types |
+| Scene Storage | `store.ts` | `scenes: Map<SceneId, Scene>`, `arrangement: ArrangementSlot[]` |
+| Scene CRUD | `store.ts` | createScene, deleteScene, duplicateScene, updateScene |
+| Canvas Auto-save | `store.ts` | loadSceneToCanvas saves before loading |
+| Scene Panel UI | `ScenePanel.tsx` | List, properties, create/delete/duplicate |
+| Scene Properties | `ScenePanel.tsx` | Name, color, duration, loops, local overrides |
+| Arrangement Mode | `tick.ts` | updateArrangementMode with slot transitions |
+| Jam Mode | `tick.ts` | Infinite playback until user change |
+| Playback Mode Toggle | `TransportBar.tsx` | Switch between arrangement/jam |
+| Transport Controls | `store.ts` | Play, pause (preserves state), stop (resets) |
+| Scene Triggering | `ScenePanel.tsx` | Click to load, double-click for immediate |
+| Add to Arrangement | `store.ts`, `ScenePanel.tsx` | addToArrangement with auto-position |
+| Arrangement Timeline | `ArrangementTimeline.tsx` | Visual representation of slots |
+| Export: Arrangement | `compiler.ts` | compileArrangement renders all scenes |
+| Export: Duration Calc | `compiler.ts` | calculateArrangementDuration |
+| Export Modal | `ExportModal.tsx` | Source selection (arrangement vs canvas) |
+| Examples as Compositions | `examples.ts` | loadExample uses clearCanvas, preserves scenes |
+
+### 🚧 Partially Implemented
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Scene Transitions | Types defined | Audio crossfade not yet implemented |
+| BPM Ramping | Data model ready | Runtime ramping not implemented |
+| Per-slot Overrides | Types defined | UI not exposed yet |
+
+### 📋 Planned (Not Implemented)
+
+| Feature | Priority | Notes |
+|---------|----------|-------|
+| MIDI Scene Triggering | Medium | Trigger scenes via MIDI notes |
+| Keyboard Shortcuts | Medium | Number keys for scene selection |
+| Phrase Quantization | Medium | Queue to next bar/phrase |
+| Drag-and-Drop Timeline | Low | Reorder scenes visually |
+| Markers/Cue Points | Low | Annotation in arrangement |
+| Audio Crossfades | Medium | Smooth blend between scenes |
+
+---
+
+*Document Version: 3.0*  
 *Last Updated: December 2024*

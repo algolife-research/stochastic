@@ -177,9 +177,32 @@ High-mass nodes create "gravitational" drag:
 - Creates natural rubato effects
 - Adjustable via `gravityConstant` global setting
 
-### 6.3 Scenes (Implemented)
+### 6.3 Scenes System (Implemented)
 
-The scene system allows multiple graph configurations:
-- `scene_trigger` nodes switch between scenes
-- Enables song sections (verse/chorus/bridge)
-- Supports `'jump'` or `'crossfade'` transitions
+The scene system enables multi-section compositions:
+
+**Core Features:**
+- **Scene Storage:** Each scene stores a complete graph snapshot
+- **Scene Properties:** Duration (beats), loop count, local overrides
+- **Auto-save:** Canvas content auto-saves when switching scenes
+
+**Playback Modes:**
+
+| Mode | Behavior |
+|------|----------|
+| **Arrangement** | Scenes play in sequence with enforced durations |
+| **Jam** | Scenes play indefinitely until user triggers change |
+
+**Scene Transitions:**
+- Click scene to load for editing (when stopped)
+- Double-click for immediate switch (when playing)
+- Scenes can override global BPM, root note, and scale
+
+**Arrangement Timeline:**
+- Visual representation of scene sequence
+- Add scenes to build complete compositions
+- Export renders all scenes in order
+
+### 6.4 Entanglement Nodes (Future)
+
+Two nodes linked by quantum entanglement: modifying one instantly affects the other regardless of graph distance.
