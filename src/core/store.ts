@@ -72,6 +72,12 @@ interface GraphState {
   selection: SelectionState;
   currentTool: Tool;
   
+  // Clipboard for copy/paste
+  clipboard: {
+    nodes: { type: NodeType; relX: number; relY: number; props: Record<string, unknown> }[];
+    edges: { fromIndex: number; toIndex: number; timingMode: string; durationBeats: number; targetParam?: string }[];
+  } | null;
+  
   // Viewport
   viewport: ViewportState;
   
@@ -95,6 +101,8 @@ interface GraphActions {
   releaseHeldPackets: (id: NodeId, indices: number[]) => void;
   duplicateNode: (id: NodeId) => NodeId | null;
   duplicateSelectedNodes: () => void;
+  copySelectedNodes: () => void;
+  pasteNodes: () => void;
   groupSelectedNodes: () => NodeId | null;
   
   // Edge operations
@@ -307,6 +315,8 @@ const initialState: GraphState = {
   },
   
   currentTool: 'select',
+  
+  clipboard: null,
   
   viewport: {
     panOffset: { x: 0, y: 0 },
@@ -1110,6 +1120,123 @@ export const useGraphStore = create<GraphStore>()(
               timingMode: edge.timingMode,
               durationBeats: edge.durationBeats,
               targetParam: edge.targetParam,
+            };
+            set(s => {
+              s.edges.set(newEdgeId, newEdge as never);
+            });
+          }
+        });
+        
+        // Select new nodes
+        set(s => {
+          s.selection.selectedNodeIds = newNodeIds;
+          s.isDirty = true;
+        });
+      },
+      
+      copySelectedNodes: () => {
+        const state = get();
+        const selectedIds = state.selection.selectedNodeIds;
+        if (selectedIds.length === 0) return;
+        
+        // Calculate center of selection for relative positioning
+        let sumX = 0, sumY = 0, count = 0;
+        const selectedNodes: GraphNode[] = [];
+        
+        selectedIds.forEach(id => {
+          const node = state.nodes.get(id);
+          if (node) {
+            selectedNodes.push(node);
+            sumX += node.x;
+            sumY += node.y;
+            count++;
+          }
+        });
+        
+        if (count === 0) return;
+        const centerX = sumX / count;
+        const centerY = sumY / count;
+        
+        // Build index map for edges
+        const nodeIndexMap = new Map<NodeId, number>();
+        const clipboardNodes: { type: NodeType; relX: number; relY: number; props: Record<string, unknown> }[] = [];
+        
+        selectedNodes.forEach((node, index) => {
+          nodeIndexMap.set(node.id, index);
+          clipboardNodes.push({
+            type: node.type,
+            relX: node.x - centerX,
+            relY: node.y - centerY,
+            props: JSON.parse(JSON.stringify(node.props)),
+          });
+        });
+        
+        // Copy edges between selected nodes
+        const clipboardEdges: { fromIndex: number; toIndex: number; timingMode: string; durationBeats: number; targetParam?: string }[] = [];
+        state.edges.forEach(edge => {
+          const fromIndex = nodeIndexMap.get(edge.from);
+          const toIndex = nodeIndexMap.get(edge.to);
+          if (fromIndex !== undefined && toIndex !== undefined) {
+            clipboardEdges.push({
+              fromIndex,
+              toIndex,
+              timingMode: edge.timingMode,
+              durationBeats: edge.durationBeats,
+              targetParam: edge.targetParam,
+            });
+          }
+        });
+        
+        set(s => {
+          s.clipboard = { nodes: clipboardNodes, edges: clipboardEdges };
+        });
+      },
+      
+      pasteNodes: () => {
+        const state = get();
+        if (!state.clipboard || state.clipboard.nodes.length === 0) return;
+        
+        // Paste at mouse position (or offset from original if no mouse position)
+        const pasteX = state.mouse.worldX || 100;
+        const pasteY = state.mouse.worldY || 100;
+        
+        const newNodeIds: NodeId[] = [];
+        
+        // Create nodes
+        state.clipboard.nodes.forEach(clipNode => {
+          const newId = createNodeId();
+          newNodeIds.push(newId);
+          
+          const newNode: GraphNode = {
+            id: newId,
+            type: clipNode.type,
+            x: pasteX + clipNode.relX,
+            y: pasteY + clipNode.relY,
+            props: JSON.parse(JSON.stringify(clipNode.props)),
+            timer: 0,
+            lastTrigger: 0,
+            flash: 0,
+            heldPackets: [],
+          };
+          
+          set(s => {
+            s.nodes.set(newId, newNode as never);
+          });
+        });
+        
+        // Create edges
+        state.clipboard.edges.forEach(clipEdge => {
+          const fromId = newNodeIds[clipEdge.fromIndex];
+          const toId = newNodeIds[clipEdge.toIndex];
+          if (fromId && toId) {
+            const newEdgeId = createEdgeId();
+            const newEdge: GraphEdge = {
+              id: newEdgeId,
+              from: fromId,
+              to: toId,
+              timingMode: clipEdge.timingMode as 'immediate' | 'beat' | 'param',
+              durationBeats: clipEdge.durationBeats,
+              targetParam: clipEdge.targetParam,
             };
             set(s => {
               s.edges.set(newEdgeId, newEdge as never);

@@ -456,23 +456,17 @@ export class CanvasInputHandler {
         const newId = store.addAnnotation(snapToGrid(world.x), snapToGrid(world.y), 'Note');
         store.selectAnnotation(newId);
         store.setTool('select');
-      } else if (e.shiftKey) {
-        // Start box selection
-        this.isBoxSelecting = true;
-        store.setBoxSelecting(true, { x: world.x, y: world.y });
-        this.canvas.style.cursor = 'crosshair';
       } else if (isNodeTool(tool)) {
         // Create new node
         const newNodeId = store.addNode(tool as NodeType, snapToGrid(world.x), snapToGrid(world.y));
         store.selectNode(newNodeId);
         store.setTool('select');
       } else {
-        // Clear selection and start panning
+        // Clear selection and start box selection (simple drag)
         store.clearSelection();
-        this.isPanning = true;
-        this.panStart = { x: screenX, y: screenY };
-        store.setIsPanning(true);
-        this.canvas.style.cursor = 'grabbing';
+        this.isBoxSelecting = true;
+        store.setBoxSelecting(true, { x: world.x, y: world.y });
+        this.canvas.style.cursor = 'crosshair';
       }
     }
   };
@@ -880,16 +874,6 @@ export class CanvasInputHandler {
         }
         break;
         
-      case 'KeyL':
-        // Start linking from selected node
-        if (store.selection.selectedNodeIds.length === 1) {
-          const selectedId = store.selection.selectedNodeIds[0];
-          if (selectedId) {
-            store.setLinkingFrom(selectedId);
-          }
-        }
-        break;
-        
       case 'Escape':
         store.setLinkingFrom(null);
         store.clearSelection();
@@ -912,11 +896,6 @@ export class CanvasInputHandler {
         store.setTool('region');
         break;
       
-      case 'KeyV':
-        // Switch to select tool
-        store.setTool('select');
-        break;
-      
       case 'KeyG':
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
@@ -934,6 +913,24 @@ export class CanvasInputHandler {
           if (store.selection.selectedNodeIds.length > 0) {
             store.duplicateSelectedNodes();
           }
+        }
+        break;
+      
+      case 'KeyC':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          // Copy selected nodes to clipboard
+          if (store.selection.selectedNodeIds.length > 0) {
+            store.copySelectedNodes();
+          }
+        }
+        break;
+      
+      case 'KeyV':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          // Paste nodes from clipboard
+          store.pasteNodes();
         }
         break;
         
