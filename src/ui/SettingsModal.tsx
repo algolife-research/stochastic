@@ -22,6 +22,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
   const [rootNote, setRootNote] = useState(musicalContext.root);
   const [scaleName, setScaleName] = useState(musicalContext.scaleName);
   const [gravity, setGravity] = useState(globalSettings.gravityConstant);
+  const [defaultEdgeBehaviour, setDefaultEdgeBehaviour] = useState(globalSettings.defaultEdgeBehaviour);
   const [projectName, setProjectName] = useState(projectMeta.name);
   const [projectAuthor, setProjectAuthor] = useState(projectMeta.author);
   
@@ -30,6 +31,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
       setRootNote(musicalContext.root);
       setScaleName(musicalContext.scaleName);
       setGravity(globalSettings.gravityConstant);
+      setDefaultEdgeBehaviour(globalSettings.defaultEdgeBehaviour);
       setProjectName(projectMeta.name);
       setProjectAuthor(projectMeta.author);
     }
@@ -42,8 +44,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
       setMusicalContext({ root: rootNote, scale, scaleName });
     }
     
-    // Update global settings
-    setGlobalSettings({ gravityConstant: gravity });
+    // Update universal constants
+    setGlobalSettings({ gravityConstant: gravity, defaultEdgeBehaviour });
     
     // Update project meta
     setProjectMeta({
@@ -61,6 +63,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
     setRootNote(musicalContext.root);
     setScaleName(musicalContext.scaleName);
     setGravity(globalSettings.gravityConstant);
+    setDefaultEdgeBehaviour(globalSettings.defaultEdgeBehaviour);
     setProjectName(projectMeta.name);
     setProjectAuthor(projectMeta.author);
     onClose();
@@ -74,7 +77,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
     <div className={styles.overlay} onClick={handleCancel}>
       <div className={styles.modal} onClick={e => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2>⚙️ Global Settings</h2>
+          <h2>⚙️ Universal Constants</h2>
           <button className={styles.closeBtn} onClick={handleCancel}>×</button>
         </div>
         
@@ -133,9 +136,24 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
             </div>
           </section>
           
-          {/* Physics */}
+          {/* Universal Constants */}
           <section className={styles.section}>
-            <h3>Physics</h3>
+            <h3>Universal Constants</h3>
+            
+            <div className={styles.row}>
+              <label>Default Edge Behaviour</label>
+              <select 
+                value={defaultEdgeBehaviour} 
+                onChange={e => setDefaultEdgeBehaviour(e.target.value as 'physical' | 'fixed')}
+              >
+                <option value="fixed">Fixed (1 beat)</option>
+                <option value="physical">Physical (length-based)</option>
+              </select>
+            </div>
+            
+            <div className={styles.info}>
+              <p>New edges default to this timing mode. Fixed = 1 beat duration, Physical = based on edge length.</p>
+            </div>
             
             <div className={styles.row}>
               <label>Gravity Constant</label>

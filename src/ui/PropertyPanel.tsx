@@ -1189,18 +1189,19 @@ interface SliderInputProps {
 }
 
 function SliderInput({ value, min, max, step, onChange }: SliderInputProps): React.ReactElement {
+  const safeValue = value ?? min ?? 0;
   return (
     <div className={styles.sliderContainer}>
       <input
         type="range"
         className={styles.slider}
-        value={value}
+        value={safeValue}
         min={min}
         max={max}
         step={step}
         onChange={e => onChange(parseFloat(e.target.value))}
       />
-      <span className={styles.sliderValue}>{value.toFixed(2)}</span>
+      <span className={styles.sliderValue}>{safeValue.toFixed(2)}</span>
     </div>
   );
 }

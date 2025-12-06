@@ -292,7 +292,8 @@ function updatePackets(deltaTime: number): void {
       traverseTime = beatsToTraverse * secondsPerBeat;
     }
     
-    const speed = traverseTime > 0 ? deltaTime / traverseTime : 0;
+    // If traverseTime is 0 or very small, arrive immediately
+    const speed = traverseTime > 0.0001 ? deltaTime / traverseTime : 1;
     
     // Update position
     const newT = packet.t + speed;

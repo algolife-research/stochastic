@@ -77,6 +77,7 @@ export function ProjectStartupModal(): React.ReactElement | null {
           subdivisions: data.globalSettings.subdivisions,
           pixelsPerBeat: data.globalSettings.pixelsPerBeat,
           gravityConstant: data.globalSettings.gravityConstant,
+          defaultEdgeBehaviour: data.globalSettings.defaultEdgeBehaviour ?? 'fixed',
         });
         
         setProjectMeta({

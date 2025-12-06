@@ -357,14 +357,16 @@ export function calculatePacketSpeed(edge: GraphEdge, deltaTime: number): number
     const secondsPerBeat = 60 / bpm;
     const traverseTime = beatsToTraverse * secondsPerBeat;
     
-    return traverseTime > 0 ? deltaTime / traverseTime : 0;
+    // If traverseTime is 0 or very small, arrive immediately
+    return traverseTime > 0.0001 ? deltaTime / traverseTime : 1;
   }
   
   // Fixed timing: constant beats regardless of length
   if (edge.durationBeats !== null) {
     const secondsPerBeat = 60 / bpm;
     const traverseTime = edge.durationBeats * secondsPerBeat;
-    return traverseTime > 0 ? deltaTime / traverseTime : 0;
+    // If traverseTime is 0 or very small, arrive immediately
+    return traverseTime > 0.0001 ? deltaTime / traverseTime : 1;
   }
   
   return 0;

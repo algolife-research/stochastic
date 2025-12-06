@@ -85,6 +85,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
       subdivisions: data.globalSettings.subdivisions,
       pixelsPerBeat: data.globalSettings.pixelsPerBeat,
       gravityConstant: data.globalSettings.gravityConstant,
+      defaultEdgeBehaviour: data.globalSettings.defaultEdgeBehaviour ?? 'fixed',
     });
     
     setProjectMeta({

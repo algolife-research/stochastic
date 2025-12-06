@@ -22,6 +22,7 @@ export interface SerializedGraph {
     rootNote: number;
     scaleName: string;
     gravity: number;
+    defaultEdgeBehaviour?: 'physical' | 'fixed';
   };
   graph: {
     nodes: Array<{
@@ -61,6 +62,7 @@ export function serializeGraph(
       rootNote: musicalContext.root,
       scaleName: musicalContext.scaleName,
       gravity: globalSettings.gravityConstant,
+      defaultEdgeBehaviour: globalSettings.defaultEdgeBehaviour,
     },
     graph: {
       nodes: Array.from(nodes.values()).map(node => ({
@@ -86,7 +88,7 @@ export function deserializeGraph(data: SerializedGraph): {
   nodes: Array<Omit<GraphNode, 'timer' | 'lastTrigger' | 'flash' | 'heldPackets'>>;
   edges: Array<GraphEdge>;
   musicalContext: { root: number; scaleName: string };
-  globalSettings: { gravityConstant: number };
+  globalSettings: { gravityConstant: number; defaultEdgeBehaviour: 'physical' | 'fixed' };
   projectMeta: { name: string; author: string; created: number; modified: number };
 } {
   return {
@@ -111,6 +113,7 @@ export function deserializeGraph(data: SerializedGraph): {
     },
     globalSettings: {
       gravityConstant: data.global.gravity,
+      defaultEdgeBehaviour: data.global.defaultEdgeBehaviour ?? 'fixed',
     },
     projectMeta: {
       name: data.meta.name,
@@ -146,7 +149,7 @@ export async function loadGraphFromFile(file: File): Promise<{
   nodes: Array<Omit<GraphNode, 'timer' | 'lastTrigger' | 'flash' | 'heldPackets'>>;
   edges: Array<GraphEdge>;
   musicalContext: { root: number; scaleName: string };
-  globalSettings: { gravityConstant: number };
+  globalSettings: { gravityConstant: number; defaultEdgeBehaviour: 'physical' | 'fixed' };
   projectMeta: { name: string; author: string; created: number; modified: number };
 }> {
   const text = await file.text();

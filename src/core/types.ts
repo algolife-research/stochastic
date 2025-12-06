@@ -358,11 +358,12 @@ export interface MusicalContext {
   readonly scaleName: ScaleName;
 }
 
-/** Global settings */
+/** Universal constants (global settings) */
 export interface GlobalSettings {
   readonly subdivisions: number;
   readonly pixelsPerBeat: number;
   readonly gravityConstant: number;
+  readonly defaultEdgeBehaviour: 'physical' | 'fixed';
 }
 
 // ============================================================================

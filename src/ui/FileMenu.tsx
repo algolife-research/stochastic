@@ -246,8 +246,8 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
         📤 Export
       </button>
       
-      <button onClick={onShowSettings} title="Global Settings">
-        ⚙️ Settings
+      <button onClick={onShowSettings} title="Universal Constants">
+        ⚙️ Constants
       </button>
       
       <input

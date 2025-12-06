@@ -209,6 +209,7 @@ const initialState: GraphState = {
     subdivisions: 4,
     pixelsPerBeat: 200,
     gravityConstant: 0.5,
+    defaultEdgeBehaviour: 'fixed',
   },
   
   projectMeta: {
@@ -448,13 +449,17 @@ export const useGraphStore = create<GraphStore>()(
         // Prevent self-loops
         if (from === to) return null;
         
+        // Use global default edge behaviour
+        const defaultMode = state.globalSettings.defaultEdgeBehaviour;
+        const defaultDuration = defaultMode === 'fixed' ? 1 : null;
+        
         const id = createEdgeId();
         const edge: GraphEdge = {
           id,
           from,
           to,
-          timingMode: options.timingMode ?? 'physical',
-          durationBeats: options.durationBeats ?? null,
+          timingMode: options.timingMode ?? defaultMode,
+          durationBeats: options.durationBeats ?? defaultDuration,
           targetParam: options.targetParam ?? null,
         };
         
