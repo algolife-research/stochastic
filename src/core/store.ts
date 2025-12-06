@@ -75,7 +75,7 @@ interface GraphState {
   // Clipboard for copy/paste
   clipboard: {
     nodes: { type: NodeType; relX: number; relY: number; props: Record<string, unknown> }[];
-    edges: { fromIndex: number; toIndex: number; timingMode: string; durationBeats: number; targetParam?: string }[];
+    edges: { fromIndex: number; toIndex: number; timingMode: 'physical' | 'fixed'; durationBeats: number | null; targetParam: string | null }[];
   } | null;
   
   // Viewport
@@ -787,6 +787,16 @@ export const useGraphStore = create<GraphStore>()(
       setMasterSpeed: (bpm) => {
         set(state => {
           state.masterSpeed = bpm;
+          // Update effectiveBpm if no scene is active (or scene uses global BPM)
+          if (state.scenePlayback.currentSceneId === null) {
+            state.scenePlayback.effectiveBpm = bpm;
+          } else {
+            // Check if active scene uses global BPM (localBpm is null)
+            const scene = state.scenes.get(state.scenePlayback.currentSceneId);
+            if (scene && scene.localBpm === null) {
+              state.scenePlayback.effectiveBpm = bpm;
+            }
+          }
         });
       },
       
@@ -1172,7 +1182,7 @@ export const useGraphStore = create<GraphStore>()(
         });
         
         // Copy edges between selected nodes
-        const clipboardEdges: { fromIndex: number; toIndex: number; timingMode: string; durationBeats: number; targetParam?: string }[] = [];
+        const clipboardEdges: { fromIndex: number; toIndex: number; timingMode: 'physical' | 'fixed'; durationBeats: number | null; targetParam: string | null }[] = [];
         state.edges.forEach(edge => {
           const fromIndex = nodeIndexMap.get(edge.from);
           const toIndex = nodeIndexMap.get(edge.to);
@@ -1234,7 +1244,7 @@ export const useGraphStore = create<GraphStore>()(
               id: newEdgeId,
               from: fromId,
               to: toId,
-              timingMode: clipEdge.timingMode as 'immediate' | 'beat' | 'param',
+              timingMode: clipEdge.timingMode,
               durationBeats: clipEdge.durationBeats,
               targetParam: clipEdge.targetParam,
             };

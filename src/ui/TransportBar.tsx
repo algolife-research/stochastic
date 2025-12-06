@@ -112,7 +112,7 @@ export function TransportBar(): React.ReactElement {
         <input
           type="number"
           className={styles.bpmInput}
-          value={scenePlayback.effectiveBpm || masterSpeed}
+          value={scenePlayback.currentSceneId !== null ? scenePlayback.effectiveBpm : masterSpeed}
           min={20}
           max={300}
           step={1}
@@ -123,7 +123,7 @@ export function TransportBar(): React.ReactElement {
         <input
           type="range"
           className={styles.bpmSlider}
-          value={scenePlayback.effectiveBpm || masterSpeed}
+          value={scenePlayback.currentSceneId !== null ? scenePlayback.effectiveBpm : masterSpeed}
           min={20}
           max={300}
           onChange={e => setMasterSpeed(parseInt(e.target.value))}
@@ -145,7 +145,7 @@ export function TransportBar(): React.ReactElement {
       {/* Keyboard shortcuts hint */}
       <div className={styles.hints}>
         <span className={styles.hint}>Space: Play/Stop</span>
-        <span className={styles.hint}>L: Link</span>
+        <span className={styles.hint}>Ctrl+C/V: Copy/Paste</span>
         <span className={styles.hint}>Del: Delete</span>
       </div>
     </div>
