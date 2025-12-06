@@ -329,12 +329,93 @@ export interface Packet {
 // SCENE & PROJECT
 // ============================================================================
 
-/** Scene snapshot */
+/** Playback mode for the composition */
+export type PlaybackMode = 'arrangement' | 'jam';
+
+/** Scene transition types */
+export type SceneTransitionType = 'cut' | 'crossfade' | 'fade';
+
+/** Quantization options for scene triggering in Jam mode */
+export type SceneQuantize = 'immediate' | 'beat' | 'bar' | 'phrase';
+
+/** Transition between scenes */
+export interface SceneTransition {
+  readonly type: SceneTransitionType;
+  readonly durationBeats: number;  // 0 for 'cut'
+}
+
+/** How a scene is triggered in Jam mode */
+export interface SceneTriggerConfig {
+  readonly midiNote: number | null;  // MIDI note to trigger (null = none)
+  readonly midiChannel: number;      // 1-16
+  readonly quantize: SceneQuantize;
+  readonly phraseLength: number;     // Beats per phrase (default: 4)
+}
+
+/** Scene definition - a self-contained musical unit */
 export interface Scene {
   readonly id: SceneId;
-  readonly name: string;
-  readonly nodes: readonly GraphNode[];
-  readonly edges: readonly GraphEdge[];
+  
+  // Metadata
+  name: string;
+  color: string;                     // For UI visualization
+  
+  // Graph content (snapshot)
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  annotations: Annotation[];
+  regions: Region[];
+  
+  // Timing (enforced in Arrangement mode, informational in Jam mode)
+  durationBeats: number;             // Suggested/enforced length
+  loopCount: number;                 // How many times to repeat (1 = play once)
+  
+  // Musical overrides (null = inherit from composition)
+  localBpm: number | null;
+  localRoot: number | null;          // 0-11
+  localScale: ScaleName | null;
+  
+  // Transitions (used in Arrangement mode)
+  enterTransition: SceneTransition;
+  exitTransition: SceneTransition;
+  
+  // Jam mode settings
+  jamTrigger: SceneTriggerConfig;
+}
+
+/** Arrangement slot - a scene placed in the timeline */
+export interface ArrangementSlot {
+  readonly id: string;
+  sceneId: SceneId;
+  startBeat: number;                 // Absolute position in arrangement
+  instanceLoopCount?: number;        // Override scene's default loop count
+  instanceBpm?: number;              // Override BPM for this instance
+}
+
+/** Playback state for scene system */
+export interface ScenePlaybackState {
+  mode: PlaybackMode;
+  
+  // Arrangement mode state
+  arrangementBeat: number;           // Global position in arrangement
+  currentSlotIndex: number;
+  
+  // Jam mode state
+  currentSceneId: SceneId | null;
+  sceneBeat: number;                 // Beat within current scene
+  sceneLoopIteration: number;        // Which loop (0-indexed)
+  queuedSceneId: SceneId | null;     // Next scene to play in Jam mode
+  queueTrigger: SceneQuantize;
+  
+  // Transition state
+  isTransitioning: boolean;
+  transitionProgress: number;        // 0-1
+  previousSceneId: SceneId | null;
+  
+  // Effective settings (computed)
+  effectiveBpm: number;
+  effectiveRoot: number;
+  effectiveScale: ScaleName;
 }
 
 /** Project metadata */

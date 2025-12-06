@@ -1619,8 +1619,9 @@ export function loadExample(exampleKey: string): void {
   import('@core/store').then(({ getGraphStore }) => {
     const store = getGraphStore();
     
-    // Clear current graph
-    store.clear();
+    // Clear only the canvas (nodes/edges), preserving scenes structure
+    // This treats examples as compositions that replace the current scene content
+    store.clearCanvas();
     
     // Set BPM
     store.setMasterSpeed(example.bpm);
@@ -1647,6 +1648,9 @@ export function loadExample(exampleKey: string): void {
         } as never);
       }
     });
+    
+    // Save the loaded content to the current scene
+    store.saveCurrentScene();
     
     // Reset view
     store.setPan(0, 0);

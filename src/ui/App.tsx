@@ -1,4 +1,4 @@
-// Phonon v2 - Main Application Component
+// Phonon v3 - Main Application Component
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useGraphStore } from '@core/store';
@@ -15,6 +15,8 @@ import { ContextMenu } from './ContextMenu';
 import { ProjectStartupModal } from './ProjectStartupModal';
 import { SettingsModal } from './SettingsModal';
 import { ExportModal } from './ExportModal';
+import { ScenePanel } from './ScenePanel';
+import { ArrangementTimeline } from './ArrangementTimeline';
 import styles from './App.module.css';
 
 // ============================================================================
@@ -87,6 +89,20 @@ export function App(): React.ReactElement {
     // Start tick system
     startTick();
     
+    // Initialize default scene if none exist
+    const initDefaultScene = () => {
+      const store = useGraphStore.getState();
+      if (store.scenes.size === 0) {
+        // Create a default scene with a source node
+        const sceneId = store.createScene('Scene 1');
+        store.loadSceneToCanvas(sceneId);
+        
+        // Add a default source node at center
+        store.addNode('source', 400, 300);
+      }
+    };
+    initDefaultScene();
+    
     // Initialize audio (deferred until user interaction)
     const initAudio = async () => {
       await audioEngine.initialize();
@@ -145,6 +161,9 @@ export function App(): React.ReactElement {
       
       {/* Main content area */}
       <div className={styles['mainContent']}>
+        {/* Scene panel on the left */}
+        <ScenePanel />
+        
         {/* Canvas container */}
         <div ref={containerRef} className={styles['canvasContainer']}>
           <canvas ref={canvasRef} className={`${styles['canvas']} phonon-canvas`} />
@@ -170,6 +189,9 @@ export function App(): React.ReactElement {
           <PropertyPanel />
         )}
       </div>
+      
+      {/* Arrangement timeline (bottom) */}
+      <ArrangementTimeline />
       
       {/* Transport bar */}
       <TransportBar />

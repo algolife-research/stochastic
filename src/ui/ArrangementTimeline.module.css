@@ -1,0 +1,328 @@
+/* Phonon v3 - Arrangement Timeline Styles */
+
+.timeline {
+  position: relative;
+  background: var(--bg-secondary, #1a1a2e);
+  border-top: 1px solid var(--border-color, #333);
+  font-size: 12px;
+  min-height: 100px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary, #0f0f1a);
+  border-bottom: 1px solid var(--border-color, #333);
+}
+
+.header h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.headerInfo {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary, #888);
+}
+
+.headerActions {
+  margin-left: auto;
+}
+
+.clearButton {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  font-size: 11px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.clearButton:hover {
+  background: rgba(255, 100, 100, 0.2);
+  color: #ff6b6b;
+}
+
+/* Empty state */
+.emptyTimeline {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-secondary, #888);
+}
+
+.emptyTimeline p {
+  margin: 4px 0;
+}
+
+.hint {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.quickAdd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.quickAdd span {
+  font-size: 11px;
+  color: var(--text-secondary, #666);
+}
+
+.quickAddButton {
+  padding: 4px 10px;
+  border: 2px solid;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-primary, #fff);
+  cursor: pointer;
+  font-size: 11px;
+  transition: background 0.15s;
+}
+
+.quickAddButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Ruler */
+.ruler {
+  position: relative;
+  height: 18px;
+  background: var(--bg-tertiary, #0f0f1a);
+  border-bottom: 1px solid var(--border-color, #333);
+}
+
+.rulerMark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--border-color, #444);
+}
+
+.rulerLabel {
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  font-size: 9px;
+  color: var(--text-secondary, #666);
+}
+
+/* Slots container */
+.slots {
+  display: flex;
+  gap: 2px;
+  padding: 8px;
+  min-height: 60px;
+  overflow-x: auto;
+}
+
+/* Individual slot */
+.slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 80px;
+  padding: 8px;
+  border-radius: 4px;
+  border-left: 4px solid #666;
+  background: var(--bg-tertiary, #0f0f1a);
+  cursor: pointer;
+  transition: background 0.15s;
+  overflow: hidden;
+}
+
+.slot:hover {
+  background: var(--bg-hover, #252538);
+}
+
+.slot.playing {
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: rgba(76, 175, 80, 0.2);
+  pointer-events: none;
+  transition: width 0.1s linear;
+}
+
+.slotContent {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+}
+
+.slotHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.slotIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 9px;
+  color: var(--text-secondary, #888);
+}
+
+.slotName {
+  font-weight: 500;
+  color: var(--text-primary, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.slotMeta {
+  display: flex;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-secondary, #888);
+}
+
+.slotActions {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.slot:hover .slotActions {
+  opacity: 1;
+}
+
+.slotAction {
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--text-secondary, #888);
+  cursor: pointer;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.slotAction:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--text-primary, #fff);
+}
+
+.slotAction:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Add slot button */
+.addSlot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  border: 2px dashed var(--border-color, #444);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  font-size: 18px;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.addSlot:hover {
+  border-color: var(--accent-color, #4a9eff);
+  color: var(--accent-color, #4a9eff);
+}
+
+/* Scene picker dropdown - uses fixed positioning to escape overflow containers */
+.scenePicker {
+  position: fixed;
+  min-width: 150px;
+  max-width: 200px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--panel-bg, #252525);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 99999;
+}
+
+.scenePickerEmpty {
+  padding: 8px 12px;
+  color: var(--text-secondary, #888);
+  font-size: 11px;
+  text-align: center;
+}
+
+.scenePickerItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--text-primary, #fff);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.scenePickerItem:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.scenePickerColor {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Playhead */
+.playhead {
+  position: absolute;
+  top: 26px;  /* Below ruler */
+  bottom: 0;
+  width: 2px;
+  background: var(--accent-color, #4a9eff);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.playhead::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  background: var(--accent-color, #4a9eff);
+  border-radius: 50%;
+}

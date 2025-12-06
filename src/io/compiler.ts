@@ -568,3 +568,120 @@ function forwardPacket(
     });
   }
 }
+
+// Import Scene and ArrangementSlot types for arrangement compilation
+import type { Scene, ArrangementSlot, SceneId, ScaleName } from '@core/types';
+import { SCALES } from '@core/constants';
+
+/**
+ * Compile an arrangement (sequence of scenes) into timed audio events.
+ * Each scene in the arrangement is compiled in order, with time offsets applied.
+ */
+export function compileArrangement(
+  scenes: Map<SceneId, Scene>,
+  arrangement: ArrangementSlot[],
+  musicalContext: MusicalContext,
+  globalSettings: GlobalSettings,
+  bpm: number = 120
+): AudioEvent[] {
+  const allEvents: AudioEvent[] = [];
+  
+  if (arrangement.length === 0) {
+    return allEvents;
+  }
+  
+  // Sort arrangement by startBeat
+  const sortedSlots = [...arrangement].sort((a, b) => a.startBeat - b.startBeat);
+  
+  let currentTimeOffset = 0;
+  
+  for (const slot of sortedSlots) {
+    const scene = scenes.get(slot.sceneId);
+    if (!scene) {
+      console.warn(`Scene ${slot.sceneId} not found in scenes map`);
+      continue;
+    }
+    
+    // Get loop count (slot override or scene default)
+    const loopCount = slot.instanceLoopCount ?? scene.loopCount ?? 1;
+    
+    // Convert scene nodes/edges arrays to Maps for compileGraph
+    const nodesMap = new Map<NodeId, GraphNode>();
+    const edgesMap = new Map<EdgeId, GraphEdge>();
+    
+    for (const node of scene.nodes) {
+      nodesMap.set(node.id, node);
+    }
+    for (const edge of scene.edges) {
+      edgesMap.set(edge.id, edge);
+    }
+    
+    // Calculate scene duration in seconds
+    const sceneBpm = slot.instanceBpm ?? scene.localBpm ?? bpm;
+    const sceneBeatDuration = 60 / sceneBpm;
+    const sceneDurationBeats = scene.durationBeats * loopCount;
+    const sceneDurationSeconds = sceneDurationBeats * sceneBeatDuration;
+    
+    // Use scene's local musical context if available
+    // Convert scale name to intervals if scene has a local scale
+    const sceneScale = scene.localScale !== null 
+      ? SCALES[scene.localScale as ScaleName] 
+      : musicalContext.scale;
+    
+    const sceneMusicalContext: MusicalContext = {
+      ...musicalContext,
+      ...(scene.localRoot !== null && { root: scene.localRoot }),
+      scale: sceneScale,
+      ...(scene.localScale !== null && { scaleName: scene.localScale as ScaleName }),
+    };
+    
+    // Compile this scene
+    const sceneEvents = compileGraph(
+      nodesMap,
+      edgesMap,
+      sceneDurationSeconds,
+      sceneMusicalContext,
+      globalSettings
+    );
+    
+    // Add time offset to all events and append
+    for (const event of sceneEvents) {
+      allEvents.push({
+        ...event,
+        time: event.time + currentTimeOffset,
+      });
+    }
+    
+    // Advance time offset for next scene
+    currentTimeOffset += sceneDurationSeconds;
+  }
+  
+  return allEvents;
+}
+
+/**
+ * Calculate total duration of an arrangement in seconds
+ */
+export function calculateArrangementDuration(
+  scenes: Map<SceneId, Scene>,
+  arrangement: ArrangementSlot[],
+  bpm: number = 120
+): number {
+  if (arrangement.length === 0) return 0;
+  
+  let totalDuration = 0;
+  
+  for (const slot of arrangement) {
+    const scene = scenes.get(slot.sceneId);
+    if (!scene) continue;
+    
+    const loopCount = slot.instanceLoopCount ?? scene.loopCount ?? 1;
+    const sceneBpm = slot.instanceBpm ?? scene.localBpm ?? bpm;
+    const sceneBeatDuration = 60 / sceneBpm;
+    const sceneDurationBeats = scene.durationBeats * loopCount;
+    
+    totalDuration += sceneDurationBeats * sceneBeatDuration;
+  }
+  
+  return totalDuration;
+}

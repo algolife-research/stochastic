@@ -1,8 +1,8 @@
 // Phonon v2 - Export Modal (Audio/MIDI)
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useGraphStore } from '@core/store';
-import { compileGraph } from '../io/compiler';
+import { compileGraph, compileArrangement, calculateArrangementDuration } from '../io/compiler';
 import { encodeMIDI } from '../io/midi';
 import type { MIDIEvent } from '../io/midi';
 import type { AudioEvent } from '../io/compiler';
@@ -18,12 +18,24 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
   const [format, setFormat] = useState<'wav' | 'midi'>('wav');
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [exportMode, setExportMode] = useState<'canvas' | 'arrangement'>('arrangement');
   
   const nodes = useGraphStore(state => state.nodes);
   const edges = useGraphStore(state => state.edges);
   const musicalContext = useGraphStore(state => state.musicalContext);
   const globalSettings = useGraphStore(state => state.globalSettings);
   const projectMeta = useGraphStore(state => state.projectMeta);
+  const scenes = useGraphStore(state => state.scenes);
+  const arrangement = useGraphStore(state => state.arrangement);
+  
+  // Check if arrangement has scenes
+  const hasArrangement = arrangement.length > 0;
+  
+  // Calculate arrangement duration (memoized)
+  const arrangementDuration = useMemo(() => {
+    if (!hasArrangement) return 0;
+    return calculateArrangementDuration(scenes, arrangement, 120);
+  }, [scenes, arrangement, hasArrangement]);
   
   const handleExport = async () => {
     setIsExporting(true);
@@ -49,24 +61,48 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
   };
   
   const exportWAV = async () => {
-    // Check for speaker nodes
-    const hasSpeaker = Array.from(nodes.values()).some(n => n.type === 'speaker');
-    if (!hasSpeaker) {
-      alert('No speaker nodes found in graph. Add at least one speaker to export audio.');
-      throw new Error('No speaker nodes');
+    const useArrangement = exportMode === 'arrangement' && hasArrangement;
+    
+    // Check for speaker nodes in the appropriate source
+    if (useArrangement) {
+      // Check all scenes in arrangement for speaker nodes
+      let hasSpeakerInArrangement = false;
+      for (const slot of arrangement) {
+        const scene = scenes.get(slot.sceneId);
+        if (scene && scene.nodes.some(n => n.type === 'speaker')) {
+          hasSpeakerInArrangement = true;
+          break;
+        }
+      }
+      if (!hasSpeakerInArrangement) {
+        alert('No speaker nodes found in any scene in the arrangement. Add at least one speaker to export audio.');
+        throw new Error('No speaker nodes in arrangement');
+      }
+    } else {
+      const hasSpeaker = Array.from(nodes.values()).some(n => n.type === 'speaker');
+      if (!hasSpeaker) {
+        alert('No speaker nodes found in graph. Add at least one speaker to export audio.');
+        throw new Error('No speaker nodes');
+      }
     }
     
     setProgress(10);
     
-    // Compile graph to audio events
-    const events = compileGraph(nodes, edges, duration, musicalContext, globalSettings);
+    // Compile graph or arrangement to audio events
+    let events: AudioEvent[];
+    if (useArrangement) {
+      events = compileArrangement(scenes, arrangement, musicalContext, globalSettings, 120);
+    } else {
+      events = compileGraph(nodes, edges, duration, musicalContext, globalSettings);
+    }
     
     setProgress(30);
     
     // Render events to audio buffer
     const sampleRate = 44100;
     const numChannels = 2;
-    const numSamples = Math.floor(duration * sampleRate);
+    const renderDuration = useArrangement ? arrangementDuration : duration;
+    const numSamples = Math.floor(renderDuration * sampleRate);
     
     const audioBuffer = await renderEventsToBuffer(events, sampleRate, numChannels, numSamples, (p) => {
       setProgress(30 + p * 0.4); // 30% to 70%
@@ -89,10 +125,17 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
   };
   
   const exportMIDI = async () => {
+    const useArrangement = exportMode === 'arrangement' && hasArrangement;
+    
     setProgress(10);
     
-    // Compile graph to audio events
-    const audioEvents = compileGraph(nodes, edges, duration, musicalContext, globalSettings);
+    // Compile graph or arrangement to audio events
+    let audioEvents: AudioEvent[];
+    if (useArrangement) {
+      audioEvents = compileArrangement(scenes, arrangement, musicalContext, globalSettings, 120);
+    } else {
+      audioEvents = compileGraph(nodes, edges, duration, musicalContext, globalSettings);
+    }
     
     if (audioEvents.length === 0) {
       alert('No audio events generated. Make sure you have sources connected to speakers.');
@@ -164,18 +207,46 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
         </div>
         
         <div className={styles.content}>
+          {/* Export source selection */}
           <div className={styles.row}>
-            <label>Duration (seconds)</label>
-            <input
-              type="number"
-              value={duration}
-              onChange={e => setDuration(parseFloat(e.target.value))}
-              min={1}
-              max={600}
-              step={1}
+            <label>Export Source</label>
+            <select 
+              value={exportMode} 
+              onChange={e => setExportMode(e.target.value as 'canvas' | 'arrangement')} 
               disabled={isExporting}
-            />
+            >
+              <option value="arrangement" disabled={!hasArrangement}>
+                Arrangement ({arrangement.length} scenes) {hasArrangement ? `- ${arrangementDuration.toFixed(1)}s` : '- empty'}
+              </option>
+              <option value="canvas">Current Canvas</option>
+            </select>
           </div>
+          
+          {/* Duration - only shown for canvas mode */}
+          {exportMode === 'canvas' && (
+            <div className={styles.row}>
+              <label>Duration (seconds)</label>
+              <input
+                type="number"
+                value={duration}
+                onChange={e => setDuration(parseFloat(e.target.value))}
+                min={1}
+                max={600}
+                step={1}
+                disabled={isExporting}
+              />
+            </div>
+          )}
+          
+          {/* Arrangement info */}
+          {exportMode === 'arrangement' && hasArrangement && (
+            <div className={styles.info}>
+              <p>
+                📋 Exporting {arrangement.length} scene{arrangement.length !== 1 ? 's' : ''} 
+                ({arrangementDuration.toFixed(1)} seconds total)
+              </p>
+            </div>
+          )}
           
           <div className={styles.row}>
             <label>Format</label>

@@ -1,4 +1,4 @@
-/* Phonon v2 - Transport Bar Styles */
+/* Phonon v3 - Transport Bar Styles */
 
 .transportBar {
   display: flex;
@@ -36,6 +36,16 @@
   color: #fff;
 }
 
+.stopButton {
+  background: #333;
+}
+
+.stopButton:hover {
+  background: #f44336;
+  border-color: #f44336;
+  color: #fff;
+}
+
 .transportButton.muted {
   color: #f44336;
 }
@@ -44,6 +54,66 @@
   width: 1px;
   height: 30px;
   background: #333;
+}
+
+/* Playback Mode Toggle */
+.modeControl {
+  display: flex;
+  gap: 4px;
+  padding: 2px;
+  background: #1a1a1a;
+  border-radius: 6px;
+}
+
+.modeButton {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modeButton:hover {
+  background: #252525;
+  color: #e0e0e0;
+}
+
+.modeButton.activeMode {
+  background: #252525;
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+/* Position Display */
+.positionDisplay {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #252525;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.positionLabel {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.positionValue {
+  font-size: 14px;
+  color: #e0e0e0;
+  min-width: 40px;
+}
+
+.loopIndicator {
+  font-size: 11px;
+  color: #4caf50;
 }
 
 .bpmControl {
@@ -76,6 +146,11 @@
   border-color: #4caf50;
 }
 
+.bpmInput:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .bpmSlider {
   width: 120px;
   height: 4px;
@@ -92,6 +167,36 @@
   background: #4caf50;
   border-radius: 50%;
   cursor: pointer;
+}
+
+.bpmSlider:disabled {
+  opacity: 0.6;
+}
+
+.bpmSlider:disabled::-webkit-slider-thumb {
+  cursor: not-allowed;
+}
+
+/* Queued scene indicator */
+.queuedIndicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(74, 158, 255, 0.15);
+  border: 1px solid #4a9eff;
+  border-radius: 4px;
+}
+
+.queuedLabel {
+  font-size: 10px;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.queuedTrigger {
+  font-size: 11px;
+  color: #4a9eff;
 }
 
 .spacer {

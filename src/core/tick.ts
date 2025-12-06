@@ -1,10 +1,10 @@
-// Phonon v2 - Game Tick System
-// Handles source timers, packet movement, and game loop
+// Phonon v3 - Game Tick System
+// Handles source timers, packet movement, scene playback, and game loop
 
 import { getGraphStore } from './store';
-import type { Packet, GraphNode, NodeId, PacketId, MidiNote, Frequency, AudioPayload } from './types';
+import type { Packet, GraphNode, NodeId, PacketId, MidiNote, Frequency, AudioPayload, SceneId, SceneQuantize } from './types';
 import { createPacketId } from './types';
-import { dist, midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS } from './constants';
+import { dist, midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS, getEffectiveBpm, getEffectiveRoot, getEffectiveScale } from './constants';
 import { processNodeArrival, getTeleporterExits, consumePendingTunnelSpeakers } from './engine';
 import { audioEngine } from '@audio/engine';
 
@@ -14,6 +14,7 @@ import { audioEngine } from '@audio/engine';
 
 let lastTime = 0;
 let tickInterval: number | null = null;
+let beatAccumulator = 0;     // Fractional beats accumulated
 
 // ============================================================================
 // ENTANGLEMENT SYNC
@@ -60,6 +61,9 @@ export function tick(currentTime: number): void {
       return;
     }
     
+    // Update scene playback (beat tracking and scene transitions)
+    updateScenePlayback(dt);
+    
     // Update sources (emit packets)
     updateSources(currentTime);
     
@@ -80,6 +84,233 @@ export function tick(currentTime: number): void {
 }
 
 // ============================================================================
+// SCENE PLAYBACK
+// ============================================================================
+
+/**
+ * Update scene playback - tracks beats and handles scene transitions
+ */
+function updateScenePlayback(dt: number): void {
+  const store = getGraphStore();
+  const { scenePlayback } = store;
+  
+  // Get effective BPM from the current scene or global settings
+  const effectiveBpm = scenePlayback.effectiveBpm;
+  const beatsPerSecond = effectiveBpm / 60;
+  const deltaBeats = dt * beatsPerSecond;
+  
+  // Accumulate beats
+  beatAccumulator += deltaBeats;
+  
+  // Advance scene beat tracking
+  store.advanceSceneBeat(deltaBeats);
+  
+  if (scenePlayback.mode === 'arrangement') {
+    updateArrangementMode(deltaBeats);
+  } else {
+    updateJamMode(deltaBeats);
+  }
+}
+
+/**
+ * Update arrangement mode - sequential scene playback
+ */
+function updateArrangementMode(deltaBeats: number): void {
+  const store = getGraphStore();
+  const { scenePlayback, scenes, arrangement } = store;
+  
+  if (arrangement.length === 0) return;
+  
+  // Calculate total beats in arrangement
+  let totalBeats = 0;
+  const slotBounds: { start: number; end: number; sceneId: SceneId; loops: number }[] = [];
+  
+  for (const slot of arrangement) {
+    const scene = scenes.get(slot.sceneId);
+    if (!scene) {
+      console.warn(`[updateArrangement] Slot has missing scene ${slot.sceneId}`);
+      continue;
+    }
+    
+    const loops = slot.instanceLoopCount ?? scene.loopCount;
+    const slotDuration = scene.durationBeats * loops;
+    
+    slotBounds.push({
+      start: totalBeats,
+      end: totalBeats + slotDuration,
+      sceneId: slot.sceneId,
+      loops
+    });
+    
+    totalBeats += slotDuration;
+  }
+  
+  if (totalBeats === 0) return;
+  
+  // Check if we need to advance to next slot
+  const currentBeat = scenePlayback.arrangementBeat;
+  const currentSlot = slotBounds[scenePlayback.currentSlotIndex];
+  
+  // Debug: log current state periodically (every ~1 second worth of beats)
+  if (Math.floor(currentBeat) !== Math.floor(currentBeat - deltaBeats) && Math.floor(currentBeat) % 4 === 0) {
+    console.log(`[updateArrangement] Beat ${currentBeat.toFixed(1)}, slotIndex: ${scenePlayback.currentSlotIndex}, slotBounds: ${slotBounds.length}, currentSlot: ${currentSlot?.start}-${currentSlot?.end}`);
+  }
+  
+  if (currentSlot && currentBeat >= currentSlot.end) {
+    // Move to next slot
+    const nextIndex = scenePlayback.currentSlotIndex + 1;
+    
+    console.log(`[Arrangement] Transitioning from slot ${scenePlayback.currentSlotIndex} to ${nextIndex}, beat: ${currentBeat.toFixed(2)}, slotEnd: ${currentSlot.end}`);
+    console.log(`[Arrangement] Current nodes on canvas before transition: ${store.nodes.size}`);
+    
+    if (nextIndex >= arrangement.length) {
+      // Arrangement complete - stop playback
+      console.log('[Arrangement] Complete, stopping');
+      store.togglePlayback(); // Stop
+      store.setScenePlayback({
+        arrangementBeat: 0,
+        currentSlotIndex: 0
+      });
+      return;
+    }
+    
+    // Advance to next slot
+    const nextSlot = slotBounds[nextIndex];
+    if (nextSlot) {
+      const nextScene = scenes.get(nextSlot.sceneId);
+      console.log(`[Arrangement] Loading scene ${nextSlot.sceneId}, has ${nextScene?.nodes.length ?? 0} nodes`);
+      
+      store.setScenePlayback({
+        currentSlotIndex: nextIndex,
+        currentSceneId: nextSlot.sceneId,
+        sceneBeat: 0,
+        sceneLoopIteration: 0
+      });
+      
+      // Load the next scene's graph to the canvas
+      store.loadSceneToCanvas(nextSlot.sceneId);
+      
+      // Debug: check what was loaded
+      const loadedNodes = store.nodes.size;
+      console.log(`[Arrangement] After loadSceneToCanvas: ${loadedNodes} nodes on canvas`);
+      
+      // Update effective settings
+      const scene = scenes.get(nextSlot.sceneId);
+      if (scene) {
+        const globalBpm = store.masterSpeed;
+        const globalRoot = store.musicalContext.root;
+        const globalScale = store.musicalContext.scaleName;
+        
+        store.setScenePlayback({
+          effectiveBpm: getEffectiveBpm(scene, globalBpm),
+          effectiveRoot: getEffectiveRoot(scene, globalRoot),
+          effectiveScale: getEffectiveScale(scene, globalScale)
+        });
+      }
+    }
+  }
+}
+
+/**
+ * Update jam mode - infinite looping with scene queuing
+ */
+function updateJamMode(deltaBeats: number): void {
+  const store = getGraphStore();
+  const { scenePlayback, scenes } = store;
+  
+  if (!scenePlayback.currentSceneId) return;
+  
+  const currentScene = scenes.get(scenePlayback.currentSceneId);
+  if (!currentScene) return;
+  
+  const sceneDuration = currentScene.durationBeats;
+  const currentBeat = scenePlayback.sceneBeat;
+  
+  // Check if we should trigger the queued scene
+  if (scenePlayback.queuedSceneId) {
+    const shouldTrigger = checkQueueTrigger(
+      currentBeat,
+      deltaBeats,
+      sceneDuration,
+      scenePlayback.queueTrigger,
+      currentScene.jamTrigger.phraseLength
+    );
+    
+    if (shouldTrigger) {
+      // Transition to queued scene
+      const nextSceneId = scenePlayback.queuedSceneId;
+      const nextScene = scenes.get(nextSceneId);
+      
+      if (nextScene) {
+        // Load the next scene
+        store.loadSceneToCanvas(nextSceneId);
+        
+        // Update playback state
+        const globalBpm = store.masterSpeed;
+        const globalRoot = store.musicalContext.root;
+        const globalScale = store.musicalContext.scaleName;
+        
+        store.setScenePlayback({
+          currentSceneId: nextSceneId,
+          sceneBeat: 0,
+          sceneLoopIteration: 0,
+          queuedSceneId: null,
+          effectiveBpm: getEffectiveBpm(nextScene, globalBpm),
+          effectiveRoot: getEffectiveRoot(nextScene, globalRoot),
+          effectiveScale: getEffectiveScale(nextScene, globalScale)
+        });
+      }
+      return;
+    }
+  }
+  
+  // Check for scene loop
+  if (currentBeat >= sceneDuration) {
+    const newLoop = scenePlayback.sceneLoopIteration + 1;
+    
+    // In jam mode, scenes loop infinitely
+    store.setScenePlayback({
+      sceneBeat: currentBeat - sceneDuration,
+      sceneLoopIteration: newLoop
+    });
+  }
+}
+
+/**
+ * Check if a queued scene should be triggered based on quantize settings
+ */
+function checkQueueTrigger(
+  currentBeat: number,
+  deltaBeat: number,
+  sceneDuration: number,
+  quantize: SceneQuantize,
+  phraseLength: number
+): boolean {
+  const prevBeat = currentBeat - deltaBeat;
+  
+  switch (quantize) {
+    case 'immediate':
+      return true;
+      
+    case 'beat':
+      // Trigger on any beat boundary
+      return Math.floor(currentBeat) > Math.floor(prevBeat);
+      
+    case 'bar':
+      // Trigger on bar boundary (4 beats)
+      return Math.floor(currentBeat / 4) > Math.floor(prevBeat / 4);
+      
+    case 'phrase':
+      // Trigger on phrase boundary (custom phrase length, default to scene duration)
+      const pLen = phraseLength > 0 ? phraseLength : sceneDuration;
+      return Math.floor(currentBeat / pLen) > Math.floor(prevBeat / pLen);
+      
+    default:
+      return false;
+  }
+}
+
+// ============================================================================
 // SOURCE EMISSION
 // ============================================================================
 
@@ -90,6 +321,12 @@ function updateSources(now: number): void {
   const store = getGraphStore();
   const { masterSpeed } = store;
   const msPerBeat = (60 / masterSpeed) * 1000;
+  
+  // Debug: log source nodes
+  const sourceNodes = Array.from(store.nodes.values()).filter(n => n.type === 'source');
+  if (sourceNodes.length > 0 && Math.random() < 0.01) {
+    console.log(`[updateSources] Found ${sourceNodes.length} source nodes: ${sourceNodes.map(n => n.id.slice(0,8)).join(', ')}`);
+  }
   
   store.nodes.forEach((node) => {
     if (node.type !== 'source') return;
@@ -513,6 +750,7 @@ function updateDelayNodes(now: number): void {
  */
 export function startTick(): void {
   lastTime = performance.now();
+  beatAccumulator = 0;
   
   const runTick = () => {
     tick(performance.now());
@@ -537,6 +775,7 @@ export function stopTick(): void {
  */
 export function resetTick(): void {
   lastTime = performance.now();
+  beatAccumulator = 0;
   
   // Reset all node timers
   const store = getGraphStore();
@@ -547,4 +786,51 @@ export function resetTick(): void {
       store.updateNode(node.id, { lastTrigger: now } as Partial<GraphNode>);
     }
   });
+  
+  // Reset scene playback state
+  const { scenePlayback, arrangement, scenes } = store;
+  
+  if (scenePlayback.mode === 'arrangement' && arrangement.length > 0) {
+    // In arrangement mode, start from the first slot
+    const firstSlot = arrangement[0];
+    const scene = firstSlot ? scenes.get(firstSlot.sceneId) : undefined;
+    
+    console.log(`[resetTick] Arrangement mode: ${arrangement.length} slots`);
+    arrangement.forEach((slot, i) => {
+      const s = scenes.get(slot.sceneId);
+      console.log(`  Slot ${i}: scene ${slot.sceneId}, ${s?.nodes.length ?? 0} nodes, ${s?.durationBeats ?? 0} beats`);
+    });
+    console.log(`[resetTick] Starting with slot 0, scene ${firstSlot?.sceneId}`);
+    
+    store.setScenePlayback({
+      arrangementBeat: 0,
+      currentSlotIndex: 0,
+      currentSceneId: firstSlot?.sceneId ?? null,
+      sceneBeat: 0,
+      sceneLoopIteration: 0,
+      isTransitioning: false,
+      transitionProgress: 0,
+      effectiveBpm: scene ? getEffectiveBpm(scene, store.masterSpeed) : store.masterSpeed,
+      effectiveRoot: scene ? getEffectiveRoot(scene, store.musicalContext.root) : store.musicalContext.root,
+      effectiveScale: scene ? getEffectiveScale(scene, store.musicalContext.scaleName) : store.musicalContext.scaleName
+    });
+    
+    // Load the first scene to canvas if in arrangement mode
+    if (firstSlot) {
+      store.loadSceneToCanvas(firstSlot.sceneId);
+    }
+  } else if (scenePlayback.mode === 'jam') {
+    // In jam mode, reset to the current scene's beginning
+    const currentScene = scenePlayback.currentSceneId ? scenes.get(scenePlayback.currentSceneId) : undefined;
+    
+    store.setScenePlayback({
+      sceneBeat: 0,
+      sceneLoopIteration: 0,
+      isTransitioning: false,
+      transitionProgress: 0,
+      effectiveBpm: currentScene ? getEffectiveBpm(currentScene, store.masterSpeed) : store.masterSpeed,
+      effectiveRoot: currentScene ? getEffectiveRoot(currentScene, store.musicalContext.root) : store.musicalContext.root,
+      effectiveScale: currentScene ? getEffectiveScale(currentScene, store.musicalContext.scaleName) : store.musicalContext.scaleName
+    });
+  }
 }

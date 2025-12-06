@@ -7,7 +7,7 @@ import type {
   FilterProps, GateProps, DelayProps, GainProps, NoiseProps,
   HarmonicProps, ModulatorProps, TunnelProps, TeleporterProps,
   QuantizerProps, LfoProps, SplitterProps, MidiOutProps, MidiCcProps, SceneTriggerProps,
-  NodeType
+  NodeType, Scene, SceneTransition, SceneTriggerConfig, ScenePlaybackState, ArrangementSlot
 } from './types';
 
 // ============================================================================
@@ -386,4 +386,131 @@ export function dist(x1: number, y1: number, x2: number, y2: number): number {
   const dx = x2 - x1;
   const dy = y2 - y1;
   return Math.sqrt(dx * dx + dy * dy);
+}
+
+// ============================================================================
+// SCENE SYSTEM CONSTANTS
+// ============================================================================
+
+/** Scene colors palette for new scenes */
+export const SCENE_COLORS = [
+  '#4CAF50',  // Green
+  '#2196F3',  // Blue
+  '#FF9800',  // Orange
+  '#9C27B0',  // Purple
+  '#F44336',  // Red
+  '#00BCD4',  // Cyan
+  '#FFEB3B',  // Yellow
+  '#E91E63',  // Pink
+  '#607D8B',  // Blue Grey
+  '#795548',  // Brown
+] as const;
+
+/** Default scene transition */
+export const DEFAULT_SCENE_TRANSITION: SceneTransition = {
+  type: 'crossfade',
+  durationBeats: 2,
+};
+
+/** Default scene trigger config for Jam mode */
+export const DEFAULT_SCENE_JAM_TRIGGER: SceneTriggerConfig = {
+  midiNote: null,
+  midiChannel: 1,
+  quantize: 'bar',
+  phraseLength: 4,
+};
+
+/** Default scene duration in beats */
+export const DEFAULT_SCENE_DURATION = 16;
+
+/** Default scene loop count */
+export const DEFAULT_SCENE_LOOP_COUNT = 1;
+
+/** Initial playback state */
+export const INITIAL_SCENE_PLAYBACK_STATE: ScenePlaybackState = {
+  mode: 'jam',
+  arrangementBeat: 0,
+  currentSlotIndex: 0,
+  currentSceneId: null,
+  sceneBeat: 0,
+  sceneLoopIteration: 0,
+  queuedSceneId: null,
+  queueTrigger: 'bar',
+  isTransitioning: false,
+  transitionProgress: 0,
+  previousSceneId: null,
+  effectiveBpm: DEFAULT_SPEED,
+  effectiveRoot: 0,
+  effectiveScale: 'minor',
+};
+
+/**
+ * Create a new empty scene with defaults
+ */
+export function createDefaultScene(
+  id: string, 
+  name: string, 
+  colorIndex: number = 0
+): Scene {
+  const color = SCENE_COLORS[colorIndex % SCENE_COLORS.length] ?? SCENE_COLORS[0];
+  return {
+    id: id as any,  // SceneId branding
+    name,
+    color,
+    nodes: [],
+    edges: [],
+    annotations: [],
+    regions: [],
+    durationBeats: DEFAULT_SCENE_DURATION,
+    loopCount: DEFAULT_SCENE_LOOP_COUNT,
+    localBpm: null,
+    localRoot: null,
+    localScale: null,
+    enterTransition: { ...DEFAULT_SCENE_TRANSITION },
+    exitTransition: { ...DEFAULT_SCENE_TRANSITION },
+    jamTrigger: { ...DEFAULT_SCENE_JAM_TRIGGER },
+  };
+}
+
+/**
+ * Calculate effective BPM for a scene (with inheritance)
+ */
+export function getEffectiveBpm(scene: Scene | null, masterBpm: number): number {
+  return scene?.localBpm ?? masterBpm;
+}
+
+/**
+ * Calculate effective root note for a scene (with inheritance)
+ */
+export function getEffectiveRoot(scene: Scene | null, masterRoot: number): number {
+  return scene?.localRoot ?? masterRoot;
+}
+
+/**
+ * Calculate effective scale for a scene (with inheritance)
+ */
+export function getEffectiveScale(scene: Scene | null, masterScale: ScaleName): ScaleName {
+  return scene?.localScale ?? masterScale;
+}
+
+/**
+ * Calculate total duration of an arrangement in beats
+ */
+export function calculateArrangementDuration(
+  arrangement: ArrangementSlot[],
+  scenes: Map<string, Scene>
+): number {
+  if (arrangement.length === 0) return 0;
+  
+  let maxEnd = 0;
+  for (const slot of arrangement) {
+    const scene = scenes.get(slot.sceneId);
+    if (scene) {
+      const loopCount = slot.instanceLoopCount ?? scene.loopCount;
+      const duration = scene.durationBeats * loopCount;
+      const end = slot.startBeat + duration;
+      if (end > maxEnd) maxEnd = end;
+    }
+  }
+  return maxEnd;
 }

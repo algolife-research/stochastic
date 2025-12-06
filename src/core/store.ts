@@ -10,15 +10,18 @@ import type {
   GraphNode, GraphEdge, Packet, AudioPayload,
   NodeType, MusicalContext, GlobalSettings, ProjectMeta,
   ViewportState, SelectionState, Tool, MidiNote, Frequency,
-  ScaleName, Annotation, Region
+  ScaleName, Annotation, Region, Scene, ArrangementSlot, 
+  ScenePlaybackState, PlaybackMode, SceneQuantize
 } from './types';
 import { 
   createNodeId, createEdgeId, createPacketId,
-  createAnnotationId, createRegionId
+  createAnnotationId, createRegionId, createSceneId
 } from './types';
 import { 
   getDefaultProps, DEFAULT_SPEED, MAX_PACKETS, SCALES,
-  midiToFreq, LEGACY_SCALE_OFFSET, MIN_REGION_SIZE
+  midiToFreq, LEGACY_SCALE_OFFSET, MIN_REGION_SIZE,
+  createDefaultScene, INITIAL_SCENE_PLAYBACK_STATE,
+  getEffectiveBpm, getEffectiveRoot, getEffectiveScale
 } from './constants';
 
 // Enable Immer MapSet plugin for Map/Set support
@@ -55,8 +58,14 @@ interface GraphState {
     isProjectMode: boolean;
   };
   showProjectStartup: boolean;
-  scenes: Map<SceneId, { id: SceneId; name: string; nodeIds: NodeId[]; edgeIds: EdgeId[] }>;
+  
+  // Scene System
+  scenes: Map<SceneId, Scene>;
+  arrangement: ArrangementSlot[];
   activeSceneId: SceneId | null;
+  editingSceneId: SceneId | null;  // Which scene is being edited on canvas
+  scenePlayback: ScenePlaybackState;
+  
   isDirty: boolean;
   
   // Selection
@@ -137,6 +146,8 @@ interface GraphActions {
   // Playback
   setIsRunning: (running: boolean) => void;
   togglePlayback: () => void;
+  pausePlayback: () => void;
+  stopPlayback: () => void;
   setIsMuted: (muted: boolean) => void;
   setMasterSpeed: (bpm: number) => void;
   
@@ -165,7 +176,39 @@ interface GraphActions {
   
   // Bulk operations
   clear: () => void;
+  clearCanvas: () => void;  // Clear only nodes/edges/packets, keep scenes
+  saveCurrentScene: () => void;  // Save current canvas to editing scene
   loadGraph: (nodes: GraphNode[], edges: GraphEdge[], annotations?: Annotation[], regions?: Region[]) => void;
+  
+  // Scene operations
+  createScene: (name?: string) => SceneId;
+  duplicateScene: (id: SceneId) => SceneId | null;
+  deleteScene: (id: SceneId) => void;
+  updateScene: (id: SceneId, updates: Partial<Scene>) => void;
+  saveCurrentToScene: (id: SceneId) => void;
+  loadSceneToCanvas: (id: SceneId) => void;
+  setEditingScene: (id: SceneId | null) => void;
+  
+  // Arrangement operations
+  addToArrangement: (sceneId: SceneId, startBeat?: number) => void;
+  removeFromArrangement: (slotId: string) => void;
+  updateArrangementSlot: (slotId: string, updates: Partial<ArrangementSlot>) => void;
+  reorderArrangement: (slotId: string, newStartBeat: number) => void;
+  clearArrangement: () => void;
+  
+  // Scene playback
+  setPlaybackMode: (mode: PlaybackMode) => void;
+  setScenePlayback: (updates: Partial<ScenePlaybackState>) => void;
+  queueScene: (sceneId: SceneId, quantize?: SceneQuantize) => void;
+  triggerSceneImmediate: (sceneId: SceneId) => void;
+  advanceSceneBeat: (deltaBeats: number) => void;
+  
+  // Scene getters
+  getScene: (id: SceneId) => Scene | undefined;
+  getScenesArray: () => Scene[];
+  getArrangementSlot: (slotId: string) => ArrangementSlot | undefined;
+  getCurrentScene: () => Scene | undefined;
+  getEffectiveSettings: () => { bpm: number; root: number; scale: ScaleName };
   
   // Getters (for external access)
   getNode: (id: NodeId) => GraphNode | undefined;
@@ -234,8 +277,13 @@ const initialState: GraphState = {
   },
   showProjectStartup: true,
   
+  // Scene System
   scenes: new Map(),
+  arrangement: [],
   activeSceneId: null,
+  editingSceneId: null,
+  scenePlayback: { ...INITIAL_SCENE_PLAYBACK_STATE },
+  
   isDirty: false,
   
   selection: {
@@ -689,6 +737,33 @@ export const useGraphStore = create<GraphStore>()(
         });
       },
       
+      pausePlayback: () => {
+        set(state => {
+          state.isRunning = false;
+        });
+      },
+      
+      stopPlayback: () => {
+        set(state => {
+          state.isRunning = false;
+          // Reset scene playback state
+          state.scenePlayback.sceneBeat = 0;
+          state.scenePlayback.arrangementBeat = 0;
+          state.scenePlayback.sceneLoopIteration = 0;
+          state.scenePlayback.currentSlotIndex = 0;
+          state.scenePlayback.queuedSceneId = null;
+          // Clear all packets
+          state.packets.clear();
+          // Reset node timers and held packets
+          for (const node of state.nodes.values()) {
+            node.timer = 0;
+            node.lastTrigger = 0;
+            node.flash = 0;
+            node.heldPackets = [];
+          }
+        });
+      },
+      
       setIsMuted: (muted) => {
         set(state => {
           state.isMuted = muted;
@@ -836,6 +911,13 @@ export const useGraphStore = create<GraphStore>()(
           state.packets.clear();
           state.annotations.clear();
           state.regions.clear();
+          // Reset scenes
+          state.scenes.clear();
+          state.arrangement = [];
+          state.activeSceneId = null;
+          state.editingSceneId = null;
+          state.scenePlayback = { ...INITIAL_SCENE_PLAYBACK_STATE };
+          // Reset selection
           state.selection = {
             selectedNodeIds: [],
             selectedEdgeId: null,
@@ -857,6 +939,50 @@ export const useGraphStore = create<GraphStore>()(
           };
           state.isDirty = true;
         });
+        
+        // Create a default scene after clearing
+        const sceneId = get().createScene('Scene 1');
+        get().loadSceneToCanvas(sceneId);
+      },
+      
+      clearCanvas: () => {
+        // Clear only the canvas content (nodes/edges/packets), preserving scenes
+        set(state => {
+          state.nodes.clear();
+          state.edges.clear();
+          state.packets.clear();
+          state.annotations.clear();
+          state.regions.clear();
+          // Reset selection but keep scenes intact
+          state.selection = {
+            selectedNodeIds: [],
+            selectedEdgeId: null,
+            selectedAnnotationId: null,
+            selectedRegionId: null,
+            hoveredNodeId: null,
+            hoveredAnnotationId: null,
+            hoveredRegionId: null,
+            hoveredRegionHandle: null,
+            isHoveringHandle: false,
+            draggingNodeId: null,
+            draggingAnnotationId: null,
+            draggingRegionId: null,
+            resizingRegionId: null,
+            linkingFromId: null,
+            isBoxSelecting: false,
+            boxSelectStart: null,
+            boxSelectEnd: null,
+          };
+          state.isDirty = true;
+        });
+      },
+      
+      saveCurrentScene: () => {
+        // Save current canvas content to the editing scene
+        const { editingSceneId } = get();
+        if (editingSceneId) {
+          get().saveCurrentToScene(editingSceneId);
+        }
       },
       
       loadGraph: (nodes, edges, annotations = [], regions = []) => {
@@ -1449,6 +1575,395 @@ export const useGraphStore = create<GraphStore>()(
       },
       
       // ========================================
+      // SCENE OPERATIONS
+      // ========================================
+      
+      createScene: (name) => {
+        const id = createSceneId();
+        const sceneCount = get().scenes.size;
+        const sceneName = name ?? `Scene ${sceneCount + 1}`;
+        const scene = createDefaultScene(id, sceneName, sceneCount);
+        
+        set(state => {
+          state.scenes.set(id, scene as any);
+          state.isDirty = true;
+        });
+        
+        return id;
+      },
+      
+      duplicateScene: (id) => {
+        const original = get().scenes.get(id);
+        if (!original) return null;
+        
+        const newId = createSceneId();
+        const newScene: Scene = {
+          ...original,
+          id: newId,
+          name: `${original.name} (copy)`,
+          nodes: original.nodes.map(n => ({ ...n, id: createNodeId() })),
+          edges: [], // Edges need remapping - simplified for now
+          annotations: original.annotations.map(a => ({ ...a, id: createAnnotationId() })),
+          regions: original.regions.map(r => ({ ...r, id: createRegionId() })),
+        };
+        
+        set(state => {
+          state.scenes.set(newId, newScene as any);
+          state.isDirty = true;
+        });
+        
+        return newId;
+      },
+      
+      deleteScene: (id) => {
+        set(state => {
+          state.scenes.delete(id);
+          // Remove from arrangement
+          state.arrangement = state.arrangement.filter(slot => slot.sceneId !== id);
+          // Clear editing if this was the editing scene
+          if (state.editingSceneId === id) {
+            state.editingSceneId = null;
+          }
+          if (state.activeSceneId === id) {
+            state.activeSceneId = null;
+          }
+          state.isDirty = true;
+        });
+      },
+      
+      updateScene: (id, updates) => {
+        set(state => {
+          const scene = state.scenes.get(id);
+          if (scene) {
+            Object.assign(scene, updates);
+            state.isDirty = true;
+          }
+        });
+      },
+      
+      saveCurrentToScene: (id) => {
+        const { nodes, edges, annotations, regions } = get();
+        
+        set(state => {
+          const scene = state.scenes.get(id);
+          if (scene) {
+            (scene as any).nodes = Array.from(nodes.values()).map(n => ({
+              ...n,
+              timer: 0,
+              lastTrigger: 0,
+              flash: 0,
+              heldPackets: [],
+            }));
+            (scene as any).edges = Array.from(edges.values());
+            (scene as any).annotations = Array.from(annotations.values());
+            (scene as any).regions = Array.from(regions.values());
+            state.isDirty = true;
+          }
+        });
+      },
+      
+      loadSceneToCanvas: (id) => {
+        // Don't reload if already editing this scene
+        if (get().editingSceneId === id) {
+          console.log(`[loadSceneToCanvas] Skipped - already editing scene ${id}`);
+          return;
+        }
+        
+        // Check scene exists
+        if (!get().scenes.has(id)) {
+          console.log(`[loadSceneToCanvas] Scene ${id} not found`);
+          return;
+        }
+        
+        console.log(`[loadSceneToCanvas] Loading scene ${id}, current editingSceneId: ${get().editingSceneId}`);
+        
+        set(state => {
+          // Save current scene first (auto-save)
+          const currentEditingId = state.editingSceneId;
+          if (currentEditingId) {
+            const currentScene = state.scenes.get(currentEditingId);
+            if (currentScene) {
+              (currentScene as any).nodes = Array.from(state.nodes.values()).map(n => ({
+                ...n,
+                timer: 0,
+                lastTrigger: 0,
+                flash: 0,
+                heldPackets: [],
+              }));
+              (currentScene as any).edges = Array.from(state.edges.values());
+              (currentScene as any).annotations = Array.from(state.annotations.values());
+              (currentScene as any).regions = Array.from(state.regions.values());
+            }
+          }
+          
+          // Now get the scene to load (after auto-save, in case it was just saved)
+          const scene = state.scenes.get(id);
+          if (!scene) return;
+          
+          console.log(`[loadSceneToCanvas] Scene ${id} has ${scene.nodes.length} nodes, ${scene.edges.length} edges`);
+          
+          // Clear current canvas
+          state.nodes.clear();
+          state.edges.clear();
+          state.annotations.clear();
+          state.regions.clear();
+          state.packets.clear();
+          
+          // Load scene content
+          for (const node of scene.nodes) {
+            const newNode = {
+              ...node,
+              timer: 0,
+              lastTrigger: 0,
+              flash: 0,
+              heldPackets: [],
+            };
+            state.nodes.set(node.id, newNode as any);
+          }
+          for (const edge of scene.edges) {
+            state.edges.set(edge.id, { ...edge } as any);
+          }
+          for (const annotation of scene.annotations) {
+            state.annotations.set(annotation.id, { ...annotation } as any);
+          }
+          for (const region of scene.regions) {
+            state.regions.set(region.id, { ...region } as any);
+          }
+          
+          state.editingSceneId = id;
+          state.selection.selectedNodeIds = [];
+          state.selection.selectedEdgeId = null;
+        });
+      },
+      
+      setEditingScene: (id) => {
+        set(state => {
+          state.editingSceneId = id;
+        });
+      },
+      
+      // ========================================
+      // ARRANGEMENT OPERATIONS
+      // ========================================
+      
+      addToArrangement: (sceneId, startBeat) => {
+        const scene = get().scenes.get(sceneId);
+        if (!scene) return;
+        
+        // If adding the currently editing scene, save it first
+        const editingId = get().editingSceneId;
+        if (editingId === sceneId) {
+          // Save current canvas to the scene
+          const { nodes, edges, annotations, regions } = get();
+          set(state => {
+            const sceneToSave = state.scenes.get(sceneId);
+            if (sceneToSave) {
+              (sceneToSave as any).nodes = Array.from(nodes.values()).map(n => ({
+                ...n,
+                timer: 0,
+                lastTrigger: 0,
+                flash: 0,
+                heldPackets: [],
+              }));
+              (sceneToSave as any).edges = Array.from(edges.values());
+              (sceneToSave as any).annotations = Array.from(annotations.values());
+              (sceneToSave as any).regions = Array.from(regions.values());
+            }
+          });
+        }
+        
+        const arrangement = get().arrangement;
+        const lastSlot = arrangement[arrangement.length - 1];
+        const lastScene = lastSlot ? get().scenes.get(lastSlot.sceneId) : null;
+        
+        // Calculate start beat: either provided, or after the last slot
+        const calculatedStart = startBeat ?? (
+          lastSlot && lastScene 
+            ? lastSlot.startBeat + (lastScene.durationBeats * lastScene.loopCount)
+            : 0
+        );
+        
+        const slot: ArrangementSlot = {
+          id: crypto.randomUUID(),
+          sceneId,
+          startBeat: calculatedStart,
+        };
+        
+        set(state => {
+          state.arrangement.push(slot);
+          state.isDirty = true;
+        });
+      },
+      
+      removeFromArrangement: (slotId) => {
+        set(state => {
+          state.arrangement = state.arrangement.filter(s => s.id !== slotId);
+          state.isDirty = true;
+        });
+      },
+      
+      updateArrangementSlot: (slotId, updates) => {
+        set(state => {
+          const slot = state.arrangement.find(s => s.id === slotId);
+          if (slot) {
+            Object.assign(slot, updates);
+            state.isDirty = true;
+          }
+        });
+      },
+      
+      reorderArrangement: (slotId, newStartBeat) => {
+        set(state => {
+          const slot = state.arrangement.find(s => s.id === slotId);
+          if (slot) {
+            slot.startBeat = Math.max(0, newStartBeat);
+            // Sort by start beat
+            state.arrangement.sort((a, b) => a.startBeat - b.startBeat);
+            state.isDirty = true;
+          }
+        });
+      },
+      
+      clearArrangement: () => {
+        set(state => {
+          state.arrangement = [];
+          state.isDirty = true;
+        });
+      },
+      
+      // ========================================
+      // SCENE PLAYBACK
+      // ========================================
+      
+      setPlaybackMode: (mode) => {
+        set(state => {
+          state.scenePlayback.mode = mode;
+        });
+      },
+      
+      setScenePlayback: (updates) => {
+        set(state => {
+          Object.assign(state.scenePlayback, updates);
+        });
+      },
+      
+      queueScene: (sceneId, quantize) => {
+        set(state => {
+          state.scenePlayback.queuedSceneId = sceneId;
+          if (quantize) {
+            state.scenePlayback.queueTrigger = quantize;
+          }
+        });
+      },
+      
+      triggerSceneImmediate: (sceneId) => {
+        const scene = get().scenes.get(sceneId);
+        if (!scene) return;
+        
+        set(state => {
+          state.scenePlayback.previousSceneId = state.scenePlayback.currentSceneId;
+          state.scenePlayback.currentSceneId = sceneId;
+          state.scenePlayback.sceneBeat = 0;
+          state.scenePlayback.sceneLoopIteration = 0;
+          state.scenePlayback.queuedSceneId = null;
+          state.activeSceneId = sceneId;
+          
+          // Update effective settings
+          const masterBpm = state.masterSpeed;
+          const masterRoot = state.musicalContext.root;
+          const masterScale = state.musicalContext.scaleName;
+          
+          state.scenePlayback.effectiveBpm = getEffectiveBpm(scene, masterBpm);
+          state.scenePlayback.effectiveRoot = getEffectiveRoot(scene, masterRoot);
+          state.scenePlayback.effectiveScale = getEffectiveScale(scene, masterScale);
+        });
+        
+        // Load scene to canvas for playback
+        get().loadSceneToCanvas(sceneId);
+      },
+      
+      advanceSceneBeat: (deltaBeats) => {
+        const { scenePlayback, scenes } = get();
+        const currentScene = scenePlayback.currentSceneId 
+          ? scenes.get(scenePlayback.currentSceneId) 
+          : null;
+        
+        set(state => {
+          state.scenePlayback.sceneBeat += deltaBeats;
+          
+          if (state.scenePlayback.mode === 'arrangement') {
+            state.scenePlayback.arrangementBeat += deltaBeats;
+          }
+          
+          // Check for queued scene trigger (Jam mode)
+          if (state.scenePlayback.queuedSceneId && state.scenePlayback.mode === 'jam') {
+            const quantize = state.scenePlayback.queueTrigger;
+            const beat = state.scenePlayback.sceneBeat;
+            const scene = currentScene;
+            const phraseLength = scene?.jamTrigger.phraseLength ?? 4;
+            
+            let shouldTrigger = false;
+            if (quantize === 'immediate') {
+              shouldTrigger = true;
+            } else if (quantize === 'beat') {
+              shouldTrigger = Math.floor(beat) !== Math.floor(beat - deltaBeats);
+            } else if (quantize === 'bar') {
+              shouldTrigger = Math.floor(beat / 4) !== Math.floor((beat - deltaBeats) / 4);
+            } else if (quantize === 'phrase') {
+              shouldTrigger = Math.floor(beat / phraseLength) !== Math.floor((beat - deltaBeats) / phraseLength);
+            }
+            
+            if (shouldTrigger) {
+              // Will trigger on next tick via triggerSceneImmediate
+            }
+          }
+          
+          // Check for scene loop/advance in Arrangement mode
+          // NOTE: Slot advancement is handled by updateArrangementMode in tick.ts
+          // Here we only handle scene looping within a slot
+          if (state.scenePlayback.mode === 'arrangement' && currentScene) {
+            const sceneDuration = currentScene.durationBeats;
+            const expectedLoop = Math.floor(state.scenePlayback.sceneBeat / sceneDuration);
+            
+            if (expectedLoop > state.scenePlayback.sceneLoopIteration) {
+              // Loop within scene (if scene has multiple loops)
+              const maxLoops = currentScene.loopCount;
+              if (state.scenePlayback.sceneLoopIteration + 1 < maxLoops) {
+                state.scenePlayback.sceneLoopIteration++;
+              }
+              // Note: actual slot transition is handled in updateArrangementMode
+            }
+          }
+        });
+      },
+      
+      // ========================================
+      // SCENE GETTERS
+      // ========================================
+      
+      getScene: (id) => get().scenes.get(id),
+      
+      getScenesArray: () => Array.from(get().scenes.values()),
+      
+      getArrangementSlot: (slotId) => get().arrangement.find(s => s.id === slotId),
+      
+      getCurrentScene: () => {
+        const { scenePlayback, scenes } = get();
+        return scenePlayback.currentSceneId 
+          ? scenes.get(scenePlayback.currentSceneId) 
+          : undefined;
+      },
+      
+      getEffectiveSettings: () => {
+        const { scenePlayback, masterSpeed, musicalContext } = get();
+        return {
+          bpm: scenePlayback.effectiveBpm || masterSpeed,
+          root: scenePlayback.effectiveRoot ?? musicalContext.root,
+          scale: scenePlayback.effectiveScale || musicalContext.scaleName,
+        };
+      },
+      
+      // ========================================
       // GETTERS
       // ========================================
       
@@ -1503,6 +2018,14 @@ export const selectViewport = (state: GraphStore) => state.viewport;
 export const selectCurrentTool = (state: GraphStore) => state.currentTool;
 export const selectMusicalContext = (state: GraphStore) => state.musicalContext;
 export const selectGlobalSettings = (state: GraphStore) => state.globalSettings;
+
+// Scene selectors
+export const selectScenes = (state: GraphStore) => state.scenes;
+export const selectArrangement = (state: GraphStore) => state.arrangement;
+export const selectActiveSceneId = (state: GraphStore) => state.activeSceneId;
+export const selectEditingSceneId = (state: GraphStore) => state.editingSceneId;
+export const selectScenePlayback = (state: GraphStore) => state.scenePlayback;
+export const selectPlaybackMode = (state: GraphStore) => state.scenePlayback.mode;
 
 // ============================================================================
 // DIRECT STORE ACCESS (For canvas/audio, bypasses React)
