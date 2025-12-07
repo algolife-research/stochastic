@@ -33,6 +33,7 @@ export default defineConfig({
       '@audio': path.resolve(__dirname, './src/audio'),
       '@ui': path.resolve(__dirname, './src/ui'),
       '@canvas': path.resolve(__dirname, './src/canvas'),
+      '@viz': path.resolve(__dirname, './src/viz'),
     },
   },
 });

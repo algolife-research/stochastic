@@ -78,19 +78,65 @@ This document outlines the development trajectory for Phonon, moving from its cu
 - [ ] **Per-Slot Overrides:** Instance-specific BPM and loop count
 - [ ] **Markers/Cue Points:** Annotation markers in arrangement
 
-## Phase 5: The Ecosystem (Long-Term)
+## Phase 5: Visual Art Generator (Planned)
+**Goal:** Transform Phonon into a generative audiovisual instrument with video export.
+
+### 5.1 Visualization Mode System
+- [ ] **Viz Mode Property:** Per-scene visualization mode setting
+- [ ] **Mode Switching:** Toggle between Editor mode (default) and Visualization modes
+- [ ] **Multiple Viz Modes:** Abstract, Geometric, Particle, Wave, Spectral, etc.
+- [ ] **Mode Preview:** Quick preview of visualization without leaving editor
+
+### 5.2 Core Visualization Engine
+- [ ] **Viz Renderer:** Separate WebGL/Canvas renderer for generative art
+- [ ] **Data Binding:** Map musical properties to visual parameters
+- [ ] **Packet Visualization:** Transform packet flow into visual elements
+- [ ] **Node Influence:** Nodes affect surrounding visual space
+- [ ] **Edge Dynamics:** Edges as visual connectors/flow lines
+
+### 5.3 Musical Data → Visual Mapping
+- [ ] **Frequency → Color:** Map pitch/frequency to color palettes
+- [ ] **Intensity → Size/Brightness:** Velocity/gain affects visual magnitude
+- [ ] **Position → Spatial:** Node positions influence visual composition
+- [ ] **Timing → Motion:** Beat/rhythm drives animation timing
+- [ ] **Wave Type → Texture:** Different wave shapes create different textures
+- [ ] **Envelope → Opacity/Scale:** AHD curves control visual element lifecycle
+
+### 5.4 Generative Art Modes
+- [ ] **Abstract Flow:** Organic shapes following packet paths
+- [ ] **Geometric Patterns:** Crystalline structures based on graph topology
+- [ ] **Particle Systems:** Explosions of particles at speaker nodes
+- [ ] **Wave Interference:** Rippling patterns from overlapping frequencies
+- [ ] **Spectral Visualizer:** Real-time frequency spectrum display
+- [ ] **Kaleidoscope:** Symmetric reflections of graph activity
+
+### 5.5 Video Export
+- [ ] **Frame Capture:** Render visualization frames in sync with audio
+- [ ] **Video Encoding:** Export to MP4/WebM with audio track
+- [ ] **Resolution Options:** 720p, 1080p, 4K export targets
+- [ ] **Frame Rate:** 30fps, 60fps options
+- [ ] **Arrangement Export:** Full arrangement rendered as video
+
+### 5.6 Advanced Visual Features
+- [ ] **Visual Presets:** Save and load visualization configurations
+- [ ] **Per-Scene Viz Settings:** Different visual styles per scene
+- [ ] **Transitions:** Visual transitions between scenes (matching audio)
+- [ ] **Custom Shaders:** User-defined GLSL shaders for advanced effects
+- [ ] **Real-time Performance:** Optimized rendering for live performance
+
+## Phase 6: The Ecosystem (Long-Term)
 **Goal:** Professional features and community.
 
-### 5.1 Interoperability
+### 6.1 Interoperability
 - [x] **MIDI Out:** Speakers can send MIDI Note On/Off
 - [ ] **VST/AU Plugin:** Wrap the engine to run inside a DAW
 - [ ] **OSC Support:** Control Phonon from external applications
 
-### 5.2 3D / VR Interface
+### 6.2 3D / VR Interface
 - [ ] Move from 2D Canvas to 3D Space (Three.js)
 - [ ] VR composition environment
 
-### 5.3 Collaboration
+### 6.3 Collaboration
 - [ ] **Cloud Sync:** Save compositions to cloud
 - [ ] **Sharing:** Publish and discover community compositions
 - [ ] **Real-time Collaboration:** Multi-user editing

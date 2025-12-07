@@ -326,6 +326,207 @@ export interface Packet {
 }
 
 // ============================================================================
+// VISUALIZATION TYPES
+// ============================================================================
+
+/** Available visualization modes */
+export type VizMode = 
+  | 'editor'        // Default graph editor (no viz)
+  | 'abstract'      // Organic flowing shapes
+  | 'geometric'     // Crystalline angular patterns
+  | 'particles'     // Particle explosions and flows
+  | 'waves'         // Interference patterns
+  | 'spectral'      // Frequency spectrum
+  | 'kaleidoscope'; // Symmetric reflections
+
+/** Color palette for visualization */
+export interface ColorPalette {
+  readonly name: string;
+  readonly colors: readonly string[];  // Array of hex colors
+  readonly background: string;
+}
+
+/** Base configuration for all viz modes */
+export interface VizConfigBase {
+  readonly colorPalette: ColorPalette;
+  readonly intensity: number;         // 0-1 global intensity
+  readonly trailLength: number;       // 0-1 trail/fade duration
+  readonly reactivity: number;        // 0-1 how reactive to music
+  readonly backgroundOpacity: number; // 0-1 background fade
+}
+
+/** Abstract mode specific config */
+export interface AbstractVizConfig extends VizConfigBase {
+  readonly flowSpeed: number;
+  readonly organicness: number;       // 0-1 organic vs angular
+  readonly blobCount: number;
+}
+
+/** Geometric mode specific config */
+export interface GeometricVizConfig extends VizConfigBase {
+  readonly symmetry: number;          // 2-12 fold symmetry
+  readonly lineWeight: number;
+  readonly fillMode: 'outline' | 'solid' | 'gradient';
+}
+
+/** Particles mode specific config */
+export interface ParticlesVizConfig extends VizConfigBase {
+  readonly particleCount: number;
+  readonly particleSize: number;
+  readonly gravity: number;
+  readonly emitOnBeat: boolean;
+}
+
+/** Waves mode specific config */
+export interface WavesVizConfig extends VizConfigBase {
+  readonly waveCount: number;
+  readonly amplitude: number;
+  readonly interference: boolean;
+}
+
+/** Spectral mode specific config */
+export interface SpectralVizConfig extends VizConfigBase {
+  readonly barCount: number;
+  readonly mirrorMode: boolean;
+  readonly circularLayout: boolean;
+}
+
+/** Kaleidoscope mode specific config */
+export interface KaleidoscopeVizConfig extends VizConfigBase {
+  readonly segments: number;          // 4-16
+  readonly rotation: number;
+  readonly zoom: number;
+}
+
+/** Union of all viz configs */
+export type VizConfig = 
+  | ({ readonly mode: 'abstract' } & AbstractVizConfig)
+  | ({ readonly mode: 'geometric' } & GeometricVizConfig)
+  | ({ readonly mode: 'particles' } & ParticlesVizConfig)
+  | ({ readonly mode: 'waves' } & WavesVizConfig)
+  | ({ readonly mode: 'spectral' } & SpectralVizConfig)
+  | ({ readonly mode: 'kaleidoscope' } & KaleidoscopeVizConfig);
+
+/** Visual transition types */
+export type VizTransitionType = 'cut' | 'crossfade' | 'morph';
+
+/** Visual transition between scenes */
+export interface VizTransition {
+  readonly type: VizTransitionType;
+  readonly durationBeats: number;
+}
+
+/** Extracted packet data for visualization */
+export interface VizPacketData {
+  readonly id: PacketId;
+  readonly x: number;
+  readonly y: number;
+  readonly vx: number;
+  readonly vy: number;
+  readonly frequency: Frequency;
+  readonly midiNote: MidiNote;
+  readonly intensity: number;
+  readonly waveType: WaveOrNoiseType;
+  readonly hue: number;
+}
+
+/** Extracted node data for visualization */
+export interface VizNodeData {
+  readonly id: NodeId;
+  readonly type: NodeType;
+  readonly x: number;
+  readonly y: number;
+  readonly flash: number;
+  readonly connectionCount: number;
+}
+
+/** Active note data for visualization */
+export interface VizNoteData {
+  readonly frequency: Frequency;
+  readonly gain: number;
+  readonly pan: number;
+  readonly envelope: number;
+  readonly waveType: WaveOrNoiseType;
+}
+
+/** Extracted musical data for visualization */
+export interface VizMusicalData {
+  readonly beat: number;
+  readonly bpm: number;
+  readonly beatPhase: number;
+  readonly barPhase: number;
+  readonly packets: VizPacketData[];
+  readonly nodes: VizNodeData[];
+  readonly activeNotes: VizNoteData[];
+  readonly averageFrequency: number;
+  readonly averageIntensity: number;
+  readonly packetDensity: number;
+}
+
+/** Global viz display state */
+export interface VizDisplayState {
+  readonly isVizMode: boolean;        // true = viz, false = editor
+  readonly previewMode: boolean;      // Preview without committing
+}
+
+// ============================================================================
+// VIDEO EXPORT TYPES
+// ============================================================================
+
+/** Video resolution presets */
+export interface VideoResolution {
+  readonly width: number;
+  readonly height: number;
+  readonly name: string;
+}
+
+export const VIDEO_RESOLUTIONS: readonly VideoResolution[] = [
+  { width: 1280, height: 720, name: '720p' },
+  { width: 1920, height: 1080, name: '1080p' },
+  { width: 2560, height: 1440, name: '1440p' },
+  { width: 3840, height: 2160, name: '4K' },
+] as const;
+
+/** Video export configuration */
+export interface VideoExportConfig {
+  readonly resolution: VideoResolution;
+  readonly frameRate: 30 | 60;
+  readonly quality: number;           // 0-1 quality level
+  readonly includeAudio: boolean;
+  readonly vizMode: VizMode;
+  readonly vizConfig: VizConfig | null;
+}
+
+/** Video export progress state */
+export interface VideoExportProgress {
+  readonly state: 'idle' | 'compiling' | 'rendering' | 'encoding' | 'muxing' | 'complete' | 'error';
+  readonly currentFrame: number;
+  readonly totalFrames: number;
+  readonly currentPhase: string;
+  readonly elapsedTime: number;
+  readonly estimatedTimeRemaining: number;
+  readonly error?: string;
+}
+
+/** Frame data for video export (packet/node state at a specific time) */
+export interface VideoFrameData {
+  readonly time: number;              // Time in seconds
+  readonly beat: number;
+  readonly beatPhase: number;
+  readonly barPhase: number;
+  readonly packets: VizPacketData[];
+  readonly nodes: VizNodeData[];
+  readonly activeNotes: VizNoteData[];
+  readonly averageFrequency: number;
+  readonly averageIntensity: number;
+  readonly packetDensity: number;
+  // Scene-specific data for arrangement export
+  readonly sceneId?: SceneId;         // Which scene this frame belongs to
+  readonly vizMode?: VizMode;         // Viz mode for this frame's scene
+  readonly vizConfig?: VizConfig;     // Full viz config for this frame's scene
+}
+
+// ============================================================================
 // SCENE & PROJECT
 // ============================================================================
 
@@ -381,6 +582,11 @@ export interface Scene {
   
   // Jam mode settings
   jamTrigger: SceneTriggerConfig;
+  
+  // Visualization settings
+  vizMode: VizMode;                  // 'editor' = default graph view
+  vizConfig: VizConfig | null;       // null when vizMode is 'editor'
+  vizTransition: VizTransition;      // Visual transition settings
 }
 
 /** Arrangement slot - a scene placed in the timeline */

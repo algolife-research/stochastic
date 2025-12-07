@@ -469,6 +469,10 @@ export function createDefaultScene(
     enterTransition: { ...DEFAULT_SCENE_TRANSITION },
     exitTransition: { ...DEFAULT_SCENE_TRANSITION },
     jamTrigger: { ...DEFAULT_SCENE_JAM_TRIGGER },
+    // Visualization settings
+    vizMode: 'editor',
+    vizConfig: null,
+    vizTransition: { type: 'crossfade', durationBeats: 1 },
   };
 }
 

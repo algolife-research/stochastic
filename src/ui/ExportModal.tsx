@@ -1,24 +1,48 @@
-// Phonon v2 - Export Modal (Audio/MIDI)
+// Phonon v2 - Export Modal (Audio/MIDI/Video)
 
 import React, { useState, useMemo } from 'react';
 import { useGraphStore } from '@core/store';
 import { compileGraph, compileArrangement, calculateArrangementDuration } from '../io/compiler';
+import { compileVideoFrames, compileArrangementVideoFrames } from '../io/video-compiler';
+import { FrameByFrameExporter } from '../io/video-encoder';
+import { renderOfflineFrame, createOfflineRenderState } from '../viz/offline-renderer';
 import { encodeMIDI } from '../io/midi';
 import type { MIDIEvent } from '../io/midi';
 import type { AudioEvent } from '../io/compiler';
+import type { VideoResolution, VizConfig } from '@core/types';
+import { getDefaultVizConfig } from '@core/store';
 import styles from './ExportModal.module.css';
+// Video resolution options
+const RESOLUTIONS: VideoResolution[] = [
+  { width: 1280, height: 720, name: '720p' },
+  { width: 1920, height: 1080, name: '1080p' },
+  { width: 2560, height: 1440, name: '1440p' },
+  { width: 3840, height: 2160, name: '4K' },
+];
 
 interface ExportModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
+type ExportTab = 'audio' | 'video';
+
 export function ExportModal({ visible, onClose }: ExportModalProps): React.ReactElement | null {
+  // Tab state
+  const [activeTab, setActiveTab] = useState<ExportTab>('audio');
+  
+  // Audio export state
   const [duration, setDuration] = useState(10);
   const [format, setFormat] = useState<'wav' | 'midi'>('wav');
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [progressPhase, setProgressPhase] = useState('');
   const [exportMode, setExportMode] = useState<'canvas' | 'arrangement'>('arrangement');
+  
+  // Video export state
+  const [videoResolution, setVideoResolution] = useState<VideoResolution>(RESOLUTIONS[1]!);
+  const [videoFrameRate, setVideoFrameRate] = useState<30 | 60>(30);
+  const [includeAudio, setIncludeAudio] = useState(true);
   
   const nodes = useGraphStore(state => state.nodes);
   const edges = useGraphStore(state => state.edges);
@@ -27,6 +51,8 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
   const projectMeta = useGraphStore(state => state.projectMeta);
   const scenes = useGraphStore(state => state.scenes);
   const arrangement = useGraphStore(state => state.arrangement);
+  const getCurrentScene = useGraphStore(state => state.getCurrentScene);
+  const currentScene = getCurrentScene();
   
   // Check if arrangement has scenes
   const hasArrangement = arrangement.length > 0;
@@ -38,8 +64,17 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
   }, [scenes, arrangement, hasArrangement]);
   
   const handleExport = async () => {
+    if (activeTab === 'audio') {
+      await handleAudioExport();
+    } else {
+      await handleVideoExport();
+    }
+  };
+  
+  const handleAudioExport = async () => {
     setIsExporting(true);
     setProgress(0);
+    setProgressPhase('Compiling...');
     
     try {
       if (format === 'wav') {
@@ -49,6 +84,7 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
       }
       
       setProgress(100);
+      setProgressPhase('Complete!');
       setTimeout(() => {
         setIsExporting(false);
         onClose();
@@ -58,6 +94,172 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
       alert('Export failed. Check console for details.');
       setIsExporting(false);
     }
+  };
+  
+  const handleVideoExport = async () => {
+    setIsExporting(true);
+    setProgress(0);
+    setProgressPhase('Compiling frames...');
+    
+    try {
+      await exportVideo();
+      
+      setProgress(100);
+      setProgressPhase('Complete!');
+      setTimeout(() => {
+        setIsExporting(false);
+        onClose();
+      }, 500);
+    } catch (err) {
+      console.error('Video export failed:', err);
+      alert('Video export failed. Check console for details.');
+      setIsExporting(false);
+    }
+  };
+  
+  const exportVideo = async () => {
+    const useArrangement = exportMode === 'arrangement' && hasArrangement;
+    const videoDuration = useArrangement ? arrangementDuration : duration;
+    const frameDuration = 1 / videoFrameRate;
+    
+    // Check for speaker nodes if including audio
+    let audioBuffer: AudioBuffer | undefined;
+    if (includeAudio) {
+      const hasSpeakers = useArrangement 
+        ? arrangement.some(slot => {
+            const scene = scenes.get(slot.sceneId);
+            return scene?.nodes.some(n => n.type === 'speaker');
+          })
+        : Array.from(nodes.values()).some(n => n.type === 'speaker');
+      
+      if (hasSpeakers) {
+        setProgressPhase('Compiling audio...');
+        setProgress(2);
+        
+        // Compile audio events
+        let audioEvents: AudioEvent[];
+        if (useArrangement) {
+          audioEvents = compileArrangement(scenes, arrangement, musicalContext, globalSettings, 120);
+        } else {
+          audioEvents = compileGraph(nodes, edges, videoDuration, musicalContext, globalSettings);
+        }
+        
+        if (audioEvents.length > 0) {
+          setProgress(5);
+          setProgressPhase('Rendering audio...');
+          
+          // Render audio events to buffer - use video duration to ensure full length
+          const sampleRate = 44100;
+          const numChannels = 2;
+          // Add a small buffer to ensure audio covers the full video
+          const numSamples = Math.ceil((videoDuration + 0.5) * sampleRate);
+          
+          audioBuffer = await renderEventsToBuffer(audioEvents, sampleRate, numChannels, numSamples, (p) => {
+            setProgress(5 + p * 5); // 5% to 10%
+          });
+        }
+      }
+    }
+    
+    setProgressPhase('Compiling frame data...');
+    setProgress(10);
+    
+    // Compile frame data (includes per-scene vizConfig for arrangement)
+    let frameData;
+    if (useArrangement) {
+      frameData = compileArrangementVideoFrames(
+        scenes,
+        arrangement,
+        videoFrameRate,
+        musicalContext,
+        globalSettings,
+        120
+      );
+    } else {
+      // For canvas mode, use current scene's viz config or default
+      const canvasVizMode = currentScene?.vizMode ?? 'particles';
+      const defaultVizConfig = getDefaultVizConfig(canvasVizMode);
+      const canvasVizConfig = currentScene?.vizConfig ?? defaultVizConfig ?? getDefaultVizConfig('particles');
+      
+      const rawFrames = compileVideoFrames(
+        nodes,
+        edges,
+        videoDuration,
+        videoFrameRate,
+        musicalContext,
+        globalSettings
+      );
+      
+      // Add viz config to each frame (ensure not null/undefined)
+      frameData = rawFrames.map(frame => ({
+        ...frame,
+        vizMode: canvasVizMode,
+        vizConfig: canvasVizConfig ?? undefined,
+      }));
+    }
+    
+    if (frameData.length === 0) {
+      throw new Error('No frames generated. Check your arrangement or duration.');
+    }
+    
+    setProgress(15);
+    setProgressPhase(`Rendering ${frameData.length} frames...`);
+    
+    // Create render state for offline rendering
+    const renderState = createOfflineRenderState();
+    
+    // Use frame-by-frame exporter for proper timing
+    const exporter = new FrameByFrameExporter(videoResolution.width, videoResolution.height);
+    exporter.init(videoFrameRate, audioBuffer);
+    
+    // Track current viz config to detect scene changes
+    let currentVizConfigForRendering: VizConfig | null = null;
+    
+    // Render and capture each frame
+    for (let i = 0; i < frameData.length; i++) {
+      const frame = frameData[i]!;
+      
+      // Get the viz config for this frame (from scene or default)
+      const frameVizConfig = frame.vizConfig ?? getDefaultVizConfig(frame.vizMode ?? 'particles');
+      
+      // If viz config changed (new scene), reset some render state
+      if (frameVizConfig !== currentVizConfigForRendering) {
+        currentVizConfigForRendering = frameVizConfig;
+        // Could reset particle systems here for clean scene transitions
+      }
+      
+      // Render and capture frame using the scene's viz config
+      exporter.captureFrame(frame, (exportCtx, fdata, w, h, _cfg) => {
+        renderOfflineFrame(exportCtx, fdata, w, h, frameVizConfig, renderState, frameDuration);
+      }, frameVizConfig);
+      
+      // Update progress periodically
+      if (i % 30 === 0) {
+        const frameProgress = (i / frameData.length);
+        setProgress(15 + frameProgress * 35); // 15% to 50%
+        setProgressPhase(`Rendering frame ${i + 1} / ${frameData.length}`);
+        // Yield to UI
+        await new Promise(resolve => setTimeout(resolve, 0));
+      }
+    }
+    
+    setProgress(50);
+    setProgressPhase(`Encoding video (${frameData.length} frames)... This plays back in real-time.`);
+    
+    // Encode video (this takes real-time as it plays back the frames)
+    const videoBlob = await exporter.encode();
+    exporter.dispose();
+    
+    setProgress(95);
+    setProgressPhase('Saving...');
+    
+    // Download
+    const url = URL.createObjectURL(videoBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${projectMeta.name || 'export'}.webm`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
   
   const exportWAV = async () => {
@@ -206,8 +408,26 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
           <button className={styles.closeBtn} onClick={onClose}>×</button>
         </div>
         
+        {/* Tab bar */}
+        <div className={styles.tabs}>
+          <button 
+            className={`${styles.tab} ${activeTab === 'audio' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('audio')}
+            disabled={isExporting}
+          >
+            🔊 Audio
+          </button>
+          <button 
+            className={`${styles.tab} ${activeTab === 'video' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('video')}
+            disabled={isExporting}
+          >
+            🎬 Video
+          </button>
+        </div>
+        
         <div className={styles.content}>
-          {/* Export source selection */}
+          {/* Export source selection (shared) */}
           <div className={styles.row}>
             <label>Export Source</label>
             <select 
@@ -248,30 +468,95 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
             </div>
           )}
           
-          <div className={styles.row}>
-            <label>Format</label>
-            <select value={format} onChange={e => setFormat(e.target.value as 'wav' | 'midi')} disabled={isExporting}>
-              <option value="wav">WAV (Audio)</option>
-              <option value="midi">MIDI</option>
-            </select>
-          </div>
-          
-          {format === 'wav' && (
-            <div className={styles.info}>
-              <p>Exports audio output from all Speaker nodes.</p>
-            </div>
+          {/* Audio-specific options */}
+          {activeTab === 'audio' && (
+            <>
+              <div className={styles.row}>
+                <label>Format</label>
+                <select value={format} onChange={e => setFormat(e.target.value as 'wav' | 'midi')} disabled={isExporting}>
+                  <option value="wav">WAV (Audio)</option>
+                  <option value="midi">MIDI</option>
+                </select>
+              </div>
+              
+              {format === 'wav' && (
+                <div className={styles.info}>
+                  <p>Exports audio output from all Speaker nodes.</p>
+                </div>
+              )}
+              
+              {format === 'midi' && (
+                <div className={styles.info}>
+                  <p>Exports MIDI events from MIDI Out nodes.</p>
+                </div>
+              )}
+            </>
           )}
           
-          {format === 'midi' && (
-            <div className={styles.info}>
-              <p>Exports MIDI events from MIDI Out nodes.</p>
-            </div>
+          {/* Video-specific options */}
+          {activeTab === 'video' && (
+            <>
+              <div className={styles.row}>
+                <label>Resolution</label>
+                <select 
+                  value={`${videoResolution.width}x${videoResolution.height}`}
+                  onChange={e => {
+                    const [w, h] = e.target.value.split('x').map(Number);
+                    const res = RESOLUTIONS.find(r => r.width === w && r.height === h);
+                    if (res) setVideoResolution(res);
+                  }}
+                  disabled={isExporting}
+                >
+                  {RESOLUTIONS.map(r => (
+                    <option key={r.name} value={`${r.width}x${r.height}`}>
+                      {r.name} ({r.width}×{r.height})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className={styles.row}>
+                <label>Frame Rate</label>
+                <select 
+                  value={videoFrameRate}
+                  onChange={e => setVideoFrameRate(parseInt(e.target.value) as 30 | 60)}
+                  disabled={isExporting}
+                >
+                  <option value={30}>30 fps</option>
+                  <option value={60}>60 fps</option>
+                </select>
+              </div>
+              
+              <div className={styles.row}>
+                <label>Include Audio</label>
+                <input
+                  type="checkbox"
+                  checked={includeAudio}
+                  onChange={e => setIncludeAudio(e.target.checked)}
+                  disabled={isExporting}
+                />
+              </div>
+              
+              <div className={styles.info}>
+                <p>
+                  🎬 Exports WebM video ({videoResolution.name}, {videoFrameRate}fps)
+                  {includeAudio && ' with audio'}
+                  <br />
+                  Visualization uses each scene's viz mode setting.
+                  <br />
+                  Estimated frames: {Math.ceil((exportMode === 'arrangement' && hasArrangement ? arrangementDuration : duration) * videoFrameRate)}
+                </p>
+              </div>
+            </>
           )}
           
           {isExporting && (
-            <div className={styles.progress}>
-              <div className={styles.progressBar} style={{ width: `${progress}%` }} />
-              <span>{Math.round(progress)}%</span>
+            <div className={styles.progressContainer}>
+              <div className={styles.progressLabel}>{progressPhase}</div>
+              <div className={styles.progress}>
+                <div className={styles.progressBar} style={{ width: `${progress}%` }} />
+                <span>{Math.round(progress)}%</span>
+              </div>
             </div>
           )}
         </div>
@@ -281,7 +566,7 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
             Cancel
           </button>
           <button className={styles.exportBtn} onClick={handleExport} disabled={isExporting}>
-            {isExporting ? 'Exporting...' : 'Export'}
+            {isExporting ? 'Exporting...' : `Export ${activeTab === 'audio' ? (format === 'wav' ? 'WAV' : 'MIDI') : 'Video'}`}
           </button>
         </div>
       </div>

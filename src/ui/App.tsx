@@ -17,6 +17,8 @@ import { SettingsModal } from './SettingsModal';
 import { ExportModal } from './ExportModal';
 import { ScenePanel } from './ScenePanel';
 import { ArrangementTimeline } from './ArrangementTimeline';
+import { VizPanel } from './VizPanel';
+import { VizCanvas } from './VizCanvas';
 import styles from './App.module.css';
 
 // ============================================================================
@@ -39,6 +41,7 @@ export function App(): React.ReactElement {
   const edges = useGraphStore(state => state.edges);
   const annotations = useGraphStore(state => state.annotations);
   const regions = useGraphStore(state => state.regions);
+  const vizDisplay = useGraphStore(state => state.vizDisplay);
   
   // Get selected node for property panel
   const selectedNodeId = selection.selectedNodeIds[0];
@@ -168,6 +171,9 @@ export function App(): React.ReactElement {
         <div ref={containerRef} className={styles['canvasContainer']}>
           <canvas ref={canvasRef} className={`${styles['canvas']} phonon-canvas`} />
           
+          {/* Visualization canvas overlay (shown in viz mode) */}
+          <VizCanvas />
+          
           {/* Audio initialization prompt */}
           {!isAudioReady && (
             <div className={styles['audioPrompt']}>
@@ -176,8 +182,10 @@ export function App(): React.ReactElement {
           )}
         </div>
         
-        {/* Property panel - show edge, node, annotation, or region panel based on selection */}
-        {selectedEdge ? (
+        {/* Right panel - VizPanel in viz mode, otherwise property/edge panel based on selection */}
+        {vizDisplay.isVizMode ? (
+          <VizPanel />
+        ) : selectedEdge ? (
           <EdgePanel edge={selectedEdge} />
         ) : selectedNode ? (
           <PropertyPanel node={selectedNode} />

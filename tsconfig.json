@@ -43,7 +43,8 @@
       "@graph/*": ["src/graph/*"],
       "@audio/*": ["src/audio/*"],
       "@ui/*": ["src/ui/*"],
-      "@canvas/*": ["src/canvas/*"]
+      "@canvas/*": ["src/canvas/*"],
+      "@viz/*": ["src/viz/*"]
     }
   },
   "include": ["src"],

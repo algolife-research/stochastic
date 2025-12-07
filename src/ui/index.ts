@@ -8,3 +8,5 @@ export { EdgePanel } from './EdgePanel';
 export { TransportBar } from './TransportBar';
 export { StatusBar } from './StatusBar';
 export { ContextMenu } from './ContextMenu';
+export { VizPanel } from './VizPanel';
+export { VizCanvas } from './VizCanvas';

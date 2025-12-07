@@ -107,6 +107,10 @@ export interface SerializedScene {
     description: string;
     color: string;
   }>;
+  // Viz properties (optional for backward compatibility)
+  vizMode?: string;
+  vizConfig?: unknown;
+  vizTransition?: { type: string; durationBeats: number };
 }
 
 export interface SerializedArrangementSlot {
@@ -327,6 +331,10 @@ export function serializeScene(scene: Scene): SerializedScene {
       description: r.description,
       color: r.color,
     })),
+    // Viz properties
+    vizMode: scene.vizMode,
+    vizConfig: scene.vizConfig,
+    vizTransition: scene.vizTransition,
   };
 }
 
@@ -391,6 +399,10 @@ export function deserializeScene(data: SerializedScene): Scene {
       description: r.description,
       color: r.color,
     })) ?? [],
+    // Viz properties with defaults for backward compatibility
+    vizMode: (data as any).vizMode ?? 'editor',
+    vizConfig: (data as any).vizConfig ?? null,
+    vizTransition: (data as any).vizTransition ?? { type: 'crossfade', durationBeats: 2 },
   };
 }
 

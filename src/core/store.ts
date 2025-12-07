@@ -11,7 +11,8 @@ import type {
   NodeType, MusicalContext, GlobalSettings, ProjectMeta,
   ViewportState, SelectionState, Tool, MidiNote, Frequency,
   ScaleName, Annotation, Region, Scene, ArrangementSlot, 
-  ScenePlaybackState, PlaybackMode, SceneQuantize
+  ScenePlaybackState, PlaybackMode, SceneQuantize,
+  VizMode, VizConfig
 } from './types';
 import { 
   createNodeId, createEdgeId, createPacketId,
@@ -26,6 +27,42 @@ import {
 
 // Enable Immer MapSet plugin for Map/Set support
 enableMapSet();
+
+// ============================================================================
+// VIZ CONFIG DEFAULTS
+// ============================================================================
+
+import { DEFAULT_PALETTE } from '../viz/palettes';
+
+/** Get default viz config for a given mode */
+export function getDefaultVizConfig(mode: VizMode): VizConfig | null {
+  const baseConfig = {
+    colorPalette: DEFAULT_PALETTE,
+    intensity: 0.8,
+    trailLength: 0.5,
+    reactivity: 0.7,
+    backgroundOpacity: 0.95,
+  };
+  
+  switch (mode) {
+    case 'editor':
+      return null;
+    case 'particles':
+      return { mode: 'particles', ...baseConfig, particleCount: 500, particleSize: 3, gravity: 0.3, emitOnBeat: true };
+    case 'abstract':
+      return { mode: 'abstract', ...baseConfig, flowSpeed: 0.5, organicness: 0.7, blobCount: 8 };
+    case 'spectral':
+      return { mode: 'spectral', ...baseConfig, barCount: 64, mirrorMode: true, circularLayout: false };
+    case 'geometric':
+      return { mode: 'geometric', ...baseConfig, symmetry: 6, lineWeight: 2, fillMode: 'outline' as const };
+    case 'waves':
+      return { mode: 'waves', ...baseConfig, waveCount: 5, amplitude: 0.5, interference: true };
+    case 'kaleidoscope':
+      return { mode: 'kaleidoscope', ...baseConfig, segments: 8, rotation: 0.3, zoom: 1 };
+    default:
+      return null;
+  }
+}
 
 // ============================================================================
 // STORE STATE INTERFACE
@@ -65,6 +102,12 @@ interface GraphState {
   activeSceneId: SceneId | null;
   editingSceneId: SceneId | null;  // Which scene is being edited on canvas
   scenePlayback: ScenePlaybackState;
+  
+  // Visualization
+  vizDisplay: {
+    isVizMode: boolean;
+    previewMode: boolean;
+  };
   
   isDirty: boolean;
   
@@ -219,6 +262,13 @@ interface GraphActions {
   getCurrentScene: () => Scene | undefined;
   getEffectiveSettings: () => { bpm: number; root: number; scale: ScaleName };
   
+  // Visualization
+  setVizMode: (isVizMode: boolean) => void;
+  setVizPreview: (previewMode: boolean) => void;
+  toggleVizMode: () => void;
+  updateSceneVizMode: (sceneId: SceneId, vizMode: import('./types').VizMode) => void;
+  updateSceneVizConfig: (sceneId: SceneId, vizConfig: import('./types').VizConfig | null) => void;
+  
   // Getters (for external access)
   getNode: (id: NodeId) => GraphNode | undefined;
   getEdge: (id: EdgeId) => GraphEdge | undefined;
@@ -292,6 +342,12 @@ const initialState: GraphState = {
   activeSceneId: null,
   editingSceneId: null,
   scenePlayback: { ...INITIAL_SCENE_PLAYBACK_STATE },
+  
+  // Visualization
+  vizDisplay: {
+    isVizMode: false,
+    previewMode: false,
+  },
   
   isDirty: false,
   
@@ -2184,6 +2240,53 @@ export const useGraphStore = create<GraphStore>()(
       },
       
       // ========================================
+      // VISUALIZATION
+      // ========================================
+      
+      setVizMode: (isVizMode) => set((state) => {
+        state.vizDisplay.isVizMode = isVizMode;
+        if (!isVizMode) {
+          state.vizDisplay.previewMode = false;
+        }
+      }),
+      
+      setVizPreview: (previewMode) => set((state) => {
+        state.vizDisplay.previewMode = previewMode;
+      }),
+      
+      toggleVizMode: () => set((state) => {
+        state.vizDisplay.isVizMode = !state.vizDisplay.isVizMode;
+        if (!state.vizDisplay.isVizMode) {
+          state.vizDisplay.previewMode = false;
+        }
+      }),
+      
+      updateSceneVizMode: (sceneId, vizMode) => set((state) => {
+        const scene = state.scenes.get(sceneId);
+        if (scene) {
+          scene.vizMode = vizMode;
+          // Initialize default config when switching to a viz mode, clear when going to editor
+          if (vizMode === 'editor') {
+            scene.vizConfig = null;
+          } else if (!scene.vizConfig || scene.vizConfig.mode !== vizMode) {
+            // Create default config for the new mode
+            const defaultConfig = getDefaultVizConfig(vizMode);
+            scene.vizConfig = defaultConfig ? JSON.parse(JSON.stringify(defaultConfig)) : null;
+          }
+          state.isDirty = true;
+        }
+      }),
+      
+      updateSceneVizConfig: (sceneId, vizConfig) => set((state) => {
+        const scene = state.scenes.get(sceneId);
+        if (scene) {
+          // Use JSON parse/stringify to convert readonly to mutable for immer
+          scene.vizConfig = vizConfig ? JSON.parse(JSON.stringify(vizConfig)) : null;
+          state.isDirty = true;
+        }
+      }),
+      
+      // ========================================
       // GETTERS
       // ========================================
       
@@ -2246,6 +2349,10 @@ export const selectActiveSceneId = (state: GraphStore) => state.activeSceneId;
 export const selectEditingSceneId = (state: GraphStore) => state.editingSceneId;
 export const selectScenePlayback = (state: GraphStore) => state.scenePlayback;
 export const selectPlaybackMode = (state: GraphStore) => state.scenePlayback.mode;
+
+// Visualization selectors
+export const selectVizDisplay = (state: GraphStore) => state.vizDisplay;
+export const selectIsVizMode = (state: GraphStore) => state.vizDisplay.isVizMode;
 
 // ============================================================================
 // DIRECT STORE ACCESS (For canvas/audio, bypasses React)
