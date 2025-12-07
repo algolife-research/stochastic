@@ -2,10 +2,10 @@
 
 import React, { useRef, useEffect } from 'react';
 import { useGraphStore } from '@core/store';
-import { saveGraphToFile, loadGraphFromFile } from '../io/file-io';
+import { saveCompositionToFile, loadCompositionFromFile, serializeComposition } from '../io/file-io';
 import { fs, isTauri } from '../io/filesystem';
 import { SCALES } from '@core/constants';
-import type { ScaleName } from '@core/types';
+import type { ScaleName, SceneId } from '@core/types';
 import styles from './FileMenu.module.css';
 
 interface FileMenuProps {
@@ -16,13 +16,15 @@ interface FileMenuProps {
 export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React.ReactElement {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const nodes = useGraphStore(state => state.nodes);
-  const edges = useGraphStore(state => state.edges);
+  const scenes = useGraphStore(state => state.scenes);
+  const arrangement = useGraphStore(state => state.arrangement);
+  const masterSpeed = useGraphStore(state => state.masterSpeed);
   const musicalContext = useGraphStore(state => state.musicalContext);
   const globalSettings = useGraphStore(state => state.globalSettings);
   const projectMeta = useGraphStore(state => state.projectMeta);
   const project = useGraphStore(state => state.project);
   const loadGraph = useGraphStore(state => state.loadGraph);
+  const loadComposition = useGraphStore(state => state.loadComposition);
   const setMusicalContext = useGraphStore(state => state.setMusicalContext);
   const setGlobalSettings = useGraphStore(state => state.setGlobalSettings);
   const setProjectMeta = useGraphStore(state => state.setProjectMeta);
@@ -30,6 +32,8 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
   const setProjectName = useGraphStore(state => state.setProjectName);
   const setCompositions = useGraphStore(state => state.setCompositions);
   const setCurrentComposition = useGraphStore(state => state.setCurrentComposition);
+  const setMasterSpeed = useGraphStore(state => state.setMasterSpeed);
+  const saveCurrentScene = useGraphStore(state => state.saveCurrentScene);
   const clear = useGraphStore(state => state.clear);
   const markClean = useGraphStore(state => state.markClean);
   
@@ -69,7 +73,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
     if (content) {
       try {
         const data = JSON.parse(content);
-        loadGraphData(data);
+        loadCompositionData(data);
         setCurrentComposition(filename);
         setProjectMeta({ name: filename.replace('.phono', '') });
       } catch (err) {
@@ -78,41 +82,98 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
     }
   };
 
-  const loadGraphData = (data: any) => {
-    // Load nodes and edges
-    const nodesWithRuntime = data.nodes.map((n: any) => ({
-      ...n,
-      timer: 0,
-      lastTrigger: 0,
-      flash: 0,
-      heldPackets: [],
-    }));
+  const loadCompositionData = (data: any) => {
+    // Detect version: v3 has scenes array, v2/legacy has nodes directly
+    const isV3 = data.meta?.version?.startsWith('3') || data.scenes;
     
-    loadGraph(nodesWithRuntime, data.edges);
-    
-    // Load musical context
-    const scaleName = data.musicalContext.scaleName as ScaleName;
-    const scale = SCALES[scaleName];
-    if (scale) {
-      setMusicalContext({
-        root: data.musicalContext.root,
-        scaleName,
-        scale,
+    if (isV3) {
+      // V3 format with scenes
+      const scaleName = data.global.scaleName as ScaleName;
+      const scale = SCALES[scaleName];
+      if (scale) {
+        setMusicalContext({
+          root: data.global.rootNote,
+          scaleName,
+          scale,
+        });
+      }
+      
+      setGlobalSettings({
+        gravityConstant: data.global.gravity,
+        defaultEdgeBehaviour: data.global.defaultEdgeBehaviour,
+      });
+      
+      setProjectMeta({
+        name: data.meta.name,
+        author: data.meta.author,
+        created: data.meta.created,
+        modified: Date.now(),
+      });
+      
+      setMasterSpeed(data.global.masterBpm || 120);
+      
+      // Deserialize scenes
+      const scenes = data.scenes.map((s: any) => ({
+        id: s.id as SceneId,
+        name: s.name,
+        color: s.color,
+        durationBeats: s.durationBeats,
+        loopCount: s.loopCount,
+        localBpm: s.localBpm,
+        localRoot: s.localRoot,
+        localScale: s.localScale as ScaleName | null,
+        enterTransition: s.enterTransition,
+        exitTransition: s.exitTransition,
+        jamTrigger: s.jamTrigger,
+        nodes: s.nodes.map((n: any) => ({
+          ...n,
+          timer: 0,
+          lastTrigger: 0,
+          flash: 0,
+          heldPackets: [],
+        })),
+        edges: s.edges,
+        annotations: s.annotations || [],
+        regions: s.regions || [],
+      }));
+      
+      loadComposition(scenes, data.arrangement || [], data.global.masterBpm || 120);
+    } else {
+      // Legacy V2 format - single graph
+      const nodesWithRuntime = data.nodes.map((n: any) => ({
+        ...n,
+        timer: 0,
+        lastTrigger: 0,
+        flash: 0,
+        heldPackets: [],
+      }));
+      
+      loadGraph(nodesWithRuntime, data.edges);
+      
+      // Load musical context
+      const scaleName = data.musicalContext.scaleName as ScaleName;
+      const scale = SCALES[scaleName];
+      if (scale) {
+        setMusicalContext({
+          root: data.musicalContext.root,
+          scaleName,
+          scale,
+        });
+      }
+      
+      // Load global settings
+      setGlobalSettings({
+        subdivisions: data.globalSettings?.subdivisions,
+        pixelsPerBeat: data.globalSettings?.pixelsPerBeat,
+        gravityConstant: data.globalSettings?.gravityConstant,
+      });
+      
+      // Load project meta
+      setProjectMeta({
+        ...data.projectMeta,
+        modified: Date.now(),
       });
     }
-    
-    // Load global settings
-    setGlobalSettings({
-      subdivisions: data.globalSettings.subdivisions,
-      pixelsPerBeat: data.globalSettings.pixelsPerBeat,
-      gravityConstant: data.globalSettings.gravityConstant,
-    });
-    
-    // Load project meta
-    setProjectMeta({
-      ...data.projectMeta,
-      modified: Date.now(),
-    });
     
     markClean();
   };
@@ -135,18 +196,13 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
   const handleSave = async () => {
     const filename = projectMeta.name || 'untitled';
     
+    // Save current canvas state to the editing scene before serializing
+    saveCurrentScene();
+    
     if (project.path && isTauri()) {
-      // Save to project folder
+      // Save to project folder using V3 format
       const phonoFilename = filename.endsWith('.phono') ? filename : `${filename}.phono`;
-      const data = {
-        version: '2.0.0',
-        timestamp: Date.now(),
-        projectMeta,
-        globalSettings,
-        musicalContext,
-        nodes: Array.from(nodes.values()).map(({ timer, lastTrigger, flash, heldPackets, ...rest }) => rest),
-        edges: Array.from(edges.values()),
-      };
+      const data = serializeComposition(scenes, arrangement, musicalContext, globalSettings, projectMeta, masterSpeed);
       
       const success = await fs.writeComposition(project.path, phonoFilename, JSON.stringify(data, null, 2));
       if (success) {
@@ -162,16 +218,17 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
     } else {
       // Fallback to download
       try {
-        await saveGraphToFile(
+        await saveCompositionToFile(
           filename,
-          nodes,
-          edges,
+          scenes,
+          arrangement,
           musicalContext,
           globalSettings,
-          projectMeta
+          projectMeta,
+          masterSpeed
         );
         markClean();
-        console.log('Graph saved:', filename);
+        console.log('Composition saved:', filename);
       } catch (err) {
         console.error('Save failed:', err);
         alert('Failed to save file');
@@ -191,8 +248,34 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
     if (!file) return;
     
     try {
-      const data = await loadGraphFromFile(file);
-      loadGraphData(data);
+      const data = await loadCompositionFromFile(file);
+      // loadCompositionFromFile handles v2->v3 migration internally
+      loadComposition(data.scenes, data.arrangement, data.masterBpm);
+      
+      // Set musical context
+      const scaleName = data.musicalContext.scaleName as ScaleName;
+      const scale = SCALES[scaleName];
+      if (scale) {
+        setMusicalContext({
+          root: data.musicalContext.root,
+          scaleName,
+          scale,
+        });
+      }
+      
+      // Set global settings
+      setGlobalSettings({
+        gravityConstant: data.globalSettings.gravityConstant,
+        defaultEdgeBehaviour: data.globalSettings.defaultEdgeBehaviour,
+      });
+      
+      // Set project meta
+      setProjectMeta({
+        ...data.projectMeta,
+        modified: Date.now(),
+      });
+      
+      markClean();
     } catch (err) {
       console.error('Load failed:', err);
       alert('Failed to load file');

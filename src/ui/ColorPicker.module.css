@@ -1,0 +1,305 @@
+/* Modern Color Picker Styles */
+
+.container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Checkerboard pattern for transparency */
+.checkerboard {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background-image: 
+    linear-gradient(45deg, #808080 25%, transparent 25%),
+    linear-gradient(-45deg, #808080 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #808080 75%),
+    linear-gradient(-45deg, transparent 75%, #808080 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+  background-color: #fff;
+}
+
+.trigger {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  padding: 2px;
+  border: 2px solid var(--border-color, #3a3a3a);
+  border-radius: 6px;
+  cursor: pointer;
+  background: var(--bg-secondary, #2a2a2a);
+  transition: border-color 0.15s ease, transform 0.1s ease;
+  overflow: hidden;
+}
+
+.trigger .checkerboard {
+  border-radius: 3px;
+}
+
+.trigger:hover {
+  border-color: var(--accent-color, #5f9ea0);
+  transform: scale(1.05);
+}
+
+.trigger:focus {
+  outline: none;
+  border-color: var(--accent-color, #5f9ea0);
+  box-shadow: 0 0 0 2px rgba(95, 158, 160, 0.3);
+}
+
+.triggerInner {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Small variant */
+.small .trigger {
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+/* Popover */
+.popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 1000;
+  min-width: 220px;
+  padding: 12px;
+  background: var(--bg-primary, #1e1e1e);
+  border: 1px solid var(--border-color, #3a3a3a);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: popoverIn 0.15s ease-out;
+}
+
+@keyframes popoverIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Presets grid */
+.presets {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.preset {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.preset:hover {
+  transform: scale(1.15);
+  z-index: 1;
+}
+
+.preset.selected {
+  border-color: white;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.preset:focus {
+  outline: none;
+  border-color: white;
+}
+
+/* Custom color section */
+.custom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color, #3a3a3a);
+}
+
+.customPreview {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.nativeInput {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.previewSwatch {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  border: 2px solid var(--border-color, #3a3a3a);
+  pointer-events: none;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.hexInput {
+  flex: 1;
+  padding: 6px 8px;
+  background: var(--bg-secondary, #2a2a2a);
+  border: 1px solid var(--border-color, #3a3a3a);
+  border-radius: 4px;
+  color: var(--text-primary, #e0e0e0);
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.hexInput:focus {
+  outline: none;
+  border-color: var(--accent-color, #5f9ea0);
+}
+
+.hexInput::placeholder {
+  color: var(--text-muted, #666);
+}
+
+/* Opacity section */
+.opacitySection {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color, #3a3a3a);
+}
+
+.opacityLabel {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted, #888);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.opacityControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.opacitySliderContainer {
+  position: relative;
+  flex: 1;
+  height: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-image: 
+    linear-gradient(45deg, #808080 25%, transparent 25%),
+    linear-gradient(-45deg, #808080 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #808080 75%),
+    linear-gradient(-45deg, transparent 75%, #808080 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0px;
+  background-color: #fff;
+}
+
+.opacityGradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.opacitySlider {
+  position: relative;
+  width: 100%;
+  height: 16px;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.opacitySlider::-webkit-slider-runnable-track {
+  height: 16px;
+  background: transparent;
+  border-radius: 8px;
+}
+
+.opacitySlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  background: white;
+  border: 2px solid var(--border-color, #3a3a3a);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+  transition: transform 0.1s ease;
+}
+
+.opacitySlider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.opacitySlider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.15);
+}
+
+.opacitySlider::-moz-range-track {
+  height: 16px;
+  background: transparent;
+  border-radius: 8px;
+}
+
+.opacitySlider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: white;
+  border: 2px solid var(--border-color, #3a3a3a);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+}
+
+.opacityValue {
+  min-width: 40px;
+  font-size: 12px;
+  color: var(--text-primary, #e0e0e0);
+  text-align: right;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+/* With opacity variant */
+.withOpacity {
+  min-width: 32px;
+}

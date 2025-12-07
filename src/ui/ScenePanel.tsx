@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { useGraphStore, selectScenes, selectEditingSceneId, selectScenePlayback, selectActiveSceneId } from '@core/store';
 import type { Scene, SceneId, ScaleName } from '@core/types';
 import { NOTE_LABELS, SCALES } from '@core/constants';
+import { ColorPicker, SCENE_COLORS } from './ColorPicker';
 import styles from './ScenePanel.module.css';
 
 // ============================================================================
@@ -232,8 +233,8 @@ function SceneProperties({ scene, masterBpm, masterRoot, masterScale }: ScenePro
     updateScene(scene.id, { name: e.target.value });
   }, [scene.id, updateScene]);
   
-  const handleColorChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    updateScene(scene.id, { color: e.target.value });
+  const handleColorChange = useCallback((color: string) => {
+    updateScene(scene.id, { color });
   }, [scene.id, updateScene]);
   
   const handleDurationChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -314,11 +315,11 @@ function SceneProperties({ scene, masterBpm, masterRoot, masterScale }: ScenePro
       <div className={styles.propertyRow}>
         <div className={styles.propertyGroup}>
           <label className={styles.propertyLabel}>Color</label>
-          <input
-            type="color"
-            className={styles.colorInput}
+          <ColorPicker
             value={scene.color}
             onChange={handleColorChange}
+            presets={SCENE_COLORS}
+            size="small"
           />
         </div>
         

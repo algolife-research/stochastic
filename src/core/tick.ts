@@ -21,17 +21,18 @@ let beatAccumulator = 0;     // Fractional beats accumulated
 // ============================================================================
 
 /**
- * Sync payload changes to all packets in the same entanglement group
+ * Sync payload across all entangled packets (except those that have arrived)
  * This creates the quantum-like behavior where split packets share effects
  */
 function syncEntangledPayloads(
   groupId: string, 
   newPayload: AudioPayload, 
-  store: ReturnType<typeof getGraphStore>
+  store: ReturnType<typeof getGraphStore>,
+  arrivingPacketIds: Set<PacketId>
 ): void {
   store.packets.forEach((packet) => {
-    if (packet.entanglementGroupId === groupId) {
-      // Sync the payload - update in place for performance
+    if (packet.entanglementGroupId === groupId && !arrivingPacketIds.has(packet.id)) {
+      // Only sync to packets that are still traveling (not arriving this tick)
       store.updatePacket(packet.id, { payload: { ...newPayload } });
     }
   });
@@ -542,6 +543,9 @@ function updatePackets(deltaTime: number): void {
     }
   });
   
+  // Create set of arriving packet IDs for entanglement sync
+  const arrivingPacketIds = new Set(arrivals.map(a => a.packet.id));
+  
   // Process arrivals
   arrivals.forEach(({ packet, node, edge }) => {
     packetsToDelete.push(packet.id);
@@ -587,6 +591,7 @@ function updatePackets(deltaTime: number): void {
         ...processedPayload,
         gain: processedPayload.gain * (speakerProps.volume ?? 1),
       };
+      
       audioEngine.playNote(finalPayload, {
         reverb: speakerProps.reverb ?? 0.3,
         pan: speakerProps.pan ?? 0,
@@ -638,18 +643,19 @@ function updatePackets(deltaTime: number): void {
     
     // Sync payload to entangled packets (if this packet is entangled)
     if (packet.entanglementGroupId && node.type !== 'speaker' && node.type !== 'splitter') {
-      syncEntangledPayloads(packet.entanglementGroupId, processedPayload, store);
+      syncEntangledPayloads(packet.entanglementGroupId, processedPayload, store, arrivingPacketIds);
     }
     
     // Propagate to outgoing edges
     const outgoingEdges = store.getOutgoingEdges(node.id);
     outgoingEdges.forEach(outEdge => {
       if (store.packets.size + packetsToSpawn.length < MAX_PACKETS) {
+        const newPayload = { ...processedPayload };
         packetsToSpawn.push({
           id: createPacketId(),
           edgeId: outEdge.id,
           t: 0,
-          payload: { ...processedPayload },
+          payload: newPayload,
           entanglementGroupId,  // Propagate entanglement
         });
       }

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useGraphStore } from '@core/store';
 import type { GraphNode, Annotation, Region } from '@core/types';
 import { NODE_COLORS, midiToNoteName } from '@core/constants';
+import { ColorPicker } from './ColorPicker';
 import styles from './PropertyPanel.module.css';
 
 // ============================================================================
@@ -1278,11 +1279,10 @@ function AnnotationProperties({ annotation }: AnnotationPropertiesProps): React.
       </PropertyRow>
       
       <PropertyRow label="Color">
-        <input
-          type="color"
-          className={styles.colorInput}
+        <ColorPicker
           value={annotation.color}
-          onChange={e => updateAnnotation(annotation.id, { color: e.target.value })}
+          onChange={color => updateAnnotation(annotation.id, { color })}
+          size="small"
         />
       </PropertyRow>
       
@@ -1336,11 +1336,11 @@ function RegionProperties({ region }: RegionPropertiesProps): React.ReactElement
       </PropertyRow>
       
       <PropertyRow label="Color">
-        <input
-          type="color"
-          className={styles.colorInput}
+        <ColorPicker
           value={region.color}
-          onChange={e => updateRegion(region.id, { color: e.target.value })}
+          onChange={color => updateRegion(region.id, { color })}
+          size="small"
+          showOpacity={true}
         />
       </PropertyRow>
       

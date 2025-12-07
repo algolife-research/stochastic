@@ -872,6 +872,14 @@ export class CanvasInputHandler {
         if (store.selection.selectedEdgeId) {
           store.deleteEdge(store.selection.selectedEdgeId);
         }
+        // Delete selected annotation
+        if (store.selection.selectedAnnotationId) {
+          store.deleteAnnotation(store.selection.selectedAnnotationId);
+        }
+        // Delete selected region
+        if (store.selection.selectedRegionId) {
+          store.deleteRegion(store.selection.selectedRegionId);
+        }
         break;
         
       case 'Escape':

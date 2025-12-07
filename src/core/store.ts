@@ -196,6 +196,7 @@ interface GraphActions {
   saveCurrentToScene: (id: SceneId) => void;
   loadSceneToCanvas: (id: SceneId) => void;
   setEditingScene: (id: SceneId | null) => void;
+  loadComposition: (scenes: Scene[], arrangement: ArrangementSlot[], masterBpm: number) => void;
   
   // Arrangement operations
   addToArrangement: (sceneId: SceneId, startBeat?: number) => void;
@@ -1877,6 +1878,88 @@ export const useGraphStore = create<GraphStore>()(
         set(state => {
           state.editingSceneId = id;
         });
+      },
+      
+      loadComposition: (scenes, arrangement, masterBpm) => {
+        set(state => {
+          // Clear existing state
+          state.nodes.clear();
+          state.edges.clear();
+          state.packets.clear();
+          state.annotations.clear();
+          state.regions.clear();
+          state.scenes.clear();
+          state.arrangement = [];
+          state.activeSceneId = null;
+          state.editingSceneId = null;
+          state.scenePlayback = { ...INITIAL_SCENE_PLAYBACK_STATE };
+          
+          // Reset selection
+          state.selection = {
+            selectedNodeIds: [],
+            selectedEdgeId: null,
+            selectedAnnotationId: null,
+            selectedRegionId: null,
+            hoveredNodeId: null,
+            hoveredAnnotationId: null,
+            hoveredRegionId: null,
+            hoveredRegionHandle: null,
+            isHoveringHandle: false,
+            draggingNodeId: null,
+            draggingAnnotationId: null,
+            draggingRegionId: null,
+            resizingRegionId: null,
+            linkingFromId: null,
+            isBoxSelecting: false,
+            boxSelectStart: null,
+            boxSelectEnd: null,
+          };
+          
+          // Load scenes (deep clone to ensure mutability)
+          for (const scene of scenes) {
+            state.scenes.set(scene.id, JSON.parse(JSON.stringify(scene)));
+          }
+          
+          // Load arrangement
+          state.arrangement = arrangement.map(slot => ({ ...slot }));
+          
+          // Set master BPM
+          state.masterSpeed = masterBpm;
+        });
+        
+        // Load first scene to canvas if available
+        const firstScene = scenes[0];
+        if (firstScene) {
+          const firstSceneId = firstScene.id;
+          // Manually load instead of calling loadSceneToCanvas to avoid auto-save check
+          set(state => {
+            const scene = state.scenes.get(firstSceneId);
+            if (!scene) return;
+            
+            // Load scene content
+            for (const node of scene.nodes) {
+              const newNode = {
+                ...node,
+                timer: 0,
+                lastTrigger: 0,
+                flash: 0,
+                heldPackets: [],
+              };
+              state.nodes.set(node.id, newNode as any);
+            }
+            for (const edge of scene.edges) {
+              state.edges.set(edge.id, { ...edge } as any);
+            }
+            for (const annotation of scene.annotations) {
+              state.annotations.set(annotation.id, { ...annotation } as any);
+            }
+            for (const region of scene.regions) {
+              state.regions.set(region.id, { ...region } as any);
+            }
+            
+            state.editingSceneId = firstSceneId;
+          });
+        }
       },
       
       // ========================================

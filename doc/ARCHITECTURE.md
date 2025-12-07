@@ -212,32 +212,54 @@ src-tauri/          # Rust backend
 ### Save/Load Flow
 
 1. User clicks **Save** → `Toolbar.handleSave()`
-2. Serialize state to JSON
-3. If Project Mode: Write to `{projectPath}/{name}.phono`
-4. Else: Browser download
+2. `saveCurrentScene()` saves canvas to editing scene
+3. `serializeComposition()` converts scenes/arrangement to JSON
+4. If Project Mode: Write to `{projectPath}/{name}.phono`
+5. Else: Browser download
 
 ## File Format
 
-Compositions are stored as `.phono` files (JSON):
+Compositions are stored as `.phono` files (JSON). **Version 3.0** uses scene-based structure:
 
 ```json
 {
-  "version": "2.0.0",
-  "timestamp": 1733430000000,
-  "projectMeta": {
+  "meta": {
+    "version": "3.0.0",
     "name": "My Composition",
     "author": "",
     "created": 1733430000000,
     "modified": 1733430000000
   },
-  "globalSettings": {
-    "gravityConstant": 0.5
+  "global": {
+    "rootNote": 0,
+    "scaleName": "major",
+    "gravity": 0.5,
+    "defaultEdgeBehaviour": "fixed",
+    "masterBpm": 120
   },
-  "musicalContext": {
-    "root": 0,
-    "scaleName": "major"
-  },
-  "nodes": [...],
-  "edges": [...]
+  "scenes": [
+    {
+      "id": "scene-1",
+      "name": "Main",
+      "color": "#4CAF50",
+      "durationBeats": 16,
+      "loopCount": 1,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "cut", "durationBeats": 0 },
+      "exitTransition": { "type": "cut", "durationBeats": 0 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 4 },
+      "nodes": [...],
+      "edges": [...],
+      "annotations": [],
+      "regions": []
+    }
+  ],
+  "arrangement": [
+    { "id": "slot-1", "sceneId": "scene-1", "startBeat": 0 }
+  ]
 }
 ```
+
+> **Note:** The app supports loading legacy V2 files (with `graph.nodes`/`graph.edges`) and automatically migrates them to V3 format.

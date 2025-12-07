@@ -25,7 +25,8 @@ export function processNodeArrival(
   const payload = { ...packet.payload };
   
   // Skip modulation edges for audio processing
-  if (edge.targetParam !== null) {
+  // Check for truthy targetParam (string), not !== null, because undefined edges also exist
+  if (edge.targetParam) {
     return payload;
   }
   

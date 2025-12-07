@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useGraphStore } from '@core/store';
-import { loadGraphFromFile } from '../io/file-io';
+import { loadCompositionFromFile, detectFileVersion, migrateV2ToV3, deserializeComposition } from '../io/file-io';
+import type { SerializedGraph, SerializedComposition } from '../io/file-io';
 import { fs, isTauri } from '../io/filesystem';
 import { SCALES } from '@core/constants';
 import type { ScaleName } from '@core/types';
@@ -24,7 +25,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
 
   const project = useGraphStore(state => state.project);
   
-  const loadGraph = useGraphStore(state => state.loadGraph);
+  const loadComposition = useGraphStore(state => state.loadComposition);
   const setMusicalContext = useGraphStore(state => state.setMusicalContext);
   const setGlobalSettings = useGraphStore(state => state.setGlobalSettings);
   const setProjectMeta = useGraphStore(state => state.setProjectMeta);
@@ -60,17 +61,22 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
     }
   }, [isOpen]);
 
-  const loadGraphData = (data: any) => {
-    const nodesWithRuntime = data.nodes.map((n: any) => ({
-      ...n,
-      timer: 0,
-      lastTrigger: 0,
-      flash: 0,
-      heldPackets: [],
-    }));
+  const loadCompositionData = (rawData: unknown) => {
+    // Detect version and migrate if needed
+    const version = detectFileVersion(rawData);
     
-    loadGraph(nodesWithRuntime, data.edges);
+    let data;
+    if (version === '2.0') {
+      const v3Data = migrateV2ToV3(rawData as SerializedGraph);
+      data = deserializeComposition(v3Data);
+    } else {
+      data = deserializeComposition(rawData as SerializedComposition);
+    }
     
+    // Load using V3 composition loader
+    loadComposition(data.scenes, data.arrangement, data.masterBpm);
+    
+    // Set musical context
     const scaleName = data.musicalContext.scaleName as ScaleName;
     const scale = SCALES[scaleName];
     if (scale) {
@@ -81,13 +87,13 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
       });
     }
     
+    // Set global settings
     setGlobalSettings({
-      subdivisions: data.globalSettings.subdivisions,
-      pixelsPerBeat: data.globalSettings.pixelsPerBeat,
       gravityConstant: data.globalSettings.gravityConstant,
-      defaultEdgeBehaviour: data.globalSettings.defaultEdgeBehaviour ?? 'fixed',
+      defaultEdgeBehaviour: data.globalSettings.defaultEdgeBehaviour,
     });
     
+    // Set project meta
     setProjectMeta({
       ...data.projectMeta,
       modified: Date.now(),
@@ -165,7 +171,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
     if (content) {
       try {
         const data = JSON.parse(content);
-        loadGraphData(data);
+        loadCompositionData(data);
         setCurrentComposition(filename);
         setProjectMeta({ name: filename.replace('.phono', '') });
       } catch (err) {
@@ -181,8 +187,34 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
     
     if (confirm('Load file? Current work will be lost.')) {
       try {
-        const data = await loadGraphFromFile(file);
-        loadGraphData(data);
+        const data = await loadCompositionFromFile(file);
+        // loadCompositionFromFile handles v2->v3 migration internally
+        loadComposition(data.scenes, data.arrangement, data.masterBpm);
+        
+        // Set musical context
+        const scaleName = data.musicalContext.scaleName as ScaleName;
+        const scale = SCALES[scaleName];
+        if (scale) {
+          setMusicalContext({
+            root: data.musicalContext.root,
+            scaleName,
+            scale,
+          });
+        }
+        
+        // Set global settings
+        setGlobalSettings({
+          gravityConstant: data.globalSettings.gravityConstant,
+          defaultEdgeBehaviour: data.globalSettings.defaultEdgeBehaviour,
+        });
+        
+        // Set project meta
+        setProjectMeta({
+          ...data.projectMeta,
+          modified: Date.now(),
+        });
+        
+        markClean();
       } catch (err) {
         console.error('Load failed:', err);
         alert('Failed to load file');
