@@ -3,7 +3,7 @@
 // Updated: 2025-12-05 with stars and brighter grid
 
 import { getGraphStore } from '@core/store';
-import type { GraphNode, GraphEdge, Packet } from '@core/types';
+import type { GraphNode, GraphEdge, Packet, TunnelProps } from '@core/types';
 import { 
   NODE_RADIUS, GRID_SIZE, NODE_COLORS, NODE_ICONS, 
   dist, midiToNoteName 
@@ -520,6 +520,13 @@ export class CanvasRenderer {
         ctx.shadowBlur = 20 * flashIntensity;
       }
       
+      // Special rendering for tunnel nodes
+      if (node.type === 'tunnel') {
+        this.drawTunnelNode(node, isSelected, isHovered, flashIntensity, color);
+        ctx.shadowBlur = 0;
+        return;
+      }
+      
       // Dark fill (original design)
       ctx.fillStyle = '#1e1e1e';
       ctx.beginPath();
@@ -560,6 +567,162 @@ export class CanvasRenderer {
       // Draw node-specific info
       this.drawNodeInfo(node);
     });
+  }
+  
+  /**
+   * Draw a tunnel node with expanded visualization showing sub-nodes
+   */
+  private drawTunnelNode(
+    node: GraphNode, 
+    isSelected: boolean, 
+    isHovered: boolean, 
+    flashIntensity: number,
+    color: string
+  ): void {
+    const { ctx } = this;
+    const props = node.props as TunnelProps;
+    const subNodes = props.subNodes || [];
+    const subNodeCount = subNodes.length;
+    
+    // Calculate capsule dimensions based on sub-node count
+    const minWidth = 60;
+    const subNodeSpacing = 18;
+    const capsuleWidth = Math.max(minWidth, subNodeCount * subNodeSpacing + 30);
+    const capsuleHeight = 50;
+    const cornerRadius = capsuleHeight / 2;
+    
+    // Draw capsule background
+    ctx.fillStyle = '#1a1a2e';
+    ctx.beginPath();
+    this.drawRoundedRect(
+      node.x - capsuleWidth / 2,
+      node.y - capsuleHeight / 2,
+      capsuleWidth,
+      capsuleHeight,
+      cornerRadius
+    );
+    ctx.fill();
+    
+    // Draw capsule outline
+    ctx.strokeStyle = color;
+    ctx.lineWidth = (isSelected || isHovered) ? 3 : 2;
+    ctx.stroke();
+    
+    // Selection indicator
+    if (isSelected) {
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      this.drawRoundedRect(
+        node.x - capsuleWidth / 2 - 4,
+        node.y - capsuleHeight / 2 - 4,
+        capsuleWidth + 8,
+        capsuleHeight + 8,
+        cornerRadius + 4
+      );
+      ctx.stroke();
+      ctx.setLineDash([]);
+    } else if (isHovered) {
+      ctx.strokeStyle = '#888888';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      this.drawRoundedRect(
+        node.x - capsuleWidth / 2 - 2,
+        node.y - capsuleHeight / 2 - 2,
+        capsuleWidth + 4,
+        capsuleHeight + 4,
+        cornerRadius + 2
+      );
+      ctx.stroke();
+    }
+    
+    // Draw tunnel name above
+    const tunnelName = props.tunnelName || 'Tunnel';
+    ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.fillStyle = '#888888';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(tunnelName, node.x, node.y - capsuleHeight / 2 - 4);
+    
+    // Draw sub-node chain inside capsule
+    if (subNodeCount > 0) {
+      const chainStartX = node.x - (subNodeCount - 1) * subNodeSpacing / 2;
+      
+      ctx.font = '12px sans-serif';
+      ctx.textBaseline = 'middle';
+      
+      subNodes.forEach((subNode, i) => {
+        const sx = chainStartX + i * subNodeSpacing;
+        const sy = node.y;
+        
+        // Sub-node icon with color
+        const subColor = NODE_COLORS[subNode.type] ?? '#666666';
+        const subIcon = NODE_ICONS[subNode.type] ?? '?';
+        
+        // Draw small colored circle behind icon
+        ctx.fillStyle = subColor;
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        
+        // Draw icon
+        ctx.fillStyle = subColor;
+        ctx.textAlign = 'center';
+        ctx.fillText(subIcon, sx, sy);
+        
+        // Draw arrow between nodes (except last)
+        if (i < subNodeCount - 1) {
+          ctx.fillStyle = '#555555';
+          ctx.font = '8px sans-serif';
+          ctx.fillText('→', sx + subNodeSpacing / 2, sy);
+          ctx.font = '12px sans-serif';
+        }
+      });
+    } else {
+      // Empty tunnel - show placeholder
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#555555';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('empty', node.x, node.y);
+    }
+    
+    // Draw sub-node count badge
+    if (subNodeCount > 0) {
+      const badgeX = node.x + capsuleWidth / 2 - 8;
+      const badgeY = node.y - capsuleHeight / 2 + 8;
+      
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(badgeX, badgeY, 8, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(subNodeCount), badgeX, badgeY);
+    }
+  }
+  
+  /**
+   * Draw a rounded rectangle path
+   */
+  private drawRoundedRect(x: number, y: number, width: number, height: number, radius: number): void {
+    const { ctx } = this;
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
   }
   
   /**

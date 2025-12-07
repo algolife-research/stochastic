@@ -2,7 +2,7 @@
 // Mouse and keyboard input handling for the canvas
 
 import { getGraphStore } from '@core/store';
-import type { NodeId, NodeType, Tool, EdgeId, AnnotationId, RegionId } from '@core/types';
+import type { NodeId, NodeType, Tool, EdgeId, AnnotationId, RegionId, TunnelProps } from '@core/types';
 import { 
   NODE_RADIUS, MIN_ZOOM, MAX_ZOOM, dist, HANDLE_OFFSET_X, HANDLE_RADIUS,
   SNAP_STEP, GRID_SIZE, GRID_ATTRACT_STRENGTH, EDGE_ATTRACT_STRENGTH,
@@ -122,10 +122,48 @@ export class CanvasInputHandler {
     // Iterate in reverse to find topmost node first
     const nodes = Array.from(store.nodes.values()).reverse();
     for (const node of nodes) {
-      const d = dist(worldX, worldY, node.x, node.y);
-      if (d <= NODE_RADIUS) {
-        foundNodeId = node.id;
-        break;
+      // Special hit detection for tunnel nodes (capsule shape)
+      if (node.type === 'tunnel') {
+        const props = node.props as TunnelProps;
+        const subNodeCount = props.subNodes?.length ?? 0;
+        const subNodeSpacing = 18;
+        const capsuleWidth = Math.max(60, subNodeCount * subNodeSpacing + 30);
+        const capsuleHeight = 50;
+        
+        // Check if point is within capsule bounds
+        const halfWidth = capsuleWidth / 2;
+        const halfHeight = capsuleHeight / 2;
+        const cornerRadius = halfHeight;
+        
+        // Simple bounding box check first
+        if (Math.abs(worldX - node.x) <= halfWidth && Math.abs(worldY - node.y) <= halfHeight) {
+          // More precise check: corners should be rounded
+          const dx = Math.abs(worldX - node.x);
+          const dy = Math.abs(worldY - node.y);
+          
+          // In the main rectangular area (excluding corners)
+          if (dx <= halfWidth - cornerRadius || dy <= halfHeight) {
+            foundNodeId = node.id;
+            break;
+          }
+          
+          // Check circular corners
+          const cornerCenterX = halfWidth - cornerRadius;
+          if (dx > cornerCenterX) {
+            const cornerDist = Math.sqrt(Math.pow(dx - cornerCenterX, 2) + Math.pow(dy, 2));
+            if (cornerDist <= cornerRadius) {
+              foundNodeId = node.id;
+              break;
+            }
+          }
+        }
+      } else {
+        // Standard circular hit detection for other nodes
+        const d = dist(worldX, worldY, node.x, node.y);
+        if (d <= NODE_RADIUS) {
+          foundNodeId = node.id;
+          break;
+        }
       }
     }
     

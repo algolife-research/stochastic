@@ -40,6 +40,7 @@
     "paths": {
       "@/*": ["src/*"],
       "@core/*": ["src/core/*"],
+      "@data/*": ["src/data/*"],
       "@graph/*": ["src/graph/*"],
       "@audio/*": ["src/audio/*"],
       "@ui/*": ["src/ui/*"],

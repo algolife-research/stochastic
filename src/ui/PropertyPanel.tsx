@@ -2,9 +2,11 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useGraphStore } from '@core/store';
-import type { GraphNode, Annotation, Region } from '@core/types';
+import type { GraphNode, Annotation, Region, SubNode } from '@core/types';
 import { NODE_COLORS, midiToNoteName } from '@core/constants';
 import { ColorPicker } from './ColorPicker';
+import { TunnelPresetSelector } from './TunnelPresetSelector';
+import type { TunnelPreset } from '@data/tunnel-presets';
 import styles from './PropertyPanel.module.css';
 
 // ============================================================================
@@ -833,8 +835,21 @@ function TunnelProps({ props, onChange }: PropsEditorProps<TunnelPropsType>): Re
     }
   };
   
+  const handlePresetSelect = (preset: TunnelPreset) => {
+    // Apply preset: update name and subNodes
+    onChange('tunnelName', preset.name);
+    // Cast subNodes to mutable array for the onChange handler
+    onChange('subNodes', [...preset.subNodes] as SubNode[]);
+  };
+  
   return (
     <>
+      {/* Preset Selector */}
+      <TunnelPresetSelector 
+        onSelect={handlePresetSelect}
+        currentName={props.tunnelName}
+      />
+      
       <PropertyRow label="Name">
         <input
           type="text"
