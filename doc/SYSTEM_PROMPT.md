@@ -105,7 +105,7 @@ locrian, pentatonic, minorPentatonic, blues, wholeTone, diminished
 ### Routing & Timing
 | Type | Purpose | Key Props |
 |------|---------|-----------|
-| `splitter` | Distribute packets | `entangled` |
+| `splitter` | Distribute packets | `entangled`, `behavior` (broadcast/random/weighted) |
 | `gate` | Probability gate | `prob` (0-1) |
 | `delay` | Time delay | `delayTime` (beats) |
 | `tunnel` | Compound processor | `tunnelName`, `subNodes` |

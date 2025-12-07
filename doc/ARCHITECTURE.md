@@ -41,7 +41,7 @@ The user interface is built with React and CSS Modules. Key components:
 | `Canvas.tsx` | HTML5 Canvas for graph visualization (via `src/canvas/renderer.ts`) |
 | `PropertyPanel.tsx` | Node/edge property editing |
 | `ScenePanel.tsx` | Scene management, properties, arrangement |
-| `ArrangementTimeline.tsx` | Visual timeline for arrangement mode |
+| `ArrangementTimeline.tsx` | Visual timeline for arrangement mode (Linear pixel-per-beat rendering) |
 | `Toolbar.tsx` | File operations, Save button |
 | `TransportBar.tsx` | Play/Pause/Stop, BPM, playback mode |
 | `ContextMenu.tsx` | Right-click node creation |
@@ -94,6 +94,7 @@ The scene system enables multi-section compositions:
 | **Scenes** | Self-contained graph snapshots with duration and settings |
 | **Arrangement Mode** | Scenes play in sequence with defined durations |
 | **Jam Mode** | Scenes play indefinitely, user triggers changes |
+| **Scene Trigger Node** | In-graph node to trigger scene jumps or queued transitions |
 | **Scene Properties** | Duration, loops, local BPM/key/scale overrides |
 | **Auto-save** | Canvas auto-saves to scene when switching |
 

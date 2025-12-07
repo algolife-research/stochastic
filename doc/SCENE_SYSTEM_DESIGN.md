@@ -1094,6 +1094,7 @@ Arrangement:
 | Playback Mode Toggle | `TransportBar.tsx` | Switch between arrangement/jam |
 | Transport Controls | `store.ts` | Play, pause (preserves state), stop (resets) |
 | Scene Triggering | `ScenePanel.tsx` | Click to load, double-click for immediate |
+| Scene Trigger Node | `engine.ts` | In-graph node for jump/crossfade transitions |
 | Add to Arrangement | `store.ts`, `ScenePanel.tsx` | addToArrangement with auto-position |
 | Arrangement Timeline | `ArrangementTimeline.tsx` | Visual representation of slots |
 | Export: Arrangement | `compiler.ts` | compileArrangement renders all scenes |

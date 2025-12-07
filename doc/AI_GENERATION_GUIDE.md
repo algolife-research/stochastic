@@ -434,16 +434,22 @@ Snaps pitches to the global scale.
 
 ### 13. Splitter Node (Signal Distributor)
 
-Passes packets to all connected outputs.
+Distributes packets to connected outputs based on behavior.
 
 ```json
 {
   "type": "splitter",
   "props": {
-    "entangled": false    // Entangled mode (see below)
+    "entangled": false,       // Entangled mode (see below)
+    "behavior": "broadcast"   // "broadcast", "random", "weighted"
   }
 }
 ```
+
+**Behaviors:**
+- `broadcast`: Sends packets to ALL connected outputs (default).
+- `random`: Sends packet to ONE random output (uniform probability).
+- `weighted`: Sends packet to ONE output based on edge weights (Markov chain).
 
 **Entanglement:** When `entangled: true`, all packets split from this node share modifications. If one passes through a pitch node, all entangled siblings receive the same pitch change.
 
@@ -590,7 +596,8 @@ Connect nodes for packet flow:
   "from": "a", 
   "to": "b", 
   "timingMode": "fixed", 
-  "durationBeats": 0.5 
+  "durationBeats": 0.5,
+  "weight": 1.0         // Optional: Weight for Markov splitters
 }
 ```
 

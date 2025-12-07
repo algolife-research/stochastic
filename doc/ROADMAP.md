@@ -32,9 +32,12 @@ This document outlines the development trajectory for Phonon, moving from its cu
 - [x] **Play/Pause/Stop:** Full transport with pause (preserves state) and stop (resets)
 - [x] **Scene Triggering:** Click to load, double-click for immediate switch
 - [x] **Scene Queuing:** Queue next scene in Jam mode
+- [x] **Scene Trigger Node:** In-graph node to trigger scene jumps or queued transitions
 
 ### 2.4 Arrangement
 - [x] **Arrangement Timeline:** Visual timeline showing scene sequence
+- [x] **Timeline Scrubbing:** Drag playhead to seek in arrangement
+- [x] **Linear Rendering:** Timeline width proportional to beat duration
 - [x] **Add to Arrangement:** Add scenes with automatic position calculation
 - [x] **Slot Management:** Reorder, remove arrangement slots
 
@@ -43,12 +46,26 @@ This document outlines the development trajectory for Phonon, moving from its cu
 - [x] **Duration Calculation:** Auto-calculate total duration from scenes
 - [x] **Export Mode Toggle:** Choose between canvas or arrangement export
 
+## Phase 2.5: UX & Stability (Missing Essentials)
+**Goal:** Essential features for a safe and forgiving creative workflow.
+
+- [ ] **Undo/Redo System:** Robust history stack for graph operations (Global or Per-Scene).
+- [ ] **Master Limiter:** Safety limiter on the master output to prevent clipping/volume spikes.
+- [ ] **Compressor Node:** Dynamics control for taming feedback loops and generative swells.
+- [ ] **Minimap:** Navigation aid for large, complex node graphs.
+- [ ] **Clipboard:** Copy/Paste nodes between different scenes.
+
 ## Phase 3: The Living Graph (Current Focus)
 **Goal:** Introduce biological/evolutionary metaphors and deeper modulation.
 
 ### 3.1 Mutators & LFOs
 - [x] **LFO Node:** Continuous modulation of node properties
+- [x] **Markov Chains:** Weighted probability routing in Splitter nodes
+- [ ] **Macro Controls:** Global "Performance Knobs" that map to multiple parameters across the graph.
 - [ ] **Randomizer Node:** Random property mutations on packets
+- [ ] **Mutator Node (Genetic Drift):** Incremental (Drift) or drastic (Radiation) changes to packet properties.
+- [ ] **Crossover Node (Sexual Reproduction):** Merges two packets, inheriting properties from both parents.
+- [ ] **Fitness Gate (Natural Selection):** Filters packets based on harmonic, energy, or density criteria.
 
 ### 3.2 Visual Feedback Polish
 - [ ] **Particle Trails:** Visual history of where packets have been
@@ -64,7 +81,7 @@ This document outlines the development trajectory for Phonon, moving from its cu
 **Goal:** Professional-grade scene orchestration.
 
 ### 4.1 Transitions
-- [ ] **Crossfade Transitions:** Smooth audio blend between scenes
+- [x] **Crossfade Transitions:** Smooth audio blend between scenes (via Scene Trigger)
 - [ ] **BPM Ramping:** Gradual tempo changes during transitions
 - [ ] **Transition Curves:** Configurable fade curves
 
@@ -140,3 +157,9 @@ This document outlines the development trajectory for Phonon, moving from its cu
 - [ ] **Cloud Sync:** Save compositions to cloud
 - [ ] **Sharing:** Publish and discover community compositions
 - [ ] **Real-time Collaboration:** Multi-user editing
+
+## Future Concepts & Experimental Ideas
+**Goal:** Radical ideas inspired by biological systems.
+
+- [ ] **Viral Packets (Horizontal Gene Transfer):** Packets that modify the properties of the Nodes they pass through (e.g., a "Minor Key Virus").
+- [ ] **Breeder Interface (Artificial Selection):** UI for evolving scenes by generating variations and selecting survivors to breed the next generation.
