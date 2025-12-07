@@ -372,3 +372,27 @@
 .deleteButton:active {
   background: rgba(220, 53, 69, 0.35);
 }
+
+/* Embedded mode styles */
+.embeddedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #252525;
+  border-bottom: 1px solid #333;
+  border-left: 3px solid #666;
+}
+
+.embeddedHeader h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.embeddedContent {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+}

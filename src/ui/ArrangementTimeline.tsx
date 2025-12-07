@@ -4,7 +4,7 @@ import styles from './ArrangementTimeline.module.css';
 import type { ArrangementSlot, Scene, SceneId } from '@core/types';
 
 /**
- * ArrangementTimeline - Visual timeline for arrangement mode
+ * ArrangementTimeline - Visual timeline for composition mode
  * Shows scenes as blocks on a timeline, supports drag-and-drop reordering
  */
 
@@ -86,7 +86,7 @@ function SlotBlock({
         <button 
           className={styles.slotAction}
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          title="Remove from arrangement"
+          title="Remove from composition"
         >
           ✕
         </button>
@@ -108,12 +108,14 @@ export function ArrangementTimeline() {
   const reorderArrangement = useGraphStore(state => state.reorderArrangement);
   const clearArrangement = useGraphStore(state => state.clearArrangement);
   const addToArrangement = useGraphStore(state => state.addToArrangement);
+  const seekArrangement = useGraphStore(state => state.seekArrangement);
   
   const timelineRef = useRef<HTMLDivElement>(null);
   const [showScenePicker, setShowScenePicker] = useState(false);
   const [pickerPos, setPickerPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const addSlotRef = useRef<HTMLDivElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const [isScrubbing, setIsScrubbing] = useState(false);
   
   // Close scene picker when clicking outside
   useEffect(() => {
@@ -135,15 +137,18 @@ export function ArrangementTimeline() {
   }, [showScenePicker]);
   
   // Calculate total duration and playhead position
-  const { totalBeats, totalDuration, slotPositions } = useMemo(() => {
+  const { totalBeats, totalDuration, slotPositions, minSlotDuration } = useMemo(() => {
     let cumulative = 0;
     const positions: { startBeat: number; endBeat: number }[] = [];
+    let minDuration = Infinity;
     
     for (const slot of arrangement) {
       const scene = scenes.get(slot.sceneId);
       const duration = scene?.durationBeats ?? 16;
       const loops = slot.instanceLoopCount ?? scene?.loopCount ?? 1;
       const totalSlotBeats = duration * loops;
+      
+      if (totalSlotBeats < minDuration) minDuration = totalSlotBeats;
       
       positions.push({
         startBeat: cumulative,
@@ -158,9 +163,15 @@ export function ArrangementTimeline() {
     return { 
       totalBeats: cumulative, 
       totalDuration: totalSec,
-      slotPositions: positions 
+      slotPositions: positions,
+      minSlotDuration: minDuration === Infinity ? 16 : minDuration
     };
   }, [arrangement, scenes, globalBpm]);
+
+  // Calculate required width to ensure linearity
+  // We want the smallest slot to be at least 80px
+  const pixelsPerBeat = 80 / Math.max(1, minSlotDuration);
+  const requiredWidth = totalBeats * pixelsPerBeat;
   
   // Calculate progress for current playing slot
   const getCurrentSlotProgress = useCallback((index: number): number => {
@@ -227,12 +238,38 @@ export function ArrangementTimeline() {
       reorderArrangement(slot.id, idx);
     });
   }, [arrangement, reorderArrangement]);
+
+  // Scrubbing logic
+  const handleScrub = useCallback((e: MouseEvent | React.MouseEvent) => {
+    if (!timelineRef.current || totalBeats === 0) return;
+    const rect = timelineRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+    const progress = Math.max(0, Math.min(1, x / width));
+    const beat = progress * totalBeats;
+    seekArrangement(beat);
+  }, [totalBeats, seekArrangement]);
+
+  useEffect(() => {
+    if (isScrubbing) {
+      const handleWindowMouseMove = (e: MouseEvent) => handleScrub(e);
+      const handleWindowMouseUp = () => setIsScrubbing(false);
+      
+      window.addEventListener('mousemove', handleWindowMouseMove);
+      window.addEventListener('mouseup', handleWindowMouseUp);
+      
+      return () => {
+        window.removeEventListener('mousemove', handleWindowMouseMove);
+        window.removeEventListener('mouseup', handleWindowMouseUp);
+      };
+    }
+  }, [isScrubbing, handleScrub]);
   
   if (arrangement.length === 0) {
     return (
       <div className={styles.timeline}>
         <div className={styles.header}>
-          <h4>Arrangement</h4>
+          <h4>Composition</h4>
           <div className={styles.headerInfo}>
             <span>0 scenes</span>
             <span>·</span>
@@ -245,7 +282,7 @@ export function ArrangementTimeline() {
           onDragOver={handleDragOver}
           onDrop={handleDrop}
         >
-          <p>No scenes in arrangement</p>
+          <p>No scenes in composition</p>
           <p className={styles.hint}>
             Add scenes from the Scene Panel or drag them here
           </p>
@@ -273,7 +310,7 @@ export function ArrangementTimeline() {
   return (
     <div className={styles.timeline}>
       <div className={styles.header}>
-        <h4>Arrangement</h4>
+        <h4>Composition</h4>
         <div className={styles.headerInfo}>
           <span>{arrangement.length} scene{arrangement.length !== 1 ? 's' : ''}</span>
           <span>·</span>
@@ -285,120 +322,136 @@ export function ArrangementTimeline() {
           <button 
             className={styles.clearButton}
             onClick={clearArrangement}
-            title="Clear arrangement"
+            title="Clear composition"
           >
             Clear
           </button>
         </div>
       </div>
       
-      {/* Beat ruler */}
-      <div className={styles.ruler}>
-        {Array.from({ length: Math.ceil(totalBeats / 16) + 1 }, (_, i) => (
-          <div 
-            key={i} 
-            className={styles.rulerMark}
-            style={{ left: `${(i * 16 / totalBeats) * 100}%` }}
-          >
-            <span className={styles.rulerLabel}>{i * 16}</span>
-          </div>
-        ))}
-      </div>
-      
-      {/* Slots */}
-      <div 
-        ref={timelineRef}
-        className={styles.slots}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-      >
-        {arrangement.map((slot, index) => {
-          const scene = scenes.get(slot.sceneId);
-          const isPlayingSlot = isPlaying && 
-            scenePlayback.mode === 'arrangement' && 
-            scenePlayback.currentSlotIndex === index;
-            
-          return (
-            <SlotBlock
-              key={slot.id}
-              slot={slot}
-              scene={scene}
-              index={index}
-              isPlaying={isPlayingSlot}
-              progress={getCurrentSlotProgress(index)}
-              onRemove={() => removeFromArrangement(slot.id)}
-              onMoveLeft={() => swapSlots(index, index - 1)}
-              onMoveRight={() => swapSlots(index, index + 1)}
-              canMoveLeft={index > 0}
-              canMoveRight={index < arrangement.length - 1}
-            />
-          );
-        })}
-        
-        {/* Add slot button */}
+      {/* Track Container - Scrollable area */}
+      <div className={styles.trackContainer}>
+        {/* Track Content - Sized by content */}
         <div 
-          ref={addSlotRef}
-          className={styles.addSlot}
-          onClick={() => {
-            if (!showScenePicker && addSlotRef.current) {
-              const rect = addSlotRef.current.getBoundingClientRect();
-              setPickerPos({
-                top: rect.top - 8, // Position above the button
-                left: rect.left + rect.width / 2
-              });
-            }
-            setShowScenePicker(!showScenePicker);
+          ref={timelineRef}
+          className={styles.trackContent}
+          style={{ minWidth: `max(100%, ${requiredWidth}px)` }}
+          onMouseDown={(e) => {
+            setIsScrubbing(true);
+            handleScrub(e);
           }}
         >
-          <span>+</span>
-        </div>
-        
-        {/* Scene picker dropdown - rendered outside of overflow container */}
-        {showScenePicker && (
-          <div 
-            ref={pickerRef}
-            className={styles.scenePicker}
-            style={{
-              top: `${Math.max(8, pickerPos.top - 150)}px`,
-              left: `${pickerPos.left}px`,
-              transform: 'translateX(-50%)'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {availableScenes.length === 0 ? (
-              <div className={styles.scenePickerEmpty}>
-                No scenes with content
+          {/* Beat ruler */}
+          <div className={styles.ruler}>
+            {Array.from({ length: Math.ceil(totalBeats / 16) + 1 }, (_, i) => (
+              <div 
+                key={i} 
+                className={styles.rulerMark}
+                style={{ left: `${(i * 16 / totalBeats) * 100}%` }}
+              >
+                <span className={styles.rulerLabel}>{i * 16}</span>
               </div>
-            ) : (
-              availableScenes.map(scene => (
-                <div
-                  key={scene.id}
-                  className={styles.scenePickerItem}
-                  onClick={() => {
-                    addToArrangement(scene.id);
-                    setShowScenePicker(false);
-                  }}
-                >
-                  <span 
-                    className={styles.scenePickerColor}
-                    style={{ backgroundColor: scene.color }}
-                  />
-                  {scene.name}
-                </div>
-              ))
-            )}
+            ))}
           </div>
-        )}
+          
+          {/* Slots */}
+          <div 
+            className={styles.slots}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            {arrangement.map((slot, index) => {
+              const scene = scenes.get(slot.sceneId);
+              const isPlayingSlot = isPlaying && 
+                scenePlayback.mode === 'arrangement' && 
+                scenePlayback.currentSlotIndex === index;
+                
+              return (
+                <SlotBlock
+                  key={slot.id}
+                  slot={slot}
+                  scene={scene}
+                  index={index}
+                  isPlaying={isPlayingSlot}
+                  progress={getCurrentSlotProgress(index)}
+                  onRemove={() => removeFromArrangement(slot.id)}
+                  onMoveLeft={() => swapSlots(index, index - 1)}
+                  onMoveRight={() => swapSlots(index, index + 1)}
+                  canMoveLeft={index > 0}
+                  canMoveRight={index < arrangement.length - 1}
+                />
+              );
+            })}
+            
+            {/* Add slot button */}
+            <div 
+              ref={addSlotRef}
+              className={styles.addSlot}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent scrubbing
+                if (!showScenePicker && addSlotRef.current) {
+                  const rect = addSlotRef.current.getBoundingClientRect();
+                  setPickerPos({
+                    top: rect.top - 8, // Position above the button
+                    left: rect.left + rect.width / 2
+                  });
+                }
+                setShowScenePicker(!showScenePicker);
+              }}
+            >
+              <span>+</span>
+            </div>
+          </div>
+          
+          {/* Playback progress indicator */}
+          {/* Show playhead even if not playing, if we have a position */}
+          {scenePlayback.mode === 'arrangement' && totalBeats > 0 && (
+            <div 
+              className={styles.playhead}
+              style={{ 
+                left: `${(scenePlayback.arrangementBeat / totalBeats) * 100}%`,
+                pointerEvents: 'none' // Let clicks pass through to timeline
+              }}
+            />
+          )}
+        </div>
       </div>
       
-      {/* Playback progress indicator */}
-      {isPlaying && scenePlayback.mode === 'arrangement' && totalBeats > 0 && (
+      {/* Scene picker dropdown - rendered outside of overflow container */}
+      {showScenePicker && (
         <div 
-          className={styles.playhead}
-          style={{ 
-            left: `${(scenePlayback.arrangementBeat / totalBeats) * 100}%` 
+          ref={pickerRef}
+          className={styles.scenePicker}
+          style={{
+            top: `${Math.max(8, pickerPos.top - 150)}px`,
+            left: `${pickerPos.left}px`,
+            transform: 'translateX(-50%)'
           }}
-        />
+          onClick={(e) => e.stopPropagation()}
+        >
+          {availableScenes.length === 0 ? (
+            <div className={styles.scenePickerEmpty}>
+              No scenes with content
+            </div>
+          ) : (
+            availableScenes.map(scene => (
+              <div
+                key={scene.id}
+                className={styles.scenePickerItem}
+                onClick={() => {
+                  addToArrangement(scene.id);
+                  setShowScenePicker(false);
+                }}
+              >
+                <span 
+                  className={styles.scenePickerColor}
+                  style={{ backgroundColor: scene.color }}
+                />
+                {scene.name}
+              </div>
+            ))
+          )}
+        </div>
       )}
     </div>
   );

@@ -57,6 +57,7 @@ const NODE_CATEGORIES: NodeCategory[] = [
       { type: 'teleporter', label: 'Teleporter', icon: NODE_ICONS.teleporter, color: NODE_COLORS.teleporter },
       { type: 'modulator', label: 'Modulator', icon: NODE_ICONS.modulator, color: NODE_COLORS.modulator },
       { type: 'lfo', label: 'LFO', icon: NODE_ICONS.lfo, color: NODE_COLORS.lfo },
+      { type: 'scene_trigger', label: 'Scene Trigger', icon: NODE_ICONS.scene_trigger, color: NODE_COLORS.scene_trigger },
     ]
   }
 ];

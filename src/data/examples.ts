@@ -51,6 +51,47 @@ export interface Example {
 // ============================================================================
 
 export const EXAMPLES: Record<string, Example> = {
+  // Tutorial 10: Scene Triggering
+  tut_10_scene_trigger: {
+    name: "Tutorial 10: Scene Triggering",
+    description: "Use Scene Trigger nodes to jump between scenes. This example has two scenes that trigger each other.",
+    bpm: 120,
+    scenes: [
+      {
+        name: "Scene A",
+        color: "#4caf50",
+        durationBeats: 16,
+        loopCount: 1,
+        nodes: [
+          { id: "src1", type: "source", x: 100, y: 200, props: { interval: 1, midiNote: 60, intensity: 0.7 } },
+          { id: "spk1", type: "speaker", x: 300, y: 200, props: { reverb: 0.3, pan: -0.3 } },
+          { id: "src2", type: "source", x: 100, y: 400, props: { interval: 4, midiNote: 60, intensity: 0.5 } },
+          { id: "trig1", type: "scene_trigger", x: 300, y: 400, props: { targetSceneIndex: 1, behavior: "jump" } }
+        ],
+        edges: [
+          { id: "e1", from: "src1", to: "spk1" },
+          { id: "e2", from: "src2", to: "trig1", timingMode: "fixed", durationBeats: 4 }
+        ]
+      },
+      {
+        name: "Scene B",
+        color: "#2196f3",
+        durationBeats: 16,
+        loopCount: 1,
+        nodes: [
+          { id: "src3", type: "source", x: 100, y: 200, props: { interval: 0.5, midiNote: 67, intensity: 0.7 } },
+          { id: "spk2", type: "speaker", x: 300, y: 200, props: { reverb: 0.3, pan: 0.3 } },
+          { id: "src4", type: "source", x: 100, y: 400, props: { interval: 4, midiNote: 60, intensity: 0.5 } },
+          { id: "trig2", type: "scene_trigger", x: 300, y: 400, props: { targetSceneIndex: 0, behavior: "jump" } }
+        ],
+        edges: [
+          { id: "e3", from: "src3", to: "spk2" },
+          { id: "e4", from: "src4", to: "trig2", timingMode: "fixed", durationBeats: 4 }
+        ]
+      }
+    ]
+  },
+
   // Tutorial 1: Basic sound
   tut_01_first_sound: {
     name: "Tutorial 1: First Sound",
@@ -218,6 +259,34 @@ export const EXAMPLES: Record<string, Example> = {
   // ============================================================================
   // DEMO COMPOSITIONS
   // ============================================================================
+
+  // Demo: Mozart's Dice Game
+  demo_mozart_dice: {
+    name: "Demo: Mozart's Dice Game",
+    description: "An aleatoric system inspired by Musikalisches Würfelspiel. A Splitter creates parallel paths, and Gates randomly allow only some to pass, creating ever-changing melodies.",
+    bpm: 120,
+    nodes: [
+      { id: "src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 60, intensity: 0.8 } },
+      { id: "split", type: "splitter", x: 250, y: 300, props: {} },
+      
+      { id: "gate1", type: "gate", x: 400, y: 150, props: { prob: 0.33 } },
+      { id: "pitch1", type: "pitch", x: 550, y: 150, props: { shift: 0 } },
+      
+      { id: "gate2", type: "gate", x: 400, y: 300, props: { prob: 0.33 } },
+      { id: "pitch2", type: "pitch", x: 550, y: 300, props: { shift: 4 } },
+      
+      { id: "gate3", type: "gate", x: 400, y: 450, props: { prob: 0.33 } },
+      { id: "pitch3", type: "pitch", x: 550, y: 450, props: { shift: 7 } },
+      
+      { id: "spk", type: "speaker", x: 700, y: 300, props: { reverb: 0.4, pan: 0 } }
+    ],
+    edges: [
+      { id: "e1", from: "src", to: "split" },
+      { id: "e2", from: "split", to: "gate1" }, { id: "e3", from: "gate1", to: "pitch1" }, { id: "e4", from: "pitch1", to: "spk" },
+      { id: "e5", from: "split", to: "gate2" }, { id: "e6", from: "gate2", to: "pitch2" }, { id: "e7", from: "pitch2", to: "spk" },
+      { id: "e8", from: "split", to: "gate3" }, { id: "e9", from: "gate3", to: "pitch3" }, { id: "e10", from: "pitch3", to: "spk" }
+    ]
+  },
 
   // Demo: Generative Ambient
   demo_ambient: {

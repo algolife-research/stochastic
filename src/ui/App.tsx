@@ -7,8 +7,6 @@ import { CanvasRenderer } from '@canvas/renderer';
 import { CanvasInputHandler } from '@canvas/input';
 import { audioEngine } from '@audio/engine';
 import { Toolbar } from './Toolbar';
-import { PropertyPanel } from './PropertyPanel';
-import { EdgePanel } from './EdgePanel';
 import { TransportBar } from './TransportBar';
 import { StatusBar } from './StatusBar';
 import { ContextMenu } from './ContextMenu';
@@ -17,8 +15,8 @@ import { SettingsModal } from './SettingsModal';
 import { ExportModal } from './ExportModal';
 import { ScenePanel } from './ScenePanel';
 import { ArrangementTimeline } from './ArrangementTimeline';
-import { VizPanel } from './VizPanel';
 import { VizCanvas } from './VizCanvas';
+import { RightPanel } from './RightPanel';
 import styles from './App.module.css';
 
 // ============================================================================
@@ -41,7 +39,6 @@ export function App(): React.ReactElement {
   const edges = useGraphStore(state => state.edges);
   const annotations = useGraphStore(state => state.annotations);
   const regions = useGraphStore(state => state.regions);
-  const vizDisplay = useGraphStore(state => state.vizDisplay);
   
   // Get selected node for property panel
   const selectedNodeId = selection.selectedNodeIds[0];
@@ -182,20 +179,13 @@ export function App(): React.ReactElement {
           )}
         </div>
         
-        {/* Right panel - VizPanel in viz mode, otherwise property/edge panel based on selection */}
-        {vizDisplay.isVizMode ? (
-          <VizPanel />
-        ) : selectedEdge ? (
-          <EdgePanel edge={selectedEdge} />
-        ) : selectedNode ? (
-          <PropertyPanel node={selectedNode} />
-        ) : selectedAnnotation ? (
-          <PropertyPanel annotation={selectedAnnotation} />
-        ) : selectedRegion ? (
-          <PropertyPanel region={selectedRegion} />
-        ) : (
-          <PropertyPanel />
-        )}
+        {/* Right panel - unified with Editor/Visualisation toggle */}
+        <RightPanel
+          selectedNode={selectedNode ?? undefined}
+          selectedEdge={selectedEdge ?? undefined}
+          selectedAnnotation={selectedAnnotation ?? undefined}
+          selectedRegion={selectedRegion ?? undefined}
+        />
       </div>
       
       {/* Arrangement timeline (bottom) */}

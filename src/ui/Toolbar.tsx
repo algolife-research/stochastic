@@ -41,8 +41,6 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
   const deleteRegion = useGraphStore(state => state.deleteRegion);
   const copySelectedNodes = useGraphStore(state => state.copySelectedNodes);
   const pasteNodes = useGraphStore(state => state.pasteNodes);
-  const toggleVizMode = useGraphStore(state => state.toggleVizMode);
-  const vizDisplay = useGraphStore(state => state.vizDisplay);
 
   // Check if there's anything selected
   const hasSelection = selection.selectedNodeIds.length > 0 || 
@@ -171,21 +169,6 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
       
       {/* Examples menu (collapsible) */}
       <ExampleMenu />
-
-      <div className={styles['separator']} />
-
-      {/* Visualization mode toggle */}
-      <button 
-        className={styles['actionButton']} 
-        onClick={toggleVizMode} 
-        title={vizDisplay.isVizMode ? "Exit Visualization (Esc)" : "Enter Visualization Mode"}
-        style={{ 
-          color: vizDisplay.isVizMode ? '#00ff88' : '#aaa',
-          background: vizDisplay.isVizMode ? 'rgba(0, 255, 136, 0.1)' : undefined
-        }}
-      >
-        <span className={styles['icon']}>🎨</span>
-      </button>
 
       {isTauri() && project.isProjectMode && project.path && (
         <>

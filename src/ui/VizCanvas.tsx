@@ -38,12 +38,14 @@ export function VizCanvas(): React.ReactElement {
   useEffect(() => {
     if (!vizDisplay.isVizMode || !canvasRef.current) return;
     
+    // If scene is in editor mode, don't initialize viz renderer
+    if (vizMode === 'editor') return;
+    
     // Initialize vizState with canvas
     vizState.init(canvasRef.current);
     
     // Set initial mode based on scene config
-    const activeMode = vizMode === 'editor' ? 'particles' : vizMode;
-    vizState.setMode(activeMode, vizConfig ?? undefined);
+    vizState.setMode(vizMode, vizConfig ?? undefined);
     
     // Set up resize observer
     const resizeObserver = new ResizeObserver(() => {
@@ -62,14 +64,16 @@ export function VizCanvas(): React.ReactElement {
       resizeObserver.disconnect();
       vizState.dispose();
     };
-  }, [vizDisplay.isVizMode, handleResize]);
+  }, [vizDisplay.isVizMode, handleResize, vizMode, vizConfig]);
   
   // Update mode when scene viz mode changes
   useEffect(() => {
     if (!vizDisplay.isVizMode) return;
     
-    const activeMode = vizMode === 'editor' ? 'particles' : vizMode;
-    vizState.setMode(activeMode, vizConfig ?? undefined);
+    // If scene is in editor mode, don't update viz renderer
+    if (vizMode === 'editor') return;
+    
+    vizState.setMode(vizMode, vizConfig ?? undefined);
   }, [vizDisplay.isVizMode, vizMode, vizConfig]);
   
   // Handle keyboard shortcuts
@@ -85,8 +89,9 @@ export function VizCanvas(): React.ReactElement {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [vizDisplay.isVizMode]);
   
-  // Don't render if not in viz mode
-  if (!vizDisplay.isVizMode) {
+  // Don't render if not in viz mode OR if scene is set to editor mode
+  // (editor mode means show the regular editor canvas, not a viz overlay)
+  if (!vizDisplay.isVizMode || vizMode === 'editor') {
     return <></>;
   }
   
@@ -97,7 +102,7 @@ export function VizCanvas(): React.ReactElement {
       {/* Overlay info */}
       <div className={styles['vizOverlay']}>
         <span className={styles['vizMode']}>
-          {vizMode === 'editor' ? 'particles' : vizMode}
+          {vizMode}
         </span>
         {!isRunning && (
           <span className={styles['vizPaused']}>

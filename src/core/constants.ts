@@ -226,6 +226,11 @@ export const DEFAULT_TELEPORTER_PROPS: TeleporterProps = {
 export const DEFAULT_QUANTIZER_PROPS: QuantizerProps = {
   strength: 1.0,
   useGlobalKey: true,
+  scale: 'major',
+  root: 0,
+  mode: 'nearest',
+  weights: {},
+  defaultPitch: 4,
 };
 
 export const DEFAULT_LFO_PROPS: LfoProps = {
@@ -238,6 +243,7 @@ export const DEFAULT_LFO_PROPS: LfoProps = {
 
 export const DEFAULT_SPLITTER_PROPS: SplitterProps = {
   entangled: false,  // When true, split packets share payload changes
+  behavior: 'broadcast',
 };
 
 export const DEFAULT_MIDI_OUT_PROPS: MidiOutProps = {

@@ -11,9 +11,10 @@ import styles from './EdgePanel.module.css';
 
 interface EdgePanelProps {
   edge: GraphEdge;
+  embedded?: boolean;
 }
 
-export function EdgePanel({ edge }: EdgePanelProps): React.ReactElement {
+export function EdgePanel({ edge, embedded }: EdgePanelProps): React.ReactElement {
   const updateEdge = useGraphStore(state => state.updateEdge);
   const getNode = useGraphStore(state => state.getNode);
   
@@ -32,14 +33,21 @@ export function EdgePanel({ edge }: EdgePanelProps): React.ReactElement {
     updateEdge(edge.id, { targetParam: param });
   }, [edge.id, updateEdge]);
   
-  return (
-    <div className={styles['panel']}>
-      <div className={styles['header']}>
-        <h3>Edge Properties</h3>
-        <span className={styles['edgeId']}>{edge.id.slice(0, 8)}</span>
-      </div>
+  const handleWeightChange = useCallback((weight: number) => {
+    updateEdge(edge.id, { weight });
+  }, [edge.id, updateEdge]);
+  
+  const content = (
+    <>
+      {/* Header (only shown when embedded) */}
+      {embedded && (
+        <div className={styles['embeddedHeader']}>
+          <h4>Edge Properties</h4>
+          <span className={styles['edgeId']}>{edge.id.slice(0, 8)}</span>
+        </div>
+      )}
       
-      <div className={styles['content']}>
+      <div className={embedded ? styles['embeddedContent'] : styles['content']}>
         {/* Connection info */}
         <div className={styles['connectionInfo']}>
           <span className={styles['nodeType']}>{fromNode?.type ?? '?'}</span>
@@ -108,6 +116,21 @@ export function EdgePanel({ edge }: EdgePanelProps): React.ReactElement {
             </select>
           </div>
         </div>
+
+        {/* Markov Weight */}
+        <div className={styles['row']}>
+          <label className={styles['label']}>Weight (Markov)</label>
+          <div className={styles['input']}>
+            <input
+              type="number"
+              className={styles['numberInput']}
+              value={edge.weight ?? 1}
+              min={0}
+              step={0.1}
+              onChange={e => handleWeightChange(parseFloat(e.target.value) || 0)}
+            />
+          </div>
+        </div>
         
         {/* Info text */}
         <div className={styles['info']}>
@@ -121,6 +144,20 @@ export function EdgePanel({ edge }: EdgePanelProps): React.ReactElement {
           )}
         </div>
       </div>
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <div className={styles['panel']}>
+      <div className={styles['header']}>
+        <h3>Edge Properties</h3>
+        <span className={styles['edgeId']}>{edge.id.slice(0, 8)}</span>
+      </div>
+      {content}
     </div>
   );
 }

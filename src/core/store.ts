@@ -251,6 +251,7 @@ interface GraphActions {
   // Scene playback
   setPlaybackMode: (mode: PlaybackMode) => void;
   setScenePlayback: (updates: Partial<ScenePlaybackState>) => void;
+  seekArrangement: (beat: number) => void;
   queueScene: (sceneId: SceneId, quantize?: SceneQuantize) => void;
   triggerSceneImmediate: (sceneId: SceneId) => void;
   advanceSceneBeat: (deltaBeats: number) => void;
@@ -2122,6 +2123,108 @@ export const useGraphStore = create<GraphStore>()(
           Object.assign(state.scenePlayback, updates);
         });
       },
+
+      seekArrangement: (targetBeat) => {
+        const state = get();
+        const { arrangement, scenes } = state;
+        
+        if (arrangement.length === 0) return;
+
+        let currentBeat = 0;
+        let foundSlotIndex = -1;
+        let beatInSlot = 0;
+        let slotStartBeat = 0;
+
+        // Find which slot contains the target beat
+        for (let i = 0; i < arrangement.length; i++) {
+          const slot = arrangement[i];
+          if (!slot) continue;
+          const scene = scenes.get(slot.sceneId);
+          if (!scene) continue;
+
+          const loops = slot.instanceLoopCount ?? scene.loopCount;
+          const duration = scene.durationBeats * loops;
+          
+          if (targetBeat >= currentBeat && targetBeat < currentBeat + duration) {
+            foundSlotIndex = i;
+            beatInSlot = targetBeat - currentBeat;
+            break;
+          }
+          
+          currentBeat += duration;
+        }
+
+        // If past the end, clamp to end or loop? For now, clamp to last slot end or stop
+        if (foundSlotIndex === -1) {
+          if (targetBeat >= currentBeat) {
+             // Past the end
+             foundSlotIndex = arrangement.length - 1;
+             // Set to end of last slot? Or just stop?
+             // Let's just set to the very end
+             set(s => {
+               s.scenePlayback.arrangementBeat = currentBeat; // End
+               s.scenePlayback.currentSlotIndex = arrangement.length; // Done
+               s.isRunning = false;
+             });
+             return;
+          } else {
+             // Before start? Should not happen with loop above starting at 0
+             foundSlotIndex = 0;
+             beatInSlot = 0;
+          }
+        }
+
+        const slot = arrangement[foundSlotIndex];
+        if (!slot) return;
+        
+        const scene = scenes.get(slot.sceneId);
+        
+        if (slot && scene) {
+          const sceneDuration = scene.durationBeats;
+          const loopIteration = Math.floor(beatInSlot / sceneDuration);
+          const sceneBeat = beatInSlot % sceneDuration;
+
+          set(s => {
+            s.scenePlayback.arrangementBeat = targetBeat;
+            s.scenePlayback.currentSlotIndex = foundSlotIndex;
+            s.scenePlayback.currentSceneId = slot.sceneId;
+            s.scenePlayback.sceneBeat = sceneBeat;
+            s.scenePlayback.sceneLoopIteration = loopIteration;
+            
+            // Load the scene if it's different
+            if (s.activeSceneId !== slot.sceneId) {
+               // We need to call loadSceneToCanvas logic here, but we are inside a setter.
+               // We can duplicate the logic or call the action outside.
+               // Since we are inside immer producer, we can modify state directly.
+               
+               // Clear current canvas
+               s.nodes.clear();
+               s.edges.clear();
+               s.annotations.clear();
+               s.regions.clear();
+               s.packets.clear();
+               
+               // Load scene content
+               for (const node of scene.nodes) {
+                 s.nodes.set(node.id, { ...node, timer: 0, lastTrigger: 0, flash: 0, heldPackets: [] } as any);
+               }
+               for (const edge of scene.edges) {
+                 s.edges.set(edge.id, { ...edge } as any);
+               }
+               for (const annotation of scene.annotations) {
+                 s.annotations.set(annotation.id, { ...annotation } as any);
+               }
+               for (const region of scene.regions) {
+                 s.regions.set(region.id, { ...region } as any);
+               }
+               
+               s.editingSceneId = slot.sceneId;
+               s.selection.selectedNodeIds = [];
+               s.selection.selectedEdgeId = null;
+            }
+          });
+        }
+      },
       
       queueScene: (sceneId, quantize) => {
         set(state => {
@@ -2169,29 +2272,6 @@ export const useGraphStore = create<GraphStore>()(
           
           if (state.scenePlayback.mode === 'arrangement') {
             state.scenePlayback.arrangementBeat += deltaBeats;
-          }
-          
-          // Check for queued scene trigger (Jam mode)
-          if (state.scenePlayback.queuedSceneId && state.scenePlayback.mode === 'jam') {
-            const quantize = state.scenePlayback.queueTrigger;
-            const beat = state.scenePlayback.sceneBeat;
-            const scene = currentScene;
-            const phraseLength = scene?.jamTrigger.phraseLength ?? 4;
-            
-            let shouldTrigger = false;
-            if (quantize === 'immediate') {
-              shouldTrigger = true;
-            } else if (quantize === 'beat') {
-              shouldTrigger = Math.floor(beat) !== Math.floor(beat - deltaBeats);
-            } else if (quantize === 'bar') {
-              shouldTrigger = Math.floor(beat / 4) !== Math.floor((beat - deltaBeats) / 4);
-            } else if (quantize === 'phrase') {
-              shouldTrigger = Math.floor(beat / phraseLength) !== Math.floor((beat - deltaBeats) / phraseLength);
-            }
-            
-            if (shouldTrigger) {
-              // Will trigger on next tick via triggerSceneImmediate
-            }
           }
           
           // Check for scene loop/advance in Arrangement mode

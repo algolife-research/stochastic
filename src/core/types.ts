@@ -55,7 +55,7 @@ export type ScaleName =
   | 'wholeTone' | 'diminished';
 
 /** Oscillator wave types */
-export type WaveType = 'sine' | 'square' | 'sawtooth' | 'triangle';
+export type WaveType = 'sine' | 'square' | 'sawtooth' | 'triangle' | 'random' | 'noise';
 
 /** Noise types */
 export type NoiseType = 'white' | 'pink' | 'brown';
@@ -176,6 +176,11 @@ export interface TeleporterProps {
 export interface QuantizerProps {
   readonly strength: number;       // 0-1
   readonly useGlobalKey: boolean;
+  readonly scale: ScaleName;
+  readonly root: number;           // 0-11
+  readonly mode: 'nearest' | 'random';
+  readonly weights: Record<number, number>; // index -> weight (0-1)
+  readonly defaultPitch: number;   // Octave (e.g. 4)
 }
 
 export interface LfoProps {
@@ -204,6 +209,7 @@ export interface SceneTriggerProps {
 
 export interface SplitterProps {
   readonly entangled: boolean;  // Entangled packets share payload changes
+  readonly behavior: 'broadcast' | 'random' | 'weighted'; // Routing behavior
 }
 
 /** Union type for all node properties */
@@ -271,6 +277,7 @@ export interface GraphEdge {
   readonly timingMode: 'physical' | 'fixed';
   readonly durationBeats: number | null;
   readonly targetParam: string | null;  // null = audio, string = CV
+  readonly weight?: number;             // Probability weight for Markov chains
 }
 
 // ============================================================================
@@ -440,6 +447,17 @@ export interface VizNodeData {
   readonly connectionCount: number;
 }
 
+/** Extracted edge data for visualization (used in editor mode export) */
+export interface VizEdgeData {
+  readonly id: EdgeId;
+  readonly fromX: number;
+  readonly fromY: number;
+  readonly toX: number;
+  readonly toY: number;
+  readonly fromNodeId: NodeId;
+  readonly toNodeId: NodeId;
+}
+
 /** Active note data for visualization */
 export interface VizNoteData {
   readonly frequency: Frequency;
@@ -516,6 +534,7 @@ export interface VideoFrameData {
   readonly barPhase: number;
   readonly packets: VizPacketData[];
   readonly nodes: VizNodeData[];
+  readonly edges?: VizEdgeData[];     // Edge data for editor mode export
   readonly activeNotes: VizNoteData[];
   readonly averageFrequency: number;
   readonly averageIntensity: number;

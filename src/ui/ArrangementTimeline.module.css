@@ -97,10 +97,15 @@
 
 /* Ruler */
 .ruler {
-  position: relative;
-  height: 18px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
   background: var(--bg-tertiary, #0f0f1a);
   border-bottom: 1px solid var(--border-color, #333);
+  z-index: 10;
+  pointer-events: none; /* Let clicks pass to track container */
 }
 
 .rulerMark {
@@ -118,13 +123,32 @@
   color: var(--text-secondary, #666);
 }
 
+/* Track Container - Handles scrolling and shared width */
+.trackContainer {
+  position: relative;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: var(--bg-secondary, #1a1a2e);
+  /* Hide scrollbar but allow scrolling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color, #444) transparent;
+}
+
+.trackContent {
+  position: relative;
+  min-width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Slots container */
 .slots {
   display: flex;
-  gap: 2px;
-  padding: 8px;
-  min-height: 60px;
-  overflow-x: auto;
+  flex: 1;
+  padding-top: 20px; /* Space for ruler */
+  min-height: 80px;
 }
 
 /* Individual slot */
@@ -134,12 +158,26 @@
   flex-direction: column;
   min-width: 80px;
   padding: 8px;
-  border-radius: 4px;
-  border-left: 4px solid #666;
+  border-radius: 0;
+  /* Use box-shadow for the colored strip to avoid layout distortion */
+  /* border-left: 4px solid #666; */
+  border-right: 1px solid rgba(0,0,0,0.5);
   background: var(--bg-tertiary, #0f0f1a);
   cursor: pointer;
   transition: background 0.15s;
   overflow: hidden;
+}
+
+/* Colored strip using pseudo-element to not affect content box */
+.slot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: var(--slot-color, #666);
+  z-index: 2;
 }
 
 .slot:hover {
@@ -153,17 +191,19 @@
 .progress {
   position: absolute;
   top: 0;
-  left: 0;
+  left: 0; /* Starts at 0, covering the colored strip */
   bottom: 0;
   background: rgba(76, 175, 80, 0.2);
   pointer-events: none;
   transition: width 0.1s linear;
+  z-index: 1;
 }
 
 .slotContent {
   position: relative;
-  z-index: 1;
+  z-index: 3; /* Above progress and strip */
   flex: 1;
+  padding-left: 6px; /* Space for strip */
 }
 
 .slotHeader {
@@ -208,6 +248,7 @@
   gap: 2px;
   opacity: 0;
   transition: opacity 0.15s;
+  z-index: 4;
 }
 
 .slot:hover .slotActions {
@@ -248,50 +289,41 @@
   min-width: 40px;
   border: 2px dashed var(--border-color, #444);
   border-radius: 4px;
-  background: transparent;
-  color: var(--text-secondary, #666);
+  margin: 8px;
   cursor: pointer;
-  font-size: 18px;
-  transition: border-color 0.15s, color 0.15s;
+  color: var(--text-secondary, #666);
+  transition: all 0.15s;
 }
 
 .addSlot:hover {
-  border-color: var(--accent-color, #4a9eff);
-  color: var(--accent-color, #4a9eff);
+  border-color: var(--text-secondary, #888);
+  color: var(--text-primary, #fff);
+  background: rgba(255, 255, 255, 0.05);
 }
 
-/* Scene picker dropdown - uses fixed positioning to escape overflow containers */
+/* Scene picker */
 .scenePicker {
-  position: fixed;
-  min-width: 150px;
-  max-width: 200px;
-  max-height: 200px;
+  position: fixed; /* Changed to fixed to avoid clipping */
+  width: 200px;
+  max-height: 300px;
   overflow-y: auto;
-  background: var(--panel-bg, #252525);
+  background: var(--bg-secondary, #1a1a2e);
   border: 1px solid var(--border-color, #444);
-  border-radius: 6px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 100;
   padding: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  z-index: 99999;
-}
-
-.scenePickerEmpty {
-  padding: 8px 12px;
-  color: var(--text-secondary, #888);
-  font-size: 11px;
-  text-align: center;
 }
 
 .scenePickerItem {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
-  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 2px;
   color: var(--text-primary, #fff);
   font-size: 12px;
-  cursor: pointer;
-  transition: background 0.15s;
 }
 
 .scenePickerItem:hover {
@@ -299,30 +331,37 @@
 }
 
 .scenePickerColor {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.scenePickerEmpty {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-secondary, #888);
+  font-size: 11px;
 }
 
 /* Playhead */
 .playhead {
   position: absolute;
-  top: 26px;  /* Below ruler */
+  top: 0;
   bottom: 0;
   width: 2px;
-  background: var(--accent-color, #4a9eff);
+  background: #2196f3;
+  z-index: 20;
   pointer-events: none;
-  z-index: 10;
+  box-shadow: 0 0 4px rgba(33, 150, 243, 0.5);
 }
 
-.playhead::before {
+.playhead::after {
   content: '';
   position: absolute;
-  top: -4px;
+  top: 0;
   left: -4px;
   width: 10px;
   height: 10px;
-  background: var(--accent-color, #4a9eff);
+  background: #2196f3;
   border-radius: 50%;
 }

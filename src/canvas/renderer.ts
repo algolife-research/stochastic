@@ -438,12 +438,15 @@ export class CanvasRenderer {
       const trailX = fromNode.x + edgeDx * trailT;
       const trailY = fromNode.y + edgeDy * trailT;
       
-      // Color based on MIDI note (rainbow spectrum)
-      const hue = ((packet.payload.midiNote - 36) / 48) * 300;
+      // Color based on pitch class (chroma) - repeats every octave
+      const chroma = packet.payload.midiNote % 12;
+      const hue = chroma * 30; // 360 / 12 = 30 degrees per semitone
       const baseColor = `hsl(${hue}, 85%, 60%)`;
       const trailColor = `hsla(${hue}, 85%, 60%, 0.5)`;
       
-      // Check if packet has high timbre (polariser effect)
+      // Size based on pitch (high pitch = small size)
+      // Map MIDI 0-127 to roughly radius 12-3
+      const radius = Math.max(3, 12 - (packet.payload.midiNote / 127) * 9);
       const hasTimbre = packet.payload.timbre > 0.5;
       
       // Draw trail
@@ -486,7 +489,7 @@ export class CanvasRenderer {
       ctx.shadowBlur = 15;
       
       ctx.beginPath();
-      ctx.arc(px, py, 6, 0, Math.PI * 2);
+      ctx.arc(px, py, radius, 0, Math.PI * 2);
       ctx.fill();
       
       ctx.shadowBlur = 0;

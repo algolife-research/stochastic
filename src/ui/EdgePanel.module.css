@@ -131,3 +131,30 @@
 .info strong {
   color: #a855f7;
 }
+
+/* Embedded mode styles */
+.embeddedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #252525;
+  border-bottom: 1px solid #333;
+  border-left: 3px solid #888;
+}
+
+.embeddedHeader h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.embeddedContent {
+  padding: 12px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

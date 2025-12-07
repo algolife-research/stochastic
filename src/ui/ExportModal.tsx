@@ -176,10 +176,12 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
         120
       );
     } else {
-      // For canvas mode, use current scene's viz config or default
-      const canvasVizMode = currentScene?.vizMode ?? 'particles';
-      const defaultVizConfig = getDefaultVizConfig(canvasVizMode);
-      const canvasVizConfig = currentScene?.vizConfig ?? defaultVizConfig ?? getDefaultVizConfig('particles');
+      // For canvas mode, use current scene's viz config
+      // If vizMode is 'editor', we keep vizConfig as null to trigger editor rendering
+      const canvasVizMode = currentScene?.vizMode ?? 'editor';
+      const canvasVizConfig = canvasVizMode === 'editor' 
+        ? null 
+        : (currentScene?.vizConfig ?? getDefaultVizConfig(canvasVizMode));
       
       const rawFrames = compileVideoFrames(
         nodes,
@@ -190,7 +192,8 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
         globalSettings
       );
       
-      // Add viz config to each frame (ensure not null/undefined)
+      // Add viz config to each frame
+      // For editor mode, vizConfig should be null/undefined to trigger editor rendering
       frameData = rawFrames.map(frame => ({
         ...frame,
         vizMode: canvasVizMode,
@@ -219,8 +222,13 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
     for (let i = 0; i < frameData.length; i++) {
       const frame = frameData[i]!;
       
-      // Get the viz config for this frame (from scene or default)
-      const frameVizConfig = frame.vizConfig ?? getDefaultVizConfig(frame.vizMode ?? 'particles');
+      // Get the viz config for this frame
+      // For editor mode (vizMode === 'editor'), we want frameVizConfig to be null
+      // to trigger the editor renderer in offline-renderer
+      const isEditorMode = frame.vizMode === 'editor';
+      const frameVizConfig = isEditorMode 
+        ? null 
+        : (frame.vizConfig ?? getDefaultVizConfig(frame.vizMode ?? 'particles'));
       
       // If viz config changed (new scene), reset some render state
       if (frameVizConfig !== currentVizConfigForRendering) {

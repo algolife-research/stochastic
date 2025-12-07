@@ -5,9 +5,10 @@ import type {
   VizConfig,
   VizMusicalData,
   VideoFrameData,
+  ColorPalette,
 } from '@core/types';
 import type { Particle, Blob, WaveSource, FrequencyBin } from './types';
-import { DEFAULT_PALETTE, getColorFromPalette, midiToHue } from './palettes';
+import { DEFAULT_PALETTE, getColorFromPalette } from './palettes';
 import { DEFAULT_PARTICLES_CONFIG } from './modes/particles';
 import { DEFAULT_ABSTRACT_CONFIG } from './modes/abstract';
 import { DEFAULT_SPECTRAL_CONFIG } from './modes/spectral';
@@ -51,7 +52,10 @@ export function renderOfflineFrame(
   state: OfflineRenderState,
   deltaTime: number
 ): void {
-  // Get config or use default
+  // Check if we're in editor mode (config is null or not provided means editor mode)
+  const isEditorMode = config === null;
+  
+  // Get config or use default for viz modes
   const cfg = config ?? { mode: 'particles' as const, ...DEFAULT_PARTICLES_CONFIG };
   const palette = cfg.colorPalette ?? DEFAULT_PALETTE;
   
@@ -69,9 +73,16 @@ export function renderOfflineFrame(
     packetDensity: frameData.packetDensity,
   };
   
-  // Clear background
-  ctx.fillStyle = palette.background;
+  // For editor mode, use dark background; otherwise use palette
+  ctx.fillStyle = isEditorMode ? '#0a0a0a' : palette.background;
   ctx.fillRect(0, 0, width, height);
+  
+  // Handle editor mode separately (when config is null)
+  if (isEditorMode) {
+    renderEditorFrame(ctx, frameData, width, height, state, deltaTime);
+    state.elapsedTime += deltaTime;
+    return;
+  }
   
   // Render based on mode
   switch (cfg.mode) {
@@ -475,87 +486,141 @@ function renderWavesFrame(
   dt: number
 ): void {
   const wavesCfg = { ...DEFAULT_WAVES_CONFIG, ...cfg };
-  // palette not used directly in this mode (HSL calculated from hue)
-  const _ = cfg.colorPalette ?? DEFAULT_PALETTE; void _;
-  const waveTime = state.elapsedTime;
+  const palette = cfg.colorPalette ?? DEFAULT_PALETTE;
+  const beatPulse = Math.pow(1 - data.beatPhase, 3);
   
-  // Create wave sources from active notes
+  // Fade background for trails (matching live renderer behavior)
+  const fadeAlpha = 1 - wavesCfg.trailLength;
+  ctx.fillStyle = palette.background;
+  ctx.globalAlpha = fadeAlpha * 0.1;
+  ctx.fillRect(0, 0, width, height);
+  ctx.globalAlpha = 1;
+  
+  // Initialize wave sources if needed
   while (state.waveSources.length < wavesCfg.waveCount) {
     state.waveSources.push({
       x: width * (0.2 + seededRandom(state.waveSources.length * 100) * 0.6),
       y: height * (0.2 + seededRandom(state.waveSources.length * 200) * 0.6),
-      frequency: 0.02 + seededRandom(state.waveSources.length * 300) * 0.03,
-      amplitude: 0,
-      phase: seededRandom(state.waveSources.length * 400) * Math.PI * 2,
-      hue: seededRandom(state.waveSources.length * 500) * 360,
+      frequency: 0.5 + seededRandom(state.waveSources.length * 300) * 1.5,
+      amplitude: 0.5 + seededRandom(state.waveSources.length * 400) * 0.5,
+      phase: seededRandom(state.waveSources.length * 500) * Math.PI * 2,
+      hue: (state.waveSources.length / wavesCfg.waveCount) * 360,
     });
   }
   
-  // Update wave sources based on active notes
-  for (let i = 0; i < state.waveSources.length; i++) {
-    const source = state.waveSources[i]!;
-    const note = data.activeNotes[i % Math.max(1, data.activeNotes.length)];
-    
-    if (note) {
-      source.amplitude = note.gain * note.envelope * wavesCfg.amplitude;
-      source.hue = midiToHue(Math.log2((note.frequency as number) / 440) * 12 + 69);
-    } else {
+  // Update wave sources based on packets (like live version)
+  for (let i = 0; i < Math.max(state.waveSources.length, data.packets.length); i++) {
+    if (i < data.packets.length) {
+      const packet = data.packets[i]!;
+      
+      if (i >= state.waveSources.length) {
+        // Add new source
+        state.waveSources.push({
+          x: packet.x,
+          y: packet.y,
+          frequency: 0.5 + Math.hypot(packet.vx, packet.vy) * 0.01,
+          amplitude: packet.intensity,
+          phase: 0,
+          hue: packet.hue,
+        });
+      } else {
+        // Update existing source - smooth interpolation
+        const source = state.waveSources[i]!;
+        const lerpFactor = dt * 3 * wavesCfg.reactivity;
+        source.x = source.x + (packet.x - source.x) * lerpFactor;
+        source.y = source.y + (packet.y - source.y) * lerpFactor;
+        source.amplitude = source.amplitude + (packet.intensity - source.amplitude) * (dt * 5);
+        source.hue = source.hue + (packet.hue - source.hue) * (dt * 2);
+        source.frequency = 0.5 + Math.hypot(packet.vx, packet.vy) * 0.01;
+      }
+    } else if (i < state.waveSources.length) {
+      // Fade out extra sources
+      const source = state.waveSources[i]!;
       source.amplitude *= 0.95;
     }
-    
-    source.phase += dt * source.frequency * 10;
   }
   
-  // Render interference pattern
-  const imageData = ctx.createImageData(width, height);
-  const pixelData = imageData.data;
+  // Update phases and pulse on beat
+  for (const source of state.waveSources) {
+    source.phase += dt * source.frequency * 3;
+    if (beatPulse > 0.8) {
+      source.amplitude = Math.min(1, source.amplitude + 0.2 * wavesCfg.intensity);
+    }
+  }
   
-  for (let y = 0; y < height; y += 2) {
-    for (let x = 0; x < width; x += 2) {
-      let value = 0;
-      let hueSum = 0;
-      let hueCount = 0;
+  // Render based on interference setting
+  if (wavesCfg.interference) {
+    renderWavesInterference(ctx, width, height, state.waveSources, wavesCfg, palette, state.elapsedTime, beatPulse);
+  } else {
+    renderWavesConcentric(ctx, width, height, state.waveSources, wavesCfg, palette, beatPulse);
+  }
+  
+  // Render source points with glows
+  renderWavesSourcePoints(ctx, state.waveSources, wavesCfg, palette, beatPulse);
+}
+
+/** Render interference pattern for waves mode */
+function renderWavesInterference(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  width: number,
+  height: number,
+  sources: WaveSource[],
+  cfg: { intensity: number; amplitude: number },
+  palette: ColorPalette,
+  time: number,
+  beatPulse: number
+): void {
+  const step = 4; // Resolution
+  const activeSources = sources.filter(s => s.amplitude > 0.01);
+  if (activeSources.length === 0) return;
+  
+  // Create image data for pixel manipulation
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const pixels = imageData.data;
+  
+  for (let y = 0; y < height; y += step) {
+    for (let x = 0; x < width; x += step) {
+      let totalWave = 0;
+      let dominantHue = 0;
+      let totalWeight = 0;
       
-      for (const source of state.waveSources) {
-        if (source.amplitude < 0.01) continue;
-        
+      for (const source of activeSources) {
         const dx = x - source.x;
         const dy = y - source.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const wave = Math.sin(dist * source.frequency - waveTime * 3 + source.phase);
-        value += wave * source.amplitude;
-        hueSum += source.hue * source.amplitude;
-        hueCount += source.amplitude;
+        
+        // Wave equation (matching live renderer)
+        const wave = Math.sin(dist * 0.05 * source.frequency - source.phase) * source.amplitude;
+        totalWave += wave;
+        
+        // Weighted hue contribution
+        const weight = source.amplitude / (1 + dist * 0.01);
+        dominantHue += source.hue * weight;
+        totalWeight += weight;
       }
       
-      const hue = hueCount > 0 ? hueSum / hueCount : 180;
-      const intensity = Math.abs(value);
-      const color = hslToRgb(hue / 360, 0.8, 0.3 + intensity * 0.4);
-      
-      const idx = (y * width + x) * 4;
-      pixelData[idx] = color.r;
-      pixelData[idx + 1] = color.g;
-      pixelData[idx + 2] = color.b;
-      pixelData[idx + 3] = 255;
-      
-      // Fill 2x2 block for performance
-      if (x + 1 < width) {
-        pixelData[idx + 4] = color.r;
-        pixelData[idx + 5] = color.g;
-        pixelData[idx + 6] = color.b;
-        pixelData[idx + 7] = 255;
+      if (totalWeight > 0) {
+        dominantHue /= totalWeight;
       }
-      if (y + 1 < height) {
-        const idx2 = ((y + 1) * width + x) * 4;
-        pixelData[idx2] = color.r;
-        pixelData[idx2 + 1] = color.g;
-        pixelData[idx2 + 2] = color.b;
-        pixelData[idx2 + 3] = 255;
-        if (x + 1 < width) {
-          pixelData[idx2 + 4] = color.r;
-          pixelData[idx2 + 5] = color.g;
-          pixelData[idx2 + 6] = color.b;
-          pixelData[idx2 + 7] = 255;
+      
+      // Normalize wave value
+      totalWave = (totalWave / activeSources.length + 1) / 2;
+      totalWave = Math.pow(totalWave, 0.7);
+      
+      // Apply intensity and beat pulse
+      const intensity = totalWave * cfg.intensity * cfg.amplitude * (1 + beatPulse * 0.3);
+      
+      // Get color from palette
+      const color = getColorFromPalette(palette, (dominantHue / 360 + time * 0.05) % 1);
+      const rgb = hexToRgbValues(color);
+      
+      // Fill step x step block
+      for (let dy = 0; dy < step && y + dy < height; dy++) {
+        for (let dx = 0; dx < step && x + dx < width; dx++) {
+          const idx = ((y + dy) * width + (x + dx)) * 4;
+          pixels[idx] = Math.min(255, pixels[idx]! + rgb.r * intensity);
+          pixels[idx + 1] = Math.min(255, pixels[idx + 1]! + rgb.g * intensity);
+          pixels[idx + 2] = Math.min(255, pixels[idx + 2]! + rgb.b * intensity);
         }
       }
     }
@@ -563,6 +628,103 @@ function renderWavesFrame(
   
   ctx.putImageData(imageData, 0, 0);
 }
+
+/** Render concentric waves for waves mode */
+function renderWavesConcentric(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  width: number,
+  height: number,
+  sources: WaveSource[],
+  cfg: { intensity: number },
+  palette: ColorPalette,
+  beatPulse: number
+): void {
+  const activeSources = sources.filter(s => s.amplitude > 0.01);
+  
+  for (const source of activeSources) {
+    const color = getColorFromPalette(palette, source.hue / 360);
+    const maxRadius = Math.max(width, height) * 0.8;
+    const waveCount = 8;
+    
+    for (let i = 0; i < waveCount; i++) {
+      const phase = (source.phase + i * 0.5) % (Math.PI * 2);
+      const radius = (phase / (Math.PI * 2)) * maxRadius;
+      const alpha = (1 - radius / maxRadius) * source.amplitude * cfg.intensity;
+      
+      if (alpha > 0.01) {
+        ctx.beginPath();
+        ctx.arc(source.x, source.y, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2 + beatPulse * 2;
+        ctx.globalAlpha = alpha;
+        ctx.stroke();
+      }
+    }
+  }
+  
+  ctx.globalAlpha = 1;
+}
+
+/** Render wave source points with glows */
+function renderWavesSourcePoints(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  sources: WaveSource[],
+  cfg: { intensity: number },
+  palette: ColorPalette,
+  beatPulse: number
+): void {
+  for (const source of sources) {
+    if (source.amplitude < 0.01) continue;
+    
+    const color = getColorFromPalette(palette, source.hue / 360);
+    const radius = 5 + source.amplitude * 15 * (1 + beatPulse * 0.5);
+    
+    // Glow
+    const gradient = ctx.createRadialGradient(
+      source.x, source.y, 0,
+      source.x, source.y, radius * 2
+    );
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(1, 'transparent');
+    
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(source.x, source.y, radius * 2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Core
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(source.x, source.y, radius * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+/** Helper to convert hex to RGB values */
+function hexToRgbValues(hex: string): { r: number; g: number; b: number } {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1]!, 16),
+    g: parseInt(result[2]!, 16),
+    b: parseInt(result[3]!, 16),
+  } : { r: 255, g: 255, b: 255 };
+}
+
+/** Kaleidoscope element for offline rendering */
+interface KaleidoElement {
+  x: number;
+  y: number;
+  size: number;
+  targetSize: number;
+  hue: number;
+  type: 'circle' | 'line' | 'triangle';
+  rotation: number;
+  age: number;
+}
+
+/** Extended offline state for kaleidoscope */
+let kaleidoElements: KaleidoElement[] = [];
+let kaleidoGlobalRotation = 0;
 
 /** Render kaleidoscope mode frame */
 function renderKaleidoscopeFrame(
@@ -572,80 +734,518 @@ function renderKaleidoscopeFrame(
   height: number,
   cfg: VizConfig,
   state: OfflineRenderState,
-  _dt: number
+  dt: number
 ): void {
   const kalCfg = { ...DEFAULT_KALEIDOSCOPE_CONFIG, ...cfg };
   const kalPalette = cfg.colorPalette ?? DEFAULT_PALETTE;
   const segments = kalCfg.segments;
-  const rotation = state.elapsedTime * kalCfg.rotation * 0.5;
-  const zoom = 1 + kalCfg.zoom * data.averageIntensity * 0.5;
+  const beatPulse = Math.pow(1 - data.beatPhase, 3);
+  
+  // Update global rotation (matching live renderer)
+  kaleidoGlobalRotation += dt * kalCfg.rotation * (1 + beatPulse * 0.5);
+  
+  // Fade background for trails
+  const fadeAlpha = 1 - kalCfg.trailLength;
+  ctx.fillStyle = kalPalette.background;
+  ctx.globalAlpha = fadeAlpha * 0.1;
+  ctx.fillRect(0, 0, width, height);
+  ctx.globalAlpha = 1;
+  
+  // Update kaleidoscope elements (spawn new ones from packets)
+  updateKaleidoElements(data, kalCfg, width, height, dt);
   
   const centerX = width / 2;
   const centerY = height / 2;
   
   ctx.save();
   ctx.translate(centerX, centerY);
-  ctx.rotate(rotation);
-  ctx.scale(zoom, zoom);
+  ctx.rotate(kaleidoGlobalRotation);
   
-  // Draw kaleidoscope segments
+  // Draw each segment
   for (let s = 0; s < segments; s++) {
     ctx.save();
     ctx.rotate((s / segments) * Math.PI * 2);
     
-    // Mirror every other segment
+    // Mirror alternate segments
     if (s % 2 === 1) {
       ctx.scale(-1, 1);
     }
     
-    // Draw packets as triangular patterns
-    for (const packet of data.packets) {
-      const dx = packet.x - centerX;
-      const dy = packet.y - centerY;
-      const dist = Math.sqrt(dx * dx + dy * dy) * 0.5;
-      const angle = Math.atan2(dy, dx);
-      
-      const color = getColorFromPalette(kalPalette, packet.hue / 360);
-      ctx.fillStyle = color;
-      ctx.globalAlpha = packet.intensity * 0.7;
-      
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(
-        Math.cos(angle) * dist,
-        Math.sin(angle) * dist / segments
-      );
-      ctx.lineTo(
-        Math.cos(angle + 0.2) * dist,
-        Math.sin(angle + 0.2) * dist / segments
-      );
-      ctx.closePath();
-      ctx.fill();
+    // Clip to segment
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    const segmentAngle = Math.PI / segments;
+    ctx.lineTo(Math.cos(-segmentAngle) * width, Math.sin(-segmentAngle) * width);
+    ctx.lineTo(Math.cos(segmentAngle) * width, Math.sin(segmentAngle) * width);
+    ctx.closePath();
+    ctx.clip();
+    
+    // Draw elements
+    for (const elem of kaleidoElements) {
+      drawKaleidoElement(ctx, elem, kalCfg, kalPalette);
     }
     
-    // Draw active notes as glowing circles
-    for (const note of data.activeNotes) {
-      const hue = midiToHue(Math.log2((note.frequency as number) / 440) * 12 + 69);
-      const color = getColorFromPalette(kalPalette, hue / 360);
-      const size = 20 + note.gain * note.envelope * 50;
-      
-      ctx.fillStyle = color;
-      ctx.globalAlpha = note.envelope * 0.5;
-      ctx.beginPath();
-      ctx.arc(
-        100 + note.pan * 50,
-        0,
-        size,
-        0, Math.PI / segments
-      );
-      ctx.fill();
-    }
+    // Draw packet trails
+    drawKaleidoPacketTrails(ctx, data, kalCfg, kalPalette, width, height);
     
     ctx.restore();
   }
   
-  ctx.globalAlpha = 1;
   ctx.restore();
+  
+  // Central decoration
+  drawKaleidoCenter(ctx, data, kalCfg, kalPalette, width, height, state.elapsedTime);
+}
+
+/** Update kaleidoscope elements based on musical data */
+function updateKaleidoElements(
+  data: VizMusicalData, 
+  cfg: { intensity: number; zoom: number }, 
+  width: number, 
+  height: number,
+  dt: number
+): void {
+  const beatPulse = Math.pow(1 - data.beatPhase, 4);
+  
+  // Spawn new elements from packets
+  for (const packet of data.packets) {
+    // Chance to spawn based on beat
+    if (beatPulse > 0.9 && seededRandom(packet.x * packet.y + data.beat) < 0.3 * cfg.intensity) {
+      kaleidoElements.push({
+        x: packet.x - width / 2,
+        y: packet.y - height / 2,
+        size: 5 + packet.intensity * 30,
+        targetSize: 5 + packet.intensity * 30,
+        hue: packet.hue,
+        type: ['circle', 'line', 'triangle'][Math.floor(seededRandom(packet.x + packet.y) * 3)] as 'circle' | 'line' | 'triangle',
+        rotation: seededRandom(packet.x * packet.y) * Math.PI * 2,
+        age: 0,
+      });
+    }
+  }
+  
+  // Update existing elements
+  for (let i = kaleidoElements.length - 1; i >= 0; i--) {
+    const elem = kaleidoElements[i]!;
+    elem.age += dt;
+    
+    // Grow and rotate
+    elem.size = elem.size + (elem.targetSize * 2 - elem.size) * (dt * 0.5);
+    elem.rotation += dt * 0.5;
+    
+    // Move outward
+    const dist = Math.hypot(elem.x, elem.y);
+    const angle = Math.atan2(elem.y, elem.x);
+    const speed = 30 * cfg.zoom;
+    elem.x += Math.cos(angle) * speed * dt;
+    elem.y += Math.sin(angle) * speed * dt;
+    
+    // Remove old or out-of-bounds elements
+    const maxDist = Math.max(width, height);
+    if (elem.age > 5 || dist > maxDist) {
+      kaleidoElements.splice(i, 1);
+    }
+  }
+  
+  // Limit element count
+  while (kaleidoElements.length > 100) {
+    kaleidoElements.shift();
+  }
+}
+
+/** Draw a single kaleidoscope element */
+function drawKaleidoElement(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  elem: KaleidoElement,
+  cfg: { intensity: number },
+  palette: ColorPalette
+): void {
+  const alpha = Math.max(0, 1 - elem.age / 5) * cfg.intensity;
+  const color = getColorFromPalette(palette, elem.hue / 360);
+  
+  ctx.save();
+  ctx.translate(elem.x, elem.y);
+  ctx.rotate(elem.rotation);
+  ctx.globalAlpha = alpha;
+  
+  switch (elem.type) {
+    case 'circle':
+      ctx.beginPath();
+      ctx.arc(0, 0, elem.size, 0, Math.PI * 2);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      break;
+      
+    case 'line':
+      ctx.beginPath();
+      ctx.moveTo(-elem.size, 0);
+      ctx.lineTo(elem.size, 0);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      break;
+      
+    case 'triangle':
+      ctx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const angle = (i / 3) * Math.PI * 2 - Math.PI / 2;
+        const x = Math.cos(angle) * elem.size;
+        const y = Math.sin(angle) * elem.size;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      break;
+  }
+  
+  ctx.restore();
+}
+
+/** Draw packet trails for kaleidoscope */
+function drawKaleidoPacketTrails(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  data: VizMusicalData,
+  cfg: { intensity: number },
+  palette: ColorPalette,
+  width: number,
+  height: number
+): void {
+  for (const packet of data.packets.slice(0, 10)) {
+    const x = packet.x - width / 2;
+    const y = packet.y - height / 2;
+    const color = getColorFromPalette(palette, packet.hue / 360);
+    
+    // Draw trail from center to packet
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1 + packet.intensity * 3;
+    ctx.globalAlpha = packet.intensity * cfg.intensity * 0.5;
+    ctx.stroke();
+    
+    // Draw point at packet
+    ctx.beginPath();
+    ctx.arc(x, y, 3 + packet.intensity * 5, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = packet.intensity * cfg.intensity;
+    ctx.fill();
+  }
+  
+  ctx.globalAlpha = 1;
+}
+
+/** Draw central decoration for kaleidoscope */
+function drawKaleidoCenter(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  data: VizMusicalData,
+  cfg: { intensity: number },
+  palette: ColorPalette,
+  width: number,
+  height: number,
+  time: number
+): void {
+  const cx = width / 2;
+  const cy = height / 2;
+  const beatPulse = Math.pow(1 - data.beatPhase, 4);
+  
+  const baseRadius = 30 + beatPulse * 20 * cfg.intensity;
+  const hue = (time * 30) % 360;
+  const color = getColorFromPalette(palette, hue / 360);
+  
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, baseRadius, 0, Math.PI * 2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.globalAlpha = 0.8;
+  ctx.stroke();
+  
+  // Inner glow
+  const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseRadius * 0.8);
+  gradient.addColorStop(0, color);
+  gradient.addColorStop(1, 'transparent');
+  ctx.fillStyle = gradient;
+  ctx.globalAlpha = 0.5;
+  ctx.fill();
+  
+  ctx.globalAlpha = 1;
+}
+
+// ============================================================================
+// Editor Mode Renderer
+// ============================================================================
+
+/** Node colors for editor mode rendering */
+const EDITOR_NODE_COLORS: Record<string, string> = {
+  source:        '#4caf50',
+  speaker:       '#ff5722',
+  pitch:         '#2196f3',
+  polariser:     '#9c27b0',
+  filter:        '#00bcd4',
+  gate:          '#ffeb3b',
+  delay:         '#795548',
+  gain:          '#607d8b',
+  noise:         '#9e9e9e',
+  harmonic:      '#e91e63',
+  modulator:     '#673ab7',
+  tunnel:        '#3f51b5',
+  teleporter:    '#00e676',
+  quantizer:     '#ff9800',
+  lfo:           '#8bc34a',
+  splitter:      '#64748b',
+  midi_out:      '#03a9f4',
+  midi_cc:       '#009688',
+  scene_trigger: '#f44336',
+};
+
+/** Node icons for editor mode rendering */
+const EDITOR_NODE_ICONS: Record<string, string> = {
+  source:        '◉',
+  speaker:       '🔊',
+  pitch:         '♪',
+  polariser:     '∿',
+  filter:        '⋈',
+  gate:          '⊡',
+  delay:         '⏱',
+  gain:          '◐',
+  noise:         '≋',
+  harmonic:      '∞',
+  modulator:     '〰',
+  tunnel:        '▣',
+  teleporter:    '⚡',
+  quantizer:     '⌗',
+  lfo:           '∼',
+  splitter:      '⋈',
+  midi_out:      '♬',
+  midi_cc:       '⚙',
+  scene_trigger: '▶',
+};
+
+const EDITOR_NODE_RADIUS = 25;
+
+/** Render editor mode frame - shows graph topology like the canvas editor */
+function renderEditorFrame(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  frameData: VideoFrameData,
+  width: number,
+  height: number,
+  state: OfflineRenderState,
+  _dt: number
+): void {
+  const time = state.elapsedTime;
+  
+  // Calculate graph bounds to fit in canvas
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const node of frameData.nodes) {
+    minX = Math.min(minX, node.x);
+    minY = Math.min(minY, node.y);
+    maxX = Math.max(maxX, node.x);
+    maxY = Math.max(maxY, node.y);
+  }
+  
+  // Handle empty graph case
+  if (!isFinite(minX)) {
+    minX = 0;
+    minY = 0;
+    maxX = width;
+    maxY = height;
+  }
+  
+  // Add padding around nodes
+  const padding = 100;
+  minX -= padding;
+  minY -= padding;
+  maxX += padding;
+  maxY += padding;
+  
+  const graphWidth = maxX - minX || 1;
+  const graphHeight = maxY - minY || 1;
+  
+  // Calculate scale and offset to center the graph
+  const scaleX = width / graphWidth;
+  const scaleY = height / graphHeight;
+  const scale = Math.min(scaleX, scaleY, 1.5); // Cap at 1.5x to avoid too much zoom
+  
+  const offsetX = (width - graphWidth * scale) / 2 - minX * scale;
+  const offsetY = (height - graphHeight * scale) / 2 - minY * scale;
+  
+  // Calculate the world-space bounds that correspond to the entire canvas
+  const canvasMinX = -offsetX / scale;
+  const canvasMinY = -offsetY / scale;
+  const canvasMaxX = (width - offsetX) / scale;
+  const canvasMaxY = (height - offsetY) / scale;
+  
+  ctx.save();
+  ctx.translate(offsetX, offsetY);
+  ctx.scale(scale, scale);
+  
+  // Draw grid covering the entire canvas area (not just node bounds)
+  drawEditorGrid(ctx, canvasMinX, canvasMinY, canvasMaxX, canvasMaxY);
+  
+  // Draw edges
+  if (frameData.edges) {
+    for (const edge of frameData.edges) {
+      drawEditorEdge(ctx, edge.fromX, edge.fromY, edge.toX, edge.toY);
+    }
+  }
+  
+  // Draw packets with trails
+  for (const packet of frameData.packets) {
+    drawEditorPacket(ctx, packet, time);
+  }
+  
+  // Draw nodes
+  for (const node of frameData.nodes) {
+    drawEditorNode(ctx, node);
+  }
+  
+  ctx.restore();
+}
+
+/** Draw grid for editor mode */
+function drawEditorGrid(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  minX: number,
+  minY: number,
+  maxX: number,
+  maxY: number
+): void {
+  const gridSize = 60;
+  
+  ctx.strokeStyle = '#2a2a2a';
+  ctx.lineWidth = 1;
+  
+  const gridStartX = Math.floor(minX / gridSize) * gridSize;
+  const gridStartY = Math.floor(minY / gridSize) * gridSize;
+  
+  ctx.beginPath();
+  for (let x = gridStartX; x <= maxX; x += gridSize) {
+    ctx.moveTo(x, minY);
+    ctx.lineTo(x, maxY);
+  }
+  for (let y = gridStartY; y <= maxY; y += gridSize) {
+    ctx.moveTo(minX, y);
+    ctx.lineTo(maxX, y);
+  }
+  ctx.stroke();
+}
+
+/** Draw an edge for editor mode */
+function drawEditorEdge(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number
+): void {
+  // Draw edge line
+  ctx.lineWidth = 3;
+  const gradient = ctx.createLinearGradient(fromX, fromY, toX, toY);
+  gradient.addColorStop(0, '#333333');
+  gradient.addColorStop(1, '#555555');
+  ctx.strokeStyle = gradient;
+  
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
+  ctx.stroke();
+  
+  // Draw direction arrow at center
+  const arrowT = 0.5;
+  const arrowX = fromX + (toX - fromX) * arrowT;
+  const arrowY = fromY + (toY - fromY) * arrowT;
+  const angle = Math.atan2(toY - fromY, toX - fromX);
+  const arrowLen = 10;
+  const arrowAngle = 2.8;
+  
+  ctx.strokeStyle = '#555555';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(
+    arrowX + Math.cos(angle + arrowAngle) * arrowLen,
+    arrowY + Math.sin(angle + arrowAngle) * arrowLen
+  );
+  ctx.lineTo(arrowX, arrowY);
+  ctx.lineTo(
+    arrowX + Math.cos(angle - arrowAngle) * arrowLen,
+    arrowY + Math.sin(angle - arrowAngle) * arrowLen
+  );
+  ctx.stroke();
+}
+
+/** Draw a packet for editor mode */
+function drawEditorPacket(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  packet: { x: number; y: number; vx: number; vy: number; hue: number; intensity: number },
+  _time: number
+): void {
+  const hue = packet.hue;
+  const baseColor = `hsl(${hue}, 85%, 60%)`;
+  const trailColor = `hsla(${hue}, 85%, 60%, 0.5)`;
+  
+  // Draw simple trail in the direction opposite to velocity
+  const trailLength = 40;
+  const speed = Math.sqrt(packet.vx * packet.vx + packet.vy * packet.vy) || 1;
+  const trailX = packet.x - (packet.vx / speed) * trailLength;
+  const trailY = packet.y - (packet.vy / speed) * trailLength;
+  
+  ctx.strokeStyle = trailColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(packet.x, packet.y);
+  ctx.lineTo(trailX, trailY);
+  ctx.stroke();
+  
+  // Draw packet head with glow
+  ctx.fillStyle = baseColor;
+  ctx.shadowColor = baseColor;
+  ctx.shadowBlur = 15;
+  
+  ctx.beginPath();
+  ctx.arc(packet.x, packet.y, 6, 0, Math.PI * 2);
+  ctx.fill();
+  
+  ctx.shadowBlur = 0;
+}
+
+/** Draw a node for editor mode */
+function drawEditorNode(
+  ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  node: { x: number; y: number; type: string; flash: number }
+): void {
+  const color = EDITOR_NODE_COLORS[node.type] ?? '#666666';
+  const flashIntensity = node.flash;
+  
+  // Flash glow
+  if (flashIntensity > 0) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 20 * flashIntensity;
+  }
+  
+  // Dark fill
+  ctx.fillStyle = '#1e1e1e';
+  ctx.beginPath();
+  ctx.arc(node.x, node.y, EDITOR_NODE_RADIUS, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Colored outline
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  
+  // Icon
+  const icon = EDITOR_NODE_ICONS[node.type] ?? '?';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '16px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(icon, node.x, node.y);
 }
 
 // ============================================================================
@@ -683,33 +1283,4 @@ function hexToRgba(hex: string, alpha: number): string {
   const b = parseInt(result[3]!, 16);
   
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
-  let r, g, b;
-
-  if (s === 0) {
-    r = g = b = l;
-  } else {
-    const hue2rgb = (p: number, q: number, t: number) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-      return p;
-    };
-
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1/3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1/3);
-  }
-
-  return {
-    r: Math.round(r * 255),
-    g: Math.round(g * 255),
-    b: Math.round(b * 255),
-  };
 }

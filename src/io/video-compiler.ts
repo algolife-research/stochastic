@@ -20,6 +20,7 @@ import type {
   VizPacketData,
   VizNodeData,
   VizNoteData,
+  VizEdgeData,
   PacketId,
   VizMode,
   VizConfig,
@@ -525,6 +526,24 @@ function captureFrame(
   // Estimate packet density (rough calculation)
   const packetDensity = packets.length / 10;
   
+  // Convert edges to VizEdgeData (for editor mode export)
+  const vizEdges: VizEdgeData[] = [];
+  for (const [id, edge] of edges) {
+    const fromNode = nodes.get(edge.from);
+    const toNode = nodes.get(edge.to);
+    if (!fromNode || !toNode) continue;
+    
+    vizEdges.push({
+      id,
+      fromX: fromNode.x,
+      fromY: fromNode.y,
+      toX: toNode.x,
+      toY: toNode.y,
+      fromNodeId: edge.from,
+      toNodeId: edge.to,
+    });
+  }
+  
   return {
     time,
     beat,
@@ -532,6 +551,7 @@ function captureFrame(
     barPhase,
     packets,
     nodes: vizNodes,
+    edges: vizEdges,
     activeNotes: vizNotes,
     averageFrequency,
     averageIntensity,

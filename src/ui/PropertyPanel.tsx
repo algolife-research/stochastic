@@ -2,8 +2,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useGraphStore } from '@core/store';
-import type { GraphNode, Annotation, Region, SubNode } from '@core/types';
-import { NODE_COLORS, midiToNoteName } from '@core/constants';
+import type { GraphNode, Annotation, Region, SubNode, ScaleName } from '@core/types';
+import { NODE_COLORS, midiToNoteName, SCALES, NOTE_LABELS } from '@core/constants';
 import { ColorPicker } from './ColorPicker';
 import { TunnelPresetSelector } from './TunnelPresetSelector';
 import type { TunnelPreset } from '@data/tunnel-presets';
@@ -17,9 +17,65 @@ interface PropertyPanelProps {
   node?: GraphNode;
   annotation?: Annotation;
   region?: Region;
+  embedded?: boolean;
 }
 
-export function PropertyPanel({ node, annotation, region }: PropertyPanelProps): React.ReactElement {
+export function PropertyPanel({ node, annotation, region, embedded }: PropertyPanelProps): React.ReactElement {
+  // Embedded mode: render content directly without wrapper
+  if (embedded) {
+    if (annotation) {
+      return (
+        <>
+          <div className={styles.embeddedHeader}>
+            <h4>✏️ Annotation</h4>
+            <span className={styles.nodeId}>{annotation.id.slice(0, 8)}</span>
+          </div>
+          <div className={styles.embeddedContent}>
+            <AnnotationProperties annotation={annotation} />
+          </div>
+        </>
+      );
+    }
+    
+    if (region) {
+      return (
+        <>
+          <div className={styles.embeddedHeader}>
+            <h4>📦 Region</h4>
+            <span className={styles.nodeId}>{region.id.slice(0, 8)}</span>
+          </div>
+          <div className={styles.embeddedContent}>
+            <RegionProperties region={region} />
+          </div>
+        </>
+      );
+    }
+    
+    if (!node) {
+      return (
+        <div className={styles.empty}>
+          Select a node, annotation, or region to view properties
+        </div>
+      );
+    }
+    
+    return (
+      <>
+        <div 
+          className={styles.embeddedHeader}
+          style={{ borderLeftColor: NODE_COLORS[node.type] }}
+        >
+          <h4>{node.type.charAt(0).toUpperCase() + node.type.slice(1)}</h4>
+          <span className={styles.nodeId}>{node.id.slice(0, 8)}</span>
+        </div>
+        <div className={styles.embeddedContent}>
+          <NodeProperties node={node} />
+        </div>
+      </>
+    );
+  }
+
+  // Standalone mode: render with panel wrapper
   if (annotation) {
     return (
       <div className={styles.panel}>
@@ -155,12 +211,20 @@ type HarmonicPropsType = { ratio: number; wave: 'sine' | 'square' | 'sawtooth' |
 type ModulatorPropsType = { rate: number; depth: number; delay: number };
 type SubNodeType = { type: string; props: Record<string, unknown> };
 type TunnelPropsType = { tunnelName: string; subNodes: SubNodeType[] };
-type QuantizerPropsType = { strength: number; useGlobalKey: boolean };
+type QuantizerPropsType = {
+  strength: number;
+  useGlobalKey: boolean;
+  scale: ScaleName;
+  root: number;
+  mode: 'nearest' | 'random';
+  weights: Record<number, number>;
+  defaultPitch: number;
+};
 type LfoPropsType = { rate: number; shape: 'sine' | 'square' | 'sawtooth' | 'triangle'; min: number; max: number; phase: number };
 type MidiOutPropsType = { channel: number; duration: number; velocityScale: number };
 type MidiCcPropsType = { channel: number; ccNumber: number };
 type SceneTriggerPropsType = { targetSceneIndex: number; behavior: 'jump' | 'crossfade' };
-type SplitterPropsType = { entangled: boolean };
+type SplitterPropsType = { entangled: boolean; behavior: 'broadcast' | 'random' | 'weighted' };
 
 // ============================================================================
 // SPECIFIC PROPERTY EDITORS
@@ -939,6 +1003,17 @@ function TunnelProps({ props, onChange }: PropsEditorProps<TunnelPropsType>): Re
 }
 
 function QuantizerProps({ props, onChange }: PropsEditorProps<QuantizerPropsType>): React.ReactElement {
+  const scaleName = props.scale || 'major';
+  const root = props.root ?? 0;
+  const scaleIntervals = SCALES[scaleName];
+  
+  // Helper to get note name for a scale degree
+  const getNoteName = (index: number) => {
+    const interval = scaleIntervals[index] ?? 0;
+    const noteIndex = (root + interval) % 12;
+    return NOTE_LABELS[noteIndex];
+  };
+
   return (
     <>
       <PropertyRow label="Strength">
@@ -957,6 +1032,78 @@ function QuantizerProps({ props, onChange }: PropsEditorProps<QuantizerPropsType
           onChange={v => onChange('useGlobalKey', v)}
         />
       </PropertyRow>
+
+      {!props.useGlobalKey && (
+        <>
+          <PropertyRow label="Scale">
+            <Select
+              value={props.scale || 'major'}
+              options={Object.keys(SCALES).map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))}
+              onChange={v => onChange('scale', v as ScaleName)}
+            />
+          </PropertyRow>
+          <PropertyRow label="Root">
+            <Select
+              value={String(props.root ?? 0)}
+              options={NOTE_LABELS.map((n, i) => ({ value: String(i), label: n }))}
+              onChange={v => onChange('root', Number(v))}
+            />
+          </PropertyRow>
+        </>
+      )}
+
+      <PropertyRow label="Mode">
+        <Select
+          value={props.mode || 'nearest'}
+          options={[
+            { value: 'nearest', label: 'Nearest Neighbor' },
+            { value: 'random', label: 'Weighted Random' }
+          ]}
+          onChange={v => onChange('mode', v as 'nearest' | 'random')}
+        />
+      </PropertyRow>
+
+      {props.mode === 'random' && (
+        <>
+          <PropertyRow label="Default Octave">
+            <NumberInput
+              value={props.defaultPitch ?? 4}
+              min={0}
+              max={8}
+              step={1}
+              onChange={v => onChange('defaultPitch', v)}
+            />
+          </PropertyRow>
+
+          <div style={{ marginTop: '12px', marginBottom: '8px', fontWeight: 'bold', fontSize: '0.9em', color: '#ccc' }}>Note Probabilities</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {scaleIntervals.map((_, index) => {
+              const weight = props.weights?.[index] ?? 0;
+              return (
+                <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '30px', textAlign: 'right', fontSize: '0.85em' }}>{getNoteName(index)}</div>
+                  <div style={{ flex: 1 }}>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="1" 
+                      step="0.05"
+                      value={weight}
+                      onChange={(e) => {
+                        const newWeights = { ...(props.weights || {}) };
+                        newWeights[index] = parseFloat(e.target.value);
+                        onChange('weights', newWeights);
+                      }}
+                      style={{ width: '100%', cursor: 'pointer' }}
+                    />
+                  </div>
+                  <div style={{ width: '40px', textAlign: 'right', fontSize: '0.85em' }}>{Math.round(weight * 100)}%</div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </>
   );
 }
@@ -982,6 +1129,8 @@ function LfoProps({ props, onChange }: PropsEditorProps<LfoPropsType>): React.Re
             { value: 'square', label: 'Square' },
             { value: 'sawtooth', label: 'Sawtooth' },
             { value: 'triangle', label: 'Triangle' },
+            { value: 'random', label: 'Random (S&H)' },
+            { value: 'noise', label: 'Noise' },
           ]}
           onChange={v => onChange('shape', v)}
         />
@@ -1083,15 +1232,23 @@ function MidiCcProps({ props, onChange }: PropsEditorProps<MidiCcPropsType>): Re
 }
 
 function SceneTriggerProps({ props, onChange }: PropsEditorProps<SceneTriggerPropsType>): React.ReactElement {
+  const scenes = useGraphStore(state => Array.from(state.scenes.values()));
+  
+  const sceneOptions = scenes.map((scene, index) => ({
+    value: String(index),
+    label: `${index}: ${scene.name}`
+  }));
+
   return (
     <>
       <PropertyRow label="Target Scene">
-        <NumberInput
-          value={props.targetSceneIndex}
-          min={-1}
-          max={99}
-          step={1}
-          onChange={v => onChange('targetSceneIndex', v)}
+        <Select
+          value={String(props.targetSceneIndex)}
+          options={[
+            { value: '-1', label: 'None' },
+            ...sceneOptions
+          ]}
+          onChange={v => onChange('targetSceneIndex', Number(v))}
         />
       </PropertyRow>
       
@@ -1112,6 +1269,18 @@ function SceneTriggerProps({ props, onChange }: PropsEditorProps<SceneTriggerPro
 function SplitterNodeProps({ props, onChange }: PropsEditorProps<SplitterPropsType>): React.ReactElement {
   return (
     <>
+      <PropertyRow label="Behavior">
+        <Select
+          value={props.behavior ?? 'broadcast'}
+          options={[
+            { value: 'broadcast', label: 'Broadcast (All)' },
+            { value: 'random', label: 'Random (Uniform)' },
+            { value: 'weighted', label: 'Weighted (Markov)' },
+          ]}
+          onChange={v => onChange('behavior', v)}
+        />
+      </PropertyRow>
+      
       <PropertyRow label="Entangled">
         <Checkbox
           checked={props.entangled ?? false}

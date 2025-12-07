@@ -4,7 +4,7 @@
 import { getGraphStore } from './store';
 import type { 
   Packet, GraphNode, GraphEdge, AudioPayload, 
-  NodeId, MidiNote, Frequency 
+  NodeId, MidiNote, Frequency, QuantizerProps, SceneTriggerProps 
 } from './types';
 import { 
   dist, midiToFreq, clampMidi, SCALES 
@@ -57,6 +57,8 @@ export function processNodeArrival(
       return processLFO(payload, node);
     case 'splitter':
       return processSplitter(payload, node);
+    case 'scene_trigger':
+      return processSceneTrigger(payload, node);
     default:
       return payload;
   }
@@ -186,48 +188,132 @@ function processModulator(payload: AudioPayload, node: GraphNode): AudioPayload 
 }
 
 function processQuantizer(payload: AudioPayload, node: GraphNode): AudioPayload {
-  const props = node.props as { strength: number; useGlobalKey: boolean };
+  const props = node.props as QuantizerProps;
   const store = getGraphStore();
   
   if (Math.random() > props.strength) {
     return payload;
   }
   
-  const { root, scale } = props.useGlobalKey 
-    ? store.musicalContext 
-    : { root: 0, scale: SCALES.major };
+  const { root, scaleName } = props.useGlobalKey 
+    ? { 
+        root: store.scenePlayback.effectiveRoot ?? store.musicalContext.root, 
+        scaleName: store.scenePlayback.effectiveScale ?? store.musicalContext.scaleName 
+      }
+    : { root: props.root, scaleName: props.scale };
+    
+  const scale = SCALES[scaleName];
   
-  const midiNote = payload.midiNote;
-  const chroma = midiNote % 12;
-  const octave = Math.floor(midiNote / 12);
+  // Safety check: if scale is undefined (e.g. invalid prop), pass through
+  if (!scale) return payload;
   
-  // Find nearest scale degree
-  let minDist = 12;
-  let nearestChroma = chroma;
+  if (props.mode === 'random') {
+    // Weighted random selection
+    const weights = props.weights;
+    const indices = Object.keys(weights).map(Number);
+    
+    let selectedIndex = 0;
+    
+    // Filter indices to only those valid for the current scale
+    const validIndices = indices.filter(i => i < scale.length);
+    
+    if (validIndices.length === 0) {
+      // Uniform random if no weights
+      selectedIndex = Math.floor(Math.random() * scale.length);
+    } else {
+      // Calculate total weight
+      let totalWeight = 0;
+      for (const i of validIndices) {
+        totalWeight += (weights[i] || 0);
+      }
+      
+      if (totalWeight <= 0) {
+         const idx = Math.floor(Math.random() * validIndices.length);
+         selectedIndex = validIndices[idx] ?? 0;
+      } else {
+        let r = Math.random() * totalWeight;
+        for (const i of validIndices) {
+          r -= (weights[i] || 0);
+          if (r <= 0) {
+            selectedIndex = i;
+            break;
+          }
+        }
+      }
+    }
+    
+    const interval = scale[selectedIndex] ?? 0;
+    const chroma = (root + interval) % 12;
+    const octave = props.defaultPitch;
+    const quantized = octave * 12 + chroma;
+    
+    return {
+      ...payload,
+      midiNote: clampMidi(quantized),
+      freq: midiToFreq(clampMidi(quantized)),
+    };
+
+  } else {
+    // Nearest neighbor (existing logic)
+    const midiNote = payload.midiNote;
+    const chroma = midiNote % 12;
+    const octave = Math.floor(midiNote / 12);
+    
+    // Find nearest scale degree
+    let minDist = 12;
+    let nearestChroma = chroma;
+    
+    for (const interval of scale) {
+      const scaleChroma = (root + interval) % 12;
+      const d = Math.min(
+        Math.abs(chroma - scaleChroma),
+        12 - Math.abs(chroma - scaleChroma)
+      );
+      if (d < minDist) {
+        minDist = d;
+        nearestChroma = scaleChroma;
+      }
+    }
+    
+    let quantized = octave * 12 + nearestChroma;
+    if (nearestChroma > chroma + 6) quantized -= 12;
+    else if (nearestChroma < chroma - 6) quantized += 12;
+    
+    const newMidi = clampMidi(quantized);
+    
+    return {
+      ...payload,
+      midiNote: newMidi,
+      freq: midiToFreq(newMidi),
+    };
+  }
+}
+
+function processSceneTrigger(payload: AudioPayload, node: GraphNode): AudioPayload {
+  const props = node.props as SceneTriggerProps;
+  const store = getGraphStore();
   
-  for (const interval of scale) {
-    const scaleChroma = (root + interval) % 12;
-    const d = Math.min(
-      Math.abs(chroma - scaleChroma),
-      12 - Math.abs(chroma - scaleChroma)
-    );
-    if (d < minDist) {
-      minDist = d;
-      nearestChroma = scaleChroma;
+  // Get all scenes to find the target by index
+  const scenes = store.getScenesArray();
+  
+  // Check if index is valid
+  if (props.targetSceneIndex >= 0 && props.targetSceneIndex < scenes.length) {
+    const targetScene = scenes[props.targetSceneIndex];
+    
+    if (targetScene) {
+      if (props.behavior === 'jump') {
+        // Immediate jump - use setTimeout to avoid modifying store during tick iteration
+        setTimeout(() => {
+          store.triggerSceneImmediate(targetScene.id);
+        }, 0);
+      } else {
+        // Queue for next quantize point (default to bar)
+        store.queueScene(targetScene.id, 'bar');
+      }
     }
   }
   
-  let quantized = octave * 12 + nearestChroma;
-  if (nearestChroma > chroma + 6) quantized -= 12;
-  else if (nearestChroma < chroma - 6) quantized += 12;
-  
-  const newMidi = clampMidi(quantized);
-  
-  return {
-    ...payload,
-    midiNote: newMidi,
-    freq: midiToFreq(newMidi),
-  };
+  return payload;
 }
 
 function processDelay(payload: AudioPayload, _node: GraphNode): AudioPayload {
@@ -286,7 +372,7 @@ function processTunnel(payload: AudioPayload, node: GraphNode): AudioPayload {
 function processLFO(payload: AudioPayload, node: GraphNode): AudioPayload {
   const props = node.props as {
     rate: number;
-    shape: 'sine' | 'triangle' | 'square' | 'sawtooth';
+    shape: 'sine' | 'triangle' | 'square' | 'sawtooth' | 'random' | 'noise';
     min: number;
     max: number;
     phase: number;
@@ -314,6 +400,16 @@ function processLFO(payload: AudioPayload, node: GraphNode): AudioPayload {
       break;
     case 'sawtooth':
       value = t % 1;
+      break;
+    case 'random':
+      // Sample and Hold: stable random value for each cycle
+      const cycle = Math.floor(t);
+      // Simple hash function for deterministic random per cycle
+      value = Math.abs(Math.sin(cycle * 12.9898 + 78.233) * 43758.5453) % 1;
+      break;
+    case 'noise':
+      // Pure white noise
+      value = Math.random();
       break;
     default:
       value = 0.5;

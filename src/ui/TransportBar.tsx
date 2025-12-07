@@ -74,9 +74,9 @@ export function TransportBar(): React.ReactElement {
         <button
           className={`${styles.modeButton} ${playbackMode === 'arrangement' ? styles.activeMode : ''}`}
           onClick={() => setPlaybackMode('arrangement')}
-          title="Arrangement Mode - Play through timeline"
+          title="Composition Mode - Play through timeline"
         >
-          📋 Arrange
+          📋 Compose
         </button>
         <button
           className={`${styles.modeButton} ${playbackMode === 'jam' ? styles.activeMode : ''}`}
@@ -93,7 +93,7 @@ export function TransportBar(): React.ReactElement {
       {/* Position display */}
       <div className={styles.positionDisplay}>
         <span className={styles.positionLabel}>
-          {playbackMode === 'arrangement' ? 'Arr' : 'Scene'}
+          {playbackMode === 'arrangement' ? 'Comp' : 'Scene'}
         </span>
         <span className={styles.positionValue}>{getPositionDisplay()}</span>
         {playbackMode === 'jam' && scenePlayback.sceneLoopIteration > 0 && (

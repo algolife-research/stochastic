@@ -631,14 +631,47 @@ function updatePackets(deltaTime: number): void {
       return; // Don't propagate immediately
     }
     
-    // Handle splitter entanglement
+    // Handle splitter entanglement and routing
     let entanglementGroupId = packet.entanglementGroupId;
+    let targetEdges = store.getOutgoingEdges(node.id);
+
     if (node.type === 'splitter') {
-      const props = node.props as { entangled?: boolean };
+      const props = node.props as { entangled?: boolean; behavior?: 'broadcast' | 'random' | 'weighted' };
+      
       if (props.entangled) {
         // Create new entanglement group for packets split here
         entanglementGroupId = crypto.randomUUID();
       }
+
+      // Handle routing behavior
+      if (props.behavior === 'random') {
+        // Pick one random edge
+        if (targetEdges.length > 0) {
+          const idx = Math.floor(Math.random() * targetEdges.length);
+          targetEdges = [targetEdges[idx]];
+        }
+      } else if (props.behavior === 'weighted') {
+        // Pick one edge based on weights
+        if (targetEdges.length > 0) {
+          let totalWeight = 0;
+          for (const edge of targetEdges) {
+            totalWeight += (edge.weight ?? 1);
+          }
+          
+          let r = Math.random() * totalWeight;
+          let selectedEdge = targetEdges[0];
+          
+          for (const edge of targetEdges) {
+            r -= (edge.weight ?? 1);
+            if (r <= 0) {
+              selectedEdge = edge;
+              break;
+            }
+          }
+          targetEdges = [selectedEdge];
+        }
+      }
+      // 'broadcast' is default (all edges)
     }
     
     // Sync payload to entangled packets (if this packet is entangled)
@@ -647,8 +680,7 @@ function updatePackets(deltaTime: number): void {
     }
     
     // Propagate to outgoing edges
-    const outgoingEdges = store.getOutgoingEdges(node.id);
-    outgoingEdges.forEach(outEdge => {
+    targetEdges.forEach(outEdge => {
       if (store.packets.size + packetsToSpawn.length < MAX_PACKETS) {
         const newPayload = { ...processedPayload };
         packetsToSpawn.push({
