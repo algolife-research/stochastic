@@ -3,6 +3,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getGraphStore } from '@core/store';
 import type { NodeType, NodeId } from '@core/types';
+import { 
+  TUNNEL_PRESETS, 
+  CATEGORY_LABELS, 
+  CATEGORY_ICONS,
+  type TunnelPresetCategory 
+} from '@data/tunnel-presets';
 import styles from './ContextMenu.module.css';
 
 // ============================================================================
@@ -80,7 +86,9 @@ export function ContextMenu(): React.ReactElement | null {
     type: 'canvas',
   });
   const [showAddSubmenu, setShowAddSubmenu] = useState(false);
+  const [showPresetSubmenu, setShowPresetSubmenu] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activePresetCategory, setActivePresetCategory] = useState<TunnelPresetCategory | null>(null);
   
   // Listen for context menu events
   useEffect(() => {
@@ -148,6 +156,8 @@ export function ContextMenu(): React.ReactElement | null {
         worldY,
       });
       setShowAddSubmenu(false);
+      setShowPresetSubmenu(false);
+      setActivePresetCategory(null);
     };
     
     // Handle edge drop event (when link dropped on empty canvas)
@@ -179,7 +189,9 @@ export function ContextMenu(): React.ReactElement | null {
         
         setState(s => ({ ...s, visible: false }));
         setShowAddSubmenu(false);
+        setShowPresetSubmenu(false);
         setActiveCategory(null);
+        setActivePresetCategory(null);
       }
     };
     
@@ -230,6 +242,57 @@ export function ContextMenu(): React.ReactElement | null {
     
     setState(s => ({ ...s, visible: false }));
     setShowAddSubmenu(false);
+    setShowPresetSubmenu(false);
+    setActivePresetCategory(null);
+  };
+  
+  const handleAddTunnelPreset = (presetId: string) => {
+    const store = getGraphStore();
+    const preset = TUNNEL_PRESETS.find(p => p.id === presetId);
+    if (!preset) return;
+    
+    let worldX: number;
+    let worldY: number;
+    
+    // Use saved world coordinates if available
+    if (state.worldX !== undefined && state.worldY !== undefined) {
+      worldX = state.worldX;
+      worldY = state.worldY;
+    } else {
+      // Convert menu position to world coordinates
+      const canvas = document.querySelector('.phonon-canvas') as HTMLCanvasElement;
+      if (!canvas) return;
+      
+      const { viewport } = store;
+      const rect = canvas.getBoundingClientRect();
+      const screenX = state.x - rect.left;
+      const screenY = state.y - rect.top;
+      worldX = (screenX - viewport.panOffset.x) / viewport.zoomLevel;
+      worldY = (screenY - viewport.panOffset.y) / viewport.zoomLevel;
+    }
+    
+    // Add tunnel node
+    const newNodeId = store.addNode('tunnel', worldX, worldY);
+    
+    // Apply preset props
+    store.updateNodeProps(newNodeId, {
+      tunnelName: preset.name,
+      subNodes: [...preset.subNodes],
+    });
+    
+    store.selectNode(newNodeId);
+    
+    // Create edge from pending link node if this is addFromEdge
+    if (state.type === 'addFromEdge' && store.pendingLinkNodeId) {
+      store.addEdge(store.pendingLinkNodeId, newNodeId);
+      store.setPendingLinkNode(null);
+      store.setContextMenuPos(null, null);
+    }
+    
+    setState(s => ({ ...s, visible: false }));
+    setShowAddSubmenu(false);
+    setShowPresetSubmenu(false);
+    setActivePresetCategory(null);
   };
   
   const handleLink = () => {
@@ -292,7 +355,7 @@ export function ContextMenu(): React.ReactElement | null {
         <>
           <div 
             className={styles.menuItem}
-            onMouseEnter={() => setShowAddSubmenu(true)}
+            onMouseEnter={() => { setShowAddSubmenu(true); setShowPresetSubmenu(false); }}
             onMouseLeave={() => { setShowAddSubmenu(false); setActiveCategory(null); }}
           >
             Add Node ▸
@@ -320,6 +383,43 @@ export function ContextMenu(): React.ReactElement | null {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+          <div 
+            className={styles.menuItem}
+            onMouseEnter={() => { setShowPresetSubmenu(true); setShowAddSubmenu(false); }}
+            onMouseLeave={() => { setShowPresetSubmenu(false); setActivePresetCategory(null); }}
+          >
+            <span className={styles.icon}>📦</span> Tunnel Presets ▸
+            {showPresetSubmenu && (
+              <div className={styles.submenu}>
+                {(['melodic', 'bass', 'pad', 'keys', 'percussion', 'fx'] as TunnelPresetCategory[]).map((category) => {
+                  const presetsInCategory = TUNNEL_PRESETS.filter(p => p.category === category);
+                  return (
+                    <div 
+                      key={category}
+                      className={styles.menuItem}
+                      onMouseEnter={() => setActivePresetCategory(category)}
+                    >
+                      <span className={styles.icon}>{CATEGORY_ICONS[category]}</span> {CATEGORY_LABELS[category]} ▸
+                      {activePresetCategory === category && (
+                        <div className={styles.submenu}>
+                          {presetsInCategory.map((preset) => (
+                            <div 
+                              key={preset.id}
+                              className={styles.menuItem}
+                              onClick={() => handleAddTunnelPreset(preset.id)}
+                              title={preset.description}
+                            >
+                              {preset.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -362,7 +462,7 @@ export function ContextMenu(): React.ReactElement | null {
             <div 
               key={category.name}
               className={styles.menuItem}
-              onMouseEnter={() => setActiveCategory(category.name)}
+              onMouseEnter={() => { setActiveCategory(category.name); setActivePresetCategory(null); }}
               onMouseLeave={() => setActiveCategory(null)}
             >
               {category.name} ▸
@@ -381,6 +481,44 @@ export function ContextMenu(): React.ReactElement | null {
               )}
             </div>
           ))}
+          <div className={styles.divider} />
+          <div 
+            className={styles.menuItem}
+            onMouseEnter={() => { setShowPresetSubmenu(true); setActiveCategory(null); }}
+            onMouseLeave={() => { setShowPresetSubmenu(false); setActivePresetCategory(null); }}
+          >
+            <span className={styles.icon}>📦</span> Tunnel Presets ▸
+            {showPresetSubmenu && (
+              <div className={styles.submenu}>
+                {(['melodic', 'bass', 'pad', 'keys', 'percussion', 'fx'] as TunnelPresetCategory[]).map((category) => {
+                  const presetsInCategory = TUNNEL_PRESETS.filter(p => p.category === category);
+                  return (
+                    <div 
+                      key={category}
+                      className={styles.menuItem}
+                      onMouseEnter={() => setActivePresetCategory(category)}
+                    >
+                      <span className={styles.icon}>{CATEGORY_ICONS[category]}</span> {CATEGORY_LABELS[category]} ▸
+                      {activePresetCategory === category && (
+                        <div className={styles.submenu}>
+                          {presetsInCategory.map((preset) => (
+                            <div 
+                              key={preset.id}
+                              className={styles.menuItem}
+                              onClick={() => handleAddTunnelPreset(preset.id)}
+                              title={preset.description}
+                            >
+                              {preset.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

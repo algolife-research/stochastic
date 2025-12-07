@@ -1,30 +1,49 @@
 // Phonon v2 - Example Compositions
 
-import type { NodeType } from '@core/types';
+import type { NodeType, ScaleName } from '@core/types';
 
 // ============================================================================
 // EXAMPLE TYPE
 // ============================================================================
 
+export interface ExampleNode {
+  id: string;
+  type: NodeType;
+  x: number;
+  y: number;
+  props: Record<string, unknown>;
+}
+
+export interface ExampleEdge {
+  id: string;
+  from: string;
+  to: string;
+  timingMode?: 'physical' | 'fixed';
+  durationBeats?: number;
+  targetParam?: string;
+}
+
+export interface ExampleScene {
+  name: string;
+  color: string;
+  durationBeats: number;
+  loopCount: number;
+  localBpm?: number | null;
+  localRoot?: number | null;
+  localScale?: ScaleName | null;
+  nodes: ExampleNode[];
+  edges: ExampleEdge[];
+}
+
 export interface Example {
   name: string;
   description: string;
   bpm: number;
-  nodes: Array<{
-    id: string;
-    type: NodeType;
-    x: number;
-    y: number;
-    props: Record<string, unknown>;
-  }>;
-  edges: Array<{
-    id: string;
-    from: string;
-    to: string;
-    timingMode?: 'physical' | 'fixed';
-    durationBeats?: number;
-    targetParam?: string;
-  }>;
+  // Single-scene examples (legacy format)
+  nodes?: ExampleNode[];
+  edges?: ExampleEdge[];
+  // Multi-scene examples
+  scenes?: ExampleScene[];
 }
 
 // ============================================================================
@@ -1597,6 +1616,628 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "e2a", from: "src2", to: "pol2" }, { id: "e2b", from: "pol2", to: "sustained" },
       { id: "e3a", from: "src3", to: "pol3" }, { id: "e3b", from: "pol3", to: "organ" }
     ]
+  },
+
+  // ============================================================================
+  // ORCHESTRAL: Pachelbel's Canon in D
+  // ============================================================================
+  // 
+  // The Canon structure:
+  // - Ground Bass: D-A-B-F#-G-D-G-A (8 notes, 2 beats each = 16 beat cycle)
+  // - Canon Melody: Same 8-note phrase enters on each voice at 16-beat intervals
+  // - At 60 BPM: 16 beats = 16 seconds per cycle
+  //
+  // Architecture: Single trigger source → splitter → delayed voices
+  // Each voice gets the same melodic block, staggered by 16 beats
+  // ============================================================================
+  
+  pachelbel_canon: {
+    name: "Orchestral: Canon in D",
+    description: "Pachelbel's Canon - Ground bass (D-A-B-F#-G-D-G-A) with canon melody entering on staggered string voices. One trigger starts the 8-note sequence that cascades through all voices.",
+    bpm: 60,
+    nodes: [
+      // =====================================================================
+      // GROUND BASS - 8 notes in sequence using delays
+      // D(38)-A(33)-B(35)-F#(30)-G(31)-D(38)-G(31)-A(33)
+      // Each note 2 beats apart, total cycle = 16 beats
+      // =====================================================================
+      { id: "bass_trigger", type: "source", x: 60, y: 700, props: { interval: 16, midiNote: 38, intensity: 0.55 } },
+      { id: "bass_split", type: "splitter", x: 140, y: 700, props: {} },
+      
+      // Note 1: D (beat 0) - direct from source
+      { id: "bass_d1", type: "pitch", x: 220, y: 600, props: { mode: 'set', shift: 0, fixedMidiNote: 38 } },
+      // Note 2: A (beat 2)
+      { id: "bass_del2", type: "delay", x: 220, y: 640, props: { delayTime: 2 } },
+      { id: "bass_a1", type: "pitch", x: 300, y: 640, props: { mode: 'set', shift: 0, fixedMidiNote: 33 } },
+      // Note 3: B (beat 4)
+      { id: "bass_del3", type: "delay", x: 220, y: 680, props: { delayTime: 4 } },
+      { id: "bass_b1", type: "pitch", x: 300, y: 680, props: { mode: 'set', shift: 0, fixedMidiNote: 35 } },
+      // Note 4: F# (beat 6)
+      { id: "bass_del4", type: "delay", x: 220, y: 720, props: { delayTime: 6 } },
+      { id: "bass_fs", type: "pitch", x: 300, y: 720, props: { mode: 'set', shift: 0, fixedMidiNote: 30 } },
+      // Note 5: G (beat 8)
+      { id: "bass_del5", type: "delay", x: 220, y: 760, props: { delayTime: 8 } },
+      { id: "bass_g1", type: "pitch", x: 300, y: 760, props: { mode: 'set', shift: 0, fixedMidiNote: 31 } },
+      // Note 6: D (beat 10)
+      { id: "bass_del6", type: "delay", x: 220, y: 800, props: { delayTime: 10 } },
+      { id: "bass_d2", type: "pitch", x: 300, y: 800, props: { mode: 'set', shift: 0, fixedMidiNote: 38 } },
+      // Note 7: G (beat 12)
+      { id: "bass_del7", type: "delay", x: 220, y: 840, props: { delayTime: 12 } },
+      { id: "bass_g2", type: "pitch", x: 300, y: 840, props: { mode: 'set', shift: 0, fixedMidiNote: 31 } },
+      // Note 8: A (beat 14)
+      { id: "bass_del8", type: "delay", x: 220, y: 880, props: { delayTime: 14 } },
+      { id: "bass_a2", type: "pitch", x: 300, y: 880, props: { mode: 'set', shift: 0, fixedMidiNote: 33 } },
+      
+      // Bass instrument (shared by all bass notes)
+      { id: "bass_tun", type: "tunnel", x: 420, y: 740, props: {
+        tunnelName: "Contrabass",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.28, decay: 1.8, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.32, decay: 1.6, mix: 0.22 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.25, decay: 1.5, mix: 0.45 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.22, decay: 1.3, mix: 0.2 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.3, decay: 1.2, mix: 0.04 } },
+          { type: 'modulator', props: { rate: 4.2, depth: 12, delay: 0.7 } },
+          { type: 'filter', props: { cutoff: 700, mod: 400, attack: 0.2, decay: 1.2 } }
+        ]
+      }},
+      { id: "bass_out", type: "speaker", x: 560, y: 740, props: { reverb: 0.45, pan: 0 } },
+      
+      // =====================================================================
+      // CANON MELODY - 8 notes: F#-E-D-C#-B-A-B-C# (one octave up)
+      // Same structure, but enters on violin voices at staggered times
+      // Voice 1 (Violin 1): immediate
+      // Voice 2 (Violin 2): +16 beats (next cycle)
+      // Voice 3 (Viola): +32 beats
+      // =====================================================================
+      
+      // Melody trigger - fires every 16 beats
+      { id: "mel_trigger", type: "source", x: 60, y: 100, props: { interval: 16, midiNote: 66, intensity: 0.5 } },
+      { id: "mel_split", type: "splitter", x: 140, y: 100, props: {} },
+      
+      // ========== VIOLIN 1 (enters immediately) ==========
+      { id: "v1_split", type: "splitter", x: 220, y: 60, props: {} },
+      // 8 melody notes for Violin 1
+      { id: "v1_n1", type: "pitch", x: 300, y: 20, props: { mode: 'set', shift: 0, fixedMidiNote: 78 } },  // F#5
+      { id: "v1_d2", type: "delay", x: 300, y: 40, props: { delayTime: 2 } },
+      { id: "v1_n2", type: "pitch", x: 380, y: 40, props: { mode: 'set', shift: 0, fixedMidiNote: 76 } },  // E5
+      { id: "v1_d3", type: "delay", x: 300, y: 60, props: { delayTime: 4 } },
+      { id: "v1_n3", type: "pitch", x: 380, y: 60, props: { mode: 'set', shift: 0, fixedMidiNote: 74 } },  // D5
+      { id: "v1_d4", type: "delay", x: 300, y: 80, props: { delayTime: 6 } },
+      { id: "v1_n4", type: "pitch", x: 380, y: 80, props: { mode: 'set', shift: 0, fixedMidiNote: 73 } },  // C#5
+      { id: "v1_d5", type: "delay", x: 300, y: 100, props: { delayTime: 8 } },
+      { id: "v1_n5", type: "pitch", x: 380, y: 100, props: { mode: 'set', shift: 0, fixedMidiNote: 71 } }, // B4
+      { id: "v1_d6", type: "delay", x: 300, y: 120, props: { delayTime: 10 } },
+      { id: "v1_n6", type: "pitch", x: 380, y: 120, props: { mode: 'set', shift: 0, fixedMidiNote: 69 } }, // A4
+      { id: "v1_d7", type: "delay", x: 300, y: 140, props: { delayTime: 12 } },
+      { id: "v1_n7", type: "pitch", x: 380, y: 140, props: { mode: 'set', shift: 0, fixedMidiNote: 71 } }, // B4
+      { id: "v1_d8", type: "delay", x: 300, y: 160, props: { delayTime: 14 } },
+      { id: "v1_n8", type: "pitch", x: 380, y: 160, props: { mode: 'set', shift: 0, fixedMidiNote: 73 } }, // C#5
+      
+      { id: "v1_tun", type: "tunnel", x: 500, y: 90, props: {
+        tunnelName: "Violin 1",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.28, decay: 1.6, mix: 0.35 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.22, decay: 1.4, mix: 0.25 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.2, mix: 0.12 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.3, decay: 1.0, mix: 0.04 } },
+          { type: 'modulator', props: { rate: 5.2, depth: 18, delay: 0.5 } },
+          { type: 'filter', props: { cutoff: 2800, mod: 1200, attack: 0.2, decay: 1.0 } }
+        ]
+      }},
+      { id: "v1_out", type: "speaker", x: 640, y: 90, props: { reverb: 0.55, pan: -0.35 } },
+      
+      // ========== VIOLIN 2 (enters at beat 16 - one cycle later) ==========
+      { id: "v2_entry", type: "delay", x: 220, y: 220, props: { delayTime: 16 } },
+      { id: "v2_split", type: "splitter", x: 300, y: 220, props: {} },
+      // 8 melody notes for Violin 2 (same pitches, delayed)
+      { id: "v2_n1", type: "pitch", x: 380, y: 180, props: { mode: 'set', shift: 0, fixedMidiNote: 78 } },
+      { id: "v2_d2", type: "delay", x: 380, y: 200, props: { delayTime: 2 } },
+      { id: "v2_n2", type: "pitch", x: 460, y: 200, props: { mode: 'set', shift: 0, fixedMidiNote: 76 } },
+      { id: "v2_d3", type: "delay", x: 380, y: 220, props: { delayTime: 4 } },
+      { id: "v2_n3", type: "pitch", x: 460, y: 220, props: { mode: 'set', shift: 0, fixedMidiNote: 74 } },
+      { id: "v2_d4", type: "delay", x: 380, y: 240, props: { delayTime: 6 } },
+      { id: "v2_n4", type: "pitch", x: 460, y: 240, props: { mode: 'set', shift: 0, fixedMidiNote: 73 } },
+      { id: "v2_d5", type: "delay", x: 380, y: 260, props: { delayTime: 8 } },
+      { id: "v2_n5", type: "pitch", x: 460, y: 260, props: { mode: 'set', shift: 0, fixedMidiNote: 71 } },
+      { id: "v2_d6", type: "delay", x: 380, y: 280, props: { delayTime: 10 } },
+      { id: "v2_n6", type: "pitch", x: 460, y: 280, props: { mode: 'set', shift: 0, fixedMidiNote: 69 } },
+      { id: "v2_d7", type: "delay", x: 380, y: 300, props: { delayTime: 12 } },
+      { id: "v2_n7", type: "pitch", x: 460, y: 300, props: { mode: 'set', shift: 0, fixedMidiNote: 71 } },
+      { id: "v2_d8", type: "delay", x: 380, y: 320, props: { delayTime: 14 } },
+      { id: "v2_n8", type: "pitch", x: 460, y: 320, props: { mode: 'set', shift: 0, fixedMidiNote: 73 } },
+      
+      { id: "v2_tun", type: "tunnel", x: 580, y: 250, props: {
+        tunnelName: "Violin 2",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.28, decay: 1.6, mix: 0.35 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.22, decay: 1.4, mix: 0.25 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.2, mix: 0.12 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.3, decay: 1.0, mix: 0.04 } },
+          { type: 'modulator', props: { rate: 5.3, depth: 17, delay: 0.5 } },
+          { type: 'filter', props: { cutoff: 2800, mod: 1200, attack: 0.2, decay: 1.0 } }
+        ]
+      }},
+      { id: "v2_out", type: "speaker", x: 720, y: 250, props: { reverb: 0.55, pan: 0.35 } },
+      
+      // ========== VIOLA (enters at beat 32 - two cycles later, octave lower) ==========
+      { id: "va_entry", type: "delay", x: 220, y: 400, props: { delayTime: 32 } },
+      { id: "va_split", type: "splitter", x: 300, y: 400, props: {} },
+      // 8 melody notes for Viola (one octave lower: 66-64-62-61-59-57-59-61)
+      { id: "va_n1", type: "pitch", x: 380, y: 360, props: { mode: 'set', shift: 0, fixedMidiNote: 66 } },  // F#4
+      { id: "va_d2", type: "delay", x: 380, y: 380, props: { delayTime: 2 } },
+      { id: "va_n2", type: "pitch", x: 460, y: 380, props: { mode: 'set', shift: 0, fixedMidiNote: 64 } },  // E4
+      { id: "va_d3", type: "delay", x: 380, y: 400, props: { delayTime: 4 } },
+      { id: "va_n3", type: "pitch", x: 460, y: 400, props: { mode: 'set', shift: 0, fixedMidiNote: 62 } },  // D4
+      { id: "va_d4", type: "delay", x: 380, y: 420, props: { delayTime: 6 } },
+      { id: "va_n4", type: "pitch", x: 460, y: 420, props: { mode: 'set', shift: 0, fixedMidiNote: 61 } },  // C#4
+      { id: "va_d5", type: "delay", x: 380, y: 440, props: { delayTime: 8 } },
+      { id: "va_n5", type: "pitch", x: 460, y: 440, props: { mode: 'set', shift: 0, fixedMidiNote: 59 } },  // B3
+      { id: "va_d6", type: "delay", x: 380, y: 460, props: { delayTime: 10 } },
+      { id: "va_n6", type: "pitch", x: 460, y: 460, props: { mode: 'set', shift: 0, fixedMidiNote: 57 } },  // A3
+      { id: "va_d7", type: "delay", x: 380, y: 480, props: { delayTime: 12 } },
+      { id: "va_n7", type: "pitch", x: 460, y: 480, props: { mode: 'set', shift: 0, fixedMidiNote: 59 } },  // B3
+      { id: "va_d8", type: "delay", x: 380, y: 500, props: { delayTime: 14 } },
+      { id: "va_n8", type: "pitch", x: 460, y: 500, props: { mode: 'set', shift: 0, fixedMidiNote: 61 } },  // C#4
+      
+      { id: "va_tun", type: "tunnel", x: 580, y: 430, props: {
+        tunnelName: "Viola",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.2, decay: 1.7, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.23, decay: 1.5, mix: 0.28 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.18, decay: 1.4, mix: 0.35 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.15, decay: 1.2, mix: 0.18 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.22, decay: 1.0, mix: 0.03 } },
+          { type: 'modulator', props: { rate: 5.0, depth: 20, delay: 0.55 } },
+          { type: 'filter', props: { cutoff: 2200, mod: 1100, attack: 0.16, decay: 0.9 } }
+        ]
+      }},
+      { id: "va_out", type: "speaker", x: 720, y: 430, props: { reverb: 0.5, pan: 0 } },
+      
+      // ========== CELLO (enters at beat 48 - three cycles later, two octaves lower) ==========
+      { id: "vc_entry", type: "delay", x: 220, y: 560, props: { delayTime: 48 } },
+      { id: "vc_split", type: "splitter", x: 300, y: 560, props: {} },
+      // 8 melody notes for Cello (two octaves lower: 54-52-50-49-47-45-47-49)
+      { id: "vc_n1", type: "pitch", x: 380, y: 520, props: { mode: 'set', shift: 0, fixedMidiNote: 54 } },  // F#3
+      { id: "vc_d2", type: "delay", x: 380, y: 540, props: { delayTime: 2 } },
+      { id: "vc_n2", type: "pitch", x: 460, y: 540, props: { mode: 'set', shift: 0, fixedMidiNote: 52 } },  // E3
+      { id: "vc_d3", type: "delay", x: 380, y: 560, props: { delayTime: 4 } },
+      { id: "vc_n3", type: "pitch", x: 460, y: 560, props: { mode: 'set', shift: 0, fixedMidiNote: 50 } },  // D3
+      { id: "vc_d4", type: "delay", x: 380, y: 580, props: { delayTime: 6 } },
+      { id: "vc_n4", type: "pitch", x: 460, y: 580, props: { mode: 'set', shift: 0, fixedMidiNote: 49 } },  // C#3
+      { id: "vc_d5", type: "delay", x: 380, y: 600, props: { delayTime: 8 } },
+      { id: "vc_n5", type: "pitch", x: 460, y: 600, props: { mode: 'set', shift: 0, fixedMidiNote: 47 } },  // B2
+      { id: "vc_d6", type: "delay", x: 380, y: 620, props: { delayTime: 10 } },
+      { id: "vc_n6", type: "pitch", x: 460, y: 620, props: { mode: 'set', shift: 0, fixedMidiNote: 45 } },  // A2
+      { id: "vc_d7", type: "delay", x: 380, y: 640, props: { delayTime: 12 } },
+      { id: "vc_n7", type: "pitch", x: 460, y: 640, props: { mode: 'set', shift: 0, fixedMidiNote: 47 } },  // B2
+      { id: "vc_d8", type: "delay", x: 380, y: 660, props: { delayTime: 14 } },
+      { id: "vc_n8", type: "pitch", x: 460, y: 660, props: { mode: 'set', shift: 0, fixedMidiNote: 49 } },  // C#3
+      
+      { id: "vc_tun", type: "tunnel", x: 580, y: 590, props: {
+        tunnelName: "Cello",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.22, decay: 2.0, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 0.25 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.2, decay: 1.6, mix: 0.4 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.4, mix: 0.25 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.25, decay: 1.2, mix: 0.035 } },
+          { type: 'modulator', props: { rate: 4.8, depth: 22, delay: 0.6 } },
+          { type: 'filter', props: { cutoff: 1600, mod: 1000, attack: 0.18, decay: 1.2 } }
+        ]
+      }},
+      { id: "vc_out", type: "speaker", x: 720, y: 590, props: { reverb: 0.5, pan: -0.2 } }
+    ],
+    edges: [
+      // ===== BASS LINE =====
+      { id: "eb1", from: "bass_trigger", to: "bass_split" },
+      { id: "eb2", from: "bass_split", to: "bass_d1" },
+      { id: "eb3", from: "bass_split", to: "bass_del2" }, { id: "eb3b", from: "bass_del2", to: "bass_a1" },
+      { id: "eb4", from: "bass_split", to: "bass_del3" }, { id: "eb4b", from: "bass_del3", to: "bass_b1" },
+      { id: "eb5", from: "bass_split", to: "bass_del4" }, { id: "eb5b", from: "bass_del4", to: "bass_fs" },
+      { id: "eb6", from: "bass_split", to: "bass_del5" }, { id: "eb6b", from: "bass_del5", to: "bass_g1" },
+      { id: "eb7", from: "bass_split", to: "bass_del6" }, { id: "eb7b", from: "bass_del6", to: "bass_d2" },
+      { id: "eb8", from: "bass_split", to: "bass_del7" }, { id: "eb8b", from: "bass_del7", to: "bass_g2" },
+      { id: "eb9", from: "bass_split", to: "bass_del8" }, { id: "eb9b", from: "bass_del8", to: "bass_a2" },
+      // All bass notes → instrument → speaker
+      { id: "ebt1", from: "bass_d1", to: "bass_tun" },
+      { id: "ebt2", from: "bass_a1", to: "bass_tun" },
+      { id: "ebt3", from: "bass_b1", to: "bass_tun" },
+      { id: "ebt4", from: "bass_fs", to: "bass_tun" },
+      { id: "ebt5", from: "bass_g1", to: "bass_tun" },
+      { id: "ebt6", from: "bass_d2", to: "bass_tun" },
+      { id: "ebt7", from: "bass_g2", to: "bass_tun" },
+      { id: "ebt8", from: "bass_a2", to: "bass_tun" },
+      { id: "ebout", from: "bass_tun", to: "bass_out" },
+      
+      // ===== MELODY TRIGGER → VOICES =====
+      { id: "em1", from: "mel_trigger", to: "mel_split" },
+      // Voice routing
+      { id: "em_v1", from: "mel_split", to: "v1_split" },
+      { id: "em_v2", from: "mel_split", to: "v2_entry" }, { id: "em_v2b", from: "v2_entry", to: "v2_split" },
+      { id: "em_va", from: "mel_split", to: "va_entry" }, { id: "em_vab", from: "va_entry", to: "va_split" },
+      { id: "em_vc", from: "mel_split", to: "vc_entry" }, { id: "em_vcb", from: "vc_entry", to: "vc_split" },
+      
+      // ===== VIOLIN 1 NOTES =====
+      { id: "ev1_1", from: "v1_split", to: "v1_n1" },
+      { id: "ev1_2", from: "v1_split", to: "v1_d2" }, { id: "ev1_2b", from: "v1_d2", to: "v1_n2" },
+      { id: "ev1_3", from: "v1_split", to: "v1_d3" }, { id: "ev1_3b", from: "v1_d3", to: "v1_n3" },
+      { id: "ev1_4", from: "v1_split", to: "v1_d4" }, { id: "ev1_4b", from: "v1_d4", to: "v1_n4" },
+      { id: "ev1_5", from: "v1_split", to: "v1_d5" }, { id: "ev1_5b", from: "v1_d5", to: "v1_n5" },
+      { id: "ev1_6", from: "v1_split", to: "v1_d6" }, { id: "ev1_6b", from: "v1_d6", to: "v1_n6" },
+      { id: "ev1_7", from: "v1_split", to: "v1_d7" }, { id: "ev1_7b", from: "v1_d7", to: "v1_n7" },
+      { id: "ev1_8", from: "v1_split", to: "v1_d8" }, { id: "ev1_8b", from: "v1_d8", to: "v1_n8" },
+      { id: "ev1_t1", from: "v1_n1", to: "v1_tun" }, { id: "ev1_t2", from: "v1_n2", to: "v1_tun" },
+      { id: "ev1_t3", from: "v1_n3", to: "v1_tun" }, { id: "ev1_t4", from: "v1_n4", to: "v1_tun" },
+      { id: "ev1_t5", from: "v1_n5", to: "v1_tun" }, { id: "ev1_t6", from: "v1_n6", to: "v1_tun" },
+      { id: "ev1_t7", from: "v1_n7", to: "v1_tun" }, { id: "ev1_t8", from: "v1_n8", to: "v1_tun" },
+      { id: "ev1_out", from: "v1_tun", to: "v1_out" },
+      
+      // ===== VIOLIN 2 NOTES =====
+      { id: "ev2_1", from: "v2_split", to: "v2_n1" },
+      { id: "ev2_2", from: "v2_split", to: "v2_d2" }, { id: "ev2_2b", from: "v2_d2", to: "v2_n2" },
+      { id: "ev2_3", from: "v2_split", to: "v2_d3" }, { id: "ev2_3b", from: "v2_d3", to: "v2_n3" },
+      { id: "ev2_4", from: "v2_split", to: "v2_d4" }, { id: "ev2_4b", from: "v2_d4", to: "v2_n4" },
+      { id: "ev2_5", from: "v2_split", to: "v2_d5" }, { id: "ev2_5b", from: "v2_d5", to: "v2_n5" },
+      { id: "ev2_6", from: "v2_split", to: "v2_d6" }, { id: "ev2_6b", from: "v2_d6", to: "v2_n6" },
+      { id: "ev2_7", from: "v2_split", to: "v2_d7" }, { id: "ev2_7b", from: "v2_d7", to: "v2_n7" },
+      { id: "ev2_8", from: "v2_split", to: "v2_d8" }, { id: "ev2_8b", from: "v2_d8", to: "v2_n8" },
+      { id: "ev2_t1", from: "v2_n1", to: "v2_tun" }, { id: "ev2_t2", from: "v2_n2", to: "v2_tun" },
+      { id: "ev2_t3", from: "v2_n3", to: "v2_tun" }, { id: "ev2_t4", from: "v2_n4", to: "v2_tun" },
+      { id: "ev2_t5", from: "v2_n5", to: "v2_tun" }, { id: "ev2_t6", from: "v2_n6", to: "v2_tun" },
+      { id: "ev2_t7", from: "v2_n7", to: "v2_tun" }, { id: "ev2_t8", from: "v2_n8", to: "v2_tun" },
+      { id: "ev2_out", from: "v2_tun", to: "v2_out" },
+      
+      // ===== VIOLA NOTES =====
+      { id: "eva_1", from: "va_split", to: "va_n1" },
+      { id: "eva_2", from: "va_split", to: "va_d2" }, { id: "eva_2b", from: "va_d2", to: "va_n2" },
+      { id: "eva_3", from: "va_split", to: "va_d3" }, { id: "eva_3b", from: "va_d3", to: "va_n3" },
+      { id: "eva_4", from: "va_split", to: "va_d4" }, { id: "eva_4b", from: "va_d4", to: "va_n4" },
+      { id: "eva_5", from: "va_split", to: "va_d5" }, { id: "eva_5b", from: "va_d5", to: "va_n5" },
+      { id: "eva_6", from: "va_split", to: "va_d6" }, { id: "eva_6b", from: "va_d6", to: "va_n6" },
+      { id: "eva_7", from: "va_split", to: "va_d7" }, { id: "eva_7b", from: "va_d7", to: "va_n7" },
+      { id: "eva_8", from: "va_split", to: "va_d8" }, { id: "eva_8b", from: "va_d8", to: "va_n8" },
+      { id: "eva_t1", from: "va_n1", to: "va_tun" }, { id: "eva_t2", from: "va_n2", to: "va_tun" },
+      { id: "eva_t3", from: "va_n3", to: "va_tun" }, { id: "eva_t4", from: "va_n4", to: "va_tun" },
+      { id: "eva_t5", from: "va_n5", to: "va_tun" }, { id: "eva_t6", from: "va_n6", to: "va_tun" },
+      { id: "eva_t7", from: "va_n7", to: "va_tun" }, { id: "eva_t8", from: "va_n8", to: "va_tun" },
+      { id: "eva_out", from: "va_tun", to: "va_out" },
+      
+      // ===== CELLO NOTES =====
+      { id: "evc_1", from: "vc_split", to: "vc_n1" },
+      { id: "evc_2", from: "vc_split", to: "vc_d2" }, { id: "evc_2b", from: "vc_d2", to: "vc_n2" },
+      { id: "evc_3", from: "vc_split", to: "vc_d3" }, { id: "evc_3b", from: "vc_d3", to: "vc_n3" },
+      { id: "evc_4", from: "vc_split", to: "vc_d4" }, { id: "evc_4b", from: "vc_d4", to: "vc_n4" },
+      { id: "evc_5", from: "vc_split", to: "vc_d5" }, { id: "evc_5b", from: "vc_d5", to: "vc_n5" },
+      { id: "evc_6", from: "vc_split", to: "vc_d6" }, { id: "evc_6b", from: "vc_d6", to: "vc_n6" },
+      { id: "evc_7", from: "vc_split", to: "vc_d7" }, { id: "evc_7b", from: "vc_d7", to: "vc_n7" },
+      { id: "evc_8", from: "vc_split", to: "vc_d8" }, { id: "evc_8b", from: "vc_d8", to: "vc_n8" },
+      { id: "evc_t1", from: "vc_n1", to: "vc_tun" }, { id: "evc_t2", from: "vc_n2", to: "vc_tun" },
+      { id: "evc_t3", from: "vc_n3", to: "vc_tun" }, { id: "evc_t4", from: "vc_n4", to: "vc_tun" },
+      { id: "evc_t5", from: "vc_n5", to: "vc_tun" }, { id: "evc_t6", from: "vc_n6", to: "vc_tun" },
+      { id: "evc_t7", from: "vc_n7", to: "vc_tun" }, { id: "evc_t8", from: "vc_n8", to: "vc_tun" },
+      { id: "evc_out", from: "vc_tun", to: "vc_out" }
+    ]
+  },
+
+  // ============================================================================
+  // ORCHESTRAL: Bolero-Style Build
+  // ============================================================================
+  
+  orchestral_bolero: {
+    name: "Orchestral: Bolero Build",
+    description: "Inspired by Ravel's Bolero - a hypnotic repetitive melody that builds with layered orchestration. Start minimal, then unmute voices progressively.",
+    bpm: 72,
+    nodes: [
+      // ========== SNARE DRUM OSTINATO ==========
+      { id: "drum_src", type: "source", x: 60, y: 100, props: { interval: 0.5, midiNote: 60, intensity: 0.25 } },
+      { id: "drum_tun", type: "tunnel", x: 180, y: 100, props: {
+        tunnelName: "Snare",
+        subNodes: [
+          { type: 'noise', props: { wave: 'white', attack: 0.001, decay: 0.08, mix: 0.6 } },
+          { type: 'polariser', props: { wave: 'triangle', attack: 0.001, decay: 0.06, mix: 0.4 } },
+          { type: 'filter', props: { cutoff: 3000, mod: 1500, attack: 0.001, decay: 0.05 } }
+        ]
+      }},
+      { id: "drum_out", type: "speaker", x: 320, y: 100, props: { reverb: 0.15, pan: 0 } },
+      
+      // ========== FLUTE (First Statement) ==========
+      { id: "flute_src", type: "source", x: 60, y: 200, props: { interval: 4, midiNote: 72, intensity: 0.45 } },
+      { id: "flute_tun", type: "tunnel", x: 200, y: 200, props: {
+        tunnelName: "Flute",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sine', attack: 0.1, decay: 1.0, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'triangle', attack: 0.12, decay: 0.9, mix: 0.1 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.1, decay: 0.8, mix: 0.18 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.08, decay: 0.6, mix: 0.06 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.06, decay: 0.35, mix: 0.1 } },
+          { type: 'modulator', props: { rate: 5.5, depth: 15, delay: 0.35 } },
+          { type: 'filter', props: { cutoff: 4500, mod: 800, attack: 0.08, decay: 0.6 } }
+        ]
+      }},
+      { id: "flute_out", type: "speaker", x: 360, y: 200, props: { reverb: 0.4, pan: -0.3 } },
+      
+      // ========== CLARINET (Second Voice) ==========
+      { id: "clar_src", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 67, intensity: 0.4 } },
+      { id: "clar_delay", type: "delay", x: 160, y: 300, props: { delayTime: 0.25 } },
+      { id: "clar_tun", type: "tunnel", x: 280, y: 300, props: {
+        tunnelName: "Clarinet",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'square', attack: 0.06, decay: 0.85, mix: 1.0 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.05, decay: 0.7, mix: 0.5 } },
+          { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.04, decay: 0.6, mix: 0.3 } },
+          { type: 'harmonic', props: { ratio: 7, wave: 'sine', attack: 0.03, decay: 0.5, mix: 0.15 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.05, decay: 0.65, mix: 0.08 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.04, decay: 0.15, mix: 0.03 } },
+          { type: 'modulator', props: { rate: 5.0, depth: 12, delay: 0.4 } },
+          { type: 'filter', props: { cutoff: 1800, mod: 800, attack: 0.05, decay: 0.5 } }
+        ]
+      }},
+      { id: "clar_out", type: "speaker", x: 420, y: 300, props: { reverb: 0.4, pan: 0.3 } },
+      
+      // ========== OBOE (Counter-melody) ==========
+      { id: "oboe_src", type: "source", x: 60, y: 400, props: { interval: 2, midiNote: 76, intensity: 0.4 } },
+      { id: "oboe_gate", type: "gate", x: 160, y: 400, props: { prob: 0.7 } },
+      { id: "oboe_tun", type: "tunnel", x: 280, y: 400, props: {
+        tunnelName: "Oboe",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.08, decay: 0.9, mix: 1.0 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.07, decay: 0.8, mix: 0.55 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.06, decay: 0.7, mix: 0.4 } },
+          { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.05, decay: 0.6, mix: 0.28 } },
+          { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.04, decay: 0.5, mix: 0.18 } },
+          { type: 'harmonic', props: { ratio: 6, wave: 'sine', attack: 0.03, decay: 0.4, mix: 0.1 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.05, decay: 0.25, mix: 0.04 } },
+          { type: 'modulator', props: { rate: 5.5, depth: 25, delay: 0.3 } },
+          { type: 'filter', props: { cutoff: 2200, mod: 1000, attack: 0.06, decay: 0.5 } }
+        ]
+      }},
+      { id: "oboe_out", type: "speaker", x: 420, y: 400, props: { reverb: 0.45, pan: -0.2 } },
+      
+      // ========== FRENCH HORN (Sustained Harmony) ==========
+      { id: "horn_src", type: "source", x: 500, y: 200, props: { interval: 8, midiNote: 60, intensity: 0.5 } },
+      { id: "horn_tun", type: "tunnel", x: 640, y: 200, props: {
+        tunnelName: "French Horn",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.15, decay: 1.4, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'triangle', attack: 0.18, decay: 1.2, mix: 0.2 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.14, decay: 1.1, mix: 0.5 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.12, decay: 0.9, mix: 0.28 } },
+          { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.1, decay: 0.7, mix: 0.15 } },
+          { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.08, decay: 0.5, mix: 0.08 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.04, decay: 0.18, mix: 0.05 } },
+          { type: 'modulator', props: { rate: 4.2, depth: 10, delay: 0.45 } },
+          { type: 'filter', props: { cutoff: 800, mod: 1200, attack: 0.12, decay: 0.8 } }
+        ]
+      }},
+      { id: "horn_out", type: "speaker", x: 800, y: 200, props: { reverb: 0.5, pan: 0.4 } },
+      
+      // ========== STRINGS PAD ==========
+      { id: "strings_src", type: "source", x: 500, y: 320, props: { interval: 8, midiNote: 55, intensity: 0.45 } },
+      { id: "strings_tun", type: "tunnel", x: 640, y: 320, props: {
+        tunnelName: "String Pad",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.8, decay: 3.5, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.9, decay: 3.2, mix: 0.4 } },
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 1.0, decay: 3.0, mix: 0.25 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.7, decay: 2.8, mix: 0.25 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.6, decay: 2.4, mix: 0.12 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.8, decay: 2.0, mix: 0.025 } },
+          { type: 'modulator', props: { rate: 4.0, depth: 12, delay: 0.8 } },
+          { type: 'filter', props: { cutoff: 2400, mod: 800, attack: 0.6, decay: 2.0 } }
+        ]
+      }},
+      { id: "strings_out", type: "speaker", x: 800, y: 320, props: { reverb: 0.6, pan: 0 } },
+      
+      // ========== TRUMPET (Climax) ==========
+      { id: "trump_src", type: "source", x: 500, y: 440, props: { interval: 4, midiNote: 79, intensity: 0.55 } },
+      { id: "trump_delay", type: "delay", x: 580, y: 440, props: { delayTime: 2 } },
+      { id: "trump_tun", type: "tunnel", x: 700, y: 440, props: {
+        tunnelName: "Trumpet",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.06, decay: 0.8, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'square', attack: 0.04, decay: 0.6, mix: 0.15 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.05, decay: 0.65, mix: 0.4 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.04, decay: 0.55, mix: 0.28 } },
+          { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.03, decay: 0.45, mix: 0.18 } },
+          { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.025, decay: 0.35, mix: 0.1 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.01, decay: 0.08, mix: 0.07 } },
+          { type: 'modulator', props: { rate: 5.5, depth: 8, delay: 0.25 } },
+          { type: 'filter', props: { cutoff: 1800, mod: 3000, attack: 0.04, decay: 0.4 } }
+        ]
+      }},
+      { id: "trump_out", type: "speaker", x: 860, y: 440, props: { reverb: 0.45, pan: -0.4 } },
+      
+      // ========== TIMPANI (Accents) ==========
+      { id: "timp_src", type: "source", x: 500, y: 540, props: { interval: 4, midiNote: 43, intensity: 0.5 } },
+      { id: "timp_gate", type: "gate", x: 580, y: 540, props: { prob: 0.4 } },
+      { id: "timp_tun", type: "tunnel", x: 700, y: 540, props: {
+        tunnelName: "Timpani",
+        subNodes: [
+          { type: 'pitch', props: { mode: 'shift', shift: -24, fixedMidiNote: 60 } },
+          { type: 'polariser', props: { wave: 'sine', attack: 0.005, decay: 1.5, mix: 1.0 } },
+          { type: 'harmonic', props: { ratio: 1.5, wave: 'sine', attack: 0.003, decay: 0.8, mix: 0.3 } },
+          { type: 'filter', props: { cutoff: 300, mod: 200, attack: 0.005, decay: 0.8 } }
+        ]
+      }},
+      { id: "timp_out", type: "speaker", x: 860, y: 540, props: { reverb: 0.5, pan: 0 } }
+    ],
+    edges: [
+      // Snare ostinato
+      { id: "e_drum1", from: "drum_src", to: "drum_tun" },
+      { id: "e_drum2", from: "drum_tun", to: "drum_out" },
+      // Flute melody
+      { id: "e_flute1", from: "flute_src", to: "flute_tun" },
+      { id: "e_flute2", from: "flute_tun", to: "flute_out" },
+      // Clarinet
+      { id: "e_clar1", from: "clar_src", to: "clar_delay" },
+      { id: "e_clar2", from: "clar_delay", to: "clar_tun" },
+      { id: "e_clar3", from: "clar_tun", to: "clar_out" },
+      // Oboe counter-melody
+      { id: "e_oboe1", from: "oboe_src", to: "oboe_gate" },
+      { id: "e_oboe2", from: "oboe_gate", to: "oboe_tun" },
+      { id: "e_oboe3", from: "oboe_tun", to: "oboe_out" },
+      // French Horn
+      { id: "e_horn1", from: "horn_src", to: "horn_tun" },
+      { id: "e_horn2", from: "horn_tun", to: "horn_out" },
+      // Strings pad
+      { id: "e_str1", from: "strings_src", to: "strings_tun" },
+      { id: "e_str2", from: "strings_tun", to: "strings_out" },
+      // Trumpet
+      { id: "e_trump1", from: "trump_src", to: "trump_delay" },
+      { id: "e_trump2", from: "trump_delay", to: "trump_tun" },
+      { id: "e_trump3", from: "trump_tun", to: "trump_out" },
+      // Timpani
+      { id: "e_timp1", from: "timp_src", to: "timp_gate" },
+      { id: "e_timp2", from: "timp_gate", to: "timp_tun" },
+      { id: "e_timp3", from: "timp_tun", to: "timp_out" }
+    ]
+  },
+
+  // ============================================================================
+  // ORCHESTRAL: Night Symphony
+  // ============================================================================
+  
+  night_symphony: {
+    name: "Orchestral: Night Symphony",
+    description: "A nocturnal orchestral piece with pizzicato strings, harp arpeggios, and ethereal choir pads. Inspired by romantic-era night music.",
+    bpm: 54,
+    nodes: [
+      // ========== PIZZICATO STRINGS ==========
+      { id: "pizz_src", type: "source", x: 60, y: 150, props: { interval: 1, midiNote: 62, intensity: 0.4 } },
+      { id: "pizz_gate", type: "gate", x: 140, y: 150, props: { prob: 0.65 } },
+      { id: "pizz_tun", type: "tunnel", x: 260, y: 150, props: {
+        tunnelName: "Pizzicato",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'triangle', attack: 0.002, decay: 0.15, mix: 1.0 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.001, decay: 0.1, mix: 0.3 } },
+          { type: 'filter', props: { cutoff: 3500, mod: 2000, attack: 0.001, decay: 0.1 } }
+        ]
+      }},
+      { id: "pizz_out", type: "speaker", x: 400, y: 150, props: { reverb: 0.55, pan: -0.4 } },
+      
+      // ========== HARP ARPEGGIOS ==========
+      { id: "harp_src", type: "source", x: 60, y: 270, props: { interval: 0.5, midiNote: 72, intensity: 0.35 } },
+      { id: "harp_split", type: "splitter", x: 140, y: 270, props: {} },
+      { id: "harp_p1", type: "pitch", x: 220, y: 230, props: { mode: 'shift', shift: 0 } },
+      { id: "harp_p2", type: "pitch", x: 220, y: 310, props: { mode: 'shift', shift: 4 } },
+      { id: "harp_tun1", type: "tunnel", x: 340, y: 230, props: {
+        tunnelName: "Harp High",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'triangle', attack: 0.002, decay: 2.0, mix: 1.0 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.001, decay: 1.5, mix: 0.3 } },
+          { type: 'filter', props: { cutoff: 4000, mod: 2000, attack: 0.001, decay: 1.0 } }
+        ]
+      }},
+      { id: "harp_tun2", type: "tunnel", x: 340, y: 310, props: {
+        tunnelName: "Harp Low",
+        subNodes: [
+          { type: 'pitch', props: { mode: 'shift', shift: -12, fixedMidiNote: 60 } },
+          { type: 'polariser', props: { wave: 'triangle', attack: 0.003, decay: 2.5, mix: 1.0 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.002, decay: 2.0, mix: 0.25 } },
+          { type: 'filter', props: { cutoff: 2500, mod: 1500, attack: 0.002, decay: 1.2 } }
+        ]
+      }},
+      { id: "harp_out1", type: "speaker", x: 480, y: 230, props: { reverb: 0.65, pan: 0.3 } },
+      { id: "harp_out2", type: "speaker", x: 480, y: 310, props: { reverb: 0.65, pan: -0.1 } },
+      
+      // ========== CHOIR PAD ==========
+      { id: "choir_src", type: "source", x: 60, y: 420, props: { interval: 8, midiNote: 55, intensity: 0.4 } },
+      { id: "choir_tun", type: "tunnel", x: 220, y: 420, props: {
+        tunnelName: "Choir",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sine', attack: 0.5, decay: 3.0, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'triangle', attack: 0.6, decay: 2.8, mix: 0.35 } },
+          { type: 'polariser', props: { wave: 'sine', attack: 0.55, decay: 2.6, mix: 0.2 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.45, decay: 2.4, mix: 0.3 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.4, decay: 2.0, mix: 0.15 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.3, decay: 0.6, mix: 0.04 } },
+          { type: 'modulator', props: { rate: 5.2, depth: 18, delay: 0.6 } },
+          { type: 'filter', props: { cutoff: 2200, mod: 600, attack: 0.4, decay: 2.0 } }
+        ]
+      }},
+      { id: "choir_out", type: "speaker", x: 400, y: 420, props: { reverb: 0.7, pan: 0 } },
+      
+      // ========== HORN MELODY ==========
+      { id: "horn_src", type: "source", x: 560, y: 180, props: { interval: 4, midiNote: 65, intensity: 0.5 } },
+      { id: "horn_delay", type: "delay", x: 640, y: 180, props: { delayTime: 1 } },
+      { id: "horn_tun", type: "tunnel", x: 760, y: 180, props: {
+        tunnelName: "French Horn",
+        subNodes: [
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.15, decay: 1.4, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'triangle', attack: 0.18, decay: 1.2, mix: 0.2 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.14, decay: 1.1, mix: 0.5 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.12, decay: 0.9, mix: 0.28 } },
+          { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.1, decay: 0.7, mix: 0.15 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.04, decay: 0.18, mix: 0.05 } },
+          { type: 'filter', props: { cutoff: 800, mod: 1200, attack: 0.12, decay: 0.8 } },
+          { type: 'modulator', props: { rate: 4.2, depth: 10, delay: 0.45 } }
+        ]
+      }},
+      { id: "horn_out", type: "speaker", x: 920, y: 180, props: { reverb: 0.55, pan: 0.2 } },
+      
+      // ========== GLOCKENSPIEL SPARKLE ==========
+      { id: "glock_src", type: "source", x: 560, y: 300, props: { interval: 2, midiNote: 84, intensity: 0.3 } },
+      { id: "glock_gate", type: "gate", x: 640, y: 300, props: { prob: 0.3 } },
+      { id: "glock_tun", type: "tunnel", x: 760, y: 300, props: {
+        tunnelName: "Glockenspiel",
+        subNodes: [
+          { type: 'pitch', props: { mode: 'shift', shift: 12, fixedMidiNote: 60 } },
+          { type: 'polariser', props: { wave: 'sine', attack: 0.001, decay: 2.0, mix: 1.0 } },
+          { type: 'harmonic', props: { ratio: 2.3, wave: 'sine', attack: 0.001, decay: 1.5, mix: 0.4 } },
+          { type: 'harmonic', props: { ratio: 5.4, wave: 'sine', attack: 0.001, decay: 0.8, mix: 0.2 } }
+        ]
+      }},
+      { id: "glock_out", type: "speaker", x: 920, y: 300, props: { reverb: 0.7, pan: 0.5 } },
+      
+      // ========== CELLO BASS ==========
+      { id: "cello_src", type: "source", x: 560, y: 420, props: { interval: 4, midiNote: 48, intensity: 0.5 } },
+      { id: "cello_tun", type: "tunnel", x: 720, y: 420, props: {
+        tunnelName: "Cello",
+        subNodes: [
+          { type: 'pitch', props: { mode: 'shift', shift: -12, fixedMidiNote: 60 } },
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.22, decay: 2.0, mix: 1.0 } },
+          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 0.25 } },
+          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.2, decay: 1.6, mix: 0.4 } },
+          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.4, mix: 0.25 } },
+          { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.15, decay: 1.2, mix: 0.12 } },
+          { type: 'noise', props: { wave: 'pink', attack: 0.25, decay: 1.2, mix: 0.035 } },
+          { type: 'modulator', props: { rate: 4.8, depth: 22, delay: 0.6 } },
+          { type: 'filter', props: { cutoff: 1600, mod: 1000, attack: 0.18, decay: 1.2 } }
+        ]
+      }},
+      { id: "cello_out", type: "speaker", x: 880, y: 420, props: { reverb: 0.5, pan: -0.3 } }
+    ],
+    edges: [
+      // Pizzicato
+      { id: "e_pizz1", from: "pizz_src", to: "pizz_gate" },
+      { id: "e_pizz2", from: "pizz_gate", to: "pizz_tun" },
+      { id: "e_pizz3", from: "pizz_tun", to: "pizz_out" },
+      // Harp arpeggios
+      { id: "e_harp1", from: "harp_src", to: "harp_split" },
+      { id: "e_harp2a", from: "harp_split", to: "harp_p1" },
+      { id: "e_harp2b", from: "harp_split", to: "harp_p2" },
+      { id: "e_harp3a", from: "harp_p1", to: "harp_tun1" },
+      { id: "e_harp3b", from: "harp_p2", to: "harp_tun2" },
+      { id: "e_harp4a", from: "harp_tun1", to: "harp_out1" },
+      { id: "e_harp4b", from: "harp_tun2", to: "harp_out2" },
+      // Choir
+      { id: "e_choir1", from: "choir_src", to: "choir_tun" },
+      { id: "e_choir2", from: "choir_tun", to: "choir_out" },
+      // Horn melody
+      { id: "e_horn1", from: "horn_src", to: "horn_delay" },
+      { id: "e_horn2", from: "horn_delay", to: "horn_tun" },
+      { id: "e_horn3", from: "horn_tun", to: "horn_out" },
+      // Glockenspiel
+      { id: "e_glock1", from: "glock_src", to: "glock_gate" },
+      { id: "e_glock2", from: "glock_gate", to: "glock_tun" },
+      { id: "e_glock3", from: "glock_tun", to: "glock_out" },
+      // Cello bass
+      { id: "e_cello1", from: "cello_src", to: "cello_tun" },
+      { id: "e_cello2", from: "cello_tun", to: "cello_out" }
+    ]
   }
 
 };
@@ -1619,25 +2260,103 @@ export function loadExample(exampleKey: string): void {
   import('@core/store').then(({ getGraphStore }) => {
     const store = getGraphStore();
     
-    // Clear only the canvas (nodes/edges), preserving scenes structure
-    // This treats examples as compositions that replace the current scene content
-    store.clearCanvas();
-    
     // Set BPM
     store.setMasterSpeed(example.bpm);
     
-    // Create ID mapping
+    // Check if this is a multi-scene example
+    if (example.scenes && example.scenes.length > 0) {
+      loadMultiSceneExample(store, example);
+    } else if (example.nodes && example.edges) {
+      loadSingleSceneExample(store, example);
+    }
+    
+    // Reset view
+    store.setPan(0, 0);
+    store.setZoom(1);
+    
+    console.log(`Loaded example: ${example.name}`);
+  });
+}
+
+/**
+ * Load a single-scene example - ADDS a new scene to the project
+ */
+function loadSingleSceneExample(store: ReturnType<typeof import('@core/store').getGraphStore>, example: Example): void {
+  // Create a new scene for this example
+  const sceneId = store.createScene(example.name);
+  
+  // Load the new scene to canvas
+  store.loadSceneToCanvas(sceneId);
+  
+  // Create ID mapping
+  const idMap = new Map<string, string>();
+  
+  // Add nodes
+  example.nodes!.forEach(node => {
+    const newId = store.addNode(node.type, node.x, node.y);
+    idMap.set(node.id, newId);
+    store.updateNodeProps(newId, node.props);
+  });
+  
+  // Add edges with timing options
+  example.edges!.forEach(edge => {
+    const fromId = idMap.get(edge.from);
+    const toId = idMap.get(edge.to);
+    if (fromId && toId) {
+      store.addEdge(fromId as never, toId as never, {
+        timingMode: edge.timingMode ?? 'physical',
+        durationBeats: edge.durationBeats ?? null,
+        targetParam: edge.targetParam ?? null
+      } as never);
+    }
+  });
+  
+  // Save the loaded content to the new scene
+  store.saveCurrentScene();
+}
+
+/**
+ * Load a multi-scene example - ADDS new scenes to the project
+ */
+function loadMultiSceneExample(store: ReturnType<typeof import('@core/store').getGraphStore>, example: Example): void {
+  // Track the first scene we create so we can switch to it at the end
+  let firstSceneId: string | null = null;
+  
+  // Create new scenes from the example (don't delete existing scenes!)
+  example.scenes!.forEach((sceneData, index) => {
+    // Create a new scene for each example scene
+    const sceneId = store.createScene(sceneData.name);
+    
+    // Update scene properties
+    store.updateScene(sceneId, {
+      color: sceneData.color,
+      durationBeats: sceneData.durationBeats,
+      loopCount: sceneData.loopCount,
+      localBpm: sceneData.localBpm ?? null,
+      localRoot: sceneData.localRoot ?? null,
+      localScale: sceneData.localScale ?? null
+    });
+    
+    // Track first scene
+    if (index === 0) {
+      firstSceneId = sceneId;
+    }
+    
+    // Load this scene to canvas and populate it
+    store.loadSceneToCanvas(sceneId);
+    
+    // Create ID mapping for this scene
     const idMap = new Map<string, string>();
     
     // Add nodes
-    example.nodes.forEach(node => {
+    sceneData.nodes.forEach(node => {
       const newId = store.addNode(node.type, node.x, node.y);
       idMap.set(node.id, newId);
       store.updateNodeProps(newId, node.props);
     });
     
-    // Add edges with timing options
-    example.edges.forEach(edge => {
+    // Add edges
+    sceneData.edges.forEach(edge => {
       const fromId = idMap.get(edge.from);
       const toId = idMap.get(edge.to);
       if (fromId && toId) {
@@ -1649,15 +2368,14 @@ export function loadExample(exampleKey: string): void {
       }
     });
     
-    // Save the loaded content to the current scene
+    // Save this scene
     store.saveCurrentScene();
-    
-    // Reset view
-    store.setPan(0, 0);
-    store.setZoom(1);
-    
-    console.log(`Loaded example: ${example.name}`);
   });
+  
+  // Load the first new scene
+  if (firstSceneId) {
+    store.loadSceneToCanvas(firstSceneId);
+  }
 }
 
 /**

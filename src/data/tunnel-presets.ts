@@ -51,28 +51,45 @@ export const TUNNEL_PRESETS: readonly TunnelPreset[] = [
     id: 'strings',
     name: 'Strings',
     category: 'melodic',
-    description: 'Violin/strings with harmonics and vibrato',
+    description: 'Violin/strings ensemble with rich bow texture and natural vibrato',
     subNodes: [
-      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.15, decay: 1.2, mix: 1.0 } },
-      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.12, decay: 1.0, mix: 0.3 } },
-      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.10, decay: 0.8, mix: 0.15 } },
-      { type: 'modulator', props: { rate: 5.5, depth: 25, delay: 0.3 } },
-      { type: 'filter', props: { cutoff: 2200, mod: 2000, attack: 0.12, decay: 0.5 } },
+      // Main body - slightly detuned layers for ensemble feel
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 1.0 } },
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.28, decay: 1.6, mix: 0.35 } }, // Detuned layer
+      // Harmonics for body
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.22, decay: 1.4, mix: 0.25 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.2, mix: 0.12 } },
+      { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.15, decay: 1.0, mix: 0.06 } },
+      // Bow noise - subtle friction sound
+      { type: 'noise', props: { wave: 'pink', attack: 0.3, decay: 1.0, mix: 0.04 } },
+      // Natural vibrato - delayed, moderate depth
+      { type: 'modulator', props: { rate: 5.2, depth: 18, delay: 0.5 } },
+      // Body resonance filter
+      { type: 'filter', props: { cutoff: 2800, mod: 1200, attack: 0.2, decay: 1.0 } },
     ],
-    tags: ['violin', 'orchestral', 'expressive'],
+    tags: ['violin', 'orchestral', 'expressive', 'ensemble'],
   },
   {
     id: 'flute',
     name: 'Flute',
     category: 'melodic',
-    description: 'Breathy flute with subtle harmonics',
+    description: 'Breathy orchestral flute with airy attack and pure tone',
     subNodes: [
-      { type: 'polariser', props: { wave: 'sine', attack: 0.08, decay: 0.8, mix: 1.0 } },
-      { type: 'noise', props: { wave: 'white', attack: 0.05, decay: 0.15, mix: 0.08 } },
-      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.1, decay: 0.6, mix: 0.2 } },
-      { type: 'filter', props: { cutoff: 4000, mod: 1000, attack: 0.05, decay: 0.4 } },
+      // Main body - pure, clear tone
+      { type: 'polariser', props: { wave: 'sine', attack: 0.1, decay: 1.0, mix: 1.0 } },
+      // Slight triangle for edge
+      { type: 'polariser', props: { wave: 'triangle', attack: 0.12, decay: 0.9, mix: 0.1 } },
+      // Weak harmonics - flute is nearly sinusoidal
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.1, decay: 0.8, mix: 0.18 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.08, decay: 0.6, mix: 0.06 } },
+      // Breath noise - essential for flute realism
+      { type: 'noise', props: { wave: 'pink', attack: 0.06, decay: 0.35, mix: 0.1 } },
+      // Subtle, quick vibrato
+      { type: 'modulator', props: { rate: 5.5, depth: 15, delay: 0.35 } },
+      // Bright, open filter
+      { type: 'filter', props: { cutoff: 4500, mod: 800, attack: 0.08, decay: 0.6 } },
     ],
-    tags: ['woodwind', 'breathy', 'soft'],
+    tags: ['woodwind', 'breathy', 'soft', 'orchestral', 'flute'],
   },
   {
     id: 'lead-synth',
@@ -170,14 +187,23 @@ export const TUNNEL_PRESETS: readonly TunnelPreset[] = [
     id: 'string-pad',
     name: 'String Pad',
     category: 'pad',
-    description: 'Lush string ensemble pad',
+    description: 'Lush string ensemble pad with multiple detuned voices and natural movement',
     subNodes: [
-      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.6, decay: 2.5, mix: 1.0 } },
-      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.5, decay: 2.0, mix: 0.3 } },
-      { type: 'modulator', props: { rate: 4.5, depth: 15, delay: 0.5 } },
-      { type: 'filter', props: { cutoff: 2000, mod: 1000, attack: 0.4, decay: 1.5 } },
+      // Multiple detuned layers for ensemble width
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.8, decay: 3.5, mix: 1.0 } },
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.9, decay: 3.2, mix: 0.4 } },
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 1.0, decay: 3.0, mix: 0.25 } },
+      // Harmonics
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.7, decay: 2.8, mix: 0.25 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.6, decay: 2.4, mix: 0.12 } },
+      // Collective bow texture
+      { type: 'noise', props: { wave: 'pink', attack: 0.8, decay: 2.0, mix: 0.025 } },
+      // Ensemble vibrato - slower, less synchronized
+      { type: 'modulator', props: { rate: 4.0, depth: 12, delay: 0.8 } },
+      // Warm ensemble filter
+      { type: 'filter', props: { cutoff: 2400, mod: 800, attack: 0.6, decay: 2.0 } },
     ],
-    tags: ['strings', 'lush', 'orchestral'],
+    tags: ['strings', 'lush', 'orchestral', 'ensemble', 'pad'],
   },
   {
     id: 'dark-pad',
@@ -353,14 +379,264 @@ export const TUNNEL_PRESETS: readonly TunnelPreset[] = [
     id: 'brass',
     name: 'Brass',
     category: 'melodic',
-    description: 'Brass section sound',
+    description: 'Brass section with warm resonance and natural breath attack',
     subNodes: [
-      { type: 'polariser', props: { wave: 'square', attack: 0.08, decay: 0.6, mix: 1.0 } },
-      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.06, decay: 0.4, mix: 0.3 } },
-      { type: 'filter', props: { cutoff: 1200, mod: 2000, attack: 0.05, decay: 0.3 } },
-      { type: 'modulator', props: { rate: 5.0, depth: 12, delay: 0.2 } },
+      // Main brass body - sawtooth is more realistic than square for brass
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.12, decay: 0.9, mix: 1.0 } },
+      // Strong even harmonics for brass character
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.1, decay: 0.7, mix: 0.45 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.08, decay: 0.6, mix: 0.25 } },
+      { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.06, decay: 0.5, mix: 0.15 } },
+      // Breath/air noise in attack
+      { type: 'noise', props: { wave: 'pink', attack: 0.02, decay: 0.12, mix: 0.06 } },
+      // Lip vibrato - slower, subtle
+      { type: 'modulator', props: { rate: 4.5, depth: 12, delay: 0.35 } },
+      // Muted formant-like filter - opens up over time
+      { type: 'filter', props: { cutoff: 900, mod: 1800, attack: 0.08, decay: 0.5 } },
     ],
-    tags: ['brass', 'horn', 'orchestral'],
+    tags: ['brass', 'horn', 'orchestral', 'section'],
+  },
+  
+  // ========================================
+  // ORCHESTRAL (NEW)
+  // ========================================
+  {
+    id: 'cello',
+    name: 'Cello',
+    category: 'melodic',
+    description: 'Deep cello with rich bow texture, body resonance and expressive vibrato',
+    subNodes: [
+      { type: 'pitch', props: { mode: 'shift', shift: -12, fixedMidiNote: 60 } },
+      // Main body with slow bow attack
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.22, decay: 2.0, mix: 1.0 } },
+      // Slight detuning for richness
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 0.25 } },
+      // Rich harmonic series - cello has strong lower harmonics
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.2, decay: 1.6, mix: 0.4 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.4, mix: 0.25 } },
+      { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.15, decay: 1.2, mix: 0.12 } },
+      // Bow rosin noise - adds realism
+      { type: 'noise', props: { wave: 'pink', attack: 0.25, decay: 1.2, mix: 0.035 } },
+      // Slower, deeper vibrato than violin - delayed onset
+      { type: 'modulator', props: { rate: 4.8, depth: 22, delay: 0.6 } },
+      // Warm body resonance
+      { type: 'filter', props: { cutoff: 1600, mod: 1000, attack: 0.18, decay: 1.2 } },
+    ],
+    tags: ['cello', 'orchestral', 'deep', 'strings', 'bowed'],
+  },
+  {
+    id: 'viola',
+    name: 'Viola',
+    category: 'melodic',
+    description: 'Warm viola with characteristic darker tone and rich mid-range',
+    subNodes: [
+      { type: 'pitch', props: { mode: 'shift', shift: -5, fixedMidiNote: 60 } },
+      // Main body - slower attack than violin
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.2, decay: 1.7, mix: 1.0 } },
+      // Ensemble detuning
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.23, decay: 1.5, mix: 0.28 } },
+      // Harmonics - viola has darker character
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.18, decay: 1.4, mix: 0.35 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.15, decay: 1.2, mix: 0.18 } },
+      { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.12, decay: 1.0, mix: 0.08 } },
+      // Bow texture
+      { type: 'noise', props: { wave: 'pink', attack: 0.22, decay: 1.0, mix: 0.03 } },
+      // Vibrato - between violin and cello characteristics
+      { type: 'modulator', props: { rate: 5.0, depth: 20, delay: 0.55 } },
+      // Darker than violin, brighter than cello
+      { type: 'filter', props: { cutoff: 2200, mod: 1100, attack: 0.16, decay: 0.9 } },
+    ],
+    tags: ['viola', 'orchestral', 'warm', 'strings', 'bowed'],
+  },
+  {
+    id: 'contrabass',
+    name: 'Contrabass',
+    category: 'bass',
+    description: 'Deep orchestral double bass with woody resonance and heavy bow',
+    subNodes: [
+      { type: 'pitch', props: { mode: 'shift', shift: -24, fixedMidiNote: 60 } },
+      // Main body - very slow attack for large instrument
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.28, decay: 2.2, mix: 1.0 } },
+      // Section feel
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.32, decay: 2.0, mix: 0.22 } },
+      // Strong fundamental and low harmonics
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.25, decay: 1.8, mix: 0.45 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.22, decay: 1.5, mix: 0.2 } },
+      // Heavy bow texture
+      { type: 'noise', props: { wave: 'pink', attack: 0.3, decay: 1.4, mix: 0.04 } },
+      // Slow, subtle vibrato
+      { type: 'modulator', props: { rate: 4.2, depth: 15, delay: 0.7 } },
+      // Woody low-pass
+      { type: 'filter', props: { cutoff: 800, mod: 500, attack: 0.2, decay: 1.4 } },
+    ],
+    tags: ['bass', 'orchestral', 'deep', 'strings', 'bowed'],
+  },
+  {
+    id: 'french-horn',
+    name: 'French Horn',
+    category: 'melodic',
+    description: 'Majestic French horn with mellow warmth and hand-stopped resonance',
+    subNodes: [
+      // Main body - horn has mellow, rounded tone
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.15, decay: 1.4, mix: 1.0 } },
+      // Slight ensemble spread
+      { type: 'polariser', props: { wave: 'triangle', attack: 0.18, decay: 1.2, mix: 0.2 } },
+      // Strong even harmonics - characteristic of horn
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.14, decay: 1.1, mix: 0.5 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.12, decay: 0.9, mix: 0.28 } },
+      { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.1, decay: 0.7, mix: 0.15 } },
+      { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.08, decay: 0.5, mix: 0.08 } },
+      // Breath air in attack
+      { type: 'noise', props: { wave: 'pink', attack: 0.04, decay: 0.18, mix: 0.05 } },
+      // Subtle lip vibrato
+      { type: 'modulator', props: { rate: 4.2, depth: 10, delay: 0.45 } },
+      // Muted, warm filter - hand-in-bell effect
+      { type: 'filter', props: { cutoff: 800, mod: 1200, attack: 0.12, decay: 0.8 } },
+    ],
+    tags: ['horn', 'brass', 'orchestral', 'majestic', 'mellow'],
+  },
+  {
+    id: 'trumpet',
+    name: 'Trumpet',
+    category: 'melodic',
+    description: 'Bright orchestral trumpet with brilliant attack and brassy resonance',
+    subNodes: [
+      // Main body - sawtooth is more realistic than square
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.06, decay: 0.8, mix: 1.0 } },
+      // Brightness layer
+      { type: 'polariser', props: { wave: 'square', attack: 0.04, decay: 0.6, mix: 0.15 } },
+      // Strong harmonic series - trumpet is harmonically rich
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.05, decay: 0.65, mix: 0.4 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.04, decay: 0.55, mix: 0.28 } },
+      { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.03, decay: 0.45, mix: 0.18 } },
+      { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.025, decay: 0.35, mix: 0.1 } },
+      // Breath/buzz in attack
+      { type: 'noise', props: { wave: 'pink', attack: 0.01, decay: 0.08, mix: 0.07 } },
+      // Quick, subtle vibrato
+      { type: 'modulator', props: { rate: 5.5, depth: 8, delay: 0.25 } },
+      // Bright, opening filter
+      { type: 'filter', props: { cutoff: 1800, mod: 3000, attack: 0.04, decay: 0.4 } },
+    ],
+    tags: ['trumpet', 'brass', 'orchestral', 'bright', 'brilliant'],
+  },
+  {
+    id: 'oboe',
+    name: 'Oboe',
+    category: 'melodic',
+    description: 'Expressive oboe with characteristic nasal reed tone and poignant vibrato',
+    subNodes: [
+      // Main body - oboe has thin, focused sound
+      { type: 'polariser', props: { wave: 'sawtooth', attack: 0.08, decay: 0.9, mix: 1.0 } },
+      // Complete harmonic series - oboe is very harmonically rich
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.07, decay: 0.8, mix: 0.55 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.06, decay: 0.7, mix: 0.4 } },
+      { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.05, decay: 0.6, mix: 0.28 } },
+      { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.04, decay: 0.5, mix: 0.18 } },
+      { type: 'harmonic', props: { ratio: 6, wave: 'sine', attack: 0.03, decay: 0.4, mix: 0.1 } },
+      // Reed/breath air
+      { type: 'noise', props: { wave: 'pink', attack: 0.05, decay: 0.25, mix: 0.04 } },
+      // Expressive vibrato - oboe has prominent vibrato
+      { type: 'modulator', props: { rate: 5.5, depth: 25, delay: 0.3 } },
+      // Nasal formant - characteristic "ee" quality
+      { type: 'filter', props: { cutoff: 2200, mod: 1000, attack: 0.06, decay: 0.5 } },
+    ],
+    tags: ['oboe', 'woodwind', 'orchestral', 'reedy', 'expressive'],
+  },
+  {
+    id: 'clarinet',
+    name: 'Clarinet',
+    category: 'melodic',
+    description: 'Smooth clarinet with characteristic hollow tone and odd-harmonic series',
+    subNodes: [
+      // Main body - clarinet has hollow, cylindrical tone
+      { type: 'polariser', props: { wave: 'square', attack: 0.06, decay: 0.85, mix: 1.0 } },
+      // Clarinet emphasizes ODD harmonics (3rd, 5th, 7th) due to cylindrical bore
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.05, decay: 0.7, mix: 0.5 } },
+      { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.04, decay: 0.6, mix: 0.3 } },
+      { type: 'harmonic', props: { ratio: 7, wave: 'sine', attack: 0.03, decay: 0.5, mix: 0.15 } },
+      // Very weak even harmonics
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.05, decay: 0.65, mix: 0.08 } },
+      // Breath/key noise
+      { type: 'noise', props: { wave: 'pink', attack: 0.04, decay: 0.15, mix: 0.03 } },
+      // Subtle, controlled vibrato
+      { type: 'modulator', props: { rate: 5.0, depth: 12, delay: 0.4 } },
+      // Warm, dark filter - chalumeau register character
+      { type: 'filter', props: { cutoff: 1800, mod: 800, attack: 0.05, decay: 0.5 } },
+    ],
+    tags: ['clarinet', 'woodwind', 'orchestral', 'smooth', 'hollow'],
+  },
+  {
+    id: 'timpani',
+    name: 'Timpani',
+    category: 'percussion',
+    description: 'Orchestral timpani with resonant boom',
+    subNodes: [
+      { type: 'pitch', props: { mode: 'shift', shift: -24, fixedMidiNote: 60 } },
+      { type: 'polariser', props: { wave: 'sine', attack: 0.005, decay: 1.5, mix: 1.0 } },
+      { type: 'harmonic', props: { ratio: 1.5, wave: 'sine', attack: 0.003, decay: 0.8, mix: 0.3 } },
+      { type: 'filter', props: { cutoff: 300, mod: 200, attack: 0.005, decay: 0.8 } },
+    ],
+    tags: ['timpani', 'percussion', 'orchestral', 'drums'],
+  },
+  {
+    id: 'harp',
+    name: 'Harp',
+    category: 'melodic',
+    description: 'Ethereal harp with shimmering decay',
+    subNodes: [
+      { type: 'polariser', props: { wave: 'triangle', attack: 0.002, decay: 2.0, mix: 1.0 } },
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.001, decay: 1.5, mix: 0.3 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.001, decay: 1.0, mix: 0.15 } },
+      { type: 'filter', props: { cutoff: 4000, mod: 2000, attack: 0.001, decay: 1.0 } },
+    ],
+    tags: ['harp', 'orchestral', 'ethereal', 'pluck'],
+  },
+  {
+    id: 'choir',
+    name: 'Choir',
+    category: 'pad',
+    description: 'Ethereal choir voices with natural breath and ensemble warmth',
+    subNodes: [
+      // Multiple voice layers for choir spread
+      { type: 'polariser', props: { wave: 'sine', attack: 0.5, decay: 3.0, mix: 1.0 } },
+      { type: 'polariser', props: { wave: 'triangle', attack: 0.6, decay: 2.8, mix: 0.35 } },
+      { type: 'polariser', props: { wave: 'sine', attack: 0.55, decay: 2.6, mix: 0.2 } },
+      // Voice harmonics - formant-like
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.45, decay: 2.4, mix: 0.3 } },
+      { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.4, decay: 2.0, mix: 0.15 } },
+      // Breath in attack
+      { type: 'noise', props: { wave: 'pink', attack: 0.3, decay: 0.6, mix: 0.04 } },
+      // Natural vibrato - varies across ensemble
+      { type: 'modulator', props: { rate: 5.2, depth: 18, delay: 0.6 } },
+      // Vowel-like formant filter
+      { type: 'filter', props: { cutoff: 2200, mod: 600, attack: 0.4, decay: 2.0 } },
+    ],
+    tags: ['choir', 'voices', 'orchestral', 'ethereal', 'vocal'],
+  },
+  {
+    id: 'pizzicato',
+    name: 'Pizzicato',
+    category: 'melodic',
+    description: 'Plucked string pizzicato',
+    subNodes: [
+      { type: 'polariser', props: { wave: 'triangle', attack: 0.002, decay: 0.15, mix: 1.0 } },
+      { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.001, decay: 0.1, mix: 0.3 } },
+      { type: 'filter', props: { cutoff: 3500, mod: 2000, attack: 0.001, decay: 0.1 } },
+    ],
+    tags: ['pizzicato', 'strings', 'orchestral', 'pluck'],
+  },
+  {
+    id: 'glockenspiel',
+    name: 'Glockenspiel',
+    category: 'keys',
+    description: 'Bright orchestral glockenspiel',
+    subNodes: [
+      { type: 'pitch', props: { mode: 'shift', shift: 12, fixedMidiNote: 60 } },
+      { type: 'polariser', props: { wave: 'sine', attack: 0.001, decay: 2.0, mix: 1.0 } },
+      { type: 'harmonic', props: { ratio: 2.3, wave: 'sine', attack: 0.001, decay: 1.5, mix: 0.4 } },
+      { type: 'harmonic', props: { ratio: 5.4, wave: 'sine', attack: 0.001, decay: 0.8, mix: 0.2 } },
+    ],
+    tags: ['glockenspiel', 'bells', 'orchestral', 'bright'],
   },
 ] as const;
 
