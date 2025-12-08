@@ -87,7 +87,10 @@ export type NodeType =
   | 'splitter'     // Split signal to multiple outputs
   | 'midi_out'     // MIDI output
   | 'midi_cc'      // MIDI CC
-  | 'scene_trigger'; // Scene change
+  | 'scene_trigger' // Scene change
+  | 'mutator'      // Genetic drift / radiation mutations
+  | 'crossover'    // Sexual reproduction - merge two packets
+  | 'fitness_gate'; // Natural selection filter
 
 // ============================================================================
 // NODE PROPERTIES
@@ -212,6 +215,51 @@ export interface SplitterProps {
   readonly behavior: 'broadcast' | 'random' | 'weighted'; // Routing behavior
 }
 
+// ============================================================================
+// EVOLUTIONARY NODE PROPERTIES
+// ============================================================================
+
+/** Mutator mode: drift = small changes, radiation = large changes */
+export type MutatorMode = 'drift' | 'radiation';
+
+/** Properties a mutator can affect */
+export type MutatableProperty = 'pitch' | 'gain' | 'cutoff' | 'wave' | 'timbre';
+
+export interface MutatorProps {
+  readonly mode: MutatorMode;
+  readonly probability: number;           // 0-1, chance of mutation per packet
+  readonly pitchDrift: number;           // Max semitone drift (drift mode)
+  readonly pitchRadiation: number;       // Max semitone jump (radiation mode)
+  readonly gainDrift: number;            // Max gain change (drift mode)
+  readonly cutoffDrift: number;          // Max cutoff change ratio (drift mode)
+  readonly waveChange: boolean;          // Allow wave type changes (radiation)
+  readonly targets: readonly MutatableProperty[];  // Which properties to mutate
+}
+
+/** Inheritance mode for crossover */
+export type CrossoverInheritance = 'random' | 'dominant_a' | 'dominant_b' | 'blend';
+
+export interface CrossoverProps {
+  readonly inheritance: CrossoverInheritance;
+  readonly pitchFrom: 'a' | 'b' | 'average' | 'random';  // Which parent provides pitch
+  readonly waveFrom: 'a' | 'b' | 'random';               // Which parent provides wave
+  readonly gainMode: 'average' | 'max' | 'min' | 'random'; // How to combine gains
+  readonly timeout: number;              // Beats to wait for second parent before passing first
+}
+
+/** Fitness criteria type */
+export type FitnessCriteria = 'harmonic' | 'energy' | 'density' | 'all';
+
+export interface FitnessGateProps {
+  readonly criteria: FitnessCriteria;
+  readonly harmonicThreshold: number;    // 0-1, kill dissonant notes below this
+  readonly energyThreshold: number;      // 0-1, minimum gain to survive
+  readonly densityThreshold: number;     // Max packets allowed through per beat
+  readonly useGlobalKey: boolean;        // Use global key for harmonic fitness
+  readonly scale: ScaleName;             // Local scale for harmonic fitness
+  readonly root: number;                 // Local root (0-11)
+}
+
 /** Union type for all node properties */
 export type NodeProps = 
   | { readonly type: 'source'; readonly props: SourceProps }
@@ -232,7 +280,10 @@ export type NodeProps =
   | { readonly type: 'midi_out'; readonly props: MidiOutProps }
   | { readonly type: 'midi_cc'; readonly props: MidiCcProps }
   | { readonly type: 'scene_trigger'; readonly props: SceneTriggerProps }
-  | { readonly type: 'splitter'; readonly props: SplitterProps };
+  | { readonly type: 'splitter'; readonly props: SplitterProps }
+  | { readonly type: 'mutator'; readonly props: MutatorProps }
+  | { readonly type: 'crossover'; readonly props: CrossoverProps }
+  | { readonly type: 'fitness_gate'; readonly props: FitnessGateProps };
 
 /** Get props type for a specific node type */
 export type PropsForNodeType<T extends NodeType> = 
@@ -613,8 +664,29 @@ export interface ArrangementSlot {
   readonly id: string;
   sceneId: SceneId;
   startBeat: number;                 // Absolute position in arrangement
+  channel: number;                   // Track/channel index (0-based)
   instanceLoopCount?: number;        // Override scene's default loop count
   instanceBpm?: number;              // Override BPM for this instance
+}
+
+/** Channel/track in the arrangement */
+export interface ArrangementChannel {
+  readonly id: string;
+  name: string;
+  color: string;
+  muted: boolean;
+  solo: boolean;
+  volume: number;                    // 0-1 multiplier
+}
+
+/** Playback state for a single channel */
+export interface ChannelPlaybackState {
+  channelIndex: number;
+  currentSlotId: string | null;
+  sceneBeat: number;
+  sceneLoopIteration: number;
+  isTransitioning: boolean;
+  transitionProgress: number;
 }
 
 /** Playback state for scene system */
@@ -623,7 +695,10 @@ export interface ScenePlaybackState {
   
   // Arrangement mode state
   arrangementBeat: number;           // Global position in arrangement
-  currentSlotIndex: number;
+  currentSlotIndex: number;          // Legacy: for single-track compatibility
+  
+  // Multi-channel state
+  activeChannels: ChannelPlaybackState[];  // State per active channel
   
   // Jam mode state
   currentSceneId: SceneId | null;
@@ -719,6 +794,7 @@ export type Tool =
   | 'gate' | 'delay' | 'gain' | 'noise' | 'harmonic' 
   | 'modulator' | 'tunnel' | 'teleporter' | 'quantizer' 
   | 'lfo' | 'splitter' | 'midi_out' | 'midi_cc' | 'scene_trigger'
+  | 'mutator' | 'crossover' | 'fitness_gate'
   | 'select' | 'pan' | 'link' | 'region' | 'annotation';
 
 export interface SelectionState {

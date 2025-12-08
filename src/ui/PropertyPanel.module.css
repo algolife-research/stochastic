@@ -345,6 +345,18 @@
   font-style: italic;
 }
 
+/* Warning notice for disabled features */
+.warningNotice {
+  font-size: 11px;
+  color: #f0ad4e;
+  background: rgba(240, 173, 78, 0.1);
+  border: 1px solid rgba(240, 173, 78, 0.3);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
 /* Delete section */
 .deleteSection {
   margin-top: 16px;

@@ -117,6 +117,7 @@ export interface SerializedArrangementSlot {
   id: string;
   sceneId: string;
   startBeat: number;
+  channel: number;
   instanceLoopCount?: number;
   instanceBpm?: number;
 }
@@ -434,6 +435,7 @@ export function serializeComposition(
       id: slot.id,
       sceneId: slot.sceneId,
       startBeat: slot.startBeat,
+      channel: slot.channel,
       instanceLoopCount: slot.instanceLoopCount,
       instanceBpm: slot.instanceBpm,
     })),
@@ -454,6 +456,7 @@ export function deserializeComposition(data: SerializedComposition): {
       id: slot.id,
       sceneId: slot.sceneId as SceneId,
       startBeat: slot.startBeat,
+      channel: slot.channel ?? 0,  // Default to channel 0 for backward compatibility
       instanceLoopCount: slot.instanceLoopCount,
       instanceBpm: slot.instanceBpm,
     })),
@@ -522,6 +525,7 @@ export function migrateV2ToV3(v2Data: SerializedGraph): SerializedComposition {
       id: crypto.randomUUID(),
       sceneId: mainSceneId,
       startBeat: 0,
+      channel: 0,
     }],
   };
 }

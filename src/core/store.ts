@@ -10,7 +10,7 @@ import type {
   GraphNode, GraphEdge, Packet, AudioPayload,
   NodeType, MusicalContext, GlobalSettings, ProjectMeta,
   ViewportState, SelectionState, Tool, MidiNote, Frequency,
-  ScaleName, Annotation, Region, Scene, ArrangementSlot, 
+  ScaleName, Annotation, Region, Scene, ArrangementSlot, ArrangementChannel,
   ScenePlaybackState, PlaybackMode, SceneQuantize,
   VizMode, VizConfig
 } from './types';
@@ -99,6 +99,7 @@ interface GraphState {
   // Scene System
   scenes: Map<SceneId, Scene>;
   arrangement: ArrangementSlot[];
+  arrangementChannels: ArrangementChannel[];  // Multi-track channels
   activeSceneId: SceneId | null;
   editingSceneId: SceneId | null;  // Which scene is being edited on canvas
   scenePlayback: ScenePlaybackState;
@@ -242,11 +243,16 @@ interface GraphActions {
   loadComposition: (scenes: Scene[], arrangement: ArrangementSlot[], masterBpm: number) => void;
   
   // Arrangement operations
-  addToArrangement: (sceneId: SceneId, startBeat?: number) => void;
+  addToArrangement: (sceneId: SceneId, startBeat?: number, channel?: number) => void;
   removeFromArrangement: (slotId: string) => void;
   updateArrangementSlot: (slotId: string, updates: Partial<ArrangementSlot>) => void;
   reorderArrangement: (slotId: string, newStartBeat: number) => void;
   clearArrangement: () => void;
+  
+  // Channel operations
+  addArrangementChannel: () => void;
+  removeArrangementChannel: (channelId: string) => void;
+  updateArrangementChannel: (channelId: string, updates: Partial<ArrangementChannel>) => void;
   
   // Scene playback
   setPlaybackMode: (mode: PlaybackMode) => void;
@@ -340,6 +346,9 @@ const initialState: GraphState = {
   // Scene System
   scenes: new Map(),
   arrangement: [],
+  arrangementChannels: [
+    { id: crypto.randomUUID(), name: 'Track 1', color: '#4fc3f7', muted: false, solo: false, volume: 1 },
+  ],
   activeSceneId: null,
   editingSceneId: null,
   scenePlayback: { ...INITIAL_SCENE_PLAYBACK_STATE },
@@ -2023,7 +2032,7 @@ export const useGraphStore = create<GraphStore>()(
       // ARRANGEMENT OPERATIONS
       // ========================================
       
-      addToArrangement: (sceneId, startBeat) => {
+      addToArrangement: (sceneId, startBeat, channel = 0) => {
         const scene = get().scenes.get(sceneId);
         if (!scene) return;
         
@@ -2050,10 +2059,12 @@ export const useGraphStore = create<GraphStore>()(
         }
         
         const arrangement = get().arrangement;
-        const lastSlot = arrangement[arrangement.length - 1];
+        // Find last slot on this channel
+        const channelSlots = arrangement.filter(s => s.channel === channel);
+        const lastSlot = channelSlots[channelSlots.length - 1];
         const lastScene = lastSlot ? get().scenes.get(lastSlot.sceneId) : null;
         
-        // Calculate start beat: either provided, or after the last slot
+        // Calculate start beat: either provided, or after the last slot on this channel
         const calculatedStart = startBeat ?? (
           lastSlot && lastScene 
             ? lastSlot.startBeat + (lastScene.durationBeats * lastScene.loopCount)
@@ -2064,6 +2075,7 @@ export const useGraphStore = create<GraphStore>()(
           id: crypto.randomUUID(),
           sceneId,
           startBeat: calculatedStart,
+          channel,
         };
         
         set(state => {
@@ -2109,6 +2121,57 @@ export const useGraphStore = create<GraphStore>()(
       },
       
       // ========================================
+      // CHANNEL OPERATIONS
+      // ========================================
+      
+      addArrangementChannel: () => {
+        set(state => {
+          const channelCount = state.arrangementChannels.length;
+          const colors = ['#4fc3f7', '#ab47bc', '#66bb6a', '#ffa726', '#ef5350', '#26c6da'];
+          state.arrangementChannels.push({
+            id: crypto.randomUUID(),
+            name: `Track ${channelCount + 1}`,
+            color: colors[channelCount % colors.length]!,
+            muted: false,
+            solo: false,
+            volume: 1,
+          });
+          state.isDirty = true;
+        });
+      },
+      
+      removeArrangementChannel: (channelId) => {
+        set(state => {
+          const channelIndex = state.arrangementChannels.findIndex(c => c.id === channelId);
+          if (channelIndex === -1 || state.arrangementChannels.length <= 1) return;
+          
+          // Remove all slots on this channel
+          state.arrangement = state.arrangement.filter(s => s.channel !== channelIndex);
+          
+          // Update channel indices for slots on higher channels
+          state.arrangement.forEach(slot => {
+            if (slot.channel > channelIndex) {
+              slot.channel--;
+            }
+          });
+          
+          // Remove the channel
+          state.arrangementChannels.splice(channelIndex, 1);
+          state.isDirty = true;
+        });
+      },
+      
+      updateArrangementChannel: (channelId, updates) => {
+        set(state => {
+          const channel = state.arrangementChannels.find(c => c.id === channelId);
+          if (channel) {
+            Object.assign(channel, updates);
+            state.isDirty = true;
+          }
+        });
+      },
+      
+      // ========================================
       // SCENE PLAYBACK
       // ========================================
       
@@ -2133,7 +2196,6 @@ export const useGraphStore = create<GraphStore>()(
         let currentBeat = 0;
         let foundSlotIndex = -1;
         let beatInSlot = 0;
-        let slotStartBeat = 0;
 
         // Find which slot contains the target beat
         for (let i = 0; i < arrangement.length; i++) {

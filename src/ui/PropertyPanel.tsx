@@ -188,6 +188,12 @@ function NodeProperties({ node }: NodePropertiesProps): React.ReactElement {
       return <SceneTriggerProps props={node.props as SceneTriggerPropsType} onChange={handleChange} />;
     case 'splitter':
       return <SplitterNodeProps props={node.props as SplitterPropsType} onChange={handleChange} />;
+    case 'mutator':
+      return <MutatorNodeProps props={node.props as MutatorPropsType} onChange={handleChange} />;
+    case 'crossover':
+      return <CrossoverNodeProps props={node.props as CrossoverPropsType} onChange={handleChange} />;
+    case 'fitness_gate':
+      return <FitnessGateNodeProps props={node.props as FitnessGatePropsType} onChange={handleChange} />;
     default:
       return <GenericProps props={node.props as unknown as Record<string, unknown>} onChange={handleChange} />;
   }
@@ -225,6 +231,35 @@ type MidiOutPropsType = { channel: number; duration: number; velocityScale: numb
 type MidiCcPropsType = { channel: number; ccNumber: number };
 type SceneTriggerPropsType = { targetSceneIndex: number; behavior: 'jump' | 'crossfade' };
 type SplitterPropsType = { entangled: boolean; behavior: 'broadcast' | 'random' | 'weighted' };
+
+// Evolutionary node types
+type MutatableProperty = 'pitch' | 'gain' | 'cutoff' | 'wave' | 'timbre';
+type MutatorPropsType = {
+  mode: 'drift' | 'radiation';
+  probability: number;
+  pitchDrift: number;
+  pitchRadiation: number;
+  gainDrift: number;
+  cutoffDrift: number;
+  waveChange: boolean;
+  targets: MutatableProperty[];
+};
+type CrossoverPropsType = {
+  inheritance: 'random' | 'dominant_a' | 'dominant_b' | 'blend';
+  pitchFrom: 'a' | 'b' | 'average' | 'random';
+  waveFrom: 'a' | 'b' | 'random';
+  gainMode: 'average' | 'max' | 'min' | 'random';
+  timeout: number;
+};
+type FitnessGatePropsType = {
+  criteria: 'harmonic' | 'energy' | 'density' | 'all';
+  harmonicThreshold: number;
+  energyThreshold: number;
+  densityThreshold: number;
+  useGlobalKey: boolean;
+  scale: ScaleName;
+  root: number;
+};
 
 // ============================================================================
 // SPECIFIC PROPERTY EDITORS
@@ -1233,6 +1268,8 @@ function MidiCcProps({ props, onChange }: PropsEditorProps<MidiCcPropsType>): Re
 
 function SceneTriggerProps({ props, onChange }: PropsEditorProps<SceneTriggerPropsType>): React.ReactElement {
   const scenes = useGraphStore(state => Array.from(state.scenes.values()));
+  const playbackMode = useGraphStore(state => state.scenePlayback.mode);
+  const isArrangementMode = playbackMode === 'arrangement';
   
   const sceneOptions = scenes.map((scene, index) => ({
     value: String(index),
@@ -1241,6 +1278,13 @@ function SceneTriggerProps({ props, onChange }: PropsEditorProps<SceneTriggerPro
 
   return (
     <>
+      {isArrangementMode && (
+        <div className={styles.warningNotice}>
+          ⚠️ Scene Trigger nodes are inactive in Composition mode. 
+          Scenes are scheduled on the timeline instead.
+        </div>
+      )}
+      
       <PropertyRow label="Target Scene">
         <Select
           value={String(props.targetSceneIndex)}
@@ -1249,6 +1293,7 @@ function SceneTriggerProps({ props, onChange }: PropsEditorProps<SceneTriggerPro
             ...sceneOptions
           ]}
           onChange={v => onChange('targetSceneIndex', Number(v))}
+          disabled={isArrangementMode}
         />
       </PropertyRow>
       
@@ -1260,6 +1305,7 @@ function SceneTriggerProps({ props, onChange }: PropsEditorProps<SceneTriggerPro
             { value: 'crossfade', label: 'Crossfade' },
           ]}
           onChange={v => onChange('behavior', v)}
+          disabled={isArrangementMode}
         />
       </PropertyRow>
     </>
@@ -1290,6 +1336,316 @@ function SplitterNodeProps({ props, onChange }: PropsEditorProps<SplitterPropsTy
       <div className={styles.description}>
         When enabled, packets split here share effects — if one passes through a pitch modifier, all entangled packets are affected.
       </div>
+    </>
+  );
+}
+
+// ============================================================================
+// EVOLUTIONARY NODE PROPERTIES
+// ============================================================================
+
+const MUTATABLE_PROPERTIES: Array<{ value: MutatableProperty; label: string }> = [
+  { value: 'pitch', label: 'Pitch' },
+  { value: 'gain', label: 'Gain' },
+  { value: 'cutoff', label: 'Filter Cutoff' },
+  { value: 'wave', label: 'Wave Type' },
+  { value: 'timbre', label: 'Timbre' },
+];
+
+function MutatorNodeProps({ props, onChange }: PropsEditorProps<MutatorPropsType>): React.ReactElement {
+  const targets = props.targets ?? ['pitch'];
+  
+  const toggleTarget = (target: MutatableProperty) => {
+    const newTargets = targets.includes(target)
+      ? targets.filter(t => t !== target)
+      : [...targets, target];
+    onChange('targets', newTargets);
+  };
+  
+  return (
+    <>
+      <PropertyRow label="Mode">
+        <Select
+          value={props.mode ?? 'drift'}
+          options={[
+            { value: 'drift', label: 'Drift (Small Changes)' },
+            { value: 'radiation', label: 'Radiation (Large Changes)' },
+          ]}
+          onChange={v => onChange('mode', v)}
+        />
+      </PropertyRow>
+      <div className={styles.description}>
+        {props.mode === 'drift' 
+          ? 'Drift applies small, incremental mutations that evolve gradually.'
+          : 'Radiation applies large, structural changes — rare but dramatic.'}
+      </div>
+      
+      <PropertyRow label="Probability">
+        <SliderInput
+          value={props.probability ?? 0.5}
+          min={0}
+          max={1}
+          step={0.01}
+          onChange={v => onChange('probability', v)}
+        />
+      </PropertyRow>
+      
+      <div className={styles.sectionHeader}>Mutation Targets</div>
+      {MUTATABLE_PROPERTIES.map(({ value, label }) => (
+        <PropertyRow key={value} label={label}>
+          <Checkbox
+            checked={targets.includes(value)}
+            onChange={() => toggleTarget(value)}
+          />
+        </PropertyRow>
+      ))}
+      
+      {props.mode === 'drift' && (
+        <>
+          <div className={styles.sectionHeader}>Drift Amounts</div>
+          {targets.includes('pitch') && (
+            <PropertyRow label="Pitch Drift (±)">
+              <NumberInput
+                value={props.pitchDrift ?? 2}
+                min={0}
+                max={12}
+                step={1}
+                onChange={v => onChange('pitchDrift', v)}
+              />
+            </PropertyRow>
+          )}
+          {targets.includes('gain') && (
+            <PropertyRow label="Gain Drift (±)">
+              <SliderInput
+                value={props.gainDrift ?? 0.1}
+                min={0}
+                max={0.5}
+                step={0.01}
+                onChange={v => onChange('gainDrift', v)}
+              />
+            </PropertyRow>
+          )}
+          {targets.includes('cutoff') && (
+            <PropertyRow label="Cutoff Drift (±%)">
+              <SliderInput
+                value={props.cutoffDrift ?? 0.2}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={v => onChange('cutoffDrift', v)}
+              />
+            </PropertyRow>
+          )}
+        </>
+      )}
+      
+      {props.mode === 'radiation' && (
+        <>
+          <div className={styles.sectionHeader}>Radiation Settings</div>
+          {targets.includes('pitch') && (
+            <PropertyRow label="Pitch Jump (±)">
+              <NumberInput
+                value={props.pitchRadiation ?? 12}
+                min={1}
+                max={48}
+                step={1}
+                onChange={v => onChange('pitchRadiation', v)}
+              />
+            </PropertyRow>
+          )}
+          {targets.includes('wave') && (
+            <PropertyRow label="Change Wave">
+              <Checkbox
+                checked={props.waveChange ?? false}
+                onChange={v => onChange('waveChange', v)}
+              />
+            </PropertyRow>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+function CrossoverNodeProps({ props, onChange }: PropsEditorProps<CrossoverPropsType>): React.ReactElement {
+  return (
+    <>
+      <div className={styles.description}>
+        Waits for two packets to arrive, then combines them into a single offspring.
+      </div>
+      
+      <PropertyRow label="Inheritance">
+        <Select
+          value={props.inheritance ?? 'random'}
+          options={[
+            { value: 'random', label: 'Random (Per-Property)' },
+            { value: 'dominant_a', label: 'Dominant A (First Parent)' },
+            { value: 'dominant_b', label: 'Dominant B (Second Parent)' },
+            { value: 'blend', label: 'Blend (Average)' },
+          ]}
+          onChange={v => onChange('inheritance', v)}
+        />
+      </PropertyRow>
+      
+      <div className={styles.sectionHeader}>Property Inheritance</div>
+      
+      <PropertyRow label="Pitch From">
+        <Select
+          value={props.pitchFrom ?? 'random'}
+          options={[
+            { value: 'a', label: 'Parent A' },
+            { value: 'b', label: 'Parent B' },
+            { value: 'average', label: 'Average' },
+            { value: 'random', label: 'Random' },
+          ]}
+          onChange={v => onChange('pitchFrom', v)}
+        />
+      </PropertyRow>
+      
+      <PropertyRow label="Wave From">
+        <Select
+          value={props.waveFrom ?? 'random'}
+          options={[
+            { value: 'a', label: 'Parent A' },
+            { value: 'b', label: 'Parent B' },
+            { value: 'random', label: 'Random' },
+          ]}
+          onChange={v => onChange('waveFrom', v)}
+        />
+      </PropertyRow>
+      
+      <PropertyRow label="Gain Mode">
+        <Select
+          value={props.gainMode ?? 'average'}
+          options={[
+            { value: 'average', label: 'Average' },
+            { value: 'max', label: 'Maximum' },
+            { value: 'min', label: 'Minimum' },
+            { value: 'random', label: 'Random' },
+          ]}
+          onChange={v => onChange('gainMode', v)}
+        />
+      </PropertyRow>
+      
+      <PropertyRow label="Timeout (beats)">
+        <NumberInput
+          value={props.timeout ?? 4}
+          min={0.5}
+          max={32}
+          step={0.5}
+          onChange={v => onChange('timeout', v)}
+        />
+      </PropertyRow>
+      <div className={styles.description}>
+        If no second parent arrives within this time, the first packet passes through unchanged.
+      </div>
+    </>
+  );
+}
+
+function FitnessGateNodeProps({ props, onChange }: PropsEditorProps<FitnessGatePropsType>): React.ReactElement {
+  return (
+    <>
+      <div className={styles.description}>
+        Natural selection: filters packets based on fitness criteria.
+      </div>
+      
+      <PropertyRow label="Criteria">
+        <Select
+          value={props.criteria ?? 'harmonic'}
+          options={[
+            { value: 'harmonic', label: 'Harmonic (Scale Fit)' },
+            { value: 'energy', label: 'Energy (Gain)' },
+            { value: 'density', label: 'Density (Rate Limit)' },
+            { value: 'all', label: 'All Combined' },
+          ]}
+          onChange={v => onChange('criteria', v)}
+        />
+      </PropertyRow>
+      
+      {(props.criteria === 'harmonic' || props.criteria === 'all') && (
+        <>
+          <div className={styles.sectionHeader}>Harmonic Fitness</div>
+          
+          <PropertyRow label="Use Global Key">
+            <Checkbox
+              checked={props.useGlobalKey ?? true}
+              onChange={v => onChange('useGlobalKey', v)}
+            />
+          </PropertyRow>
+          
+          {!props.useGlobalKey && (
+            <>
+              <PropertyRow label="Scale">
+                <Select
+                  value={props.scale ?? 'major'}
+                  options={Object.keys(SCALES).map(s => ({ value: s, label: s }))}
+                  onChange={v => onChange('scale', v)}
+                />
+              </PropertyRow>
+              
+              <PropertyRow label="Root">
+                <Select
+                  value={String(props.root ?? 0)}
+                  options={NOTE_LABELS.map((label, i) => ({ value: String(i), label }))}
+                  onChange={v => onChange('root', parseInt(v))}
+                />
+              </PropertyRow>
+            </>
+          )}
+          
+          <PropertyRow label="Min Consonance">
+            <SliderInput
+              value={props.harmonicThreshold ?? 0.5}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={v => onChange('harmonicThreshold', v)}
+            />
+          </PropertyRow>
+          <div className={styles.description}>
+            Notes outside the scale with consonance below this threshold are killed.
+          </div>
+        </>
+      )}
+      
+      {(props.criteria === 'energy' || props.criteria === 'all') && (
+        <>
+          <div className={styles.sectionHeader}>Energy Fitness</div>
+          
+          <PropertyRow label="Min Gain">
+            <SliderInput
+              value={props.energyThreshold ?? 0.1}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={v => onChange('energyThreshold', v)}
+            />
+          </PropertyRow>
+          <div className={styles.description}>
+            Packets below this gain level die off (survival of the loudest).
+          </div>
+        </>
+      )}
+      
+      {(props.criteria === 'density' || props.criteria === 'all') && (
+        <>
+          <div className={styles.sectionHeader}>Density Fitness</div>
+          
+          <PropertyRow label="Max per Beat">
+            <NumberInput
+              value={props.densityThreshold ?? 8}
+              min={1}
+              max={64}
+              step={1}
+              onChange={v => onChange('densityThreshold', v)}
+            />
+          </PropertyRow>
+          <div className={styles.description}>
+            Only this many packets can pass through per beat (overpopulation control).
+          </div>
+        </>
+      )}
     </>
   );
 }
@@ -1411,14 +1767,16 @@ interface SelectProps {
   value: string;
   options: Array<{ value: string; label: string }>;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }
 
-function Select({ value, options, onChange }: SelectProps): React.ReactElement {
+function Select({ value, options, onChange, disabled }: SelectProps): React.ReactElement {
   return (
     <select
       className={styles.select}
       value={value}
       onChange={e => onChange(e.target.value)}
+      disabled={disabled}
     >
       {options.map(opt => (
         <option key={opt.value} value={opt.value}>

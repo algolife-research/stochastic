@@ -59,6 +59,14 @@ const NODE_CATEGORIES: NodeCategory[] = [
       { type: 'lfo', label: 'LFO', icon: NODE_ICONS.lfo, color: NODE_COLORS.lfo },
       { type: 'scene_trigger', label: 'Scene Trigger', icon: NODE_ICONS.scene_trigger, color: NODE_COLORS.scene_trigger },
     ]
+  },
+  {
+    name: 'Evolution',
+    nodes: [
+      { type: 'mutator', label: 'Mutator', icon: NODE_ICONS.mutator, color: NODE_COLORS.mutator },
+      { type: 'crossover', label: 'Crossover', icon: NODE_ICONS.crossover, color: NODE_COLORS.crossover },
+      { type: 'fitness_gate', label: 'Fitness Gate', icon: NODE_ICONS.fitness_gate, color: NODE_COLORS.fitness_gate },
+    ]
   }
 ];
 

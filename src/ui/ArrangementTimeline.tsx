@@ -1,52 +1,52 @@
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import { useGraphStore, selectScenes, selectArrangement, selectScenePlayback, selectIsRunning } from '@core/store';
 import styles from './ArrangementTimeline.module.css';
-import type { ArrangementSlot, Scene, SceneId } from '@core/types';
+import type { ArrangementSlot, ArrangementChannel, Scene, SceneId } from '@core/types';
 
 /**
- * ArrangementTimeline - Visual timeline for composition mode
- * Shows scenes as blocks on a timeline, supports drag-and-drop reordering
+ * ArrangementTimeline - Multi-track visual timeline for composition mode
+ * Shows scenes as blocks on multiple tracks (like video editing software)
  */
+
+const PIXELS_PER_BEAT = 8;
+const TRACK_HEIGHT = 52;
 
 interface SlotBlockProps {
   slot: ArrangementSlot;
   scene: Scene | undefined;
-  index: number;
   isPlaying: boolean;
-  progress: number; // 0-1 progress through this slot
+  progress: number;
+  pixelsPerBeat: number;
   onRemove: () => void;
-  onMoveLeft: () => void;
-  onMoveRight: () => void;
-  canMoveLeft: boolean;
-  canMoveRight: boolean;
+  onDragStart: (e: React.DragEvent) => void;
 }
 
 function SlotBlock({ 
   slot, 
   scene, 
-  index, 
   isPlaying, 
   progress,
-  onRemove, 
-  onMoveLeft, 
-  onMoveRight,
-  canMoveLeft,
-  canMoveRight
+  pixelsPerBeat,
+  onRemove,
+  onDragStart
 }: SlotBlockProps) {
-  // Use slot overrides or scene defaults
   const effectiveDuration = scene?.durationBeats ?? 16;
   const effectiveLoops = slot.instanceLoopCount ?? scene?.loopCount ?? 1;
   const totalBeats = effectiveDuration * effectiveLoops;
+  const width = totalBeats * pixelsPerBeat;
+  const left = slot.startBeat * pixelsPerBeat;
   
   return (
     <div 
       className={`${styles.slot} ${isPlaying ? styles.playing : ''}`}
       style={{ 
-        borderLeftColor: scene?.color ?? '#666',
-        flex: totalBeats // Width proportional to duration
+        left: `${left}px`,
+        width: `${width}px`,
+        backgroundColor: scene?.color ?? '#666',
       }}
+      draggable
+      onDragStart={onDragStart}
     >
-      {/* Progress overlay */}
       {isPlaying && (
         <div 
           className={styles.progress}
@@ -55,41 +55,180 @@ function SlotBlock({
       )}
       
       <div className={styles.slotContent}>
-        <div className={styles.slotHeader}>
-          <span className={styles.slotIndex}>{index + 1}</span>
-          <span className={styles.slotName}>{scene?.name ?? 'Unknown'}</span>
-        </div>
-        
-        <div className={styles.slotMeta}>
-          <span>{totalBeats} beats</span>
-          {effectiveLoops > 1 && <span>×{effectiveLoops}</span>}
+        <span className={styles.slotName}>{scene?.name ?? 'Unknown'}</span>
+        <span className={styles.slotMeta}>
+          {totalBeats}b {effectiveLoops > 1 && `×${effectiveLoops}`}
+        </span>
+      </div>
+      
+      <button 
+        className={styles.slotRemove}
+        onClick={(e) => { e.stopPropagation(); onRemove(); }}
+        title="Remove"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+interface TrackRowProps {
+  channel: ArrangementChannel;
+  channelIndex: number;
+  slots: ArrangementSlot[];
+  scenes: Map<SceneId, Scene>;
+  isPlaying: boolean;
+  scenePlayback: ReturnType<typeof selectScenePlayback>;
+  pixelsPerBeat: number;
+  totalBeats: number;
+  onDropSlot: (sceneId: SceneId, beat: number, channel: number) => void;
+  onRemoveSlot: (slotId: string) => void;
+  onMoveSlot: (slotId: string, newBeat: number, newChannel: number) => void;
+  onToggleMute: () => void;
+  onToggleSolo: () => void;
+}
+
+function TrackRow({
+  channel,
+  channelIndex,
+  slots,
+  scenes,
+  isPlaying,
+  scenePlayback,
+  pixelsPerBeat,
+  totalBeats,
+  onDropSlot,
+  onRemoveSlot,
+  onMoveSlot,
+  onToggleMute,
+  onToggleSolo
+}: TrackRowProps) {
+  const [dragOverBeat, setDragOverBeat] = useState<number | null>(null);
+  
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const beat = Math.max(0, Math.round(x / pixelsPerBeat));
+    setDragOverBeat(beat);
+  }, [pixelsPerBeat]);
+  
+  const handleDragLeave = useCallback(() => {
+    setDragOverBeat(null);
+  }, []);
+  
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverBeat(null);
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const beat = Math.max(0, Math.round(x / pixelsPerBeat));
+    
+    // Check if this is a slot being moved or a new scene being added
+    const slotId = e.dataTransfer.getData('slotId');
+    if (slotId) {
+      // Moving existing slot
+      onMoveSlot(slotId, beat, channelIndex);
+    } else {
+      // Adding new scene
+      const sceneId = e.dataTransfer.getData('text/plain');
+      if (sceneId) {
+        onDropSlot(sceneId as SceneId, beat, channelIndex);
+      }
+    }
+  }, [pixelsPerBeat, channelIndex, onDropSlot, onMoveSlot]);
+  
+  const getSlotProgress = useCallback((slot: ArrangementSlot): number => {
+    if (!isPlaying || scenePlayback.mode !== 'arrangement') return 0;
+    
+    const scene = scenes.get(slot.sceneId);
+    if (!scene) return 0;
+    
+    const loops = slot.instanceLoopCount ?? scene.loopCount;
+    const duration = scene.durationBeats * loops;
+    const slotEnd = slot.startBeat + duration;
+    
+    const currentBeat = scenePlayback.arrangementBeat;
+    if (currentBeat < slot.startBeat || currentBeat >= slotEnd) return 0;
+    
+    return (currentBeat - slot.startBeat) / duration;
+  }, [isPlaying, scenePlayback, scenes]);
+  
+  const isSlotPlaying = useCallback((slot: ArrangementSlot): boolean => {
+    if (!isPlaying || scenePlayback.mode !== 'arrangement') return false;
+    
+    const scene = scenes.get(slot.sceneId);
+    if (!scene) return false;
+    
+    const loops = slot.instanceLoopCount ?? scene.loopCount;
+    const duration = scene.durationBeats * loops;
+    const currentBeat = scenePlayback.arrangementBeat;
+    
+    return currentBeat >= slot.startBeat && currentBeat < slot.startBeat + duration;
+  }, [isPlaying, scenePlayback, scenes]);
+  
+  const handleSlotDragStart = useCallback((slot: ArrangementSlot) => (e: React.DragEvent) => {
+    e.dataTransfer.setData('slotId', slot.id);
+    e.dataTransfer.effectAllowed = 'move';
+  }, []);
+  
+  return (
+    <div className={styles.trackRow}>
+      {/* Track header with controls */}
+      <div 
+        className={styles.trackHeader}
+        style={{ borderLeftColor: channel.color }}
+      >
+        <span className={styles.trackName}>{channel.name}</span>
+        <div className={styles.trackControls}>
+          <button 
+            className={`${styles.trackButton} ${channel.muted ? styles.active : ''}`}
+            onClick={onToggleMute}
+            title="Mute"
+          >
+            M
+          </button>
+          <button 
+            className={`${styles.trackButton} ${channel.solo ? styles.active : ''}`}
+            onClick={onToggleSolo}
+            title="Solo"
+          >
+            S
+          </button>
         </div>
       </div>
       
-      <div className={styles.slotActions}>
-        <button 
-          className={styles.slotAction}
-          onClick={(e) => { e.stopPropagation(); onMoveLeft(); }}
-          disabled={!canMoveLeft}
-          title="Move left"
-        >
-          ◀
-        </button>
-        <button 
-          className={styles.slotAction}
-          onClick={(e) => { e.stopPropagation(); onMoveRight(); }}
-          disabled={!canMoveRight}
-          title="Move right"
-        >
-          ▶
-        </button>
-        <button 
-          className={styles.slotAction}
-          onClick={(e) => { e.stopPropagation(); onRemove(); }}
-          title="Remove from composition"
-        >
-          ✕
-        </button>
+      {/* Track lane */}
+      <div 
+        className={styles.trackLane}
+        style={{ width: `${totalBeats * pixelsPerBeat}px` }}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {/* Drop indicator */}
+        {dragOverBeat !== null && (
+          <div 
+            className={styles.dropIndicator}
+            style={{ left: `${dragOverBeat * pixelsPerBeat}px` }}
+          />
+        )}
+        
+        {/* Slots on this track */}
+        {slots.map((slot) => (
+          <SlotBlock
+            key={slot.id}
+            slot={slot}
+            scene={scenes.get(slot.sceneId)}
+            isPlaying={isSlotPlaying(slot)}
+            progress={getSlotProgress(slot)}
+            pixelsPerBeat={pixelsPerBeat}
+            onRemove={() => onRemoveSlot(slot.id)}
+            onDragStart={handleSlotDragStart(slot)}
+          />
+        ))}
       </div>
     </div>
   );
@@ -98,6 +237,7 @@ function SlotBlock({
 export function ArrangementTimeline() {
   const scenes = useGraphStore(selectScenes);
   const arrangement = useGraphStore(selectArrangement);
+  const arrangementChannels = useGraphStore(state => state.arrangementChannels);
   const globalBpm = useGraphStore(state => state.masterSpeed);
   const scenePlayback = useGraphStore(selectScenePlayback);
   const isPlaying = useGraphStore(selectIsRunning);
@@ -105,86 +245,49 @@ export function ArrangementTimeline() {
   const canvasNodeCount = useGraphStore(state => state.nodes.size);
   
   const removeFromArrangement = useGraphStore(state => state.removeFromArrangement);
-  const reorderArrangement = useGraphStore(state => state.reorderArrangement);
+  const updateArrangementSlot = useGraphStore(state => state.updateArrangementSlot);
   const clearArrangement = useGraphStore(state => state.clearArrangement);
   const addToArrangement = useGraphStore(state => state.addToArrangement);
   const seekArrangement = useGraphStore(state => state.seekArrangement);
+  const addArrangementChannel = useGraphStore(state => state.addArrangementChannel);
+  const updateArrangementChannel = useGraphStore(state => state.updateArrangementChannel);
   
   const timelineRef = useRef<HTMLDivElement>(null);
-  const [showScenePicker, setShowScenePicker] = useState(false);
-  const [pickerPos, setPickerPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
-  const addSlotRef = useRef<HTMLDivElement>(null);
-  const pickerRef = useRef<HTMLDivElement>(null);
   const [isScrubbing, setIsScrubbing] = useState(false);
+  const [showScenePicker, setShowScenePicker] = useState(false);
+  const [pickerChannel, _setPickerChannel] = useState(0);
+  const pickerRef = useRef<HTMLDivElement>(null);
   
-  // Close scene picker when clicking outside
-  useEffect(() => {
-    if (!showScenePicker) return;
-    
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      // Check if click is outside both the button and the dropdown
-      const isOutsideButton = addSlotRef.current && !addSlotRef.current.contains(target);
-      const isOutsidePicker = pickerRef.current && !pickerRef.current.contains(target);
-      
-      if (isOutsideButton && isOutsidePicker) {
-        setShowScenePicker(false);
-      }
-    };
-    
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showScenePicker]);
-  
-  // Calculate total duration and playhead position
-  const { totalBeats, totalDuration, slotPositions, minSlotDuration } = useMemo(() => {
-    let cumulative = 0;
-    const positions: { startBeat: number; endBeat: number }[] = [];
-    let minDuration = Infinity;
+  // Calculate total beats across all channels
+  const { totalBeats, totalDuration } = useMemo(() => {
+    let maxBeat = 0;
     
     for (const slot of arrangement) {
       const scene = scenes.get(slot.sceneId);
-      const duration = scene?.durationBeats ?? 16;
-      const loops = slot.instanceLoopCount ?? scene?.loopCount ?? 1;
-      const totalSlotBeats = duration * loops;
+      if (!scene) continue;
       
-      if (totalSlotBeats < minDuration) minDuration = totalSlotBeats;
-      
-      positions.push({
-        startBeat: cumulative,
-        endBeat: cumulative + totalSlotBeats
-      });
-      cumulative += totalSlotBeats;
+      const loops = slot.instanceLoopCount ?? scene.loopCount;
+      const slotEnd = slot.startBeat + scene.durationBeats * loops;
+      if (slotEnd > maxBeat) maxBeat = slotEnd;
     }
     
-    // totalDuration in seconds
-    const totalSec = cumulative / (globalBpm / 60);
+    // Ensure minimum length
+    maxBeat = Math.max(maxBeat, 64);
     
-    return { 
-      totalBeats: cumulative, 
-      totalDuration: totalSec,
-      slotPositions: positions,
-      minSlotDuration: minDuration === Infinity ? 16 : minDuration
-    };
+    const totalSec = maxBeat / (globalBpm / 60);
+    return { totalBeats: maxBeat, totalDuration: totalSec };
   }, [arrangement, scenes, globalBpm]);
-
-  // Calculate required width to ensure linearity
-  // We want the smallest slot to be at least 80px
-  const pixelsPerBeat = 80 / Math.max(1, minSlotDuration);
-  const requiredWidth = totalBeats * pixelsPerBeat;
   
-  // Calculate progress for current playing slot
-  const getCurrentSlotProgress = useCallback((index: number): number => {
-    if (!isPlaying || scenePlayback.mode !== 'arrangement') return 0;
-    if (scenePlayback.currentSlotIndex !== index) return 0;
-    
-    const pos = slotPositions[index];
-    if (!pos) return 0;
-    
-    const slotBeats = pos.endBeat - pos.startBeat;
-    const beatsIntoSlot = scenePlayback.arrangementBeat - pos.startBeat;
-    return Math.min(1, Math.max(0, beatsIntoSlot / slotBeats));
-  }, [isPlaying, scenePlayback, slotPositions]);
+  // Group slots by channel
+  const slotsByChannel = useMemo(() => {
+    const grouped: Map<number, ArrangementSlot[]> = new Map();
+    for (const slot of arrangement) {
+      const existing = grouped.get(slot.channel) ?? [];
+      existing.push(slot);
+      grouped.set(slot.channel, existing);
+    }
+    return grouped;
+  }, [arrangement]);
   
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
@@ -193,79 +296,71 @@ export function ArrangementTimeline() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
   
-  // Get available scenes to add - all scenes (even if editing has unsaved content)
+  // Available scenes to add
   const availableScenes = useMemo(() => {
     return Array.from(scenes.values()).filter(s => {
-      // Scene has saved content
       if (s.nodes.length > 0 || s.edges.length > 0) return true;
-      // Scene is currently being edited and canvas has content
       if (s.id === editingSceneId && canvasNodeCount > 0) return true;
       return false;
     });
   }, [scenes, editingSceneId, canvasNodeCount]);
   
-  // Handle drag and drop from scene list
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
-  }, []);
-  
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const sceneId = e.dataTransfer.getData('text/plain');
-    if (sceneId && scenes.has(sceneId as SceneId)) {
-      addToArrangement(sceneId as SceneId);
-    }
-  }, [scenes, addToArrangement]);
-  
-  // Reorder helper - swaps two adjacent slots by manipulating the array order
-  const swapSlots = useCallback((indexA: number, indexB: number) => {
-    if (indexA < 0 || indexB < 0) return;
-    if (indexA >= arrangement.length || indexB >= arrangement.length) return;
-    
-    const slotA = arrangement[indexA];
-    const slotB = arrangement[indexB];
-    if (!slotA || !slotB) return;
-    
-    // Create new arrangement with swapped positions
-    const newArrangement = [...arrangement];
-    newArrangement[indexA] = slotB;
-    newArrangement[indexB] = slotA;
-    
-    // Update all slots via reorderArrangement - use their index as startBeat
-    // This ensures proper ordering
-    newArrangement.forEach((slot, idx) => {
-      reorderArrangement(slot.id, idx);
-    });
-  }, [arrangement, reorderArrangement]);
-
-  // Scrubbing logic
+  // Scrubbing
   const handleScrub = useCallback((e: MouseEvent | React.MouseEvent) => {
     if (!timelineRef.current || totalBeats === 0) return;
     const rect = timelineRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const width = rect.width;
-    const progress = Math.max(0, Math.min(1, x / width));
-    const beat = progress * totalBeats;
+    const x = e.clientX - rect.left - 100; // Account for track header width
+    const beat = Math.max(0, x / PIXELS_PER_BEAT);
     seekArrangement(beat);
   }, [totalBeats, seekArrangement]);
-
+  
   useEffect(() => {
-    if (isScrubbing) {
-      const handleWindowMouseMove = (e: MouseEvent) => handleScrub(e);
-      const handleWindowMouseUp = () => setIsScrubbing(false);
-      
-      window.addEventListener('mousemove', handleWindowMouseMove);
-      window.addEventListener('mouseup', handleWindowMouseUp);
-      
-      return () => {
-        window.removeEventListener('mousemove', handleWindowMouseMove);
-        window.removeEventListener('mouseup', handleWindowMouseUp);
-      };
-    }
+    if (!isScrubbing) return;
+    
+    const handleMouseMove = (e: MouseEvent) => handleScrub(e);
+    const handleMouseUp = () => setIsScrubbing(false);
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
   }, [isScrubbing, handleScrub]);
   
-  if (arrangement.length === 0) {
+  // Close picker when clicking outside
+  useEffect(() => {
+    if (!showScenePicker) return;
+    
+    const handleClick = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowScenePicker(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showScenePicker]);
+  
+  const handleDropSlot = useCallback((sceneId: SceneId, beat: number, channel: number) => {
+    addToArrangement(sceneId, beat, channel);
+  }, [addToArrangement]);
+  
+  const handleMoveSlot = useCallback((slotId: string, newBeat: number, newChannel: number) => {
+    updateArrangementSlot(slotId, { startBeat: newBeat, channel: newChannel });
+  }, [updateArrangementSlot]);
+  
+  const handleToggleMute = useCallback((channelId: string, currentMuted: boolean) => {
+    updateArrangementChannel(channelId, { muted: !currentMuted });
+  }, [updateArrangementChannel]);
+  
+  const handleToggleSolo = useCallback((channelId: string, currentSolo: boolean) => {
+    updateArrangementChannel(channelId, { solo: !currentSolo });
+  }, [updateArrangementChannel]);
+  
+  // Empty state
+  if (arrangement.length === 0 && arrangementChannels.length === 1) {
     return (
       <div className={styles.timeline}>
         <div className={styles.header}>
@@ -277,25 +372,21 @@ export function ArrangementTimeline() {
           </div>
         </div>
         
-        <div 
-          className={styles.emptyTimeline}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-        >
+        <div className={styles.emptyTimeline}>
           <p>No scenes in composition</p>
           <p className={styles.hint}>
-            Add scenes from the Scene Panel or drag them here
+            Drag scenes from the Scene Panel onto tracks below
           </p>
           
           {availableScenes.length > 0 && (
             <div className={styles.quickAdd}>
-              <span>Quick add:</span>
+              <span>Quick add to Track 1:</span>
               {availableScenes.slice(0, 4).map(scene => (
                 <button
                   key={scene.id}
                   className={styles.quickAddButton}
                   style={{ borderColor: scene.color }}
-                  onClick={() => addToArrangement(scene.id)}
+                  onClick={() => addToArrangement(scene.id, 0, 0)}
                 >
                   {scene.name}
                 </button>
@@ -312,13 +403,20 @@ export function ArrangementTimeline() {
       <div className={styles.header}>
         <h4>Composition</h4>
         <div className={styles.headerInfo}>
-          <span>{arrangement.length} scene{arrangement.length !== 1 ? 's' : ''}</span>
+          <span>{arrangement.length} slot{arrangement.length !== 1 ? 's' : ''}</span>
           <span>·</span>
-          <span>{totalBeats} beats</span>
+          <span>{arrangementChannels.length} track{arrangementChannels.length !== 1 ? 's' : ''}</span>
           <span>·</span>
           <span>{formatTime(totalDuration)}</span>
         </div>
         <div className={styles.headerActions}>
+          <button 
+            className={styles.addTrackButton}
+            onClick={addArrangementChannel}
+            title="Add track"
+          >
+            + Track
+          </button>
           <button 
             className={styles.clearButton}
             onClick={clearArrangement}
@@ -329,117 +427,78 @@ export function ArrangementTimeline() {
         </div>
       </div>
       
-      {/* Track Container - Scrollable area */}
-      <div className={styles.trackContainer}>
-        {/* Track Content - Sized by content */}
-        <div 
-          ref={timelineRef}
-          className={styles.trackContent}
-          style={{ minWidth: `max(100%, ${requiredWidth}px)` }}
-          onMouseDown={(e) => {
-            setIsScrubbing(true);
-            handleScrub(e);
-          }}
-        >
-          {/* Beat ruler */}
-          <div className={styles.ruler}>
-            {Array.from({ length: Math.ceil(totalBeats / 16) + 1 }, (_, i) => (
+      <div 
+        ref={timelineRef}
+        className={styles.multiTrackContainer}
+        onMouseDown={(e) => {
+          if ((e.target as HTMLElement).closest(`.${styles.trackHeader}`)) return;
+          setIsScrubbing(true);
+          handleScrub(e);
+        }}
+      >
+        {/* Beat ruler */}
+        <div className={styles.rulerRow}>
+          <div className={styles.rulerHeader}></div>
+          <div 
+            className={styles.ruler}
+            style={{ width: `${totalBeats * PIXELS_PER_BEAT}px` }}
+          >
+            {Array.from({ length: Math.ceil(totalBeats / 4) + 1 }, (_, i) => (
               <div 
                 key={i} 
-                className={styles.rulerMark}
-                style={{ left: `${(i * 16 / totalBeats) * 100}%` }}
+                className={`${styles.rulerMark} ${i % 4 === 0 ? styles.rulerMarkMajor : ''}`}
+                style={{ left: `${i * 4 * PIXELS_PER_BEAT}px` }}
               >
-                <span className={styles.rulerLabel}>{i * 16}</span>
+                {i % 4 === 0 && <span className={styles.rulerLabel}>{i * 4}</span>}
               </div>
             ))}
           </div>
-          
-          {/* Slots */}
-          <div 
-            className={styles.slots}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
-            {arrangement.map((slot, index) => {
-              const scene = scenes.get(slot.sceneId);
-              const isPlayingSlot = isPlaying && 
-                scenePlayback.mode === 'arrangement' && 
-                scenePlayback.currentSlotIndex === index;
-                
-              return (
-                <SlotBlock
-                  key={slot.id}
-                  slot={slot}
-                  scene={scene}
-                  index={index}
-                  isPlaying={isPlayingSlot}
-                  progress={getCurrentSlotProgress(index)}
-                  onRemove={() => removeFromArrangement(slot.id)}
-                  onMoveLeft={() => swapSlots(index, index - 1)}
-                  onMoveRight={() => swapSlots(index, index + 1)}
-                  canMoveLeft={index > 0}
-                  canMoveRight={index < arrangement.length - 1}
-                />
-              );
-            })}
-            
-            {/* Add slot button */}
-            <div 
-              ref={addSlotRef}
-              className={styles.addSlot}
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent scrubbing
-                if (!showScenePicker && addSlotRef.current) {
-                  const rect = addSlotRef.current.getBoundingClientRect();
-                  setPickerPos({
-                    top: rect.top - 8, // Position above the button
-                    left: rect.left + rect.width / 2
-                  });
-                }
-                setShowScenePicker(!showScenePicker);
-              }}
-            >
-              <span>+</span>
-            </div>
-          </div>
-          
-          {/* Playback progress indicator */}
-          {/* Show playhead even if not playing, if we have a position */}
-          {scenePlayback.mode === 'arrangement' && totalBeats > 0 && (
-            <div 
-              className={styles.playhead}
-              style={{ 
-                left: `${(scenePlayback.arrangementBeat / totalBeats) * 100}%`,
-                pointerEvents: 'none' // Let clicks pass through to timeline
-              }}
-            />
-          )}
         </div>
+        
+        {/* Tracks */}
+        {arrangementChannels.map((channel, index) => (
+          <TrackRow
+            key={channel.id}
+            channel={channel}
+            channelIndex={index}
+            slots={slotsByChannel.get(index) ?? []}
+            scenes={scenes}
+            isPlaying={isPlaying}
+            scenePlayback={scenePlayback}
+            pixelsPerBeat={PIXELS_PER_BEAT}
+            totalBeats={totalBeats}
+            onDropSlot={handleDropSlot}
+            onRemoveSlot={removeFromArrangement}
+            onMoveSlot={handleMoveSlot}
+            onToggleMute={() => handleToggleMute(channel.id, channel.muted)}
+            onToggleSolo={() => handleToggleSolo(channel.id, channel.solo)}
+          />
+        ))}
+        
+        {/* Playhead */}
+        {scenePlayback.mode === 'arrangement' && totalBeats > 0 && (
+          <div 
+            className={styles.playhead}
+            style={{ 
+              left: `${100 + scenePlayback.arrangementBeat * PIXELS_PER_BEAT}px`,
+              height: `${20 + arrangementChannels.length * TRACK_HEIGHT}px`
+            }}
+          />
+        )}
       </div>
       
-      {/* Scene picker dropdown - rendered outside of overflow container */}
+      {/* Scene picker */}
       {showScenePicker && (
-        <div 
-          ref={pickerRef}
-          className={styles.scenePicker}
-          style={{
-            top: `${Math.max(8, pickerPos.top - 150)}px`,
-            left: `${pickerPos.left}px`,
-            transform: 'translateX(-50%)'
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div ref={pickerRef} className={styles.scenePicker}>
           {availableScenes.length === 0 ? (
-            <div className={styles.scenePickerEmpty}>
-              No scenes with content
-            </div>
+            <div className={styles.scenePickerEmpty}>No scenes with content</div>
           ) : (
             availableScenes.map(scene => (
               <div
                 key={scene.id}
                 className={styles.scenePickerItem}
                 onClick={() => {
-                  addToArrangement(scene.id);
+                  addToArrangement(scene.id, 0, pickerChannel);
                   setShowScenePicker(false);
                 }}
               >

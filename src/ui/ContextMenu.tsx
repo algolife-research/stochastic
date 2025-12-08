@@ -69,6 +69,15 @@ const NODE_CATEGORIES: NodeCategory[] = [
       { type: 'teleporter', label: 'Teleporter', icon: '⊚' },
       { type: 'modulator', label: 'Modulator', icon: '⟳' },
       { type: 'lfo', label: 'LFO', icon: '∿' },
+      { type: 'scene_trigger', label: 'Scene Trigger', icon: '▶' },
+    ]
+  },
+  {
+    name: 'Evolution',
+    nodes: [
+      { type: 'mutator', label: 'Mutator', icon: '🧬' },
+      { type: 'crossover', label: 'Crossover', icon: '⚤' },
+      { type: 'fitness_gate', label: 'Fitness Gate', icon: '🏆' },
     ]
   }
 ];

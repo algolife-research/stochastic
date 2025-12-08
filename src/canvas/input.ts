@@ -1028,7 +1028,8 @@ function isNodeTool(tool: Tool): boolean {
     'source', 'speaker', 'pitch', 'polariser', 'filter', 
     'gate', 'delay', 'gain', 'noise', 'harmonic', 
     'modulator', 'tunnel', 'teleporter', 'quantizer', 
-    'lfo', 'midi_out', 'midi_cc', 'scene_trigger'
+    'lfo', 'splitter', 'midi_out', 'midi_cc', 'scene_trigger',
+    'mutator', 'crossover', 'fitness_gate'
   ];
   return nodeTool.includes(tool);
 }

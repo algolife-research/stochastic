@@ -7,6 +7,7 @@ import type {
   FilterProps, GateProps, DelayProps, GainProps, NoiseProps,
   HarmonicProps, ModulatorProps, TunnelProps, TeleporterProps,
   QuantizerProps, LfoProps, SplitterProps, MidiOutProps, MidiCcProps, SceneTriggerProps,
+  MutatorProps, CrossoverProps, FitnessGateProps,
   NodeType, Scene, SceneTransition, SceneTriggerConfig, ScenePlaybackState, ArrangementSlot
 } from './types';
 
@@ -111,6 +112,9 @@ export const NODE_COLORS: Record<NodeType, string> = {
   midi_out:      '#03a9f4',  // Light Blue
   midi_cc:       '#009688',  // Teal
   scene_trigger: '#f44336',  // Red
+  mutator:       '#ff6f00',  // Amber Dark - Evolution/mutation
+  crossover:     '#d500f9',  // Purple Accent - DNA mixing
+  fitness_gate:  '#76ff03',  // Light Green Accent - Survival
 } as const;
 
 // ============================================================================
@@ -137,6 +141,9 @@ export const NODE_ICONS: Record<NodeType, string> = {
   midi_out:      '♬',
   midi_cc:       '⚙',
   scene_trigger: '▶',
+  mutator:       '🧬',  // DNA strand
+  crossover:     '⚤',   // Male/Female symbol (reproduction)
+  fitness_gate:  '🏆',  // Trophy (survival of fittest)
 } as const;
 
 // ============================================================================
@@ -263,6 +270,39 @@ export const DEFAULT_SCENE_TRIGGER_PROPS: SceneTriggerProps = {
 };
 
 // ============================================================================
+// EVOLUTIONARY NODE DEFAULTS
+// ============================================================================
+
+export const DEFAULT_MUTATOR_PROPS: MutatorProps = {
+  mode: 'drift',
+  probability: 0.5,
+  pitchDrift: 2,           // +/- 2 semitones
+  pitchRadiation: 12,      // +/- 1 octave
+  gainDrift: 0.1,          // +/- 10%
+  cutoffDrift: 0.2,        // +/- 20%
+  waveChange: false,
+  targets: ['pitch'],
+};
+
+export const DEFAULT_CROSSOVER_PROPS: CrossoverProps = {
+  inheritance: 'random',
+  pitchFrom: 'random',
+  waveFrom: 'random',
+  gainMode: 'average',
+  timeout: 4,              // Wait 4 beats for second parent
+};
+
+export const DEFAULT_FITNESS_GATE_PROPS: FitnessGateProps = {
+  criteria: 'harmonic',
+  harmonicThreshold: 0.5,  // 50% consonance required
+  energyThreshold: 0.1,    // Min 10% gain to survive
+  densityThreshold: 8,     // Max 8 packets per beat
+  useGlobalKey: true,
+  scale: 'major',
+  root: 0,
+};
+
+// ============================================================================
 // DEFAULT PROPS LOOKUP
 // ============================================================================
 
@@ -286,6 +326,9 @@ type DefaultPropsMap = {
   midi_out: MidiOutProps;
   midi_cc: MidiCcProps;
   scene_trigger: SceneTriggerProps;
+  mutator: MutatorProps;
+  crossover: CrossoverProps;
+  fitness_gate: FitnessGateProps;
 };
 
 const DEFAULT_PROPS_MAP: DefaultPropsMap = {
@@ -308,6 +351,9 @@ const DEFAULT_PROPS_MAP: DefaultPropsMap = {
   midi_out: DEFAULT_MIDI_OUT_PROPS,
   midi_cc: DEFAULT_MIDI_CC_PROPS,
   scene_trigger: DEFAULT_SCENE_TRIGGER_PROPS,
+  mutator: DEFAULT_MUTATOR_PROPS,
+  crossover: DEFAULT_CROSSOVER_PROPS,
+  fitness_gate: DEFAULT_FITNESS_GATE_PROPS,
 };
 
 /**
@@ -437,6 +483,7 @@ export const INITIAL_SCENE_PLAYBACK_STATE: ScenePlaybackState = {
   mode: 'jam',
   arrangementBeat: 0,
   currentSlotIndex: 0,
+  activeChannels: [],
   currentSceneId: null,
   sceneBeat: 0,
   sceneLoopIteration: 0,

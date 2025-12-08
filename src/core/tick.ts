@@ -2,7 +2,7 @@
 // Handles source timers, packet movement, scene playback, and game loop
 
 import { getGraphStore } from './store';
-import type { Packet, GraphNode, NodeId, PacketId, MidiNote, Frequency, AudioPayload, SceneId, SceneQuantize } from './types';
+import type { Packet, GraphNode, GraphEdge, NodeId, EdgeId, PacketId, MidiNote, Frequency, AudioPayload, SceneId, SceneQuantize, CrossoverProps } from './types';
 import { createPacketId } from './types';
 import { dist, midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS, getEffectiveBpm, getEffectiveRoot, getEffectiveScale } from './constants';
 import { processNodeArrival, getTeleporterExits, consumePendingTunnelSpeakers } from './engine';
@@ -15,6 +15,26 @@ import { audioEngine } from '@audio/engine';
 let lastTime = 0;
 let tickInterval: number | null = null;
 let beatAccumulator = 0;     // Fractional beats accumulated
+
+// ============================================================================
+// MULTI-CHANNEL SCENE STATE
+// ============================================================================
+
+/** State for a scene playing on a channel (not on canvas) */
+interface ChannelSceneState {
+  sceneId: SceneId;
+  channelIndex: number;
+  nodes: Map<NodeId, GraphNode>;
+  edges: Map<EdgeId, GraphEdge>;
+  packets: Map<PacketId, Packet>;
+  localBeat: number;
+}
+
+/** Active channel scenes (excluding the one on canvas) */
+let activeChannelScenes: Map<number, ChannelSceneState> = new Map();
+
+/** Which channel is currently displayed on canvas (-1 for none/jam mode) */
+let canvasChannelIndex: number = 0;
 
 // ============================================================================
 // ENTANGLEMENT SYNC
@@ -36,6 +56,123 @@ function syncEntangledPayloads(
       store.updatePacket(packet.id, { payload: { ...newPayload } });
     }
   });
+}
+
+// ============================================================================
+// CROSSOVER (SEXUAL REPRODUCTION)
+// ============================================================================
+
+// Note: WAVE_TYPES is defined in engine.ts for mutator use
+
+/**
+ * Perform genetic crossover between two parent packets
+ * Creates an offspring with inherited properties from both parents
+ */
+function performCrossover(parentA: AudioPayload, parentB: AudioPayload, props: CrossoverProps): AudioPayload {
+  const offspring: AudioPayload = { ...parentA }; // Start with parent A as base
+  
+  // Determine pitch inheritance
+  switch (props.pitchFrom) {
+    case 'a':
+      // Already have A's pitch
+      break;
+    case 'b':
+      offspring.midiNote = parentB.midiNote;
+      offspring.freq = parentB.freq;
+      break;
+    case 'average':
+      const avgMidi = Math.round((parentA.midiNote + parentB.midiNote) / 2) as MidiNote;
+      offspring.midiNote = avgMidi;
+      offspring.freq = midiToFreq(avgMidi);
+      break;
+    case 'random':
+      if (Math.random() < 0.5) {
+        offspring.midiNote = parentB.midiNote;
+        offspring.freq = parentB.freq;
+      }
+      break;
+  }
+  
+  // Determine wave inheritance
+  switch (props.waveFrom) {
+    case 'a':
+      // Already have A's wave
+      break;
+    case 'b':
+      offspring.wave = parentB.wave;
+      break;
+    case 'random':
+      if (Math.random() < 0.5) {
+        offspring.wave = parentB.wave;
+      }
+      break;
+  }
+  
+  // Determine gain combination
+  switch (props.gainMode) {
+    case 'average':
+      offspring.gain = (parentA.gain + parentB.gain) / 2;
+      break;
+    case 'max':
+      offspring.gain = Math.max(parentA.gain, parentB.gain);
+      break;
+    case 'min':
+      offspring.gain = Math.min(parentA.gain, parentB.gain);
+      break;
+    case 'random':
+      offspring.gain = Math.random() < 0.5 ? parentA.gain : parentB.gain;
+      break;
+  }
+  
+  // Handle inheritance mode for other properties
+  switch (props.inheritance) {
+    case 'random':
+      // Randomly pick each property from either parent
+      offspring.timbre = Math.random() < 0.5 ? parentA.timbre : parentB.timbre;
+      offspring.cutoff = Math.random() < 0.5 ? parentA.cutoff : parentB.cutoff;
+      offspring.holdTime = Math.random() < 0.5 ? parentA.holdTime : parentB.holdTime;
+      offspring.releaseTime = Math.random() < 0.5 ? parentA.releaseTime : parentB.releaseTime;
+      break;
+    case 'dominant_a':
+      // Keep A's properties (already the base)
+      break;
+    case 'dominant_b':
+      // Use B's properties
+      offspring.timbre = parentB.timbre;
+      offspring.cutoff = parentB.cutoff;
+      offspring.holdTime = parentB.holdTime;
+      offspring.releaseTime = parentB.releaseTime;
+      break;
+    case 'blend':
+      // Average/blend numeric properties
+      offspring.timbre = (parentA.timbre + parentB.timbre) / 2;
+      offspring.cutoff = ((parentA.cutoff + parentB.cutoff) / 2) as Frequency;
+      offspring.holdTime = (parentA.holdTime + parentB.holdTime) / 2;
+      offspring.releaseTime = (parentA.releaseTime + parentB.releaseTime) / 2;
+      break;
+  }
+  
+  // Merge wave layers from both parents (if they exist)
+  const wavesA = parentA.waves ?? [];
+  const wavesB = parentB.waves ?? [];
+  if (wavesA.length > 0 || wavesB.length > 0) {
+    // Take alternating layers from each parent, filtering out undefined
+    const mergedWaves = [];
+    const maxLen = Math.max(wavesA.length, wavesB.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i % 2 === 0 && wavesA[i]) {
+        mergedWaves.push(wavesA[i]);
+      } else if (wavesB[i]) {
+        mergedWaves.push(wavesB[i]);
+      } else if (wavesA[i]) {
+        mergedWaves.push(wavesA[i]);
+      }
+    }
+    // Filter to ensure no undefined values
+    offspring.waves = mergedWaves.filter((w): w is NonNullable<typeof w> => w !== undefined);
+  }
+  
+  return offspring;
 }
 
 // ============================================================================
@@ -79,6 +216,9 @@ export function tick(currentTime: number): void {
     
     // Update delay nodes
     updateDelayNodes(currentTime);
+    
+    // Update virtual channel scenes (multi-channel audio)
+    updateVirtualChannelScenes(currentTime, dt);
   } catch (error) {
     console.error('Tick error:', error);
   }
@@ -113,103 +253,470 @@ function updateScenePlayback(dt: number): void {
   }
 }
 
+/** Track which scenes are currently active per channel */
+interface ActiveSlot {
+  slotId: string;
+  sceneId: SceneId;
+  channelIndex: number;
+  startBeat: number;
+  endBeat: number;
+  localBeat: number;  // Beat within this slot
+  loops: number;
+}
+
 /**
- * Update arrangement mode - sequential scene playback
+ * Update arrangement mode - multi-channel scene playback
+ * Multiple scenes can play simultaneously on different channels
  */
 function updateArrangementMode(deltaBeats: number): void {
   const store = getGraphStore();
-  const { scenePlayback, scenes, arrangement } = store;
+  const { scenePlayback, scenes, arrangement, arrangementChannels } = store;
   
   if (arrangement.length === 0) return;
   
-  // Calculate total beats in arrangement
-  let totalBeats = 0;
-  const slotBounds: { start: number; end: number; sceneId: SceneId; loops: number }[] = [];
+  const currentBeat = scenePlayback.arrangementBeat;
+  
+  // Calculate which slots are active at the current beat (across all channels)
+  const activeSlots: ActiveSlot[] = [];
+  let maxEndBeat = 0;
   
   for (const slot of arrangement) {
     const scene = scenes.get(slot.sceneId);
-    if (!scene) {
-      console.warn(`[updateArrangement] Slot has missing scene ${slot.sceneId}`);
-      continue;
-    }
+    if (!scene) continue;
+    
+    // Check if channel is muted
+    const channel = arrangementChannels[slot.channel];
+    if (channel?.muted) continue;
+    
+    // Check for solo mode - if any channel is soloed, only play soloed channels
+    const hasSolo = arrangementChannels.some(c => c.solo);
+    if (hasSolo && !channel?.solo) continue;
     
     const loops = slot.instanceLoopCount ?? scene.loopCount;
     const slotDuration = scene.durationBeats * loops;
+    const slotStart = slot.startBeat;
+    const slotEnd = slotStart + slotDuration;
     
-    slotBounds.push({
-      start: totalBeats,
-      end: totalBeats + slotDuration,
-      sceneId: slot.sceneId,
-      loops
-    });
+    if (slotEnd > maxEndBeat) maxEndBeat = slotEnd;
     
-    totalBeats += slotDuration;
-  }
-  
-  if (totalBeats === 0) return;
-  
-  // Check if we need to advance to next slot
-  const currentBeat = scenePlayback.arrangementBeat;
-  const currentSlot = slotBounds[scenePlayback.currentSlotIndex];
-  
-  // Debug: log current state periodically (every ~1 second worth of beats)
-  if (Math.floor(currentBeat) !== Math.floor(currentBeat - deltaBeats) && Math.floor(currentBeat) % 4 === 0) {
-    console.log(`[updateArrangement] Beat ${currentBeat.toFixed(1)}, slotIndex: ${scenePlayback.currentSlotIndex}, slotBounds: ${slotBounds.length}, currentSlot: ${currentSlot?.start}-${currentSlot?.end}`);
-  }
-  
-  if (currentSlot && currentBeat >= currentSlot.end) {
-    // Move to next slot
-    const nextIndex = scenePlayback.currentSlotIndex + 1;
-    
-    console.log(`[Arrangement] Transitioning from slot ${scenePlayback.currentSlotIndex} to ${nextIndex}, beat: ${currentBeat.toFixed(2)}, slotEnd: ${currentSlot.end}`);
-    console.log(`[Arrangement] Current nodes on canvas before transition: ${store.nodes.size}`);
-    
-    if (nextIndex >= arrangement.length) {
-      // Arrangement complete - stop playback
-      console.log('[Arrangement] Complete, stopping');
-      store.togglePlayback(); // Stop
-      store.setScenePlayback({
-        arrangementBeat: 0,
-        currentSlotIndex: 0
+    // Check if this slot is active at current beat
+    if (currentBeat >= slotStart && currentBeat < slotEnd) {
+      activeSlots.push({
+        slotId: slot.id,
+        sceneId: slot.sceneId,
+        channelIndex: slot.channel,
+        startBeat: slotStart,
+        endBeat: slotEnd,
+        localBeat: currentBeat - slotStart,
+        loops
       });
+    }
+  }
+  
+  // Debug: log active slots periodically (uncomment for debugging)
+  // if (Math.floor(currentBeat) !== Math.floor(currentBeat - deltaBeats) && Math.floor(currentBeat) % 4 === 0) {
+  //   console.log(`[Arrangement] Beat ${currentBeat.toFixed(1)}, active slots: ${activeSlots.length}`, 
+  //     activeSlots.map(s => `ch${s.channelIndex}:${s.sceneId}`).join(', '));
+  // }
+  
+  // Check if arrangement is complete
+  if (maxEndBeat > 0 && currentBeat >= maxEndBeat) {
+    console.log('[Arrangement] Complete, stopping');
+    store.togglePlayback();
+    store.setScenePlayback({
+      arrangementBeat: 0,
+      currentSlotIndex: 0,
+      activeChannels: []
+    });
+    activeChannelScenes.clear();
+    return;
+  }
+  
+  // Update active channel states
+  const newActiveChannels = activeSlots.map(slot => ({
+    channelIndex: slot.channelIndex,
+    currentSlotId: slot.slotId,
+    sceneBeat: slot.localBeat % (scenes.get(slot.sceneId)?.durationBeats ?? 16),
+    sceneLoopIteration: Math.floor(slot.localBeat / (scenes.get(slot.sceneId)?.durationBeats ?? 16)),
+    isTransitioning: false,
+    transitionProgress: 0
+  }));
+  
+  // Only update if channel states have changed
+  const prevActiveIds = scenePlayback.activeChannels.map(c => c.currentSlotId).sort().join(',');
+  const newActiveIds = newActiveChannels.map(c => c.currentSlotId).sort().join(',');
+  
+  if (prevActiveIds !== newActiveIds) {
+    // console.log(`[Arrangement] Active slots changed: ${newActiveIds}`);
+    store.setScenePlayback({ activeChannels: newActiveChannels });
+    
+    // Set canvas channel FIRST (before updating virtual scenes)
+    // The primary slot (first active slot by channel order) goes to canvas
+    if (activeSlots.length > 0 && activeSlots[0]) {
+      const primarySlot = activeSlots[0];
+      canvasChannelIndex = primarySlot.channelIndex;
+      store.loadSceneToCanvas(primarySlot.sceneId);
+    }
+    
+    // Update virtual channel scenes (for non-canvas channels)
+    updateActiveChannelScenes(activeSlots);
+  }
+  
+  // For backward compatibility, also set currentSceneId if there's at least one active
+  if (activeSlots.length > 0 && activeSlots[0]) {
+    const primarySlot = activeSlots[0];
+    if (scenePlayback.currentSceneId !== primarySlot.sceneId) {
+      store.setScenePlayback({
+        currentSceneId: primarySlot.sceneId,
+        currentSlotIndex: arrangement.findIndex(s => s.id === primarySlot.slotId),
+        sceneBeat: primarySlot.localBeat % (scenes.get(primarySlot.sceneId)?.durationBeats ?? 16)
+      });
+    }
+  }
+}
+
+/**
+ * Update the virtual scene states for non-canvas channels
+ */
+function updateActiveChannelScenes(activeSlots: ActiveSlot[]): void {
+  const store = getGraphStore();
+  const { scenes } = store;
+  
+  // Clear old channel scenes that are no longer active
+  const activeChannelIndices = new Set(activeSlots.map(s => s.channelIndex));
+  for (const [channelIndex] of activeChannelScenes) {
+    if (!activeChannelIndices.has(channelIndex)) {
+      activeChannelScenes.delete(channelIndex);
+    }
+  }
+  
+  // Create/update channel scenes for non-canvas channels
+  for (const slot of activeSlots) {
+    // Skip the canvas channel - it uses the main store
+    if (slot.channelIndex === canvasChannelIndex) continue;
+    
+    const scene = scenes.get(slot.sceneId);
+    if (!scene) continue;
+    
+    // Check if we need to create/update this channel's state
+    const existing = activeChannelScenes.get(slot.channelIndex);
+    if (!existing || existing.sceneId !== slot.sceneId) {
+      // Create new virtual scene state
+      const nodes = new Map<NodeId, GraphNode>();
+      const edges = new Map<EdgeId, GraphEdge>();
+      
+      // Clone scene nodes with fresh state
+      for (const nodeData of scene.nodes) {
+        const node: GraphNode = {
+          ...nodeData,
+          id: nodeData.id as NodeId,
+          timer: 0,
+          lastTrigger: 0,
+          flash: 0,
+          heldPackets: [],
+        };
+        nodes.set(node.id, node);
+      }
+      
+      // Clone scene edges
+      for (const edgeData of scene.edges) {
+        edges.set(edgeData.id as EdgeId, edgeData as GraphEdge);
+      }
+      
+      activeChannelScenes.set(slot.channelIndex, {
+        sceneId: slot.sceneId,
+        channelIndex: slot.channelIndex,
+        nodes,
+        edges,
+        packets: new Map(),
+        localBeat: slot.localBeat,
+      });
+      
+      // console.log(`[MultiChannel] Created virtual scene for channel ${slot.channelIndex}: ${slot.sceneId}`);
+    } else {
+      // Update local beat
+      existing.localBeat = slot.localBeat;
+    }
+  }
+}
+
+/**
+ * Process virtual channel scenes - sources and packets for non-canvas channels
+ * This enables multi-channel audio where scenes not on canvas still produce sound
+ */
+function updateVirtualChannelScenes(now: number, dt: number): void {
+  const store = getGraphStore();
+  const { masterSpeed, arrangementChannels, scenePlayback } = store;
+  
+  // Only process in arrangement mode
+  if (scenePlayback.mode !== 'arrangement') return;
+  
+  const msPerBeat = (60 / masterSpeed) * 1000;
+  
+  // Process each active virtual channel scene
+  for (const [channelIndex, channelScene] of activeChannelScenes) {
+    // Skip if this channel is the one on canvas (already processed by main loop)
+    if (channelIndex === canvasChannelIndex) continue;
+    
+    // Get channel settings for volume
+    const channel = arrangementChannels[channelIndex];
+    const channelVolume = channel?.volume ?? 1;
+    
+    // Update sources - trigger auto-sources and spawn packets
+    updateVirtualSources(channelScene, now, msPerBeat);
+    
+    // Update packets - move them and process arrivals
+    updateVirtualPackets(channelScene, dt, channelVolume);
+  }
+}
+
+/**
+ * Update sources in a virtual channel scene
+ */
+function updateVirtualSources(
+  channelScene: ChannelSceneState,
+  now: number,
+  msPerBeat: number
+): void {
+  const { nodes } = channelScene;
+  
+  nodes.forEach((node) => {
+    if (node.type !== 'source') return;
+    
+    const props = node.props as {
+      interval: number;
+      autoTrigger: boolean;
+      noteIndex: number;
+      midiNote: MidiNote;
+      intensity: number;
+    };
+    
+    // Skip manual trigger sources
+    if (props.autoTrigger === false) return;
+    
+    const intervalMs = props.interval * msPerBeat;
+    
+    if (now - node.lastTrigger >= intervalMs) {
+      // Spawn packets for this source
+      spawnVirtualPacket(channelScene, node.id, props);
+      
+      // Update last trigger time
+      node.lastTrigger = now;
+      node.flash = 1;
+    }
+  });
+}
+
+/**
+ * Spawn a packet in a virtual channel scene
+ */
+function spawnVirtualPacket(
+  channelScene: ChannelSceneState,
+  sourceNodeId: NodeId,
+  props: { noteIndex: number; midiNote: MidiNote; intensity: number }
+): void {
+  const { edges, packets } = channelScene;
+  
+  if (packets.size >= MAX_PACKETS) return;
+  
+  // Determine MIDI note
+  let midiNote: MidiNote;
+  if (props.noteIndex >= 0) {
+    midiNote = clampMidi(LEGACY_SCALE_OFFSET + Math.min(36, props.noteIndex)) as MidiNote;
+  } else if (props.noteIndex === -1) {
+    // Random note
+    midiNote = (36 + Math.floor(Math.random() * 49)) as MidiNote;
+  } else {
+    midiNote = props.midiNote ?? (60 as MidiNote);
+  }
+  
+  const freq = midiToFreq(midiNote);
+  const intensity = props.intensity ?? 0.5;
+  
+  // Get outgoing edges from this source
+  const outgoingEdges: GraphEdge[] = [];
+  edges.forEach((edge) => {
+    if (edge.from === sourceNodeId) {
+      outgoingEdges.push(edge);
+    }
+  });
+  
+  // Create packets for each outgoing edge
+  outgoingEdges.forEach(edge => {
+    const packetId = createPacketId();
+    const packet: Packet = {
+      id: packetId,
+      edgeId: edge.id,
+      t: 0,
+      payload: {
+        freq,
+        midiNote,
+        wave: 'sine',
+        timbre: 0,
+        cutoff: 20000 as Frequency,
+        gain: intensity,
+        holdTime: 0,
+        releaseTime: 0.1,
+      },
+    };
+    
+    packets.set(packetId, packet);
+  });
+}
+
+/**
+ * Update packets in a virtual channel scene
+ */
+function updateVirtualPackets(
+  channelScene: ChannelSceneState,
+  dt: number,
+  channelVolume: number
+): void {
+  const store = getGraphStore();
+  const { globalSettings, masterSpeed } = store;
+  const { nodes, edges, packets } = channelScene;
+  
+  const packetsToDelete: PacketId[] = [];
+  const packetsToSpawn: Packet[] = [];
+  
+  const secondsPerBeat = 60 / masterSpeed;
+  
+  packets.forEach((packet) => {
+    const edge = edges.get(packet.edgeId);
+    if (!edge) {
+      packetsToDelete.push(packet.id);
       return;
     }
     
-    // Advance to next slot
-    const nextSlot = slotBounds[nextIndex];
-    if (nextSlot) {
-      const nextScene = scenes.get(nextSlot.sceneId);
-      console.log(`[Arrangement] Loading scene ${nextSlot.sceneId}, has ${nextScene?.nodes.length ?? 0} nodes`);
+    const fromNode = nodes.get(edge.from);
+    const toNode = nodes.get(edge.to);
+    if (!fromNode || !toNode) {
+      packetsToDelete.push(packet.id);
+      return;
+    }
+    
+    // Calculate traverse time based on edge timing mode
+    let traverseTime: number;
+    if (edge.timingMode === 'fixed' && edge.durationBeats !== null) {
+      traverseTime = edge.durationBeats * secondsPerBeat;
+    } else {
+      // Physical distance mode
+      const edgeLength = dist(fromNode.x, fromNode.y, toNode.x, toNode.y);
+      const beatsToTraverse = edgeLength / globalSettings.pixelsPerBeat;
+      traverseTime = beatsToTraverse * secondsPerBeat;
+    }
+    
+    // Move packet
+    const speed = 1 / Math.max(0.001, traverseTime);
+    packet.t += dt * speed;
+    
+    // Check for arrival
+    if (packet.t >= 1) {
+      // Process arrival - pass the edge for proper node processing
+      processVirtualArrival(channelScene, packet, toNode, edge, channelVolume);
       
-      store.setScenePlayback({
-        currentSlotIndex: nextIndex,
-        currentSceneId: nextSlot.sceneId,
-        sceneBeat: 0,
-        sceneLoopIteration: 0
+      // Check if gate blocked the packet (gain set to negative)
+      if (packet.payload.gain < 0) {
+        packetsToDelete.push(packet.id);
+        return;
+      }
+      
+      // Get outgoing edges from destination
+      const nextEdges: GraphEdge[] = [];
+      edges.forEach((e) => {
+        if (e.from === toNode.id) {
+          nextEdges.push(e);
+        }
       });
       
-      // Load the next scene's graph to the canvas
-      store.loadSceneToCanvas(nextSlot.sceneId);
-      
-      // Debug: check what was loaded
-      const loadedNodes = store.nodes.size;
-      console.log(`[Arrangement] After loadSceneToCanvas: ${loadedNodes} nodes on canvas`);
-      
-      // Update effective settings
-      const scene = scenes.get(nextSlot.sceneId);
-      if (scene) {
-        const globalBpm = store.masterSpeed;
-        const globalRoot = store.musicalContext.root;
-        const globalScale = store.musicalContext.scaleName;
+      if (nextEdges.length === 0) {
+        // No outgoing edges, delete packet
+        packetsToDelete.push(packet.id);
+      } else {
+        // Clone packet for additional edges
+        for (let i = 1; i < nextEdges.length; i++) {
+          const nextEdge = nextEdges[i];
+          if (nextEdge) {
+            const clone: Packet = {
+              id: createPacketId(),
+              edgeId: nextEdge.id,
+              t: 0,
+              payload: { ...packet.payload },
+            };
+            packetsToSpawn.push(clone);
+          }
+        }
         
-        store.setScenePlayback({
-          effectiveBpm: getEffectiveBpm(scene, globalBpm),
-          effectiveRoot: getEffectiveRoot(scene, globalRoot),
-          effectiveScale: getEffectiveScale(scene, globalScale)
-        });
+        // Continue on first edge
+        const firstEdge = nextEdges[0];
+        if (firstEdge) {
+          // Create new packet since we can't mutate readonly properties
+          const continuedPacket: Packet = {
+            id: packet.id,
+            edgeId: firstEdge.id,
+            t: 0,
+            payload: packet.payload,
+          };
+          packets.set(packet.id, continuedPacket);
+        } else {
+          packetsToDelete.push(packet.id);
+        }
       }
     }
+  });
+  
+  // Delete dead packets
+  packetsToDelete.forEach(id => packets.delete(id));
+  
+  // Add new packets
+  packetsToSpawn.forEach(p => packets.set(p.id, p));
+}
+
+/**
+ * Process packet arrival at a node in a virtual channel scene
+ * Uses the same processNodeArrival as the main canvas for consistent behavior
+ */
+function processVirtualArrival(
+  channelScene: ChannelSceneState,
+  packet: Packet,
+  node: GraphNode,
+  edge: GraphEdge,
+  channelVolume: number
+): void {
+  // Use the same processing as the main canvas
+  const processedPayload = processNodeArrival(packet, node, edge);
+  
+  // Update packet payload with processed result
+  packet.payload = processedPayload;
+  
+  // Handle gate - check if packet was blocked (gain set to -1 by processNodeArrival)
+  if (node.type === 'gate' && processedPayload.gain < 0) {
+    // Gate blocked - mark packet for deletion by setting gain to indicate blocked
+    return;
   }
+  
+  // Handle speaker nodes - this triggers audio!
+  if (node.type === 'speaker') {
+    const props = node.props as { volume?: number; pan?: number; reverb?: number };
+    const volume = (props.volume ?? 1) * channelVolume;
+    const pan = props.pan ?? 0;
+    const reverb = props.reverb ?? 0.3;
+    
+    // Apply speaker volume to processed payload
+    const finalPayload = {
+      ...processedPayload,
+      gain: processedPayload.gain * volume,
+    };
+    
+    audioEngine.playNote(finalPayload, { pan, reverb });
+    
+    // Flash the node visually
+    node.flash = 1;
+    return;
+  }
+  
+  // Flash node to indicate processing
+  node.flash = 1;
 }
 
 /**
@@ -322,12 +829,6 @@ function updateSources(now: number): void {
   const store = getGraphStore();
   const { masterSpeed } = store;
   const msPerBeat = (60 / masterSpeed) * 1000;
-  
-  // Debug: log source nodes
-  const sourceNodes = Array.from(store.nodes.values()).filter(n => n.type === 'source');
-  if (sourceNodes.length > 0 && Math.random() < 0.01) {
-    console.log(`[updateSources] Found ${sourceNodes.length} source nodes: ${sourceNodes.map(n => n.id.slice(0,8)).join(', ')}`);
-  }
   
   store.nodes.forEach((node) => {
     if (node.type !== 'source') return;
@@ -631,6 +1132,60 @@ function updatePackets(deltaTime: number): void {
       return; // Don't propagate immediately
     }
     
+    // Handle crossover node (sexual reproduction - wait for two parents)
+    if (node.type === 'crossover') {
+      const props = node.props as CrossoverProps;
+      const now = performance.now();
+      
+      // Check if there's already a waiting packet
+      const heldPackets = node.heldPackets ?? [];
+      
+      if (heldPackets.length === 0) {
+        // First parent - hold and wait for second
+        store.holdPacketAtNode(node.id, packet.payload, props.timeout);
+        return; // Wait for second parent
+      } else {
+        // Second parent arrived - perform crossover
+        const firstHeld = heldPackets[0];
+        if (!firstHeld) {
+          // Safety check - shouldn't happen
+          return;
+        }
+        
+        const parentA = firstHeld.payload;
+        const parentB = packet.payload;
+        
+        // Check if first parent has timed out
+        const hasTimedOut = now >= firstHeld.releaseTime;
+        
+        if (hasTimedOut) {
+          // Timeout - just pass through the new packet
+          store.releaseHeldPackets(node.id, [0]);
+        } else {
+          // Crossover! Create offspring
+          const offspring = performCrossover(parentA, parentB, props);
+          
+          // Clear held packets
+          store.releaseHeldPackets(node.id, [0]);
+          
+          // Spawn offspring on outgoing edges
+          const outgoingEdges = store.getOutgoingEdges(node.id);
+          outgoingEdges.forEach(outEdge => {
+            if (store.packets.size + packetsToSpawn.length < MAX_PACKETS) {
+              packetsToSpawn.push({
+                id: createPacketId(),
+                edgeId: outEdge.id,
+                t: 0,
+                payload: offspring,
+              });
+            }
+          });
+          
+          return; // Don't propagate the parents
+        }
+      }
+    }
+    
     // Handle splitter entanglement and routing
     let entanglementGroupId = packet.entanglementGroupId;
     let targetEdges = store.getOutgoingEdges(node.id);
@@ -648,7 +1203,10 @@ function updatePackets(deltaTime: number): void {
         // Pick one random edge
         if (targetEdges.length > 0) {
           const idx = Math.floor(Math.random() * targetEdges.length);
-          targetEdges = [targetEdges[idx]];
+          const selected = targetEdges[idx];
+          if (selected) {
+            targetEdges = [selected];
+          }
         }
       } else if (props.behavior === 'weighted') {
         // Pick one edge based on weights
@@ -668,7 +1226,10 @@ function updatePackets(deltaTime: number): void {
               break;
             }
           }
-          targetEdges = [selectedEdge];
+          
+          if (selectedEdge) {
+            targetEdges = [selectedEdge];
+          }
         }
       }
       // 'broadcast' is default (all edges)

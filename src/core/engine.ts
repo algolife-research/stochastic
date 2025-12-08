@@ -4,7 +4,8 @@
 import { getGraphStore } from './store';
 import type { 
   Packet, GraphNode, GraphEdge, AudioPayload, 
-  NodeId, MidiNote, Frequency, QuantizerProps, SceneTriggerProps 
+  NodeId, MidiNote, Frequency, QuantizerProps, SceneTriggerProps,
+  MutatorProps, FitnessGateProps, WaveType
 } from './types';
 import { 
   dist, midiToFreq, clampMidi, SCALES 
@@ -59,6 +60,11 @@ export function processNodeArrival(
       return processSplitter(payload, node);
     case 'scene_trigger':
       return processSceneTrigger(payload, node);
+    case 'mutator':
+      return processMutator(payload, node);
+    case 'fitness_gate':
+      return processFitnessGate(payload, node);
+    // Note: crossover is handled specially in tick.ts, not here
     default:
       return payload;
   }
@@ -293,6 +299,13 @@ function processSceneTrigger(payload: AudioPayload, node: GraphNode): AudioPaylo
   const props = node.props as SceneTriggerProps;
   const store = getGraphStore();
   
+  // Scene triggers are only meaningful in Jam mode
+  // In Arrangement mode, scenes are scheduled on a timeline, not triggered dynamically
+  if (store.scenePlayback.mode === 'arrangement') {
+    // Just pass through without triggering - the node is inactive in this mode
+    return payload;
+  }
+  
   // Get all scenes to find the target by index
   const scenes = store.getScenesArray();
   
@@ -427,6 +440,178 @@ function processLFO(payload: AudioPayload, node: GraphNode): AudioPayload {
 function processSplitter(payload: AudioPayload, _node: GraphNode): AudioPayload {
   // Splitter just passes payload through unchanged
   // The splitting happens at the edge level (one node can have multiple outgoing edges)
+  return payload;
+}
+
+// ============================================================================
+// EVOLUTIONARY NODES
+// ============================================================================
+
+const WAVE_TYPES: WaveType[] = ['sine', 'square', 'sawtooth', 'triangle'];
+
+/**
+ * Mutator Node - Applies genetic drift or radiation mutations to packets
+ */
+function processMutator(payload: AudioPayload, node: GraphNode): AudioPayload {
+  const props = node.props as MutatorProps;
+  
+  // Check probability - skip mutation if random roll fails
+  if (Math.random() > props.probability) {
+    return payload;
+  }
+  
+  const result = { ...payload };
+  const targets = props.targets || ['pitch'];
+  
+  if (props.mode === 'drift') {
+    // Drift mode: small, incremental changes
+    
+    if (targets.includes('pitch')) {
+      // Apply small pitch drift
+      const drift = (Math.random() - 0.5) * 2 * props.pitchDrift;
+      const newMidi = clampMidi(Math.round(result.midiNote + drift));
+      result.midiNote = newMidi;
+      result.freq = midiToFreq(newMidi);
+    }
+    
+    if (targets.includes('gain')) {
+      // Apply small gain drift
+      const drift = (Math.random() - 0.5) * 2 * props.gainDrift;
+      result.gain = Math.max(0, Math.min(1, result.gain + drift));
+    }
+    
+    if (targets.includes('cutoff')) {
+      // Apply cutoff drift as a ratio
+      const ratio = 1 + (Math.random() - 0.5) * 2 * props.cutoffDrift;
+      result.cutoff = Math.max(20, Math.min(20000, result.cutoff * ratio)) as Frequency;
+    }
+    
+    if (targets.includes('timbre')) {
+      // Small timbre drift
+      const drift = (Math.random() - 0.5) * 0.2;
+      result.timbre = Math.max(0, Math.min(1, result.timbre + drift));
+    }
+    
+  } else {
+    // Radiation mode: large, structural changes
+    
+    if (targets.includes('pitch')) {
+      // Large pitch jump
+      const jump = (Math.random() - 0.5) * 2 * props.pitchRadiation;
+      const newMidi = clampMidi(Math.round(result.midiNote + jump));
+      result.midiNote = newMidi;
+      result.freq = midiToFreq(newMidi);
+    }
+    
+    if (targets.includes('gain')) {
+      // Random gain (complete reset)
+      result.gain = Math.random();
+    }
+    
+    if (targets.includes('cutoff')) {
+      // Random cutoff across full range
+      result.cutoff = (200 + Math.random() * 19800) as Frequency;
+    }
+    
+    if (targets.includes('wave') && props.waveChange) {
+      // Complete wave type change
+      const randomWave = WAVE_TYPES[Math.floor(Math.random() * WAVE_TYPES.length)];
+      if (randomWave) {
+        result.wave = randomWave;
+      }
+    }
+    
+    if (targets.includes('timbre')) {
+      // Random timbre
+      result.timbre = Math.random();
+    }
+  }
+  
+  return result;
+}
+
+/**
+ * Fitness Gate - Natural selection based on harmonic, energy, or density criteria
+ */
+function processFitnessGate(payload: AudioPayload, node: GraphNode): AudioPayload {
+  const props = node.props as FitnessGateProps;
+  const store = getGraphStore();
+  
+  // Get scale for harmonic fitness calculation
+  const { root, scaleName } = props.useGlobalKey
+    ? {
+        root: store.scenePlayback.effectiveRoot ?? store.musicalContext.root,
+        scaleName: store.scenePlayback.effectiveScale ?? store.musicalContext.scaleName
+      }
+    : { root: props.root, scaleName: props.scale };
+  
+  const scale = SCALES[scaleName];
+  if (!scale) return payload;
+  
+  let survives = true;
+  
+  // Check harmonic fitness (is the note consonant with the scale?)
+  if (props.criteria === 'harmonic' || props.criteria === 'all') {
+    const chroma = payload.midiNote % 12;
+    const relativeToRoot = (chroma - root + 12) % 12;
+    
+    // Check if note is in scale
+    const inScale = scale.includes(relativeToRoot);
+    
+    if (!inScale) {
+      // Note is not in scale - calculate dissonance
+      // Find distance to nearest scale degree
+      let minDist = 12;
+      for (const interval of scale) {
+        const scaleChroma = (root + interval) % 12;
+        const d = Math.min(
+          Math.abs(chroma - scaleChroma),
+          12 - Math.abs(chroma - scaleChroma)
+        );
+        minDist = Math.min(minDist, d);
+      }
+      
+      // Convert distance to consonance (0 = dissonant, 1 = consonant)
+      const consonance = 1 - (minDist / 6); // max distance is 6 semitones
+      
+      if (consonance < props.harmonicThreshold) {
+        survives = false;
+      }
+    }
+  }
+  
+  // Check energy fitness (is the packet loud enough?)
+  if (survives && (props.criteria === 'energy' || props.criteria === 'all')) {
+    if (payload.gain < props.energyThreshold) {
+      survives = false;
+    }
+  }
+  
+  // Check density fitness (is there room for more packets?)
+  // This is tracked per-node to count how many packets pass per beat
+  if (survives && (props.criteria === 'density' || props.criteria === 'all')) {
+    const now = performance.now();
+    const msPerBeat = (60 / store.masterSpeed) * 1000;
+    
+    // Use node's timer to track packets per beat window
+    // Reset counter if we've moved to a new beat
+    if (now - node.lastTrigger > msPerBeat) {
+      node.timer = 0;
+      node.lastTrigger = now;
+    }
+    
+    node.timer += 1;
+    
+    if (node.timer > props.densityThreshold) {
+      survives = false;
+    }
+  }
+  
+  if (!survives) {
+    // Signal to delete packet (same convention as Gate node)
+    return { ...payload, gain: -1 };
+  }
+  
   return payload;
 }
 
