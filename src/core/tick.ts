@@ -1394,13 +1394,6 @@ export function resetTick(): void {
     const firstSlot = arrangement[0];
     const scene = firstSlot ? scenes.get(firstSlot.sceneId) : undefined;
     
-    console.log(`[resetTick] Arrangement mode: ${arrangement.length} slots`);
-    arrangement.forEach((slot, i) => {
-      const s = scenes.get(slot.sceneId);
-      console.log(`  Slot ${i}: scene ${slot.sceneId}, ${s?.nodes.length ?? 0} nodes, ${s?.durationBeats ?? 0} beats`);
-    });
-    console.log(`[resetTick] Starting with slot 0, scene ${firstSlot?.sceneId}`);
-    
     store.setScenePlayback({
       arrangementBeat: 0,
       currentSlotIndex: 0,
@@ -1419,10 +1412,12 @@ export function resetTick(): void {
       store.loadSceneToCanvas(firstSlot.sceneId);
     }
   } else if (scenePlayback.mode === 'jam') {
-    // In jam mode, reset to the current scene's beginning
-    const currentScene = scenePlayback.currentSceneId ? scenes.get(scenePlayback.currentSceneId) : undefined;
+    // In jam mode, use the editing scene if currentSceneId is not set
+    const jamSceneId = scenePlayback.currentSceneId ?? store.editingSceneId;
+    const currentScene = jamSceneId ? scenes.get(jamSceneId) : undefined;
     
     store.setScenePlayback({
+      currentSceneId: jamSceneId,  // Ensure currentSceneId is set!
       sceneBeat: 0,
       sceneLoopIteration: 0,
       isTransitioning: false,

@@ -18,6 +18,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
   
   const scenes = useGraphStore(state => state.scenes);
   const arrangement = useGraphStore(state => state.arrangement);
+  const arrangementChannels = useGraphStore(state => state.arrangementChannels);
   const masterSpeed = useGraphStore(state => state.masterSpeed);
   const musicalContext = useGraphStore(state => state.musicalContext);
   const globalSettings = useGraphStore(state => state.globalSettings);
@@ -137,7 +138,24 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
         regions: s.regions || [],
       }));
       
-      loadComposition(scenes, data.arrangement || [], data.global.masterBpm || 120);
+      // Deserialize channels with default if not present
+      const channels = data.channels?.map((ch: any) => ({
+        id: ch.id,
+        name: ch.name,
+        color: ch.color,
+        muted: ch.muted,
+        solo: ch.solo,
+        volume: ch.volume,
+      })) ?? [{
+        id: 'channel-0',
+        name: 'Track 1',
+        color: '#4CAF50',
+        muted: false,
+        solo: false,
+        volume: 1,
+      }];
+      
+      loadComposition(scenes, data.arrangement || [], channels, data.global.masterBpm || 120);
     } else {
       // Legacy V2 format - single graph
       const nodesWithRuntime = data.nodes.map((n: any) => ({
@@ -202,7 +220,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
     if (project.path && isTauri()) {
       // Save to project folder using V3 format
       const phonoFilename = filename.endsWith('.phono') ? filename : `${filename}.phono`;
-      const data = serializeComposition(scenes, arrangement, musicalContext, globalSettings, projectMeta, masterSpeed);
+      const data = serializeComposition(scenes, arrangement, arrangementChannels, musicalContext, globalSettings, projectMeta, masterSpeed);
       
       const success = await fs.writeComposition(project.path, phonoFilename, JSON.stringify(data, null, 2));
       if (success) {
@@ -222,6 +240,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
           filename,
           scenes,
           arrangement,
+          arrangementChannels,
           musicalContext,
           globalSettings,
           projectMeta,
@@ -250,7 +269,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
     try {
       const data = await loadCompositionFromFile(file);
       // loadCompositionFromFile handles v2->v3 migration internally
-      loadComposition(data.scenes, data.arrangement, data.masterBpm);
+      loadComposition(data.scenes, data.arrangement, data.channels, data.masterBpm);
       
       // Set musical context
       const scaleName = data.musicalContext.scaleName as ScaleName;

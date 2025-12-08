@@ -11,6 +11,7 @@ import type {
   ProjectMeta,
   Scene,
   ArrangementSlot,
+  ArrangementChannel,
   ScaleName,
   AnnotationId,
   RegionId
@@ -122,6 +123,15 @@ export interface SerializedArrangementSlot {
   instanceBpm?: number;
 }
 
+export interface SerializedArrangementChannel {
+  id: string;
+  name: string;
+  color: string;
+  muted: boolean;
+  solo: boolean;
+  volume: number;
+}
+
 export interface SerializedComposition {
   meta: {
     version: string;
@@ -139,6 +149,7 @@ export interface SerializedComposition {
   };
   scenes: SerializedScene[];
   arrangement: SerializedArrangementSlot[];
+  channels?: SerializedArrangementChannel[];  // Optional for backward compatibility
 }
 
 // ============================================================================
@@ -410,6 +421,7 @@ export function deserializeScene(data: SerializedScene): Scene {
 export function serializeComposition(
   scenes: Map<SceneId, Scene>,
   arrangement: ArrangementSlot[],
+  channels: ArrangementChannel[],
   musicalContext: MusicalContext,
   globalSettings: GlobalSettings,
   projectMeta: ProjectMeta,
@@ -439,17 +451,36 @@ export function serializeComposition(
       instanceLoopCount: slot.instanceLoopCount,
       instanceBpm: slot.instanceBpm,
     })),
+    channels: channels.map(ch => ({
+      id: ch.id,
+      name: ch.name,
+      color: ch.color,
+      muted: ch.muted,
+      solo: ch.solo,
+      volume: ch.volume,
+    })),
   };
 }
 
 export function deserializeComposition(data: SerializedComposition): {
   scenes: Scene[];
   arrangement: ArrangementSlot[];
+  channels: ArrangementChannel[];
   musicalContext: { root: number; scaleName: string };
   globalSettings: { gravityConstant: number; defaultEdgeBehaviour: 'physical' | 'fixed' };
   projectMeta: { name: string; author: string; created: number; modified: number };
   masterBpm: number;
 } {
+  // Default channel if none saved (backward compatibility)
+  const defaultChannel: ArrangementChannel = {
+    id: 'channel-0',
+    name: 'Track 1',
+    color: '#4CAF50',
+    muted: false,
+    solo: false,
+    volume: 1,
+  };
+  
   return {
     scenes: data.scenes.map(deserializeScene),
     arrangement: data.arrangement.map(slot => ({
@@ -460,6 +491,14 @@ export function deserializeComposition(data: SerializedComposition): {
       instanceLoopCount: slot.instanceLoopCount,
       instanceBpm: slot.instanceBpm,
     })),
+    channels: data.channels?.map(ch => ({
+      id: ch.id,
+      name: ch.name,
+      color: ch.color,
+      muted: ch.muted,
+      solo: ch.solo,
+      volume: ch.volume,
+    })) ?? [defaultChannel],
     musicalContext: {
       root: data.global.rootNote,
       scaleName: data.global.scaleName,
@@ -527,6 +566,14 @@ export function migrateV2ToV3(v2Data: SerializedGraph): SerializedComposition {
       startBeat: 0,
       channel: 0,
     }],
+    channels: [{
+      id: 'channel-0',
+      name: 'Track 1',
+      color: '#4CAF50',
+      muted: false,
+      solo: false,
+      volume: 1,
+    }],
   };
 }
 
@@ -534,12 +581,13 @@ export async function saveCompositionToFile(
   filename: string,
   scenes: Map<SceneId, Scene>,
   arrangement: ArrangementSlot[],
+  channels: ArrangementChannel[],
   musicalContext: MusicalContext,
   globalSettings: GlobalSettings,
   projectMeta: ProjectMeta,
   masterBpm: number
 ): Promise<void> {
-  const data = serializeComposition(scenes, arrangement, musicalContext, globalSettings, projectMeta, masterBpm);
+  const data = serializeComposition(scenes, arrangement, channels, musicalContext, globalSettings, projectMeta, masterBpm);
   const json = JSON.stringify(data, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -555,6 +603,7 @@ export async function saveCompositionToFile(
 export async function loadCompositionFromFile(file: File): Promise<{
   scenes: Scene[];
   arrangement: ArrangementSlot[];
+  channels: ArrangementChannel[];
   musicalContext: { root: number; scaleName: string };
   globalSettings: { gravityConstant: number; defaultEdgeBehaviour: 'physical' | 'fixed' };
   projectMeta: { name: string; author: string; created: number; modified: number };

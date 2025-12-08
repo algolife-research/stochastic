@@ -62,10 +62,10 @@ export function compileGraph(
   edges: Map<EdgeId, GraphEdge>,
   durationSeconds: number,
   musicalContext: MusicalContext,
-  globalSettings: GlobalSettings
+  globalSettings: GlobalSettings,
+  bpm: number = 120
 ): AudioEvent[] {
   const events: AudioEvent[] = [];
-  const bpm = 120; // TODO: Get from global settings
   const beatDuration = 60 / bpm;
   const ticksPerBeat = 100;
   const tickDuration = beatDuration / ticksPerBeat;
@@ -103,21 +103,22 @@ export function compileGraph(
         const noteIndex = props.noteIndex ?? -1;
         const intensity = props.intensity ?? 0.5;
         
-        // Determine MIDI note
+        // Determine MIDI note - aligned with live engine (tick.ts)
         let midiNote: number;
-        if (noteIndex === -1) {
-          // Random
+        if (noteIndex >= 0) {
+          // Legacy scale-based index (same as live engine)
+          // LEGACY_SCALE_OFFSET = 36
+          midiNote = 36 + Math.min(36, noteIndex);
+        } else if (noteIndex === -1) {
+          // Random note
           midiNote = 36 + Math.floor(Math.random() * 49);
-        } else if (noteIndex === -2) {
-          // Fixed
-          midiNote = props.midiNote ?? 60;
         } else {
-          // Legacy scale index
-          const scale = musicalContext.scale;
-          const octave = Math.floor(noteIndex / scale.length);
-          const degree = noteIndex % scale.length;
-          midiNote = musicalContext.root + octave * 12 + (scale[degree] || 0);
+          // Fixed MIDI note (noteIndex < -1, typically -2)
+          midiNote = props.midiNote ?? 60;
         }
+        
+        // Clamp to valid MIDI range
+        midiNote = Math.max(0, Math.min(127, midiNote));
         
         const freq = 440 * Math.pow(2, (midiNote - 69) / 12) as Frequency;
         
@@ -203,7 +204,7 @@ export function compileGraph(
       
       if (p.t >= 1.0) {
         // Process arrival at destination node
-        processArrival(p, toNode, nodes, edges, currentTime, beatDuration, events, simPackets, heldPackets);
+        processArrival(p, toNode, nodes, edges, currentTime, beatDuration, events, simPackets, heldPackets, musicalContext);
         simPackets.splice(i, 1);
       }
     }
@@ -221,7 +222,8 @@ function processArrival(
   beatDuration: number,
   events: AudioEvent[],
   simPackets: SimPacket[],
-  heldPackets: Map<NodeId, Array<{ payload: SimPacket['payload']; releaseTime: number }>>
+  heldPackets: Map<NodeId, Array<{ payload: SimPacket['payload']; releaseTime: number }>>,
+  musicalContext: MusicalContext
 ): void {
   let payload = { ...packet.payload };
   
@@ -543,6 +545,141 @@ function processArrival(
       break;
     }
     
+    case 'mutator': {
+      const props = node.props as any;
+      const probability = props.probability ?? 0.5;
+      const mode = props.mode ?? 'drift';
+      const targets = props.targets ?? ['pitch'];
+      
+      // Check probability
+      if (Math.random() > probability) {
+        forwardPacket(node.id, payload, edges, simPackets, currentTime);
+        break;
+      }
+      
+      if (mode === 'drift') {
+        if (targets.includes('pitch')) {
+          const drift = (Math.random() - 0.5) * 2 * (props.pitchDrift ?? 2);
+          const newMidi = Math.max(0, Math.min(127, Math.round(payload.midiNote + drift)));
+          payload.midiNote = newMidi as MidiNote;
+          payload.freq = (440 * Math.pow(2, (newMidi - 69) / 12)) as Frequency;
+        }
+        if (targets.includes('gain')) {
+          const drift = (Math.random() - 0.5) * 2 * (props.gainDrift ?? 0.1);
+          payload.gain = Math.max(0, Math.min(1, payload.gain + drift));
+        }
+        if (targets.includes('cutoff')) {
+          const ratio = 1 + (Math.random() - 0.5) * 2 * (props.cutoffDrift ?? 0.2);
+          payload.cutoff = Math.max(20, Math.min(20000, payload.cutoff * ratio)) as Frequency;
+        }
+      } else {
+        // Radiation mode
+        if (targets.includes('pitch')) {
+          const jump = (Math.random() - 0.5) * 2 * (props.pitchRadiation ?? 12);
+          const newMidi = Math.max(0, Math.min(127, Math.round(payload.midiNote + jump)));
+          payload.midiNote = newMidi as MidiNote;
+          payload.freq = (440 * Math.pow(2, (newMidi - 69) / 12)) as Frequency;
+        }
+        if (targets.includes('gain')) {
+          payload.gain = Math.random();
+        }
+        if (targets.includes('cutoff')) {
+          payload.cutoff = (200 + Math.random() * 19800) as Frequency;
+        }
+      }
+      
+      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      break;
+    }
+    
+    case 'fitness_gate': {
+      const props = node.props as any;
+      const criteria = props.criteria ?? 'harmonic';
+      let survives = true;
+      
+      // Simplified harmonic fitness - check if note is in scale
+      if (criteria === 'harmonic' || criteria === 'all') {
+        const threshold = props.harmonicThreshold ?? 0.5;
+        const scale = musicalContext.scale;
+        const root = musicalContext.root;
+        const chroma = payload.midiNote % 12;
+        const relativeToRoot = (chroma - root + 12) % 12;
+        const inScale = scale.includes(relativeToRoot);
+        
+        if (!inScale) {
+          let minDist = 12;
+          for (const interval of scale) {
+            const scaleChroma = (root + interval) % 12;
+            const d = Math.min(Math.abs(chroma - scaleChroma), 12 - Math.abs(chroma - scaleChroma));
+            minDist = Math.min(minDist, d);
+          }
+          const consonance = 1 - (minDist / 6);
+          if (consonance < threshold) survives = false;
+        }
+      }
+      
+      // Energy fitness
+      if (survives && (criteria === 'energy' || criteria === 'all')) {
+        const threshold = props.energyThreshold ?? 0.2;
+        if (payload.gain < threshold) survives = false;
+      }
+      
+      if (survives) {
+        forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      }
+      break;
+    }
+    
+    case 'crossover': {
+      // Crossover waits for two parents - simplified: just pass through with slight variation
+      // For proper crossover simulation, we'd need to track packet pairs per node
+      const props = node.props as any;
+      const held = heldPackets.get(node.id) || [];
+      
+      if (held.length === 0) {
+        // First parent - hold it
+        const timeout = (props.timeout ?? 2) * beatDuration;
+        heldPackets.set(node.id, [{ payload, releaseTime: currentTime + timeout }]);
+      } else {
+        // Second parent - perform crossover
+        const firstParent = held[0]!.payload;
+        const offspring = { ...payload };
+        
+        // Crossover logic
+        const pitchFrom = props.pitchFrom ?? 'average';
+        if (pitchFrom === 'average') {
+          const avgMidi = Math.round((firstParent.midiNote + payload.midiNote) / 2);
+          offspring.midiNote = avgMidi as MidiNote;
+          offspring.freq = (440 * Math.pow(2, (avgMidi - 69) / 12)) as Frequency;
+        } else if (pitchFrom === 'b') {
+          offspring.midiNote = payload.midiNote;
+          offspring.freq = payload.freq;
+        } else if (pitchFrom === 'random') {
+          if (Math.random() < 0.5) {
+            offspring.midiNote = firstParent.midiNote;
+            offspring.freq = firstParent.freq;
+          }
+        }
+        // pitchFrom === 'a' keeps offspring as-is (already copied from payload)
+        
+        // Clear held and forward offspring
+        heldPackets.set(node.id, []);
+        forwardPacket(node.id, offspring, edges, simPackets, currentTime);
+      }
+      break;
+    }
+    
+    case 'lfo':
+      // LFO nodes don't process packets - they modulate other nodes
+      // Skip packet forwarding
+      break;
+    
+    case 'scene_trigger':
+      // Scene triggers are not relevant during offline export
+      // Just pass through
+      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      break;
+    
     case 'splitter':
     default:
       forwardPacket(node.id, payload, edges, simPackets, currentTime);
@@ -574,8 +711,8 @@ import type { Scene, ArrangementSlot, SceneId, ScaleName } from '@core/types';
 import { SCALES } from '@core/constants';
 
 /**
- * Compile an arrangement (sequence of scenes) into timed audio events.
- * Each scene in the arrangement is compiled in order, with time offsets applied.
+ * Compile an arrangement (multi-channel scenes) into timed audio events.
+ * Scenes on different channels play simultaneously based on their startBeat positions.
  */
 export function compileArrangement(
   scenes: Map<SceneId, Scene>,
@@ -590,12 +727,10 @@ export function compileArrangement(
     return allEvents;
   }
   
-  // Sort arrangement by startBeat
-  const sortedSlots = [...arrangement].sort((a, b) => a.startBeat - b.startBeat);
+  const beatDuration = 60 / bpm;
   
-  let currentTimeOffset = 0;
-  
-  for (const slot of sortedSlots) {
+  // Process each slot independently - slots can overlap on different channels
+  for (const slot of arrangement) {
     const scene = scenes.get(slot.sceneId);
     if (!scene) {
       console.warn(`Scene ${slot.sceneId} not found in scenes map`);
@@ -616,14 +751,16 @@ export function compileArrangement(
       edgesMap.set(edge.id, edge);
     }
     
-    // Calculate scene duration in seconds
+    // Calculate scene timing
     const sceneBpm = slot.instanceBpm ?? scene.localBpm ?? bpm;
     const sceneBeatDuration = 60 / sceneBpm;
     const sceneDurationBeats = scene.durationBeats * loopCount;
     const sceneDurationSeconds = sceneDurationBeats * sceneBeatDuration;
     
+    // Calculate the time offset for this slot based on its startBeat
+    const slotStartTime = slot.startBeat * beatDuration;
+    
     // Use scene's local musical context if available
-    // Convert scale name to intervals if scene has a local scale
     const sceneScale = scene.localScale !== null 
       ? SCALES[scene.localScale as ScaleName] 
       : musicalContext.scale;
@@ -635,32 +772,31 @@ export function compileArrangement(
       ...(scene.localScale !== null && { scaleName: scene.localScale as ScaleName }),
     };
     
-    // Compile this scene
+    // Compile this scene (pass scene's BPM)
     const sceneEvents = compileGraph(
       nodesMap,
       edgesMap,
       sceneDurationSeconds,
       sceneMusicalContext,
-      globalSettings
+      globalSettings,
+      sceneBpm
     );
     
-    // Add time offset to all events and append
+    // Add time offset based on slot's startBeat position (not sequential)
     for (const event of sceneEvents) {
       allEvents.push({
         ...event,
-        time: event.time + currentTimeOffset,
+        time: event.time + slotStartTime,
       });
     }
-    
-    // Advance time offset for next scene
-    currentTimeOffset += sceneDurationSeconds;
   }
   
-  return allEvents;
+  return allEvents.sort((a, b) => a.time - b.time);
 }
 
 /**
- * Calculate total duration of an arrangement in seconds
+ * Calculate total duration of an arrangement in seconds.
+ * With multi-channel support, duration is the maximum end time across all slots.
  */
 export function calculateArrangementDuration(
   scenes: Map<SceneId, Scene>,
@@ -669,7 +805,8 @@ export function calculateArrangementDuration(
 ): number {
   if (arrangement.length === 0) return 0;
   
-  let totalDuration = 0;
+  const beatDuration = 60 / bpm;
+  let maxEndTime = 0;
   
   for (const slot of arrangement) {
     const scene = scenes.get(slot.sceneId);
@@ -679,9 +816,14 @@ export function calculateArrangementDuration(
     const sceneBpm = slot.instanceBpm ?? scene.localBpm ?? bpm;
     const sceneBeatDuration = 60 / sceneBpm;
     const sceneDurationBeats = scene.durationBeats * loopCount;
+    const sceneDurationSeconds = sceneDurationBeats * sceneBeatDuration;
     
-    totalDuration += sceneDurationBeats * sceneBeatDuration;
+    // Calculate when this slot ends (startBeat position + scene duration)
+    const slotStartTime = slot.startBeat * beatDuration;
+    const slotEndTime = slotStartTime + sceneDurationSeconds;
+    
+    maxEndTime = Math.max(maxEndTime, slotEndTime);
   }
   
-  return totalDuration;
+  return maxEndTime;
 }

@@ -240,7 +240,7 @@ interface GraphActions {
   saveCurrentToScene: (id: SceneId) => void;
   loadSceneToCanvas: (id: SceneId) => void;
   setEditingScene: (id: SceneId | null) => void;
-  loadComposition: (scenes: Scene[], arrangement: ArrangementSlot[], masterBpm: number) => void;
+  loadComposition: (scenes: Scene[], arrangement: ArrangementSlot[], channels: ArrangementChannel[], masterBpm: number) => void;
   
   // Arrangement operations
   addToArrangement: (sceneId: SceneId, startBeat?: number, channel?: number) => void;
@@ -1868,18 +1868,10 @@ export const useGraphStore = create<GraphStore>()(
       
       loadSceneToCanvas: (id) => {
         // Don't reload if already editing this scene
-        if (get().editingSceneId === id) {
-          console.log(`[loadSceneToCanvas] Skipped - already editing scene ${id}`);
-          return;
-        }
+        if (get().editingSceneId === id) return;
         
         // Check scene exists
-        if (!get().scenes.has(id)) {
-          console.log(`[loadSceneToCanvas] Scene ${id} not found`);
-          return;
-        }
-        
-        console.log(`[loadSceneToCanvas] Loading scene ${id}, current editingSceneId: ${get().editingSceneId}`);
+        if (!get().scenes.has(id)) return;
         
         set(state => {
           // Save current scene first (auto-save)
@@ -1903,8 +1895,6 @@ export const useGraphStore = create<GraphStore>()(
           // Now get the scene to load (after auto-save, in case it was just saved)
           const scene = state.scenes.get(id);
           if (!scene) return;
-          
-          console.log(`[loadSceneToCanvas] Scene ${id} has ${scene.nodes.length} nodes, ${scene.edges.length} edges`);
           
           // Clear current canvas
           state.nodes.clear();
@@ -1946,7 +1936,7 @@ export const useGraphStore = create<GraphStore>()(
         });
       },
       
-      loadComposition: (scenes, arrangement, masterBpm) => {
+      loadComposition: (scenes, arrangement, channels, masterBpm) => {
         set(state => {
           // Clear existing state
           state.nodes.clear();
@@ -1956,6 +1946,7 @@ export const useGraphStore = create<GraphStore>()(
           state.regions.clear();
           state.scenes.clear();
           state.arrangement = [];
+          state.arrangementChannels = [];
           state.activeSceneId = null;
           state.editingSceneId = null;
           state.scenePlayback = { ...INITIAL_SCENE_PLAYBACK_STATE };
@@ -1988,6 +1979,9 @@ export const useGraphStore = create<GraphStore>()(
           
           // Load arrangement
           state.arrangement = arrangement.map(slot => ({ ...slot }));
+          
+          // Load channels
+          state.arrangementChannels = channels.map(ch => ({ ...ch }));
           
           // Set master BPM
           state.masterSpeed = masterBpm;
@@ -2178,6 +2172,10 @@ export const useGraphStore = create<GraphStore>()(
       setPlaybackMode: (mode) => {
         set(state => {
           state.scenePlayback.mode = mode;
+          // When switching to Jam mode, set currentSceneId to the editing scene
+          if (mode === 'jam' && state.scenePlayback.currentSceneId === null && state.editingSceneId) {
+            state.scenePlayback.currentSceneId = state.editingSceneId;
+          }
         });
       },
       

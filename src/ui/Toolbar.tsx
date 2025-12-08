@@ -24,6 +24,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
   const projectMeta = useGraphStore(state => state.projectMeta);
   const scenes = useGraphStore(state => state.scenes);
   const arrangement = useGraphStore(state => state.arrangement);
+  const arrangementChannels = useGraphStore(state => state.arrangementChannels);
   const masterSpeed = useGraphStore(state => state.masterSpeed);
   const musicalContext = useGraphStore(state => state.musicalContext);
   const globalSettings = useGraphStore(state => state.globalSettings);
@@ -87,7 +88,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
     
     if (project.isProjectMode && project.path && isTauri()) {
       const phonoFilename = filename.endsWith('.phono') ? filename : `${filename}.phono`;
-      const data = serializeComposition(scenes, arrangement, musicalContext, globalSettings, projectMeta, masterSpeed);
+      const data = serializeComposition(scenes, arrangement, arrangementChannels, musicalContext, globalSettings, projectMeta, masterSpeed);
       
       const success = await fs.writeComposition(project.path, phonoFilename, JSON.stringify(data, null, 2));
       if (success) {
@@ -101,7 +102,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
       }
     } else {
       try {
-        await saveCompositionToFile(filename, scenes, arrangement, musicalContext, globalSettings, projectMeta, masterSpeed);
+        await saveCompositionToFile(filename, scenes, arrangement, arrangementChannels, musicalContext, globalSettings, projectMeta, masterSpeed);
         markClean();
       } catch (err) {
         console.error('Save failed:', err);

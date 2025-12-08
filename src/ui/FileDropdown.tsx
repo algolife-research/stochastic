@@ -74,7 +74,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
     }
     
     // Load using V3 composition loader
-    loadComposition(data.scenes, data.arrangement, data.masterBpm);
+    loadComposition(data.scenes, data.arrangement, data.channels, data.masterBpm);
     
     // Set musical context
     const scaleName = data.musicalContext.scaleName as ScaleName;
@@ -189,7 +189,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
       try {
         const data = await loadCompositionFromFile(file);
         // loadCompositionFromFile handles v2->v3 migration internally
-        loadComposition(data.scenes, data.arrangement, data.masterBpm);
+        loadComposition(data.scenes, data.arrangement, data.channels, data.masterBpm);
         
         // Set musical context
         const scaleName = data.musicalContext.scaleName as ScaleName;

@@ -372,6 +372,7 @@ export interface ArrangementSlot {
   
   // Position in arrangement
   startBeat: number;               // Absolute position
+  channel: number;                 // Track index (0-based)
   
   // Per-instance overrides
   instanceLoopCount?: number;      // Override scene's default
@@ -379,6 +380,16 @@ export interface ArrangementSlot {
   
   // Markers
   markers: ArrangementMarker[];
+}
+
+/** Arrangement channel (track) configuration */
+export interface ArrangementChannel {
+  readonly id: string;
+  name: string;                    // e.g., "Melody", "Bass"
+  color: string;                   // For timeline visualization
+  muted: boolean;
+  solo: boolean;
+  volume: number;                  // 0-1 multiplier
 }
 
 /** Marker within an arrangement slot */
@@ -405,8 +416,11 @@ export interface Composition {
   // Scene library (unordered)
   scenes: Scene[];
   
-  // Arrangement (ordered timeline)
+  // Arrangement (ordered timeline, multi-channel)
   arrangement: ArrangementSlot[];
+  
+  // Channel configuration
+  channels: ArrangementChannel[];
   
   // Playback state
   currentSceneIndex: number;
@@ -414,7 +428,30 @@ export interface Composition {
 }
 ```
 
-### 4.3 File Format Extension
+### 4.3 Multi-Channel Playback
+
+Multiple scenes can play simultaneously on different channels:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    MULTI-CHANNEL TIMELINE                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  Track 1:  [Intro 16b]──►[Verse 32b]──────►[Chorus 16b]──►     │
+│  Track 2:  ────────────[Bass Pattern 32b]──►[Bass Fill]──►     │
+│  Track 3:  [Pad 48b]────────────────────────────────────►      │
+│                                                                 │
+│  • All active channels play simultaneously                      │
+│  • Each channel has independent mute/solo/volume                │
+│  • One channel's scene is displayed on canvas at a time         │
+│  • Virtual processing handles non-displayed channels            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Virtual Scene Processing**: Scenes on non-canvas channels use "virtual" processing - their graph simulation runs, packets travel, and speakers trigger audio, but without canvas rendering overhead.
+
+### 4.4 File Format Extension
 
 ```json
 {

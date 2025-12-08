@@ -92,11 +92,35 @@ The scene system enables multi-section compositions:
 | Feature | Description |
 |---------|-------------|
 | **Scenes** | Self-contained graph snapshots with duration and settings |
-| **Arrangement Mode** | Scenes play in sequence with defined durations |
-| **Jam Mode** | Scenes play indefinitely, user triggers changes |
-| **Scene Trigger Node** | In-graph node to trigger scene jumps or queued transitions |
+| **Arrangement Mode** | Scenes play on multi-channel timeline, multiple scenes can play simultaneously |
+| **Jam Mode** | Scenes play indefinitely, user triggers changes via scene_trigger nodes |
+| **Scene Trigger Node** | In-graph node to queue scene transitions (crossfade/jump) |
 | **Scene Properties** | Duration, loops, local BPM/key/scale overrides |
 | **Auto-save** | Canvas auto-saves to scene when switching |
+| **Multi-Channel** | Multiple tracks with independent volume, mute, solo |
+
+### 3.1 Multi-Channel Architecture
+
+The arrangement supports multiple channels (tracks) playing simultaneously:
+
+```typescript
+interface ArrangementChannel {
+  id: string;
+  name: string;      // e.g., "Melody", "Bass", "Drums"
+  color: string;     // For timeline visualization
+  muted: boolean;
+  solo: boolean;
+  volume: number;    // 0-1 multiplier
+}
+```
+
+**Virtual Scene Processing**: Scenes on non-displayed channels are processed "virtually" - their sources emit packets, packets travel, and speakers trigger audio, but without canvas rendering.
+
+```typescript
+// In tick.ts
+activeChannelScenes: Map<number, ChannelSceneState>  // Non-canvas channels
+canvasChannelIndex: number                           // Which channel is displayed
+```
 
 ### 4. Canvas Renderer
 
@@ -251,6 +275,9 @@ Compositions are stored as `.phono` files (JSON). **Version 3.0** uses scene-bas
       "enterTransition": { "type": "cut", "durationBeats": 0 },
       "exitTransition": { "type": "cut", "durationBeats": 0 },
       "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 4 },
+      "vizMode": "editor",
+      "vizConfig": null,
+      "vizTransition": { "type": "crossfade", "durationBeats": 2 },
       "nodes": [...],
       "edges": [...],
       "annotations": [],
@@ -258,9 +285,12 @@ Compositions are stored as `.phono` files (JSON). **Version 3.0** uses scene-bas
     }
   ],
   "arrangement": [
-    { "id": "slot-1", "sceneId": "scene-1", "startBeat": 0 }
+    { "id": "slot-1", "sceneId": "scene-1", "startBeat": 0, "channel": 0 }
+  ],
+  "channels": [
+    { "id": "channel-0", "name": "Track 1", "color": "#4CAF50", "muted": false, "solo": false, "volume": 1 }
   ]
 }
 ```
 
-> **Note:** The app supports loading legacy V2 files (with `graph.nodes`/`graph.edges`) and automatically migrates them to V3 format.
+> **Note:** The app supports loading legacy V2 files (with `graph.nodes`/`graph.edges`) and automatically migrates them to V3 format with a default channel.

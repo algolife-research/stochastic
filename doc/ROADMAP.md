@@ -40,11 +40,14 @@ This document outlines the development trajectory for Phonon, moving from its cu
 - [x] **Linear Rendering:** Timeline width proportional to beat duration
 - [x] **Add to Arrangement:** Add scenes with automatic position calculation
 - [x] **Slot Management:** Reorder, remove arrangement slots
+- [x] **Multi-Channel Support:** Multiple tracks playing simultaneously
+- [x] **Channel Controls:** Per-track mute, solo, volume
 
 ### 2.5 Export
 - [x] **Arrangement Export:** Export entire arrangement to WAV/MIDI
 - [x] **Duration Calculation:** Auto-calculate total duration from scenes
 - [x] **Export Mode Toggle:** Choose between canvas or arrangement export
+- [x] **Multi-Channel Export:** All channels play during export
 
 ## Phase 2.5: UX & Stability (Missing Essentials)
 **Goal:** Essential features for a safe and forgiving creative workflow.
