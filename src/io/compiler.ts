@@ -356,8 +356,48 @@ function processArrival(
     
     case 'gate': {
       const props = node.props as any;
-      const probability = props.prob ?? 1.0;
-      if (Math.random() < probability) {
+      const mode = props.mode ?? 'probability';
+      
+      // Probability mode - simple random gate
+      if (mode === 'probability') {
+        const probability = props.prob ?? 1.0;
+        if (Math.random() < probability) {
+          forwardPacket(node.id, payload, edges, simPackets, currentTime);
+        }
+        break;
+      }
+      
+      // Fitness modes - criteria-based selection
+      let survives = true;
+      
+      // Harmonic fitness
+      if (mode === 'harmonic' || mode === 'all') {
+        const threshold = props.harmonicThreshold ?? 0.5;
+        const scale = musicalContext.scale;
+        const root = musicalContext.root;
+        const chroma = payload.midiNote % 12;
+        const relativeToRoot = (chroma - root + 12) % 12;
+        const inScale = scale.includes(relativeToRoot);
+        
+        if (!inScale) {
+          let minDist = 12;
+          for (const interval of scale) {
+            const scaleChroma = (root + interval) % 12;
+            const d = Math.min(Math.abs(chroma - scaleChroma), 12 - Math.abs(chroma - scaleChroma));
+            minDist = Math.min(minDist, d);
+          }
+          const consonance = 1 - (minDist / 6);
+          if (consonance < threshold) survives = false;
+        }
+      }
+      
+      // Energy fitness
+      if (survives && (mode === 'energy' || mode === 'all')) {
+        const threshold = props.energyThreshold ?? 0.2;
+        if (payload.gain < threshold) survives = false;
+      }
+      
+      if (survives) {
         forwardPacket(node.id, payload, edges, simPackets, currentTime);
       }
       break;
@@ -589,44 +629,6 @@ function processArrival(
       }
       
       forwardPacket(node.id, payload, edges, simPackets, currentTime);
-      break;
-    }
-    
-    case 'fitness_gate': {
-      const props = node.props as any;
-      const criteria = props.criteria ?? 'harmonic';
-      let survives = true;
-      
-      // Simplified harmonic fitness - check if note is in scale
-      if (criteria === 'harmonic' || criteria === 'all') {
-        const threshold = props.harmonicThreshold ?? 0.5;
-        const scale = musicalContext.scale;
-        const root = musicalContext.root;
-        const chroma = payload.midiNote % 12;
-        const relativeToRoot = (chroma - root + 12) % 12;
-        const inScale = scale.includes(relativeToRoot);
-        
-        if (!inScale) {
-          let minDist = 12;
-          for (const interval of scale) {
-            const scaleChroma = (root + interval) % 12;
-            const d = Math.min(Math.abs(chroma - scaleChroma), 12 - Math.abs(chroma - scaleChroma));
-            minDist = Math.min(minDist, d);
-          }
-          const consonance = 1 - (minDist / 6);
-          if (consonance < threshold) survives = false;
-        }
-      }
-      
-      // Energy fitness
-      if (survives && (criteria === 'energy' || criteria === 'all')) {
-        const threshold = props.energyThreshold ?? 0.2;
-        if (payload.gain < threshold) survives = false;
-      }
-      
-      if (survives) {
-        forwardPacket(node.id, payload, edges, simPackets, currentTime);
-      }
       break;
     }
     

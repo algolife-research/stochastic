@@ -192,8 +192,6 @@ function NodeProperties({ node }: NodePropertiesProps): React.ReactElement {
       return <MutatorNodeProps props={node.props as MutatorPropsType} onChange={handleChange} />;
     case 'crossover':
       return <CrossoverNodeProps props={node.props as CrossoverPropsType} onChange={handleChange} />;
-    case 'fitness_gate':
-      return <FitnessGateNodeProps props={node.props as FitnessGatePropsType} onChange={handleChange} />;
     default:
       return <GenericProps props={node.props as unknown as Record<string, unknown>} onChange={handleChange} />;
   }
@@ -208,7 +206,16 @@ type SpeakerPropsType = { volume: number; reverb: number; pan: number; holdTime:
 type PitchPropsType = { mode: string; shift: number; fixedMidiNote: number };
 type PolariserPropsType = { wave: 'sine' | 'square' | 'sawtooth' | 'triangle'; attack: number; decay: number; mix: number };
 type FilterPropsType = { cutoff: number; attack: number; decay: number; mod: number };
-type GatePropsType = { prob: number };
+type GatePropsType = { 
+  mode: 'probability' | 'harmonic' | 'energy' | 'density' | 'all';
+  prob: number; 
+  harmonicThreshold: number;
+  energyThreshold: number;
+  densityThreshold: number;
+  useGlobalKey: boolean;
+  scale: ScaleName;
+  root: number;
+};
 type DelayPropsType = { delayTime: number };
 type GainPropsType = { value: number; mass: number };
 type TeleporterPropsType = { channel: string; isEntry: boolean };
@@ -250,15 +257,6 @@ type CrossoverPropsType = {
   waveFrom: 'a' | 'b' | 'random';
   gainMode: 'average' | 'max' | 'min' | 'random';
   timeout: number;
-};
-type FitnessGatePropsType = {
-  criteria: 'harmonic' | 'energy' | 'density' | 'all';
-  harmonicThreshold: number;
-  energyThreshold: number;
-  densityThreshold: number;
-  useGlobalKey: boolean;
-  scale: ScaleName;
-  root: number;
 };
 
 // ============================================================================
@@ -673,16 +671,120 @@ function FilterProps({ props, onChange }: PropsEditorProps<FilterPropsType>): Re
 }
 
 function GateProps({ props, onChange }: PropsEditorProps<GatePropsType>): React.ReactElement {
+  const mode = props.mode ?? 'probability';
+  
   return (
-    <PropertyRow label="Probability">
-      <SliderInput
-        value={props.prob}
-        min={0}
-        max={1}
-        step={0.01}
-        onChange={v => onChange('prob', v)}
-      />
-    </PropertyRow>
+    <>
+      <PropertyRow label="Mode">
+        <Select
+          value={mode}
+          options={[
+            { value: 'probability', label: 'Probability' },
+            { value: 'harmonic', label: 'Harmonic (Scale Fit)' },
+            { value: 'energy', label: 'Energy (Gain)' },
+            { value: 'density', label: 'Density (Rate Limit)' },
+            { value: 'all', label: 'All Fitness' },
+          ]}
+          onChange={v => onChange('mode', v)}
+        />
+      </PropertyRow>
+      
+      {mode === 'probability' && (
+        <PropertyRow label="Probability">
+          <SliderInput
+            value={props.prob}
+            min={0}
+            max={1}
+            step={0.01}
+            onChange={v => onChange('prob', v)}
+          />
+        </PropertyRow>
+      )}
+      
+      {(mode === 'harmonic' || mode === 'all') && (
+        <>
+          <div className={styles.sectionHeader}>Harmonic Fitness</div>
+          
+          <PropertyRow label="Use Global Key">
+            <Checkbox
+              checked={props.useGlobalKey ?? true}
+              onChange={v => onChange('useGlobalKey', v)}
+            />
+          </PropertyRow>
+          
+          {!props.useGlobalKey && (
+            <>
+              <PropertyRow label="Scale">
+                <Select
+                  value={props.scale ?? 'major'}
+                  options={Object.keys(SCALES).map(s => ({ value: s, label: s }))}
+                  onChange={v => onChange('scale', v)}
+                />
+              </PropertyRow>
+              
+              <PropertyRow label="Root">
+                <Select
+                  value={String(props.root ?? 0)}
+                  options={NOTE_LABELS.map((label, i) => ({ value: String(i), label }))}
+                  onChange={v => onChange('root', parseInt(v))}
+                />
+              </PropertyRow>
+            </>
+          )}
+          
+          <PropertyRow label="Min Consonance">
+            <SliderInput
+              value={props.harmonicThreshold ?? 0.5}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={v => onChange('harmonicThreshold', v)}
+            />
+          </PropertyRow>
+          <div className={styles.description}>
+            Notes outside the scale with consonance below this threshold are killed.
+          </div>
+        </>
+      )}
+      
+      {(mode === 'energy' || mode === 'all') && (
+        <>
+          <div className={styles.sectionHeader}>Energy Fitness</div>
+          
+          <PropertyRow label="Min Gain">
+            <SliderInput
+              value={props.energyThreshold ?? 0.1}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={v => onChange('energyThreshold', v)}
+            />
+          </PropertyRow>
+          <div className={styles.description}>
+            Packets below this gain level die off (survival of the loudest).
+          </div>
+        </>
+      )}
+      
+      {(mode === 'density' || mode === 'all') && (
+        <>
+          <div className={styles.sectionHeader}>Density Fitness</div>
+          
+          <PropertyRow label="Max per Beat">
+            <NumberInput
+              value={props.densityThreshold ?? 8}
+              min={1}
+              max={64}
+              step={1}
+              onChange={v => onChange('densityThreshold', v)}
+            />
+          </PropertyRow>
+          <div className={styles.description}>
+            Only this many packets can pass through per beat (overpopulation control).
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
@@ -1539,113 +1641,6 @@ function CrossoverNodeProps({ props, onChange }: PropsEditorProps<CrossoverProps
       <div className={styles.description}>
         If no second parent arrives within this time, the first packet passes through unchanged.
       </div>
-    </>
-  );
-}
-
-function FitnessGateNodeProps({ props, onChange }: PropsEditorProps<FitnessGatePropsType>): React.ReactElement {
-  return (
-    <>
-      <div className={styles.description}>
-        Natural selection: filters packets based on fitness criteria.
-      </div>
-      
-      <PropertyRow label="Criteria">
-        <Select
-          value={props.criteria ?? 'harmonic'}
-          options={[
-            { value: 'harmonic', label: 'Harmonic (Scale Fit)' },
-            { value: 'energy', label: 'Energy (Gain)' },
-            { value: 'density', label: 'Density (Rate Limit)' },
-            { value: 'all', label: 'All Combined' },
-          ]}
-          onChange={v => onChange('criteria', v)}
-        />
-      </PropertyRow>
-      
-      {(props.criteria === 'harmonic' || props.criteria === 'all') && (
-        <>
-          <div className={styles.sectionHeader}>Harmonic Fitness</div>
-          
-          <PropertyRow label="Use Global Key">
-            <Checkbox
-              checked={props.useGlobalKey ?? true}
-              onChange={v => onChange('useGlobalKey', v)}
-            />
-          </PropertyRow>
-          
-          {!props.useGlobalKey && (
-            <>
-              <PropertyRow label="Scale">
-                <Select
-                  value={props.scale ?? 'major'}
-                  options={Object.keys(SCALES).map(s => ({ value: s, label: s }))}
-                  onChange={v => onChange('scale', v)}
-                />
-              </PropertyRow>
-              
-              <PropertyRow label="Root">
-                <Select
-                  value={String(props.root ?? 0)}
-                  options={NOTE_LABELS.map((label, i) => ({ value: String(i), label }))}
-                  onChange={v => onChange('root', parseInt(v))}
-                />
-              </PropertyRow>
-            </>
-          )}
-          
-          <PropertyRow label="Min Consonance">
-            <SliderInput
-              value={props.harmonicThreshold ?? 0.5}
-              min={0}
-              max={1}
-              step={0.01}
-              onChange={v => onChange('harmonicThreshold', v)}
-            />
-          </PropertyRow>
-          <div className={styles.description}>
-            Notes outside the scale with consonance below this threshold are killed.
-          </div>
-        </>
-      )}
-      
-      {(props.criteria === 'energy' || props.criteria === 'all') && (
-        <>
-          <div className={styles.sectionHeader}>Energy Fitness</div>
-          
-          <PropertyRow label="Min Gain">
-            <SliderInput
-              value={props.energyThreshold ?? 0.1}
-              min={0}
-              max={1}
-              step={0.01}
-              onChange={v => onChange('energyThreshold', v)}
-            />
-          </PropertyRow>
-          <div className={styles.description}>
-            Packets below this gain level die off (survival of the loudest).
-          </div>
-        </>
-      )}
-      
-      {(props.criteria === 'density' || props.criteria === 'all') && (
-        <>
-          <div className={styles.sectionHeader}>Density Fitness</div>
-          
-          <PropertyRow label="Max per Beat">
-            <NumberInput
-              value={props.densityThreshold ?? 8}
-              min={1}
-              max={64}
-              step={1}
-              onChange={v => onChange('densityThreshold', v)}
-            />
-          </PropertyRow>
-          <div className={styles.description}>
-            Only this many packets can pass through per beat (overpopulation control).
-          </div>
-        </>
-      )}
     </>
   );
 }

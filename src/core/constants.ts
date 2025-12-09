@@ -7,7 +7,7 @@ import type {
   FilterProps, GateProps, DelayProps, GainProps, NoiseProps,
   HarmonicProps, ModulatorProps, TunnelProps, TeleporterProps,
   QuantizerProps, LfoProps, SplitterProps, MidiOutProps, MidiCcProps, SceneTriggerProps,
-  MutatorProps, CrossoverProps, FitnessGateProps,
+  MutatorProps, CrossoverProps,
   NodeType, Scene, SceneTransition, SceneTriggerConfig, ScenePlaybackState, ArrangementSlot
 } from './types';
 
@@ -114,7 +114,6 @@ export const NODE_COLORS: Record<NodeType, string> = {
   scene_trigger: '#f44336',  // Red
   mutator:       '#ff6f00',  // Amber Dark - Evolution/mutation
   crossover:     '#d500f9',  // Purple Accent - DNA mixing
-  fitness_gate:  '#76ff03',  // Light Green Accent - Survival
 } as const;
 
 // ============================================================================
@@ -143,7 +142,6 @@ export const NODE_ICONS: Record<NodeType, string> = {
   scene_trigger: '▶',
   mutator:       '🧬',  // DNA strand
   crossover:     '⚤',   // Male/Female symbol (reproduction)
-  fitness_gate:  '🏆',  // Trophy (survival of fittest)
 } as const;
 
 // ============================================================================
@@ -187,7 +185,15 @@ export const DEFAULT_FILTER_PROPS: FilterProps = {
 };
 
 export const DEFAULT_GATE_PROPS: GateProps = {
+  mode: 'probability',
   prob: 0.5,
+  // Fitness mode properties
+  harmonicThreshold: 0.5,  // 50% consonance required
+  energyThreshold: 0.1,    // Min 10% gain to survive
+  densityThreshold: 8,     // Max 8 packets per beat
+  useGlobalKey: true,
+  scale: 'major',
+  root: 0,
 };
 
 export const DEFAULT_DELAY_PROPS: DelayProps = {
@@ -292,16 +298,6 @@ export const DEFAULT_CROSSOVER_PROPS: CrossoverProps = {
   timeout: 4,              // Wait 4 beats for second parent
 };
 
-export const DEFAULT_FITNESS_GATE_PROPS: FitnessGateProps = {
-  criteria: 'harmonic',
-  harmonicThreshold: 0.5,  // 50% consonance required
-  energyThreshold: 0.1,    // Min 10% gain to survive
-  densityThreshold: 8,     // Max 8 packets per beat
-  useGlobalKey: true,
-  scale: 'major',
-  root: 0,
-};
-
 // ============================================================================
 // DEFAULT PROPS LOOKUP
 // ============================================================================
@@ -328,7 +324,6 @@ type DefaultPropsMap = {
   scene_trigger: SceneTriggerProps;
   mutator: MutatorProps;
   crossover: CrossoverProps;
-  fitness_gate: FitnessGateProps;
 };
 
 const DEFAULT_PROPS_MAP: DefaultPropsMap = {
@@ -353,7 +348,6 @@ const DEFAULT_PROPS_MAP: DefaultPropsMap = {
   scene_trigger: DEFAULT_SCENE_TRIGGER_PROPS,
   mutator: DEFAULT_MUTATOR_PROPS,
   crossover: DEFAULT_CROSSOVER_PROPS,
-  fitness_gate: DEFAULT_FITNESS_GATE_PROPS,
 };
 
 /**

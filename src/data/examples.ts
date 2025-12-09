@@ -1141,20 +1141,20 @@ export const EXAMPLES: Record<string, Example> = {
       // Hi-hat with white noise
       { id: "hh_src", type: "source", x: 60, y: 150, props: { interval: 0.5, midiNote: 80, intensity: 0.4 } },
       { id: "hh_gate", type: "gate", x: 150, y: 150, props: { prob: 0.75 } },
-      { id: "hh_noise", type: "noise", x: 240, y: 150, props: { noiseType: "white", attack: 0.001, decay: 0.05 } },
+      { id: "hh_noise", type: "noise", x: 240, y: 150, props: { wave: "white", attack: 0.001, decay: 0.05 } },
       { id: "hh_flt", type: "filter", x: 330, y: 150, props: { cutoff: 8000, mod: 2000, attack: 0.001, decay: 0.03 } },
       { id: "hh_out", type: "speaker", x: 440, y: 150, props: { reverb: 0.15, pan: 0.3 } },
       
       // Snare with pink noise
       { id: "sn_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.7 } },
       { id: "sn_del", type: "delay", x: 140, y: 300, props: { delayTime: 1 } },
-      { id: "sn_noise", type: "noise", x: 240, y: 300, props: { noiseType: "pink", attack: 0.005, decay: 0.15 } },
+      { id: "sn_noise", type: "noise", x: 240, y: 300, props: { wave: "pink", attack: 0.005, decay: 0.15 } },
       { id: "sn_flt", type: "filter", x: 340, y: 300, props: { cutoff: 3000, mod: 2000, attack: 0.01, decay: 0.1 } },
       { id: "sn_out", type: "speaker", x: 460, y: 300, props: { reverb: 0.3, pan: -0.1 } },
       
       // Rumble with brown noise
       { id: "rm_src", type: "source", x: 60, y: 450, props: { interval: 4, midiNote: 36, intensity: 0.5 } },
-      { id: "rm_noise", type: "noise", x: 180, y: 450, props: { noiseType: "brown", attack: 0.1, decay: 1.5 } },
+      { id: "rm_noise", type: "noise", x: 180, y: 450, props: { wave: "brown", attack: 0.1, decay: 1.5 } },
       { id: "rm_flt", type: "filter", x: 300, y: 450, props: { cutoff: 200, mod: 150, attack: 0.05, decay: 0.8 } },
       { id: "rm_out", type: "speaker", x: 420, y: 450, props: { reverb: 0.4, pan: 0 } }
     ],
@@ -1227,8 +1227,8 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "out1", type: "speaker", x: 280, y: 250, props: { reverb: 0.3, pan: -0.5 } },
       
       // Teleporter sends to far right
-      { id: "tele_in", type: "teleporter", x: 380, y: 250, props: { targetId: "tele_out", mode: "send" } },
-      { id: "tele_out", type: "teleporter", x: 600, y: 250, props: { targetId: "tele_in", mode: "receive" } },
+      { id: "tele_in", type: "teleporter", x: 380, y: 250, props: { channel: "A", isEntry: true } },
+      { id: "tele_out", type: "teleporter", x: 600, y: 250, props: { channel: "A", isEntry: false } },
       
       { id: "p_up", type: "pitch", x: 700, y: 250, props: { shift: 7 } },
       { id: "out2", type: "speaker", x: 820, y: 250, props: { reverb: 0.5, pan: 0.5 } },
@@ -1236,8 +1236,8 @@ export const EXAMPLES: Record<string, Example> = {
       // Second teleporter pair for octave
       { id: "src2", type: "source", x: 60, y: 400, props: { interval: 4, midiNote: 48, intensity: 0.7 } },
       { id: "pol2", type: "polariser", x: 160, y: 400, props: { wave: "sine", attack: 0.1, decay: 1.0 } },
-      { id: "tele_in2", type: "teleporter", x: 280, y: 400, props: { targetId: "tele_out2", mode: "send" } },
-      { id: "tele_out2", type: "teleporter", x: 500, y: 400, props: { targetId: "tele_in2", mode: "receive" } },
+      { id: "tele_in2", type: "teleporter", x: 280, y: 400, props: { channel: "B", isEntry: true } },
+      { id: "tele_out2", type: "teleporter", x: 500, y: 400, props: { channel: "B", isEntry: false } },
       { id: "p_oct", type: "pitch", x: 600, y: 400, props: { shift: 12 } },
       { id: "out3", type: "speaker", x: 720, y: 400, props: { reverb: 0.6, pan: 0 } }
     ],
@@ -2306,6 +2306,185 @@ export const EXAMPLES: Record<string, Example> = {
       // Cello bass
       { id: "e_cello1", from: "cello_src", to: "cello_tun" },
       { id: "e_cello2", from: "cello_tun", to: "cello_out" }
+    ]
+  },
+
+  // ============================================================================
+  // EVOLUTIONARY: Genetic Melodies
+  // ============================================================================
+  
+  genetic_evolution: {
+    name: "Evolutionary: Genetic Melodies",
+    description: "Demonstrates genetic algorithm nodes: Mutator adds random variations, Fitness Gate filters out dissonant notes, creating melodies that naturally evolve toward harmony.",
+    bpm: 100,
+    nodes: [
+      // Seed melody - random notes that will evolve
+      { id: "seed", type: "source", x: 60, y: 250, props: { interval: 0.5, noteIndex: -1, intensity: 0.6 } },
+      
+      // Mutator adds genetic drift - small random pitch variations
+      { id: "mutate", type: "mutator", x: 180, y: 250, props: { 
+        mode: "drift", 
+        probability: 0.7,
+        pitchDrift: 3,
+        pitchRadiation: 12,
+        gainDrift: 0.1,
+        cutoffDrift: 0.2,
+        waveChange: false,
+        targets: ["pitch"]
+      }},
+      
+      // Fitness gate - only let through notes that fit the scale
+      { id: "fitness", type: "gate", x: 300, y: 250, props: {
+        mode: "harmonic",
+        prob: 0.5,
+        harmonicThreshold: 0.7,
+        energyThreshold: 0.1,
+        densityThreshold: 8,
+        useGlobalKey: true,
+        scale: "major",
+        root: 0
+      }},
+      
+      // Quantize survivors to scale
+      { id: "quant", type: "quantizer", x: 420, y: 250, props: { strength: 1.0 } },
+      
+      // Shape the sound
+      { id: "pol", type: "polariser", x: 540, y: 250, props: { wave: "triangle", attack: 0.02, decay: 0.3 } },
+      { id: "out", type: "speaker", x: 660, y: 250, props: { reverb: 0.4, pan: 0 } },
+      
+      // Bass layer - more stable with less mutation
+      { id: "bass_seed", type: "source", x: 60, y: 400, props: { interval: 2, noteIndex: -1, intensity: 0.7 } },
+      { id: "bass_mut", type: "mutator", x: 180, y: 400, props: { 
+        mode: "drift", 
+        probability: 0.3,
+        pitchDrift: 2,
+        pitchRadiation: 5,
+        gainDrift: 0.05,
+        cutoffDrift: 0.1,
+        waveChange: false,
+        targets: ["pitch"]
+      }},
+      { id: "bass_fit", type: "gate", x: 300, y: 400, props: {
+        mode: "harmonic",
+        prob: 0.5,
+        harmonicThreshold: 0.8,
+        energyThreshold: 0.2,
+        densityThreshold: 4,
+        useGlobalKey: true,
+        scale: "major",
+        root: 0
+      }},
+      { id: "bass_p", type: "pitch", x: 420, y: 400, props: { shift: -12 } },
+      { id: "bass_pol", type: "polariser", x: 540, y: 400, props: { wave: "sawtooth", attack: 0.05, decay: 0.5 } },
+      { id: "bass_flt", type: "filter", x: 660, y: 400, props: { cutoff: 600, mod: 400, attack: 0.02, decay: 0.3 } },
+      { id: "bass_out", type: "speaker", x: 780, y: 400, props: { reverb: 0.2, pan: 0 } }
+    ],
+    edges: [
+      // Main melody chain
+      { id: "e1", from: "seed", to: "mutate" },
+      { id: "e2", from: "mutate", to: "fitness" },
+      { id: "e3", from: "fitness", to: "quant" },
+      { id: "e4", from: "quant", to: "pol" },
+      { id: "e5", from: "pol", to: "out" },
+      // Bass chain
+      { id: "eb1", from: "bass_seed", to: "bass_mut" },
+      { id: "eb2", from: "bass_mut", to: "bass_fit" },
+      { id: "eb3", from: "bass_fit", to: "bass_p" },
+      { id: "eb4", from: "bass_p", to: "bass_pol" },
+      { id: "eb5", from: "bass_pol", to: "bass_flt" },
+      { id: "eb6", from: "bass_flt", to: "bass_out" }
+    ]
+  },
+
+  // ============================================================================
+  // EVOLUTIONARY: Radiation Burst
+  // ============================================================================
+  
+  radiation_burst: {
+    name: "Evolutionary: Radiation Burst",
+    description: "Mutator in radiation mode creates dramatic sonic explosions with large pitch jumps and wave changes. Gates control the density of mutations.",
+    bpm: 85,
+    nodes: [
+      // Trigger source
+      { id: "trigger", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.7 } },
+      { id: "split", type: "splitter", x: 160, y: 300, props: {} },
+      
+      // Pure voice - no mutation (for reference)
+      { id: "pure_pol", type: "polariser", x: 300, y: 180, props: { wave: "sine", attack: 0.1, decay: 1.0 } },
+      { id: "pure_out", type: "speaker", x: 440, y: 180, props: { reverb: 0.5, pan: -0.5 } },
+      
+      // Radiation voice - wild mutations
+      { id: "rad_mut", type: "mutator", x: 300, y: 300, props: { 
+        mode: "radiation", 
+        probability: 0.9,
+        pitchDrift: 2,
+        pitchRadiation: 24,
+        gainDrift: 0.3,
+        cutoffDrift: 0.5,
+        waveChange: true,
+        targets: ["pitch", "wave", "gain"]
+      }},
+      { id: "rad_pol", type: "polariser", x: 440, y: 300, props: { wave: "sawtooth", attack: 0.02, decay: 0.6 } },
+      { id: "rad_flt", type: "filter", x: 560, y: 300, props: { cutoff: 2000, mod: 3000, attack: 0.02, decay: 0.4 } },
+      { id: "rad_out", type: "speaker", x: 700, y: 300, props: { reverb: 0.6, pan: 0.5 } },
+      
+      // Delayed radiation echo
+      { id: "delay1", type: "delay", x: 300, y: 420, props: { delayTime: 0.5 } },
+      { id: "rad_mut2", type: "mutator", x: 440, y: 420, props: { 
+        mode: "radiation", 
+        probability: 0.6,
+        pitchDrift: 1,
+        pitchRadiation: 12,
+        gainDrift: 0.2,
+        cutoffDrift: 0.3,
+        waveChange: true,
+        targets: ["pitch"]
+      }},
+      { id: "rad_pol2", type: "polariser", x: 560, y: 420, props: { wave: "triangle", attack: 0.05, decay: 0.8 } },
+      { id: "rad_out2", type: "speaker", x: 700, y: 420, props: { reverb: 0.7, pan: 0 } }
+    ],
+    edges: [
+      { id: "e1", from: "trigger", to: "split" },
+      // Pure voice
+      { id: "ep1", from: "split", to: "pure_pol" },
+      { id: "ep2", from: "pure_pol", to: "pure_out" },
+      // Radiation voice  
+      { id: "er1", from: "split", to: "rad_mut" },
+      { id: "er2", from: "rad_mut", to: "rad_pol" },
+      { id: "er3", from: "rad_pol", to: "rad_flt" },
+      { id: "er4", from: "rad_flt", to: "rad_out" },
+      // Delayed radiation
+      { id: "ed1", from: "split", to: "delay1" },
+      { id: "ed2", from: "delay1", to: "rad_mut2" },
+      { id: "ed3", from: "rad_mut2", to: "rad_pol2" },
+      { id: "ed4", from: "rad_pol2", to: "rad_out2" }
+    ]
+  },
+
+  // ============================================================================
+  // Tutorial 9: Tunnels - Compact Sound Design
+  // ============================================================================
+  
+  tut_09_tunnels: {
+    name: "Tutorial 9: Tunnels",
+    description: "Tunnels pack multiple effects into one node. This creates a rich string sound using polarisers, harmonics, and modulation in a single tunnel.",
+    bpm: 80,
+    nodes: [
+      { id: "src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
+      { id: "string", type: "tunnel", x: 280, y: 300, props: {
+        tunnelName: "String",
+        subNodes: [
+          { type: "polariser", props: { wave: "sawtooth", attack: 0.2, decay: 1.5, mix: 1.0 } },
+          { type: "harmonic", props: { ratio: 2, wave: "sine", attack: 0.15, decay: 1.2, mix: 0.3 } },
+          { type: "modulator", props: { rate: 5, depth: 15, delay: 0.3 } },
+          { type: "filter", props: { cutoff: 2000, mod: 1000, attack: 0.1, decay: 0.8 } }
+        ]
+      }},
+      { id: "spk", type: "speaker", x: 460, y: 300, props: { reverb: 0.5, pan: 0 } }
+    ],
+    edges: [
+      { id: "e1", from: "src", to: "string" },
+      { id: "e2", from: "string", to: "spk" }
     ]
   }
 

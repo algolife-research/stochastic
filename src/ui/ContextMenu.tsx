@@ -77,7 +77,6 @@ const NODE_CATEGORIES: NodeCategory[] = [
     nodes: [
       { type: 'mutator', label: 'Mutator', icon: '🧬' },
       { type: 'crossover', label: 'Crossover', icon: '⚤' },
-      { type: 'fitness_gate', label: 'Fitness Gate', icon: '🏆' },
     ]
   }
 ];

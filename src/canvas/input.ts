@@ -1029,7 +1029,7 @@ function isNodeTool(tool: Tool): boolean {
     'gate', 'delay', 'gain', 'noise', 'harmonic', 
     'modulator', 'tunnel', 'teleporter', 'quantizer', 
     'lfo', 'splitter', 'midi_out', 'midi_cc', 'scene_trigger',
-    'mutator', 'crossover', 'fitness_gate'
+    'mutator', 'crossover'
   ];
   return nodeTool.includes(tool);
 }

@@ -5,7 +5,7 @@ import { getGraphStore } from './store';
 import type { 
   Packet, GraphNode, GraphEdge, AudioPayload, 
   NodeId, MidiNote, Frequency, QuantizerProps, SceneTriggerProps,
-  MutatorProps, FitnessGateProps, WaveType
+  MutatorProps, GateProps, WaveType
 } from './types';
 import { 
   dist, midiToFreq, clampMidi, SCALES 
@@ -62,8 +62,6 @@ export function processNodeArrival(
       return processSceneTrigger(payload, node);
     case 'mutator':
       return processMutator(payload, node);
-    case 'fitness_gate':
-      return processFitnessGate(payload, node);
     // Note: crossover is handled specially in tick.ts, not here
     default:
       return payload;
@@ -127,11 +125,88 @@ function processFilter(payload: AudioPayload, node: GraphNode): AudioPayload {
 }
 
 function processGate(payload: AudioPayload, node: GraphNode): AudioPayload {
-  const props = node.props as { prob: number };
+  const props = node.props as GateProps;
+  const mode = props.mode ?? 'probability';
   
-  // Gate blocks packet with probability (1 - prob)
-  if (Math.random() > props.prob) {
-    // Signal to delete packet
+  // Probability mode - simple random gate
+  if (mode === 'probability') {
+    if (Math.random() > props.prob) {
+      return { ...payload, gain: -1 };
+    }
+    return payload;
+  }
+  
+  // Fitness modes - criteria-based selection
+  const store = getGraphStore();
+  
+  // Get scale for harmonic fitness calculation
+  const { root, scaleName } = props.useGlobalKey
+    ? {
+        root: store.scenePlayback.effectiveRoot ?? store.musicalContext.root,
+        scaleName: store.scenePlayback.effectiveScale ?? store.musicalContext.scaleName
+      }
+    : { root: props.root, scaleName: props.scale };
+  
+  const scale = SCALES[scaleName];
+  if (!scale) return payload;
+  
+  let survives = true;
+  
+  // Check harmonic fitness (is the note consonant with the scale?)
+  if (mode === 'harmonic' || mode === 'all') {
+    const chroma = payload.midiNote % 12;
+    const relativeToRoot = (chroma - root + 12) % 12;
+    
+    // Check if note is in scale
+    const inScale = scale.includes(relativeToRoot);
+    
+    if (!inScale) {
+      // Note is not in scale - calculate dissonance
+      let minDist = 12;
+      for (const interval of scale) {
+        const scaleChroma = (root + interval) % 12;
+        const d = Math.min(
+          Math.abs(chroma - scaleChroma),
+          12 - Math.abs(chroma - scaleChroma)
+        );
+        minDist = Math.min(minDist, d);
+      }
+      
+      // Convert distance to consonance (0 = dissonant, 1 = consonant)
+      const consonance = 1 - (minDist / 6);
+      
+      if (consonance < props.harmonicThreshold) {
+        survives = false;
+      }
+    }
+  }
+  
+  // Check energy fitness (is the packet loud enough?)
+  if (survives && (mode === 'energy' || mode === 'all')) {
+    if (payload.gain < props.energyThreshold) {
+      survives = false;
+    }
+  }
+  
+  // Check density fitness (is there room for more packets?)
+  if (survives && (mode === 'density' || mode === 'all')) {
+    const now = performance.now();
+    const msPerBeat = (60 / store.masterSpeed) * 1000;
+    
+    // Use node's timer to track packets per beat window
+    if (now - node.lastTrigger > msPerBeat) {
+      node.timer = 0;
+      node.lastTrigger = now;
+    }
+    
+    node.timer += 1;
+    
+    if (node.timer > props.densityThreshold) {
+      survives = false;
+    }
+  }
+  
+  if (!survives) {
     return { ...payload, gain: -1 };
   }
   
@@ -528,91 +603,6 @@ function processMutator(payload: AudioPayload, node: GraphNode): AudioPayload {
   }
   
   return result;
-}
-
-/**
- * Fitness Gate - Natural selection based on harmonic, energy, or density criteria
- */
-function processFitnessGate(payload: AudioPayload, node: GraphNode): AudioPayload {
-  const props = node.props as FitnessGateProps;
-  const store = getGraphStore();
-  
-  // Get scale for harmonic fitness calculation
-  const { root, scaleName } = props.useGlobalKey
-    ? {
-        root: store.scenePlayback.effectiveRoot ?? store.musicalContext.root,
-        scaleName: store.scenePlayback.effectiveScale ?? store.musicalContext.scaleName
-      }
-    : { root: props.root, scaleName: props.scale };
-  
-  const scale = SCALES[scaleName];
-  if (!scale) return payload;
-  
-  let survives = true;
-  
-  // Check harmonic fitness (is the note consonant with the scale?)
-  if (props.criteria === 'harmonic' || props.criteria === 'all') {
-    const chroma = payload.midiNote % 12;
-    const relativeToRoot = (chroma - root + 12) % 12;
-    
-    // Check if note is in scale
-    const inScale = scale.includes(relativeToRoot);
-    
-    if (!inScale) {
-      // Note is not in scale - calculate dissonance
-      // Find distance to nearest scale degree
-      let minDist = 12;
-      for (const interval of scale) {
-        const scaleChroma = (root + interval) % 12;
-        const d = Math.min(
-          Math.abs(chroma - scaleChroma),
-          12 - Math.abs(chroma - scaleChroma)
-        );
-        minDist = Math.min(minDist, d);
-      }
-      
-      // Convert distance to consonance (0 = dissonant, 1 = consonant)
-      const consonance = 1 - (minDist / 6); // max distance is 6 semitones
-      
-      if (consonance < props.harmonicThreshold) {
-        survives = false;
-      }
-    }
-  }
-  
-  // Check energy fitness (is the packet loud enough?)
-  if (survives && (props.criteria === 'energy' || props.criteria === 'all')) {
-    if (payload.gain < props.energyThreshold) {
-      survives = false;
-    }
-  }
-  
-  // Check density fitness (is there room for more packets?)
-  // This is tracked per-node to count how many packets pass per beat
-  if (survives && (props.criteria === 'density' || props.criteria === 'all')) {
-    const now = performance.now();
-    const msPerBeat = (60 / store.masterSpeed) * 1000;
-    
-    // Use node's timer to track packets per beat window
-    // Reset counter if we've moved to a new beat
-    if (now - node.lastTrigger > msPerBeat) {
-      node.timer = 0;
-      node.lastTrigger = now;
-    }
-    
-    node.timer += 1;
-    
-    if (node.timer > props.densityThreshold) {
-      survives = false;
-    }
-  }
-  
-  if (!survives) {
-    // Signal to delete packet (same convention as Gate node)
-    return { ...payload, gain: -1 };
-  }
-  
-  return payload;
 }
 
 // ============================================================================

@@ -65,7 +65,6 @@ const NODE_CATEGORIES: NodeCategory[] = [
     nodes: [
       { type: 'mutator', label: 'Mutator', icon: NODE_ICONS.mutator, color: NODE_COLORS.mutator },
       { type: 'crossover', label: 'Crossover', icon: NODE_ICONS.crossover, color: NODE_COLORS.crossover },
-      { type: 'fitness_gate', label: 'Fitness Gate', icon: NODE_ICONS.fitness_gate, color: NODE_COLORS.fitness_gate },
     ]
   }
 ];

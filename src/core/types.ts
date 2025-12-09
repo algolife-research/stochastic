@@ -89,8 +89,7 @@ export type NodeType =
   | 'midi_cc'      // MIDI CC
   | 'scene_trigger' // Scene change
   | 'mutator'      // Genetic drift / radiation mutations
-  | 'crossover'    // Sexual reproduction - merge two packets
-  | 'fitness_gate'; // Natural selection filter
+  | 'crossover';   // Sexual reproduction - merge two packets
 
 // ============================================================================
 // NODE PROPERTIES
@@ -132,8 +131,19 @@ export interface FilterProps {
   readonly mod: number;            // Modulation amount
 }
 
+/** Gate mode: probability = simple random, fitness = criteria-based selection */
+export type GateMode = 'probability' | 'harmonic' | 'energy' | 'density' | 'all';
+
 export interface GateProps {
-  readonly prob: number;           // 0-1 pass probability
+  readonly mode: GateMode;         // Gating mode
+  readonly prob: number;           // 0-1 pass probability (probability mode)
+  // Fitness mode properties
+  readonly harmonicThreshold: number;    // 0-1, kill dissonant notes below this
+  readonly energyThreshold: number;      // 0-1, minimum gain to survive
+  readonly densityThreshold: number;     // Max packets allowed through per beat
+  readonly useGlobalKey: boolean;        // Use global key for harmonic fitness
+  readonly scale: ScaleName;             // Local scale for harmonic fitness
+  readonly root: number;                 // Local root (0-11)
 }
 
 export interface DelayProps {
@@ -247,18 +257,7 @@ export interface CrossoverProps {
   readonly timeout: number;              // Beats to wait for second parent before passing first
 }
 
-/** Fitness criteria type */
-export type FitnessCriteria = 'harmonic' | 'energy' | 'density' | 'all';
 
-export interface FitnessGateProps {
-  readonly criteria: FitnessCriteria;
-  readonly harmonicThreshold: number;    // 0-1, kill dissonant notes below this
-  readonly energyThreshold: number;      // 0-1, minimum gain to survive
-  readonly densityThreshold: number;     // Max packets allowed through per beat
-  readonly useGlobalKey: boolean;        // Use global key for harmonic fitness
-  readonly scale: ScaleName;             // Local scale for harmonic fitness
-  readonly root: number;                 // Local root (0-11)
-}
 
 /** Union type for all node properties */
 export type NodeProps = 
@@ -282,8 +281,7 @@ export type NodeProps =
   | { readonly type: 'scene_trigger'; readonly props: SceneTriggerProps }
   | { readonly type: 'splitter'; readonly props: SplitterProps }
   | { readonly type: 'mutator'; readonly props: MutatorProps }
-  | { readonly type: 'crossover'; readonly props: CrossoverProps }
-  | { readonly type: 'fitness_gate'; readonly props: FitnessGateProps };
+  | { readonly type: 'crossover'; readonly props: CrossoverProps };
 
 /** Get props type for a specific node type */
 export type PropsForNodeType<T extends NodeType> = 
@@ -794,7 +792,7 @@ export type Tool =
   | 'gate' | 'delay' | 'gain' | 'noise' | 'harmonic' 
   | 'modulator' | 'tunnel' | 'teleporter' | 'quantizer' 
   | 'lfo' | 'splitter' | 'midi_out' | 'midi_cc' | 'scene_trigger'
-  | 'mutator' | 'crossover' | 'fitness_gate'
+  | 'mutator' | 'crossover'
   | 'select' | 'pan' | 'link' | 'region' | 'annotation';
 
 export interface SelectionState {
