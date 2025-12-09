@@ -2,6 +2,16 @@
 
 Phonon is a desktop application built using web technologies and the Tauri framework. It combines a React-based UI with a high-performance audio engine and a Rust-based backend for system integration.
 
+## Documentation
+
+| Document | Contents |
+|----------|----------|
+| [Frontend Architecture](./FRONTEND_ARCHITECTURE.md) | React UI, State Management, Canvas, Audio Engine, Graph Engine |
+| [Backend Architecture](./BACKEND_ARCHITECTURE.md) | Tauri/Rust, File System, Export Systems |
+| [AI Generation Guide](./AI_GENERATION_GUIDE.md) | File format specification for AI-generated compositions |
+
+---
+
 ## High-Level Overview
 
 ```
@@ -27,270 +37,113 @@ Phonon is a desktop application built using web technologies and the Tauri frame
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Core Components
+---
 
-### 1. Frontend (React + TypeScript)
+## Technology Stack
 
-Location: `src/ui/`
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| **UI** | React + TypeScript | Component-based interface |
+| **Styling** | CSS Modules | Scoped component styles |
+| **State** | Zustand + Immer | Global state with immutable updates |
+| **Canvas** | HTML5 Canvas 2D | Graph visualization and animation |
+| **Audio** | Web Audio API + AudioWorklet | Real-time synthesis |
+| **Desktop** | Tauri (Rust) | Native file access, window management |
+| **Build** | Vite | Fast development and bundling |
 
-The user interface is built with React and CSS Modules. Key components:
+---
 
-| Component | Purpose |
-|-----------|---------|
-| `App.tsx` | Root component, orchestrates canvas and panels |
-| `Canvas.tsx` | HTML5 Canvas for graph visualization (via `src/canvas/renderer.ts`) |
-| `PropertyPanel.tsx` | Node/edge property editing |
-| `ScenePanel.tsx` | Scene management, properties, arrangement |
-| `ArrangementTimeline.tsx` | Visual timeline for arrangement mode (Linear pixel-per-beat rendering) |
-| `Toolbar.tsx` | File operations, Save button |
-| `TransportBar.tsx` | Play/Pause/Stop, BPM, playback mode |
-| `ContextMenu.tsx` | Right-click node creation |
-| `ProjectStartupModal.tsx` | Project selection on launch |
-| `ExportModal.tsx` | WAV/MIDI export with scene support |
+## Core Systems
 
-### 2. State Management (Zustand + Immer)
+### Graph Engine
+The visual programming model where nodes process audio packets traveling along edges. Supports 16+ node types including sources, effects, and routing.
 
-Location: `src/core/store.ts`
+→ See [Frontend Architecture - Graph Engine](./FRONTEND_ARCHITECTURE.md#7-graph-engine)
 
-The application uses Zustand for global state management with Immer for immutable updates. The store uses `Map` and `Set` collections for O(1) node/edge lookups.
+### Scene System
+Multi-section compositions with arrangement timeline and live performance (jam) mode. Scenes can override BPM, key, and scale.
 
-```typescript
-interface GraphState {
-  nodes: Map<NodeId, GraphNode>;
-  edges: Map<EdgeId, GraphEdge>;
-  packets: Map<PacketId, Packet>;
-  annotations: Map<AnnotationId, Annotation>;
-  regions: Map<RegionId, Region>;
-  
-  // Scene System
-  scenes: Map<SceneId, Scene>;
-  arrangement: ArrangementSlot[];
-  activeSceneId: SceneId | null;
-  editingSceneId: SceneId | null;
-  scenePlayback: ScenePlaybackState;
-  
-  isRunning: boolean;
-  masterSpeed: number;  // BPM
-  musicalContext: MusicalContext;
-  globalSettings: GlobalSettings;
-  
-  // Project mode
-  project: {
-    path: string | null;
-    isProjectMode: boolean;
-    currentComposition: string | null;
-  };
-}
-```
+→ See [Frontend Architecture - Scene System](./FRONTEND_ARCHITECTURE.md#4-scene-system)
 
-### 3. Scene System
+### Audio Synthesis
+Multi-oscillator polyphonic synthesizer with AHD envelopes, filters, and convolution reverb. Runs in AudioWorklet for low latency.
 
-Location: `src/core/store.ts` (scene actions), `src/core/tick.ts` (playback)
+→ See [Frontend Architecture - Audio Engine](./FRONTEND_ARCHITECTURE.md#6-audio-engine)
 
-The scene system enables multi-section compositions:
+### File I/O
+`.phono` JSON format for compositions. Supports project mode for multi-file workflows. Legacy format migration.
 
-| Feature | Description |
-|---------|-------------|
-| **Scenes** | Self-contained graph snapshots with duration and settings |
-| **Arrangement Mode** | Scenes play on multi-channel timeline, multiple scenes can play simultaneously |
-| **Jam Mode** | Scenes play indefinitely, user triggers changes via scene_trigger nodes |
-| **Scene Trigger Node** | In-graph node to queue scene transitions (crossfade/jump) |
-| **Scene Properties** | Duration, loops, local BPM/key/scale overrides |
-| **Auto-save** | Canvas auto-saves to scene when switching |
-| **Multi-Channel** | Multiple tracks with independent volume, mute, solo |
+→ See [Backend Architecture - File I/O](./BACKEND_ARCHITECTURE.md#4-file-io)
 
-### 3.1 Multi-Channel Architecture
-
-The arrangement supports multiple channels (tracks) playing simultaneously:
-
-```typescript
-interface ArrangementChannel {
-  id: string;
-  name: string;      // e.g., "Melody", "Bass", "Drums"
-  color: string;     // For timeline visualization
-  muted: boolean;
-  solo: boolean;
-  volume: number;    // 0-1 multiplier
-}
-```
-
-**Virtual Scene Processing**: Scenes on non-displayed channels are processed "virtually" - their sources emit packets, packets travel, and speakers trigger audio, but without canvas rendering.
-
-```typescript
-// In tick.ts
-activeChannelScenes: Map<number, ChannelSceneState>  // Non-canvas channels
-canvasChannelIndex: number                           // Which channel is displayed
-```
-
-### 4. Canvas Renderer
-
-Location: `src/canvas/renderer.ts`, `src/canvas/input.ts`
-
-A custom 2D canvas renderer handles:
-- Node and edge drawing with glow effects
-- Packet animation (60fps)
-- Background grid and animated stars
-- Zoom/pan viewport transforms
-- Selection box rendering
-
-### 5. Audio Engine
-
-Location: `src/audio/`
-
-The audio system uses Web Audio API with an AudioWorklet for sample-accurate synthesis:
-
-| File | Purpose |
-|------|---------|
-| `engine.ts` | Main thread: context setup, reverb, message passing |
-| `worklet.ts` | Audio thread: `PhononSynthProcessor` with multi-voice polyphony |
-
-**Synthesis Features:**
-- Multi-oscillator layering (up to 4 waves per voice)
-- AHD envelope (Attack-Hold-Decay)
-- Filter with envelope modulation
-- Stereo panning
-- Convolution reverb
-
-### 6. Graph Engine
-
-Location: `src/core/engine.ts`, `src/core/tick.ts`
-
-The graph simulation runs on a fixed tick rate:
-1. Advance packet positions along edges
-2. Process arrivals at nodes
-3. Spawn new packets from sources
-4. Trigger audio events at speakers
-5. Update scene playback state (arrangement/jam mode)
-
-### 7. Offline Compiler
-
-Location: `src/io/compiler.ts`
-
-The compiler renders compositions to audio files:
-
-| Function | Purpose |
-|----------|---------|
-| `compileGraph()` | Compile single graph to audio events |
-| `compileArrangement()` | Compile full arrangement (all scenes) |
-| `calculateArrangementDuration()` | Calculate total duration from scenes |
-
-### 8. Backend (Tauri / Rust)
-
-Location: `src-tauri/`
-
-Tauri provides:
-- Native file dialogs (`@tauri-apps/api/dialog`)
-- Direct filesystem access (`@tauri-apps/api/fs`)
-- Window management and system tray
-- Cross-platform builds (Windows, macOS, Linux)
+---
 
 ## Directory Structure
 
 ```
 src/
-├── audio/          # Audio synthesis
-│   ├── engine.ts   # Main thread audio management
-│   └── worklet.ts  # AudioWorklet processor
-├── canvas/         # Rendering
-│   ├── renderer.ts # Canvas drawing
-│   └── input.ts    # Mouse/keyboard handling
-├── core/           # Application core
-│   ├── constants.ts # Config values, scales
-│   ├── engine.ts   # Graph processing
-│   ├── store.ts    # Zustand state (includes scenes)
-│   ├── tick.ts     # Animation loop + scene playback
-│   └── types.ts    # TypeScript types
+├── audio/          # Audio synthesis (AudioWorklet)
+├── canvas/         # 2D rendering and input handling
+├── core/           # Application logic
+│   ├── store/      # Modular Zustand store
+│   ├── tick/       # Animation and playback
+│   ├── type-guards.ts
+│   ├── types.ts
+│   └── engine.ts
 ├── data/           # Example compositions
-├── io/             # Input/Output
-│   ├── compiler.ts # Offline rendering (single + arrangement)
-│   ├── file-io.ts  # Save/load logic
-│   ├── filesystem.ts # Tauri FS wrapper
-│   └── midi.ts     # MIDI encoding
+├── io/             # File operations, export
 └── ui/             # React components
-    ├── App.tsx
-    ├── PropertyPanel.tsx
-    ├── ScenePanel.tsx        # Scene management
-    ├── ArrangementTimeline.tsx # Arrangement view
-    ├── TransportBar.tsx      # Play/Pause/Stop + mode
-    ├── Toolbar.tsx
-    └── ...
 
 src-tauri/          # Rust backend
 ├── src/main.rs
-├── tauri.conf.json
-└── icons/
+└── tauri.conf.json
 ```
+
+---
 
 ## Data Flow
 
-### Playback Flow
+### Real-time Playback
+```
+Play button → setIsRunning(true) → tick loop starts
+                                        │
+    ┌───────────────────────────────────┴───────────────────────────┐
+    │                         Each Frame                            │
+    ├───────────────────────────────────────────────────────────────┤
+    │  1. engine.processPackets() - advance simulation              │
+    │  2. Scene transitions (arrangement/jam mode)                  │
+    │  3. Speaker nodes → AudioWorklet noteOn messages              │
+    │  4. renderer.render() - draw current state                    │
+    └───────────────────────────────────────────────────────────────┘
+```
 
-1. User clicks **Play** → `store.setIsRunning(true)`
-2. `tick.ts` starts animation loop
-3. Each frame:
-   - `engine.processPackets()` advances simulation
-   - `updateArrangementMode()` or `updateJamMode()` handles scene transitions
-   - Packets reaching speakers emit audio events
-   - `renderer.render()` draws current state
-4. User clicks **Stop** → simulation pauses, audio fades
+### Save/Load
+```
+Save → saveCurrentScene() → serializeComposition() → Tauri writeTextFile
+Load → Tauri readTextFile → deserializeComposition() → populate store
+```
 
-### Save/Load Flow
+---
 
-1. User clicks **Save** → `Toolbar.handleSave()`
-2. `saveCurrentScene()` saves canvas to editing scene
-3. `serializeComposition()` converts scenes/arrangement to JSON
-4. If Project Mode: Write to `{projectPath}/{name}.phono`
-5. Else: Browser download
+## File Format (V3)
 
-## File Format
-
-Compositions are stored as `.phono` files (JSON). **Version 3.0** uses scene-based structure:
+Compositions are stored as `.phono` files (JSON):
 
 ```json
 {
-  "meta": {
-    "version": "3.0.0",
-    "name": "My Composition",
-    "author": "",
-    "created": 1733430000000,
-    "modified": 1733430000000
-  },
-  "global": {
-    "rootNote": 0,
-    "scaleName": "major",
-    "gravity": 0.5,
-    "defaultEdgeBehaviour": "fixed",
-    "masterBpm": 120
-  },
+  "meta": { "version": "3.0.0", "name": "...", "author": "..." },
+  "global": { "masterBpm": 120, "rootNote": 60, "scaleName": "major" },
   "scenes": [
     {
       "id": "scene-1",
       "name": "Main",
-      "color": "#4CAF50",
       "durationBeats": 16,
-      "loopCount": 1,
-      "localBpm": null,
-      "localRoot": null,
-      "localScale": null,
-      "enterTransition": { "type": "cut", "durationBeats": 0 },
-      "exitTransition": { "type": "cut", "durationBeats": 0 },
-      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 4 },
-      "vizMode": "editor",
-      "vizConfig": null,
-      "vizTransition": { "type": "crossfade", "durationBeats": 2 },
       "nodes": [...],
-      "edges": [...],
-      "annotations": [],
-      "regions": []
+      "edges": [...]
     }
   ],
-  "arrangement": [
-    { "id": "slot-1", "sceneId": "scene-1", "startBeat": 0, "channel": 0 }
-  ],
-  "channels": [
-    { "id": "channel-0", "name": "Track 1", "color": "#4CAF50", "muted": false, "solo": false, "volume": 1 }
-  ]
+  "arrangement": [{ "id": "slot-1", "sceneId": "scene-1", "startBeat": 0 }],
+  "channels": [{ "id": "channel-0", "name": "Track 1", "volume": 1 }]
 }
 ```
 
-> **Note:** The app supports loading legacy V2 files (with `graph.nodes`/`graph.edges`) and automatically migrates them to V3 format with a default channel.
+→ See [AI Generation Guide](./AI_GENERATION_GUIDE.md) for complete schema reference.
