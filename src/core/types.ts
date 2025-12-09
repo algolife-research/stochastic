@@ -54,14 +54,21 @@ export type ScaleName =
   | 'pentatonic' | 'minorPentatonic' | 'blues'
   | 'wholeTone' | 'diminished';
 
-/** Oscillator wave types */
-export type WaveType = 'sine' | 'square' | 'sawtooth' | 'triangle' | 'random' | 'noise';
+/** Pure oscillator waveforms */
+export type OscillatorWave = 'sine' | 'square' | 'sawtooth' | 'triangle';
 
 /** Noise types */
-export type NoiseType = 'white' | 'pink' | 'brown';
+export type NoiseWave = 'white' | 'pink' | 'brown';
 
-/** All wave types including noise */
-export type WaveOrNoiseType = WaveType | NoiseType;
+/** All audio wave types (oscillator + noise) */
+export type WaveType = OscillatorWave | NoiseWave;
+
+/** LFO shapes (oscillator + special modes) */
+export type LfoShape = OscillatorWave | 'random' | 'noise';
+
+// Legacy alias for backwards compatibility
+export type WaveOrNoiseType = WaveType;
+export type NoiseType = NoiseWave;
 
 // ============================================================================
 // NODE TYPES
@@ -72,13 +79,11 @@ export type NodeType =
   | 'source'       // Generates packets
   | 'speaker'      // Audio output
   | 'pitch'        // Pitch shift/set
-  | 'polariser'    // Wave shaping
+  | 'oscillator'   // Add wave layer (replaces polariser/noise/harmonic)
   | 'filter'       // Frequency filter
   | 'gate'         // Probability gate
   | 'delay'        // Time delay
   | 'gain'         // Volume/amplitude
-  | 'noise'        // Noise generator
-  | 'harmonic'     // Harmonic overtone
   | 'modulator'    // Vibrato/modulation
   | 'tunnel'       // Compound node
   | 'teleporter'   // Instant transport
@@ -117,11 +122,32 @@ export interface PitchProps {
   readonly fixedMidiNote: MidiNote; // Target note (set mode)
 }
 
-export interface PolariserProps {
-  readonly wave: WaveType;
+// ============================================================================
+// SHARED PROPERTY TYPES
+// ============================================================================
+
+/** Envelope for layered sounds */
+export interface EnvelopedLayer {
   readonly attack: Seconds;
   readonly decay: Seconds;
   readonly mix: number;            // 0-1
+}
+
+/** Local key configuration (scale/root) */
+export interface LocalKeyConfig {
+  readonly useGlobalKey: boolean;
+  readonly scale: ScaleName;
+  readonly root: number;           // 0-11
+}
+
+// ============================================================================
+// NODE PROPERTIES (continued)
+// ============================================================================
+
+/** Unified oscillator/noise/harmonic layer */
+export interface OscillatorProps extends EnvelopedLayer {
+  readonly wave: WaveType;         // Oscillator or noise type
+  readonly ratio: number;          // Frequency multiplier (1.0 = fundamental)
 }
 
 export interface FilterProps {
@@ -134,16 +160,13 @@ export interface FilterProps {
 /** Gate mode: probability = simple random, fitness = criteria-based selection */
 export type GateMode = 'probability' | 'harmonic' | 'energy' | 'density' | 'all';
 
-export interface GateProps {
+export interface GateProps extends LocalKeyConfig {
   readonly mode: GateMode;         // Gating mode
   readonly prob: number;           // 0-1 pass probability (probability mode)
   // Fitness mode properties
   readonly harmonicThreshold: number;    // 0-1, kill dissonant notes below this
   readonly energyThreshold: number;      // 0-1, minimum gain to survive
   readonly densityThreshold: number;     // Max packets allowed through per beat
-  readonly useGlobalKey: boolean;        // Use global key for harmonic fitness
-  readonly scale: ScaleName;             // Local scale for harmonic fitness
-  readonly root: number;                 // Local root (0-11)
 }
 
 export interface DelayProps {
@@ -153,21 +176,6 @@ export interface DelayProps {
 export interface GainProps {
   readonly value: number;          // Multiplier
   readonly mass: number;           // For gravity physics
-}
-
-export interface NoiseProps {
-  readonly wave: NoiseType;
-  readonly attack: Seconds;
-  readonly decay: Seconds;
-  readonly mix: number;            // 0-1
-}
-
-export interface HarmonicProps {
-  readonly ratio: number;          // Frequency multiplier
-  readonly wave: WaveType;
-  readonly attack: Seconds;
-  readonly decay: Seconds;
-  readonly mix: number;            // 0-1
 }
 
 export interface ModulatorProps {
@@ -186,11 +194,8 @@ export interface TeleporterProps {
   readonly isEntry: boolean;       // Entry or exit point
 }
 
-export interface QuantizerProps {
+export interface QuantizerProps extends LocalKeyConfig {
   readonly strength: number;       // 0-1
-  readonly useGlobalKey: boolean;
-  readonly scale: ScaleName;
-  readonly root: number;           // 0-11
   readonly mode: 'nearest' | 'random';
   readonly weights: Record<number, number>; // index -> weight (0-1)
   readonly defaultPitch: number;   // Octave (e.g. 4)
@@ -198,7 +203,7 @@ export interface QuantizerProps {
 
 export interface LfoProps {
   readonly rate: Frequency;        // Hz
-  readonly shape: WaveType;
+  readonly shape: LfoShape;        // Includes 'random' and 'noise' for LFO
   readonly min: number;
   readonly max: number;
   readonly phase: number;          // 0-1
@@ -264,13 +269,11 @@ export type NodeProps =
   | { readonly type: 'source'; readonly props: SourceProps }
   | { readonly type: 'speaker'; readonly props: SpeakerProps }
   | { readonly type: 'pitch'; readonly props: PitchProps }
-  | { readonly type: 'polariser'; readonly props: PolariserProps }
+  | { readonly type: 'oscillator'; readonly props: OscillatorProps }
   | { readonly type: 'filter'; readonly props: FilterProps }
   | { readonly type: 'gate'; readonly props: GateProps }
   | { readonly type: 'delay'; readonly props: DelayProps }
   | { readonly type: 'gain'; readonly props: GainProps }
-  | { readonly type: 'noise'; readonly props: NoiseProps }
-  | { readonly type: 'harmonic'; readonly props: HarmonicProps }
   | { readonly type: 'modulator'; readonly props: ModulatorProps }
   | { readonly type: 'tunnel'; readonly props: TunnelProps }
   | { readonly type: 'teleporter'; readonly props: TeleporterProps }
@@ -788,11 +791,10 @@ export interface Region {
 // ============================================================================
 
 export type Tool = 
-  | 'source' | 'speaker' | 'pitch' | 'polariser' | 'filter' 
-  | 'gate' | 'delay' | 'gain' | 'noise' | 'harmonic' 
-  | 'modulator' | 'tunnel' | 'teleporter' | 'quantizer' 
-  | 'lfo' | 'splitter' | 'midi_out' | 'midi_cc' | 'scene_trigger'
-  | 'mutator' | 'crossover'
+  | 'source' | 'speaker' | 'pitch' | 'oscillator' | 'filter' 
+  | 'gate' | 'delay' | 'gain' | 'modulator' | 'tunnel' 
+  | 'teleporter' | 'quantizer' | 'lfo' | 'splitter' 
+  | 'midi_out' | 'midi_cc' | 'scene_trigger' | 'mutator' | 'crossover'
   | 'select' | 'pan' | 'link' | 'region' | 'annotation';
 
 export interface SelectionState {

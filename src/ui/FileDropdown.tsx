@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useGraphStore } from '@core/store';
-import { loadCompositionFromFile, detectFileVersion, migrateV2ToV3, deserializeComposition } from '../io/file-io';
+import { loadCompositionFromFile, detectFileVersion, migrateV2ToV3, deserializeComposition, saveCompositionToFile, serializeComposition } from '../io/file-io';
 import type { SerializedGraph, SerializedComposition } from '../io/file-io';
 import { fs, isTauri } from '../io/filesystem';
 import { SCALES } from '@core/constants';
@@ -24,6 +24,13 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const project = useGraphStore(state => state.project);
+  const scenes = useGraphStore(state => state.scenes);
+  const arrangement = useGraphStore(state => state.arrangement);
+  const arrangementChannels = useGraphStore(state => state.arrangementChannels);
+  const masterSpeed = useGraphStore(state => state.masterSpeed);
+  const musicalContext = useGraphStore(state => state.musicalContext);
+  const globalSettings = useGraphStore(state => state.globalSettings);
+  const projectMeta = useGraphStore(state => state.projectMeta);
   
   const loadComposition = useGraphStore(state => state.loadComposition);
   const setMusicalContext = useGraphStore(state => state.setMusicalContext);
@@ -31,6 +38,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
   const setProjectMeta = useGraphStore(state => state.setProjectMeta);
   const setCompositions = useGraphStore(state => state.setCompositions);
   const setCurrentComposition = useGraphStore(state => state.setCurrentComposition);
+  const saveCurrentScene = useGraphStore(state => state.saveCurrentScene);
   const clear = useGraphStore(state => state.clear);
   const markClean = useGraphStore(state => state.markClean);
 
@@ -100,6 +108,40 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
     });
     
     markClean();
+  };
+
+  const handleExportComposition = async () => {
+    const filename = projectMeta.name || 'untitled';
+    
+    // Save current canvas state to the editing scene before serializing
+    saveCurrentScene();
+    
+    if (project.isProjectMode && project.path && isTauri()) {
+      // Save to project folder
+      const phonoFilename = filename.endsWith('.phono') ? filename : `${filename}.phono`;
+      const data = serializeComposition(scenes, arrangement, arrangementChannels, musicalContext, globalSettings, projectMeta, masterSpeed);
+      
+      const success = await fs.writeComposition(project.path, phonoFilename, JSON.stringify(data, null, 2));
+      if (success) {
+        markClean();
+        setCurrentComposition(phonoFilename);
+        const files = await fs.listCompositions(project.path);
+        setCompositions(files);
+        console.log('Saved to project:', phonoFilename);
+      } else {
+        alert('Failed to save to project folder');
+      }
+    } else {
+      // Download as file
+      try {
+        await saveCompositionToFile(filename, scenes, arrangement, arrangementChannels, musicalContext, globalSettings, projectMeta, masterSpeed);
+        markClean();
+        console.log('Composition exported:', filename);
+      } catch (err) {
+        console.error('Export failed:', err);
+        alert('Failed to export file');
+      }
+    }
   };
 
   const handleNew = () => {
@@ -269,6 +311,10 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
 
           <button className={styles.menuItem} onClick={handleLoad}>
             <span>📂</span> Load... <span className={styles.shortcut}>Ctrl+O</span>
+          </button>
+          
+          <button className={styles.menuItem} onClick={() => { handleExportComposition(); setIsOpen(false); }}>
+            <span>💾</span> Export Composition <span className={styles.shortcut}>Ctrl+S</span>
           </button>
           
           <div className={styles.separator} />

@@ -66,10 +66,10 @@ export function compileVideoFrames(
   durationSeconds: number,
   frameRate: number,
   musicalContext: MusicalContext,
-  globalSettings: GlobalSettings
+  globalSettings: GlobalSettings,
+  bpm: number = 120
 ): VideoFrameData[] {
   const frames: VideoFrameData[] = [];
-  const bpm = 120; // TODO: Get from global settings
   const beatDuration = 60 / bpm;
   
   // Simulation resolution (higher than frame rate for accuracy)
@@ -368,9 +368,9 @@ function processVideoArrival(
       break;
     }
     
-    case 'polariser': {
+    case 'oscillator': {
       const props = node.props as any;
-      payload.wave = props.wave ?? 'square';
+      payload.wave = props.wave ?? 'sawtooth';
       forwardPacket(node.id, payload, edges, simPackets, currentTime);
       break;
     }

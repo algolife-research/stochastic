@@ -46,10 +46,8 @@ const NODE_CATEGORIES: NodeCategory[] = [
   {
     name: 'Sound',
     nodes: [
-      { type: 'polariser', label: 'Polariser', icon: '∿' },
+      { type: 'oscillator', label: 'Oscillator', icon: '∿' },
       { type: 'filter', label: 'Filter', icon: '▼' },
-      { type: 'noise', label: 'Noise', icon: '▒' },
-      { type: 'harmonic', label: 'Harmonic', icon: '∞' },
     ]
   },
   {

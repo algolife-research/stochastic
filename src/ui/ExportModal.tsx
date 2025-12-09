@@ -52,6 +52,7 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
   const scenes = useGraphStore(state => state.scenes);
   const arrangement = useGraphStore(state => state.arrangement);
   const getCurrentScene = useGraphStore(state => state.getCurrentScene);
+  const masterSpeed = useGraphStore(state => state.masterSpeed);
   const currentScene = getCurrentScene();
   
   // Check if arrangement has scenes
@@ -60,8 +61,8 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
   // Calculate arrangement duration (memoized)
   const arrangementDuration = useMemo(() => {
     if (!hasArrangement) return 0;
-    return calculateArrangementDuration(scenes, arrangement, 120);
-  }, [scenes, arrangement, hasArrangement]);
+    return calculateArrangementDuration(scenes, arrangement, masterSpeed);
+  }, [scenes, arrangement, hasArrangement, masterSpeed]);
   
   const handleExport = async () => {
     if (activeTab === 'audio') {
@@ -139,7 +140,7 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
         // Compile audio events
         let audioEvents: AudioEvent[];
         if (useArrangement) {
-          audioEvents = compileArrangement(scenes, arrangement, musicalContext, globalSettings, 120);
+          audioEvents = compileArrangement(scenes, arrangement, musicalContext, globalSettings, masterSpeed);
         } else {
           audioEvents = compileGraph(nodes, edges, videoDuration, musicalContext, globalSettings);
         }
@@ -173,7 +174,7 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
         videoFrameRate,
         musicalContext,
         globalSettings,
-        120
+        masterSpeed
       );
     } else {
       // For canvas mode, use current scene's viz config
@@ -189,7 +190,8 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
         videoDuration,
         videoFrameRate,
         musicalContext,
-        globalSettings
+        globalSettings,
+        masterSpeed
       );
       
       // Add viz config to each frame
@@ -301,7 +303,7 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
     // Compile graph or arrangement to audio events
     let events: AudioEvent[];
     if (useArrangement) {
-      events = compileArrangement(scenes, arrangement, musicalContext, globalSettings, 120);
+      events = compileArrangement(scenes, arrangement, musicalContext, globalSettings, masterSpeed);
     } else {
       events = compileGraph(nodes, edges, duration, musicalContext, globalSettings);
     }
@@ -342,7 +344,7 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
     // Compile graph or arrangement to audio events
     let audioEvents: AudioEvent[];
     if (useArrangement) {
-      audioEvents = compileArrangement(scenes, arrangement, musicalContext, globalSettings, 120);
+      audioEvents = compileArrangement(scenes, arrangement, musicalContext, globalSettings, masterSpeed);
     } else {
       audioEvents = compileGraph(nodes, edges, duration, musicalContext, globalSettings);
     }
@@ -356,7 +358,7 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
     
     // Convert audio events to MIDI events
     const midiEvents: MIDIEvent[] = [];
-    const bpm = 120; // TODO: Get from global settings when available
+    const bpm = masterSpeed;
     
     for (const event of audioEvents) {
       // Convert frequency to MIDI note (if not already available)

@@ -340,8 +340,8 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
         📂 Load File
       </button>
       
-      <button onClick={handleSave} title="Save Composition (Ctrl+S)">
-        💾 Save
+      <button onClick={handleSave} title="Download composition file (Ctrl+S)">
+        💾 Export Composition
       </button>
       
       <button onClick={onShowExport} title="Export Audio/MIDI">

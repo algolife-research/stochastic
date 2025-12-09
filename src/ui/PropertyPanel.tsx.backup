@@ -156,8 +156,8 @@ function NodeProperties({ node }: NodePropertiesProps): React.ReactElement {
       return <SpeakerProps props={node.props as SpeakerPropsType} onChange={handleChange} />;
     case 'pitch':
       return <PitchProps props={node.props as PitchPropsType} onChange={handleChange} />;
-    case 'polariser':
-      return <PolariserProps props={node.props as PolariserPropsType} onChange={handleChange} />;
+    case 'oscillator':
+      return <OscillatorNodeProps props={node.props as OscillatorPropsType} onChange={handleChange} />;
     case 'filter':
       return <FilterProps props={node.props as FilterPropsType} onChange={handleChange} />;
     case 'gate':
@@ -168,10 +168,6 @@ function NodeProperties({ node }: NodePropertiesProps): React.ReactElement {
       return <GainProps props={node.props as GainPropsType} onChange={handleChange} />;
     case 'teleporter':
       return <TeleporterProps props={node.props as TeleporterPropsType} onChange={handleChange} />;
-    case 'noise':
-      return <NoiseProps props={node.props as NoisePropsType} onChange={handleChange} />;
-    case 'harmonic':
-      return <HarmonicProps props={node.props as HarmonicPropsType} onChange={handleChange} />;
     case 'modulator':
       return <ModulatorProps props={node.props as ModulatorPropsType} onChange={handleChange} />;
     case 'tunnel':
@@ -204,7 +200,7 @@ function NodeProperties({ node }: NodePropertiesProps): React.ReactElement {
 type SourcePropsType = { interval: number; midiNote: number; noteIndex: number; intensity: number; autoTrigger: boolean };
 type SpeakerPropsType = { volume: number; reverb: number; pan: number; holdTime: number; releaseTime: number };
 type PitchPropsType = { mode: string; shift: number; fixedMidiNote: number };
-type PolariserPropsType = { wave: 'sine' | 'square' | 'sawtooth' | 'triangle'; attack: number; decay: number; mix: number };
+type OscillatorPropsType = { wave: 'sine' | 'square' | 'sawtooth' | 'triangle' | 'white' | 'pink' | 'brown'; ratio: number; attack: number; decay: number; mix: number };
 type FilterPropsType = { cutoff: number; attack: number; decay: number; mod: number };
 type GatePropsType = { 
   mode: 'probability' | 'harmonic' | 'energy' | 'density' | 'all';
@@ -219,8 +215,6 @@ type GatePropsType = {
 type DelayPropsType = { delayTime: number };
 type GainPropsType = { value: number; mass: number };
 type TeleporterPropsType = { channel: string; isEntry: boolean };
-type NoisePropsType = { wave: 'white' | 'pink' | 'brown'; attack: number; decay: number; mix: number };
-type HarmonicPropsType = { ratio: number; wave: 'sine' | 'square' | 'sawtooth' | 'triangle'; attack: number; decay: number; mix: number };
 type ModulatorPropsType = { rate: number; depth: number; delay: number };
 type SubNodeType = { type: string; props: Record<string, unknown> };
 type TunnelPropsType = { tunnelName: string; subNodes: SubNodeType[] };
@@ -437,7 +431,7 @@ function PitchProps({ props, onChange }: PropsEditorProps<PitchPropsType>): Reac
 }
 
 // ============================================================================
-// POLARISER - Wave Preview Canvas
+// OSCILLATOR - Wave Preview Canvas
 // ============================================================================
 
 function WaveformPreview({ 
@@ -445,11 +439,12 @@ function WaveformPreview({
   attack, 
   decay 
 }: { 
-  wave: 'sine' | 'square' | 'sawtooth' | 'triangle'; 
+  wave: 'sine' | 'square' | 'sawtooth' | 'triangle' | 'white' | 'pink' | 'brown'; 
   attack: number; 
   decay: number;
 }): React.ReactElement {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isNoiseWave = wave === 'white' || wave === 'pink' || wave === 'brown';
   
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -475,7 +470,7 @@ function WaveformPreview({
     ctx.stroke();
     
     // Generate waveform
-    const getWaveValue = (phase: number): number => {
+    const getWaveValue = (phase: number, x: number): number => {
       const p = phase % 1;
       switch (wave) {
         case 'sine':
@@ -486,6 +481,12 @@ function WaveformPreview({
           return 2 * p - 1;
         case 'triangle':
           return 4 * Math.abs(p - 0.5) - 1;
+        case 'white':
+          return (Math.sin(x * 47.3) + Math.sin(x * 97.7) + Math.sin(x * 157.1)) * 0.33;
+        case 'pink':
+          return (Math.sin(x * 23.1) + Math.sin(x * 67.3) * 0.7 + Math.sin(x * 113.7) * 0.5) * 0.4;
+        case 'brown':
+          return (Math.sin(x * 11.7) + Math.sin(x * 31.3) * 0.5) * 0.6;
         default:
           return 0;
       }
@@ -506,14 +507,14 @@ function WaveformPreview({
     };
     
     // Draw waveform
-    ctx.strokeStyle = '#a855f7'; // Purple for polariser
+    ctx.strokeStyle = isNoiseWave ? '#9e9e9e' : '#a855f7'; // Grey for noise, Purple for oscillator
     ctx.lineWidth = 2;
     ctx.beginPath();
     
     for (let x = 0; x < width; x++) {
       const t = x / width;
       const phase = t * cycles;
-      const waveValue = getWaveValue(phase);
+      const waveValue = getWaveValue(phase, x);
       const envelope = getEnvelope(t);
       const y = height / 2 - (waveValue * envelope * height * 0.4);
       
@@ -527,7 +528,7 @@ function WaveformPreview({
     ctx.stroke();
     
     // Draw envelope outline
-    ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)';
+    ctx.strokeStyle = isNoiseWave ? 'rgba(158, 158, 158, 0.3)' : 'rgba(168, 85, 247, 0.3)';
     ctx.lineWidth = 1;
     ctx.setLineDash([4, 4]);
     
@@ -554,7 +555,7 @@ function WaveformPreview({
     ctx.stroke();
     
     ctx.setLineDash([]);
-  }, [wave, attack, decay]);
+  }, [wave, attack, decay, isNoiseWave]);
   
   return (
     <canvas 
@@ -571,7 +572,10 @@ function WaveformPreview({
   );
 }
 
-function PolariserProps({ props, onChange }: PropsEditorProps<PolariserPropsType>): React.ReactElement {
+function OscillatorNodeProps({ props, onChange }: PropsEditorProps<OscillatorPropsType>): React.ReactElement {
+  // Determine if this is a noise wave
+  const isNoiseWave = props.wave === 'white' || props.wave === 'pink' || props.wave === 'brown';
+  
   return (
     <>
       <PropertyRow label="Wave Preview">
@@ -586,10 +590,25 @@ function PolariserProps({ props, onChange }: PropsEditorProps<PolariserPropsType
             { value: 'square', label: 'Square' },
             { value: 'sawtooth', label: 'Sawtooth' },
             { value: 'triangle', label: 'Triangle' },
+            { value: 'white', label: 'White Noise' },
+            { value: 'pink', label: 'Pink Noise' },
+            { value: 'brown', label: 'Brown Noise' },
           ]}
           onChange={v => onChange('wave', v)}
         />
       </PropertyRow>
+      
+      {!isNoiseWave && (
+        <PropertyRow label="Ratio">
+          <NumberInput
+            value={props.ratio}
+            min={0.1}
+            max={16}
+            step={0.1}
+            onChange={v => onChange('ratio', v)}
+          />
+        </PropertyRow>
+      )}
       
       <PropertyRow label="Attack">
         <SliderInput
@@ -852,115 +871,8 @@ function TeleporterProps({ props, onChange }: PropsEditorProps<TeleporterPropsTy
 }
 
 // ============================================================================
-// NEW NODE TYPE EDITORS
+// MORE NODE TYPE EDITORS
 // ============================================================================
-
-function NoiseProps({ props, onChange }: PropsEditorProps<NoisePropsType>): React.ReactElement {
-  return (
-    <>
-      <PropertyRow label="Noise Type">
-        <Select
-          value={props.wave}
-          options={[
-            { value: 'white', label: 'White' },
-            { value: 'pink', label: 'Pink' },
-            { value: 'brown', label: 'Brown' },
-          ]}
-          onChange={v => onChange('wave', v)}
-        />
-      </PropertyRow>
-      
-      <PropertyRow label="Attack">
-        <SliderInput
-          value={props.attack}
-          min={0}
-          max={1}
-          step={0.01}
-          onChange={v => onChange('attack', v)}
-        />
-      </PropertyRow>
-      
-      <PropertyRow label="Decay">
-        <SliderInput
-          value={props.decay}
-          min={0}
-          max={2}
-          step={0.01}
-          onChange={v => onChange('decay', v)}
-        />
-      </PropertyRow>
-      
-      <PropertyRow label="Mix">
-        <SliderInput
-          value={props.mix}
-          min={0}
-          max={1}
-          step={0.01}
-          onChange={v => onChange('mix', v)}
-        />
-      </PropertyRow>
-    </>
-  );
-}
-
-function HarmonicProps({ props, onChange }: PropsEditorProps<HarmonicPropsType>): React.ReactElement {
-  return (
-    <>
-      <PropertyRow label="Ratio">
-        <NumberInput
-          value={props.ratio}
-          min={0.5}
-          max={8}
-          step={0.5}
-          onChange={v => onChange('ratio', v)}
-        />
-      </PropertyRow>
-      
-      <PropertyRow label="Wave">
-        <Select
-          value={props.wave}
-          options={[
-            { value: 'sine', label: 'Sine' },
-            { value: 'square', label: 'Square' },
-            { value: 'sawtooth', label: 'Sawtooth' },
-            { value: 'triangle', label: 'Triangle' },
-          ]}
-          onChange={v => onChange('wave', v)}
-        />
-      </PropertyRow>
-      
-      <PropertyRow label="Attack">
-        <SliderInput
-          value={props.attack}
-          min={0}
-          max={1}
-          step={0.01}
-          onChange={v => onChange('attack', v)}
-        />
-      </PropertyRow>
-      
-      <PropertyRow label="Decay">
-        <SliderInput
-          value={props.decay}
-          min={0}
-          max={2}
-          step={0.01}
-          onChange={v => onChange('decay', v)}
-        />
-      </PropertyRow>
-      
-      <PropertyRow label="Mix">
-        <SliderInput
-          value={props.mix}
-          min={0}
-          max={1}
-          step={0.01}
-          onChange={v => onChange('mix', v)}
-        />
-      </PropertyRow>
-    </>
-  );
-}
 
 function ModulatorProps({ props, onChange }: PropsEditorProps<ModulatorPropsType>): React.ReactElement {
   return (

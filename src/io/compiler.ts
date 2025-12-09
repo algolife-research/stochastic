@@ -265,60 +265,20 @@ function processArrival(
       break;
     }
     
-    case 'polariser': {
+    case 'oscillator': {
       const props = node.props as any;
-      const newWave = props.wave ?? 'square';
+      const wave = props.wave ?? 'sawtooth';
       const attack = props.attack ?? 0.01;
       const decay = props.decay ?? 0.4;
       const mix = props.mix ?? 1.0;
+      const ratio = props.ratio ?? 1;
       
-      // Add new wave layer (don't create default layer)
+      // Add wave layer
       const existingWaves = payload.waves ?? [];
-      payload.wave = newWave;
+      payload.wave = wave;
       payload.timbre = 0.8;
       payload.waves = [...existingWaves, {
-        wave: newWave,
-        attack,
-        decay,
-        gain: mix,
-      }];
-      
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
-      break;
-    }
-    
-    case 'noise': {
-      const props = node.props as any;
-      const noiseWave = props.wave ?? 'white';
-      const attack = props.attack ?? 0.01;
-      const decay = props.decay ?? 0.2;
-      const mix = props.mix ?? 0.2;
-      
-      const existingWaves = payload.waves ?? [];
-      payload.timbre = 0.9;
-      payload.waves = [...existingWaves, {
-        wave: noiseWave,
-        attack,
-        decay,
-        gain: mix,
-      }];
-      
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
-      break;
-    }
-    
-    case 'harmonic': {
-      const props = node.props as any;
-      const harmWave = props.wave ?? 'sine';
-      const attack = props.attack ?? 0.01;
-      const decay = props.decay ?? 0.4;
-      const mix = props.mix ?? 0.5;
-      const ratio = props.ratio ?? 2;
-      
-      const existingWaves = payload.waves ?? [];
-      payload.timbre = 0.8;
-      payload.waves = [...existingWaves, {
-        wave: harmWave,
+        wave,
         attack,
         decay,
         gain: mix,
@@ -478,46 +438,16 @@ function processArrival(
             break;
           }
           
-          case 'polariser': {
+          case 'oscillator': {
             const attack = subNode.props.attack ?? 0.01;
             const decay = subNode.props.decay ?? 0.4;
             const mix = subNode.props.mix ?? 1.0;
+            const ratio = subNode.props.ratio ?? 1;
             const existingWaves = currentPayload.waves ?? [];
-            currentPayload.wave = subNode.props.wave ?? 'sine';
+            currentPayload.wave = subNode.props.wave ?? 'sawtooth';
             currentPayload.timbre = 0.8;
             currentPayload.waves = [...existingWaves, {
-              wave: subNode.props.wave ?? 'sine',
-              attack,
-              decay,
-              gain: mix,
-            }];
-            break;
-          }
-          
-          case 'noise': {
-            const attack = subNode.props.attack ?? 0.01;
-            const decay = subNode.props.decay ?? 0.2;
-            const mix = subNode.props.mix ?? 0.2;
-            const existingWaves = currentPayload.waves ?? [];
-            currentPayload.timbre = 0.9;
-            currentPayload.waves = [...existingWaves, {
-              wave: subNode.props.wave ?? 'white',
-              attack,
-              decay,
-              gain: mix,
-            }];
-            break;
-          }
-          
-          case 'harmonic': {
-            const attack = subNode.props.attack ?? 0.01;
-            const decay = subNode.props.decay ?? 0.4;
-            const mix = subNode.props.mix ?? 0.5;
-            const ratio = subNode.props.ratio ?? 2;
-            const existingWaves = currentPayload.waves ?? [];
-            currentPayload.timbre = 0.8;
-            currentPayload.waves = [...existingWaves, {
-              wave: subNode.props.wave ?? 'sine',
+              wave: subNode.props.wave ?? 'sawtooth',
               attack,
               decay,
               gain: mix,

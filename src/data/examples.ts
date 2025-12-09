@@ -51,208 +51,217 @@ export interface Example {
 // ============================================================================
 
 export const EXAMPLES: Record<string, Example> = {
-  // Tutorial 10: Scene Triggering
-  tut_10_scene_trigger: {
-    name: "Tutorial 10: Scene Triggering",
-    description: "Use Scene Trigger nodes to jump between scenes. This example has two scenes that trigger each other.",
-    bpm: 120,
+  // Complete Tutorial - Learn Phonon step by step
+  tutorial: {
+    name: "Tutorial: Learn Phonon",
+    description: "A complete interactive tutorial with 10 scenes teaching you Phonon from basics to advanced concepts. Use the Scene Panel to navigate between lessons.",
+    bpm: 100,
     scenes: [
+      // Scene 1: First Sound
       {
-        name: "Scene A",
+        name: "1. First Sound",
         color: "#4caf50",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "src", type: "source", x: 150, y: 300, props: { interval: 1, midiNote: 60, intensity: 0.7 } },
+          { id: "spk", type: "speaker", x: 350, y: 300, props: { reverb: 0.3, pan: 0 } }
+        ],
+        edges: [
+          { id: "e1", from: "src", to: "spk" }
+        ]
+      },
+      // Scene 2: Pitch Shifting
+      {
+        name: "2. Pitch Shifting",
+        color: "#8bc34a",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 48, intensity: 0.6 } },
+          { id: "p1", type: "pitch", x: 250, y: 300, props: { shift: 7 } },
+          { id: "spk", type: "speaker", x: 400, y: 300, props: { reverb: 0.3, pan: 0 } }
+        ],
+        edges: [
+          { id: "e1", from: "src", to: "p1" },
+          { id: "e2", from: "p1", to: "spk" }
+        ]
+      },
+      // Scene 3: Shaping Sound
+      {
+        name: "3. Shaping Sound",
+        color: "#cddc39",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "src1", type: "source", x: 100, y: 200, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+          { id: "pol1", type: "oscillator", x: 250, y: 200, props: { wave: "sine", attack: 0.1, decay: 0.8 } },
+          { id: "spk1", type: "speaker", x: 400, y: 200, props: { reverb: 0.4, pan: -0.5 } },
+          
+          { id: "src2", type: "source", x: 100, y: 400, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+          { id: "pol2", type: "oscillator", x: 250, y: 400, props: { wave: "sawtooth", attack: 0.01, decay: 0.3 } },
+          { id: "spk2", type: "speaker", x: 400, y: 400, props: { reverb: 0.2, pan: 0.5 } }
+        ],
+        edges: [
+          { id: "e1", from: "src1", to: "pol1" }, { id: "e2", from: "pol1", to: "spk1" },
+          { id: "e3", from: "src2", to: "pol2" }, { id: "e4", from: "pol2", to: "spk2" }
+        ]
+      },
+      // Scene 4: Chords (Splitting Paths)
+      {
+        name: "4. Chords",
+        color: "#ffeb3b",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+          
+          { id: "pol1", type: "oscillator", x: 250, y: 180, props: { wave: "sine", attack: 0.05, decay: 0.6 } },
+          { id: "spk1", type: "speaker", x: 400, y: 180, props: { reverb: 0.5, pan: -0.5 } },
+          
+          { id: "p2", type: "pitch", x: 250, y: 300, props: { shift: 4 } },
+          { id: "pol2", type: "oscillator", x: 350, y: 300, props: { wave: "triangle", attack: 0.05, decay: 0.6 } },
+          { id: "spk2", type: "speaker", x: 500, y: 300, props: { reverb: 0.5, pan: 0 } },
+          
+          { id: "p3", type: "pitch", x: 250, y: 420, props: { shift: 7 } },
+          { id: "pol3", type: "oscillator", x: 350, y: 420, props: { wave: "sine", attack: 0.05, decay: 0.6 } },
+          { id: "spk3", type: "speaker", x: 500, y: 420, props: { reverb: 0.5, pan: 0.5 } }
+        ],
+        edges: [
+          { id: "e1", from: "src", to: "pol1" }, { id: "e1b", from: "pol1", to: "spk1" },
+          { id: "e2", from: "src", to: "p2" }, { id: "e2b", from: "p2", to: "pol2" }, { id: "e2c", from: "pol2", to: "spk2" },
+          { id: "e3", from: "src", to: "p3" }, { id: "e3b", from: "p3", to: "pol3" }, { id: "e3c", from: "pol3", to: "spk3" }
+        ]
+      },
+      // Scene 5: Randomness
+      {
+        name: "5. Randomness",
+        color: "#ffc107",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "src", type: "source", x: 100, y: 300, props: { interval: 0.5, noteIndex: -1, intensity: 0.5 } },
+          { id: "gate", type: "gate", x: 220, y: 300, props: { prob: 0.6 } },
+          { id: "pol", type: "oscillator", x: 340, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.25 } },
+          { id: "spk", type: "speaker", x: 460, y: 300, props: { reverb: 0.4, pan: 0 } }
+        ],
+        edges: [
+          { id: "e1", from: "src", to: "gate" },
+          { id: "e2", from: "gate", to: "pol" },
+          { id: "e3", from: "pol", to: "spk" }
+        ]
+      },
+      // Scene 6: Delays
+      {
+        name: "6. Delays",
+        color: "#ff9800",
+        durationBeats: 16,
+        loopCount: -1,
+        nodes: [
+          { id: "src", type: "source", x: 80, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
+          
+          { id: "pol1", type: "oscillator", x: 220, y: 180, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
+          { id: "spk1", type: "speaker", x: 380, y: 180, props: { reverb: 0.3, pan: -0.4 } },
+          
+          { id: "d2", type: "delay", x: 200, y: 300, props: { delayTime: 1 } },
+          { id: "pol2", type: "oscillator", x: 320, y: 300, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
+          { id: "spk2", type: "speaker", x: 460, y: 300, props: { reverb: 0.3, pan: 0 } },
+          
+          { id: "d3", type: "delay", x: 200, y: 420, props: { delayTime: 2 } },
+          { id: "pol3", type: "oscillator", x: 320, y: 420, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
+          { id: "spk3", type: "speaker", x: 460, y: 420, props: { reverb: 0.3, pan: 0.4 } }
+        ],
+        edges: [
+          { id: "e1", from: "src", to: "pol1" }, { id: "e1b", from: "pol1", to: "spk1" },
+          { id: "e2", from: "src", to: "d2" }, { id: "e2b", from: "d2", to: "pol2" }, { id: "e2c", from: "pol2", to: "spk2" },
+          { id: "e3", from: "src", to: "d3" }, { id: "e3b", from: "d3", to: "pol3" }, { id: "e3c", from: "pol3", to: "spk3" }
+        ]
+      },
+      // Scene 7: Filters
+      {
+        name: "7. Filters",
+        color: "#ff5722",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          { id: "pol", type: "oscillator", x: 220, y: 300, props: { wave: "sawtooth", attack: 0.02, decay: 1.0 } },
+          { id: "flt", type: "filter", x: 340, y: 300, props: { cutoff: 800, mod: 2000, attack: 0.01, decay: 0.4 } },
+          { id: "spk", type: "speaker", x: 460, y: 300, props: { reverb: 0.4, pan: 0 } }
+        ],
+        edges: [
+          { id: "e1", from: "src", to: "pol" },
+          { id: "e2", from: "pol", to: "flt" },
+          { id: "e3", from: "flt", to: "spk" }
+        ]
+      },
+      // Scene 8: Dynamics (Gain)
+      {
+        name: "8. Dynamics",
+        color: "#e91e63",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "src", type: "source", x: 80, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.5 } },
+          
+          { id: "g1", type: "gain", x: 200, y: 180, props: { value: 0.3 } },
+          { id: "pol1", type: "oscillator", x: 320, y: 180, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
+          { id: "spk1", type: "speaker", x: 440, y: 180, props: { reverb: 0.3, pan: -0.3 } },
+          
+          { id: "pol2", type: "oscillator", x: 250, y: 300, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
+          { id: "spk2", type: "speaker", x: 400, y: 300, props: { reverb: 0.3, pan: 0 } },
+          
+          { id: "g3", type: "gain", x: 200, y: 420, props: { value: 1.5 } },
+          { id: "pol3", type: "oscillator", x: 320, y: 420, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
+          { id: "spk3", type: "speaker", x: 440, y: 420, props: { reverb: 0.3, pan: 0.3 } }
+        ],
+        edges: [
+          { id: "e1", from: "src", to: "g1" }, { id: "e1b", from: "g1", to: "pol1" }, { id: "e1c", from: "pol1", to: "spk1" },
+          { id: "e2", from: "src", to: "pol2" }, { id: "e2b", from: "pol2", to: "spk2" },
+          { id: "e3", from: "src", to: "g3" }, { id: "e3b", from: "g3", to: "pol3" }, { id: "e3c", from: "pol3", to: "spk3" }
+        ]
+      },
+      // Scene 9: Tunnels
+      {
+        name: "9. Tunnels",
+        color: "#9c27b0",
+        durationBeats: 16,
+        loopCount: -1,
+        nodes: [
+          { id: "src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
+          { id: "string", type: "tunnel", x: 280, y: 300, props: {
+            tunnelName: "String",
+            subNodes: [
+              { type: "oscillator", props: { wave: "sawtooth", attack: 0.2, decay: 1.5, mix: 1.0 } },
+              { type: "oscillator", props: { ratio: 2, wave: "sine", attack: 0.15, decay: 1.2, mix: 0.3 } },
+              { type: "modulator", props: { rate: 5, depth: 15, delay: 0.3 } },
+              { type: "filter", props: { cutoff: 2000, mod: 1000, attack: 0.1, decay: 0.8 } }
+            ]
+          }},
+          { id: "spk", type: "speaker", x: 460, y: 300, props: { reverb: 0.5, pan: 0 } }
+        ],
+        edges: [
+          { id: "e1", from: "src", to: "string" },
+          { id: "e2", from: "string", to: "spk" }
+        ]
+      },
+      // Scene 10: Scene Triggering (two sub-scenes demonstrating the concept)
+      {
+        name: "10. Scene Triggers",
+        color: "#673ab7",
         durationBeats: 16,
         loopCount: 1,
         nodes: [
           { id: "src1", type: "source", x: 100, y: 200, props: { interval: 1, midiNote: 60, intensity: 0.7 } },
           { id: "spk1", type: "speaker", x: 300, y: 200, props: { reverb: 0.3, pan: -0.3 } },
           { id: "src2", type: "source", x: 100, y: 400, props: { interval: 4, midiNote: 60, intensity: 0.5 } },
-          { id: "trig1", type: "scene_trigger", x: 300, y: 400, props: { targetSceneIndex: 1, behavior: "jump" } }
+          { id: "trig1", type: "scene_trigger", x: 300, y: 400, props: { targetSceneIndex: 0, behavior: "jump" } }
         ],
         edges: [
           { id: "e1", from: "src1", to: "spk1" },
           { id: "e2", from: "src2", to: "trig1", timingMode: "fixed", durationBeats: 4 }
         ]
-      },
-      {
-        name: "Scene B",
-        color: "#2196f3",
-        durationBeats: 16,
-        loopCount: 1,
-        nodes: [
-          { id: "src3", type: "source", x: 100, y: 200, props: { interval: 0.5, midiNote: 67, intensity: 0.7 } },
-          { id: "spk2", type: "speaker", x: 300, y: 200, props: { reverb: 0.3, pan: 0.3 } },
-          { id: "src4", type: "source", x: 100, y: 400, props: { interval: 4, midiNote: 60, intensity: 0.5 } },
-          { id: "trig2", type: "scene_trigger", x: 300, y: 400, props: { targetSceneIndex: 0, behavior: "jump" } }
-        ],
-        edges: [
-          { id: "e3", from: "src3", to: "spk2" },
-          { id: "e4", from: "src4", to: "trig2", timingMode: "fixed", durationBeats: 4 }
-        ]
       }
-    ]
-  },
-
-  // Tutorial 1: Basic sound
-  tut_01_first_sound: {
-    name: "Tutorial 1: First Sound",
-    description: "A Source emits packets, a Speaker plays them. Press Play to hear it!",
-    bpm: 120,
-    nodes: [
-      { id: "src", type: "source", x: 150, y: 300, props: { interval: 1, midiNote: 60, intensity: 0.7 } },
-      { id: "spk", type: "speaker", x: 350, y: 300, props: { reverb: 0.3, pan: 0 } }
-    ],
-    edges: [
-      { id: "e1", from: "src", to: "spk" }
-    ]
-  },
-
-  // Tutorial 2: Changing pitch
-  tut_02_changing_pitch: {
-    name: "Tutorial 2: Pitch Shifting",
-    description: "A Pitch node shifts notes up or down. This one shifts up 7 semitones (a fifth).",
-    bpm: 120,
-    nodes: [
-      { id: "src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 48, intensity: 0.6 } },
-      { id: "p1", type: "pitch", x: 250, y: 300, props: { shift: 7 } },
-      { id: "spk", type: "speaker", x: 400, y: 300, props: { reverb: 0.3, pan: 0 } }
-    ],
-    edges: [
-      { id: "e1", from: "src", to: "p1" },
-      { id: "e2", from: "p1", to: "spk" }
-    ]
-  },
-
-  // Tutorial 3: Shaping sound with polariser
-  tut_03_shaping_sound: {
-    name: "Tutorial 3: Shaping Sound",
-    description: "A Polariser gives packets a waveform and envelope. Compare sine vs sawtooth!",
-    bpm: 100,
-    nodes: [
-      { id: "src1", type: "source", x: 100, y: 200, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
-      { id: "pol1", type: "polariser", x: 250, y: 200, props: { wave: "sine", attack: 0.1, decay: 0.8 } },
-      { id: "spk1", type: "speaker", x: 400, y: 200, props: { reverb: 0.4, pan: -0.5 } },
-      
-      { id: "src2", type: "source", x: 100, y: 400, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
-      { id: "pol2", type: "polariser", x: 250, y: 400, props: { wave: "sawtooth", attack: 0.01, decay: 0.3 } },
-      { id: "spk2", type: "speaker", x: 400, y: 400, props: { reverb: 0.2, pan: 0.5 } }
-    ],
-    edges: [
-      { id: "e1", from: "src1", to: "pol1" }, { id: "e2", from: "pol1", to: "spk1" },
-      { id: "e3", from: "src2", to: "pol2" }, { id: "e4", from: "pol2", to: "spk2" }
-    ]
-  },
-
-  // Tutorial 4: Splitting paths for chords
-  tut_04_splitting_paths: {
-    name: "Tutorial 4: Chords",
-    description: "Connect one source to multiple speakers with different pitch shifts for chords!",
-    bpm: 90,
-    nodes: [
-      { id: "src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
-      
-      { id: "pol1", type: "polariser", x: 250, y: 180, props: { wave: "sine", attack: 0.05, decay: 0.6 } },
-      { id: "spk1", type: "speaker", x: 400, y: 180, props: { reverb: 0.5, pan: -0.5 } },
-      
-      { id: "p2", type: "pitch", x: 250, y: 300, props: { shift: 4 } },
-      { id: "pol2", type: "polariser", x: 350, y: 300, props: { wave: "triangle", attack: 0.05, decay: 0.6 } },
-      { id: "spk2", type: "speaker", x: 500, y: 300, props: { reverb: 0.5, pan: 0 } },
-      
-      { id: "p3", type: "pitch", x: 250, y: 420, props: { shift: 7 } },
-      { id: "pol3", type: "polariser", x: 350, y: 420, props: { wave: "sine", attack: 0.05, decay: 0.6 } },
-      { id: "spk3", type: "speaker", x: 500, y: 420, props: { reverb: 0.5, pan: 0.5 } }
-    ],
-    edges: [
-      { id: "e1", from: "src", to: "pol1" }, { id: "e1b", from: "pol1", to: "spk1" },
-      { id: "e2", from: "src", to: "p2" }, { id: "e2b", from: "p2", to: "pol2" }, { id: "e2c", from: "pol2", to: "spk2" },
-      { id: "e3", from: "src", to: "p3" }, { id: "e3b", from: "p3", to: "pol3" }, { id: "e3c", from: "pol3", to: "spk3" }
-    ]
-  },
-
-  // Tutorial 5: Randomness with gates
-  tut_05_randomness: {
-    name: "Tutorial 5: Randomness",
-    description: "A Gate randomly blocks packets. Set noteIndex to -1 for random pitches!",
-    bpm: 100,
-    nodes: [
-      { id: "src", type: "source", x: 100, y: 300, props: { interval: 0.5, noteIndex: -1, intensity: 0.5 } },
-      { id: "gate", type: "gate", x: 220, y: 300, props: { prob: 0.6 } },
-      { id: "pol", type: "polariser", x: 340, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.25 } },
-      { id: "spk", type: "speaker", x: 460, y: 300, props: { reverb: 0.4, pan: 0 } }
-    ],
-    edges: [
-      { id: "e1", from: "src", to: "gate" },
-      { id: "e2", from: "gate", to: "pol" },
-      { id: "e3", from: "pol", to: "spk" }
-    ]
-  },
-
-  // Tutorial 6: Delays for echoes
-  tut_06_timing_delay: {
-    name: "Tutorial 6: Delays",
-    description: "A Delay holds packets before releasing them. Great for echoes and arpeggios!",
-    bpm: 90,
-    nodes: [
-      { id: "src", type: "source", x: 80, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
-      
-      { id: "pol1", type: "polariser", x: 220, y: 180, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
-      { id: "spk1", type: "speaker", x: 380, y: 180, props: { reverb: 0.3, pan: -0.4 } },
-      
-      { id: "d2", type: "delay", x: 200, y: 300, props: { delayTime: 1 } },
-      { id: "pol2", type: "polariser", x: 320, y: 300, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
-      { id: "spk2", type: "speaker", x: 460, y: 300, props: { reverb: 0.3, pan: 0 } },
-      
-      { id: "d3", type: "delay", x: 200, y: 420, props: { delayTime: 2 } },
-      { id: "pol3", type: "polariser", x: 320, y: 420, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
-      { id: "spk3", type: "speaker", x: 460, y: 420, props: { reverb: 0.3, pan: 0.4 } }
-    ],
-    edges: [
-      { id: "e1", from: "src", to: "pol1" }, { id: "e1b", from: "pol1", to: "spk1" },
-      { id: "e2", from: "src", to: "d2" }, { id: "e2b", from: "d2", to: "pol2" }, { id: "e2c", from: "pol2", to: "spk2" },
-      { id: "e3", from: "src", to: "d3" }, { id: "e3b", from: "d3", to: "pol3" }, { id: "e3c", from: "pol3", to: "spk3" }
-    ]
-  },
-
-  // Tutorial 7: Filters
-  tut_07_filters: {
-    name: "Tutorial 7: Filters",
-    description: "A Filter removes frequencies. Low cutoff = darker sound. Add modulation for 'wah'!",
-    bpm: 80,
-    nodes: [
-      { id: "src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
-      { id: "pol", type: "polariser", x: 220, y: 300, props: { wave: "sawtooth", attack: 0.02, decay: 1.0 } },
-      { id: "flt", type: "filter", x: 340, y: 300, props: { cutoff: 800, mod: 2000, attack: 0.01, decay: 0.4 } },
-      { id: "spk", type: "speaker", x: 460, y: 300, props: { reverb: 0.4, pan: 0 } }
-    ],
-    edges: [
-      { id: "e1", from: "src", to: "pol" },
-      { id: "e2", from: "pol", to: "flt" },
-      { id: "e3", from: "flt", to: "spk" }
-    ]
-  },
-
-  // Tutorial 8: Gain dynamics
-  tut_08_gain_dynamics: {
-    name: "Tutorial 8: Dynamics",
-    description: "A Gain node controls volume. Values above 1 = louder, below 1 = quieter.",
-    bpm: 100,
-    nodes: [
-      { id: "src", type: "source", x: 80, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.5 } },
-      
-      { id: "g1", type: "gain", x: 200, y: 180, props: { value: 0.3 } },
-      { id: "pol1", type: "polariser", x: 320, y: 180, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
-      { id: "spk1", type: "speaker", x: 440, y: 180, props: { reverb: 0.3, pan: -0.3 } },
-      
-      { id: "pol2", type: "polariser", x: 250, y: 300, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
-      { id: "spk2", type: "speaker", x: 400, y: 300, props: { reverb: 0.3, pan: 0 } },
-      
-      { id: "g3", type: "gain", x: 200, y: 420, props: { value: 1.5 } },
-      { id: "pol3", type: "polariser", x: 320, y: 420, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
-      { id: "spk3", type: "speaker", x: 440, y: 420, props: { reverb: 0.3, pan: 0.3 } }
-    ],
-    edges: [
-      { id: "e1", from: "src", to: "g1" }, { id: "e1b", from: "g1", to: "pol1" }, { id: "e1c", from: "pol1", to: "spk1" },
-      { id: "e2", from: "src", to: "pol2" }, { id: "e2b", from: "pol2", to: "spk2" },
-      { id: "e3", from: "src", to: "g3" }, { id: "e3b", from: "g3", to: "pol3" }, { id: "e3c", from: "pol3", to: "spk3" }
     ]
   },
 
@@ -296,16 +305,16 @@ export const EXAMPLES: Record<string, Example> = {
     nodes: [
       { id: "src1", type: "source", x: 100, y: 200, props: { interval: 3, noteIndex: -1, intensity: 0.4 } },
       { id: "gate1", type: "gate", x: 220, y: 200, props: { prob: 0.5 } },
-      { id: "pol1", type: "polariser", x: 340, y: 200, props: { wave: "sine", attack: 0.3, decay: 2.0 } },
+      { id: "pol1", type: "oscillator", x: 340, y: 200, props: { wave: "sine", attack: 0.3, decay: 2.0 } },
       { id: "spk1", type: "speaker", x: 500, y: 200, props: { reverb: 0.7, pan: -0.3 } },
       
       { id: "src2", type: "source", x: 100, y: 350, props: { interval: 4, noteIndex: -1, intensity: 0.3 } },
       { id: "d1", type: "delay", x: 220, y: 350, props: { delayTime: 2 } },
-      { id: "pol2", type: "polariser", x: 340, y: 350, props: { wave: "triangle", attack: 0.5, decay: 3.0 } },
+      { id: "pol2", type: "oscillator", x: 340, y: 350, props: { wave: "triangle", attack: 0.5, decay: 3.0 } },
       { id: "spk2", type: "speaker", x: 500, y: 350, props: { reverb: 0.8, pan: 0.3 } },
       
       { id: "src3", type: "source", x: 100, y: 500, props: { interval: 6, midiNote: 36, intensity: 0.5 } },
-      { id: "pol3", type: "polariser", x: 250, y: 500, props: { wave: "sine", attack: 0.2, decay: 4.0 } },
+      { id: "pol3", type: "oscillator", x: 250, y: 500, props: { wave: "sine", attack: 0.2, decay: 4.0 } },
       { id: "spk3", type: "speaker", x: 400, y: 500, props: { reverb: 0.6, pan: 0 } }
     ],
     edges: [
@@ -327,7 +336,7 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 100,
     nodes: [
       { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
-      { id: "pol", type: "polariser", x: 160, y: 300, props: { wave: "triangle", attack: 0.02, decay: 0.3 } },
+      { id: "pol", type: "oscillator", x: 160, y: 300, props: { wave: "triangle", attack: 0.02, decay: 0.3 } },
       { id: "spk1", type: "speaker", x: 280, y: 300, props: { reverb: 0.3, pan: -0.4 } },
       { id: "p1", type: "pitch", x: 400, y: 300, props: { shift: 4 } },
       { id: "spk2", type: "speaker", x: 520, y: 300, props: { reverb: 0.3, pan: -0.1 } },
@@ -355,7 +364,7 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 80,
     nodes: [
       { id: "src", type: "source", x: 100, y: 300, props: { interval: 0.5, midiNote: 36, intensity: 0.8 } },
-      { id: "pol", type: "polariser", x: 250, y: 300, props: { wave: "sawtooth", attack: 0.01, decay: 0.5 } },
+      { id: "pol", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", attack: 0.01, decay: 0.5 } },
       { id: "flt", type: "filter", x: 400, y: 300, props: { cutoff: 400, mod: 2000, attack: 0.01, decay: 0.2 } },
       { id: "spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.2, pan: 0 } }
     ],
@@ -373,19 +382,19 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 110,
     nodes: [
       { id: "kick_src", type: "source", x: 60, y: 180, props: { interval: 2, midiNote: 36, intensity: 0.8 } },
-      { id: "kick_pol", type: "polariser", x: 180, y: 180, props: { wave: "sine", attack: 0.01, decay: 0.25 } },
+      { id: "kick_pol", type: "oscillator", x: 180, y: 180, props: { wave: "sine", attack: 0.01, decay: 0.25 } },
       { id: "kick_p", type: "pitch", x: 300, y: 180, props: { shift: -12 } },
       { id: "kick_out", type: "speaker", x: 420, y: 180, props: { reverb: 0.1, pan: 0 } },
       
       { id: "snare_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
       { id: "snare_del", type: "delay", x: 140, y: 300, props: { delayTime: 1 } },
-      { id: "snare_pol", type: "polariser", x: 240, y: 300, props: { wave: "sawtooth", attack: 0.01, decay: 0.12 } },
+      { id: "snare_pol", type: "oscillator", x: 240, y: 300, props: { wave: "sawtooth", attack: 0.01, decay: 0.12 } },
       { id: "snare_p", type: "pitch", x: 340, y: 300, props: { shift: 12 } },
       { id: "snare_out", type: "speaker", x: 460, y: 300, props: { reverb: 0.35, pan: 0.1 } },
       
       { id: "hh_src", type: "source", x: 60, y: 420, props: { interval: 0.5, midiNote: 72, intensity: 0.3 } },
       { id: "hh_gate", type: "gate", x: 160, y: 420, props: { prob: 0.75 } },
-      { id: "hh_pol", type: "polariser", x: 260, y: 420, props: { wave: "square", attack: 0.005, decay: 0.04 } },
+      { id: "hh_pol", type: "oscillator", x: 260, y: 420, props: { wave: "square", attack: 0.005, decay: 0.04 } },
       { id: "hh_p", type: "pitch", x: 360, y: 420, props: { shift: 24 } },
       { id: "hh_out", type: "speaker", x: 480, y: 420, props: { reverb: 0.15, pan: 0.4 } }
     ],
@@ -403,15 +412,15 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 90,
     nodes: [
       { id: "src4", type: "source", x: 60, y: 180, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
-      { id: "pol4", type: "polariser", x: 180, y: 180, props: { wave: "sine", attack: 0.01, decay: 0.6 } },
+      { id: "pol4", type: "oscillator", x: 180, y: 180, props: { wave: "sine", attack: 0.01, decay: 0.6 } },
       { id: "spk4", type: "speaker", x: 300, y: 180, props: { reverb: 0.4, pan: -0.5 } },
       
       { id: "src3", type: "source", x: 60, y: 300, props: { interval: 3, midiNote: 67, intensity: 0.6 } },
-      { id: "pol3", type: "polariser", x: 180, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.4 } },
+      { id: "pol3", type: "oscillator", x: 180, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.4 } },
       { id: "spk3", type: "speaker", x: 300, y: 300, props: { reverb: 0.4, pan: 0 } },
       
       { id: "src5", type: "source", x: 60, y: 420, props: { interval: 5, midiNote: 55, intensity: 0.6 } },
-      { id: "pol5", type: "polariser", x: 180, y: 420, props: { wave: "square", attack: 0.01, decay: 0.3 } },
+      { id: "pol5", type: "oscillator", x: 180, y: 420, props: { wave: "square", attack: 0.01, decay: 0.3 } },
       { id: "spk5", type: "speaker", x: 300, y: 420, props: { reverb: 0.4, pan: 0.5 } }
     ],
     edges: [
@@ -428,18 +437,18 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 90,
     nodes: [
       { id: "bass_src", type: "source", x: 60, y: 150, props: { interval: 2, midiNote: 36, intensity: 0.8 } },
-      { id: "bass_pol", type: "polariser", x: 180, y: 150, props: { wave: "sawtooth", attack: 0.02, decay: 0.5 } },
+      { id: "bass_pol", type: "oscillator", x: 180, y: 150, props: { wave: "sawtooth", attack: 0.02, decay: 0.5 } },
       { id: "bass_flt", type: "filter", x: 300, y: 150, props: { cutoff: 500, mod: 800, attack: 0.01, decay: 0.3 } },
       { id: "bass_spk", type: "speaker", x: 420, y: 150, props: { reverb: 0.15, pan: 0 } },
       
       { id: "mel_src", type: "source", x: 60, y: 300, props: { interval: 0.5, noteIndex: -1, intensity: 0.5 } },
       { id: "mel_gate", type: "gate", x: 160, y: 300, props: { prob: 0.5 } },
-      { id: "mel_pol", type: "polariser", x: 260, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.2 } },
+      { id: "mel_pol", type: "oscillator", x: 260, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.2 } },
       { id: "mel_spk", type: "speaker", x: 380, y: 300, props: { reverb: 0.5, pan: 0.3 } },
       
       { id: "beat_src", type: "source", x: 60, y: 450, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
       { id: "beat_p", type: "pitch", x: 160, y: 450, props: { shift: -24 } },
-      { id: "beat_pol", type: "polariser", x: 260, y: 450, props: { wave: "sine", attack: 0.005, decay: 0.15 } },
+      { id: "beat_pol", type: "oscillator", x: 260, y: 450, props: { wave: "sine", attack: 0.005, decay: 0.15 } },
       { id: "beat_spk", type: "speaker", x: 380, y: 450, props: { reverb: 0.1, pan: 0 } }
     ],
     edges: [
@@ -463,10 +472,10 @@ export const EXAMPLES: Record<string, Example> = {
     nodes: [
       { id: "src", type: "source", x: 100, y: 200, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
       
-      { id: "pol1", type: "polariser", x: 300, y: 200, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
+      { id: "pol1", type: "oscillator", x: 300, y: 200, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
       { id: "spk1", type: "speaker", x: 500, y: 200, props: { reverb: 0.3, pan: -0.3 } },
       
-      { id: "pol2", type: "polariser", x: 300, y: 350, props: { wave: "triangle", attack: 0.02, decay: 0.4 } },
+      { id: "pol2", type: "oscillator", x: 300, y: 350, props: { wave: "triangle", attack: 0.02, decay: 0.4 } },
       { id: "spk2", type: "speaker", x: 500, y: 350, props: { reverb: 0.3, pan: 0.3 } }
     ],
     edges: [
@@ -486,17 +495,17 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 110,
     nodes: [
       { id: "src5", type: "source", x: 50, y: 150, props: { interval: 5, midiNote: 60, intensity: 0.6 } },
-      { id: "pol5", type: "polariser", x: 200, y: 150, props: { wave: "sine", attack: 0.1, decay: 2.0 } },
+      { id: "pol5", type: "oscillator", x: 200, y: 150, props: { wave: "sine", attack: 0.1, decay: 2.0 } },
       { id: "dly5", type: "delay", x: 350, y: 150, props: { delayTime: 0.5 } },
       { id: "spk5", type: "speaker", x: 500, y: 150, props: { reverb: 0.5, pan: -0.5 } },
 
       { id: "src7", type: "source", x: 50, y: 300, props: { interval: 7, midiNote: 64, intensity: 0.6 } },
-      { id: "pol7", type: "polariser", x: 200, y: 300, props: { wave: "triangle", attack: 0.1, decay: 2.0 } },
+      { id: "pol7", type: "oscillator", x: 200, y: 300, props: { wave: "triangle", attack: 0.1, decay: 2.0 } },
       { id: "dly7", type: "delay", x: 350, y: 300, props: { delayTime: 0.75 } },
       { id: "spk7", type: "speaker", x: 500, y: 300, props: { reverb: 0.5, pan: 0 } },
 
       { id: "src9", type: "source", x: 50, y: 450, props: { interval: 9, midiNote: 67, intensity: 0.6 } },
-      { id: "pol9", type: "polariser", x: 200, y: 450, props: { wave: "sine", attack: 0.1, decay: 2.0 } },
+      { id: "pol9", type: "oscillator", x: 200, y: 450, props: { wave: "sine", attack: 0.1, decay: 2.0 } },
       { id: "dly9", type: "delay", x: 350, y: 450, props: { delayTime: 1.0 } },
       { id: "spk9", type: "speaker", x: 500, y: 450, props: { reverb: 0.5, pan: 0.5 } }
     ],
@@ -514,7 +523,7 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 120,
     nodes: [
       { id: "src", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
-      { id: "pol", type: "polariser", x: 140, y: 300, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
+      { id: "pol", type: "oscillator", x: 140, y: 300, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
       { id: "e1", type: "speaker", x: 220, y: 300, props: { reverb: 0.3, pan: -0.5 } },
       { id: "p1", type: "pitch", x: 300, y: 300, props: { shift: 2 } },
       { id: "e2", type: "speaker", x: 380, y: 300, props: { reverb: 0.3, pan: -0.25 } },
@@ -546,7 +555,7 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 100,
     nodes: [
       { id: "src", type: "source", x: 50, y: 300, props: { interval: 4, midiNote: 62, intensity: 0.6 } },
-      { id: "pol", type: "polariser", x: 120, y: 300, props: { wave: "triangle", attack: 0.02, decay: 0.4 } },
+      { id: "pol", type: "oscillator", x: 120, y: 300, props: { wave: "triangle", attack: 0.02, decay: 0.4 } },
       
       // Voice 1 - immediate
       { id: "v1_e1", type: "speaker", x: 220, y: 180, props: { reverb: 0.3, pan: -0.6 } },
@@ -596,7 +605,7 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 100,
     nodes: [
       { id: "src", type: "source", x: 50, y: 300, props: { interval: 4, midiNote: 62, intensity: 0.6 } },
-      { id: "pol", type: "polariser", x: 120, y: 300, props: { wave: "triangle", attack: 0.02, decay: 0.4 } },
+      { id: "pol", type: "oscillator", x: 120, y: 300, props: { wave: "triangle", attack: 0.02, decay: 0.4 } },
       
       // Voice 1 - subject
       { id: "v1_e1", type: "speaker", x: 220, y: 180, props: { reverb: 0.3, pan: -0.5 } },
@@ -649,18 +658,18 @@ export const EXAMPLES: Record<string, Example> = {
     nodes: [
       // Loud layer
       { id: "src_loud", type: "source", x: 60, y: 150, props: { interval: 4, midiNote: 60, intensity: 0.8 } },
-      { id: "pol_loud", type: "polariser", x: 180, y: 150, props: { wave: "sawtooth", attack: 0.01, decay: 0.5 } },
+      { id: "pol_loud", type: "oscillator", x: 180, y: 150, props: { wave: "sawtooth", attack: 0.01, decay: 0.5 } },
       { id: "out_loud", type: "speaker", x: 300, y: 150, props: { reverb: 0.2, pan: -0.3 } },
       
       // Soft layer
       { id: "src_soft", type: "source", x: 60, y: 280, props: { interval: 2, midiNote: 72, intensity: 0.2 } },
-      { id: "pol_soft", type: "polariser", x: 180, y: 280, props: { wave: "triangle", attack: 0.1, decay: 0.8 } },
+      { id: "pol_soft", type: "oscillator", x: 180, y: 280, props: { wave: "triangle", attack: 0.1, decay: 0.8 } },
       { id: "out_soft", type: "speaker", x: 300, y: 280, props: { reverb: 0.6, pan: 0.3 } },
       
       // Swell layer - goes through gain stages
       { id: "src_swell", type: "source", x: 60, y: 420, props: { interval: 1, midiNote: 67, intensity: 0.3 } },
       { id: "gain_up", type: "gain", x: 160, y: 420, props: { value: 1.5 } },
-      { id: "pol_swell", type: "polariser", x: 260, y: 420, props: { wave: "sine", attack: 0.2, decay: 0.6 } },
+      { id: "pol_swell", type: "oscillator", x: 260, y: 420, props: { wave: "sine", attack: 0.2, decay: 0.6 } },
       { id: "gain_down", type: "gain", x: 360, y: 420, props: { value: 0.5 } },
       { id: "out_swell", type: "speaker", x: 460, y: 420, props: { reverb: 0.4, pan: 0 } }
     ],
@@ -679,7 +688,7 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 120,
     nodes: [
       { id: "src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
-      { id: "pol", type: "polariser", x: 180, y: 300, props: { wave: "sine", attack: 0.02, decay: 0.5 } },
+      { id: "pol", type: "oscillator", x: 180, y: 300, props: { wave: "sine", attack: 0.02, decay: 0.5 } },
       
       // Root note - immediate
       { id: "spk1", type: "speaker", x: 400, y: 150, props: { reverb: 0.4, pan: -0.4 } },
@@ -720,17 +729,17 @@ export const EXAMPLES: Record<string, Example> = {
     nodes: [
       { id: "src1", type: "source", x: 80, y: 200, props: { interval: 3, noteIndex: -1, intensity: 0.5 } },
       { id: "gate1", type: "gate", x: 180, y: 200, props: { prob: 0.4 } },
-      { id: "pol1", type: "polariser", x: 280, y: 200, props: { wave: "sine", attack: 0.01, decay: 3.0 } },
+      { id: "pol1", type: "oscillator", x: 280, y: 200, props: { wave: "sine", attack: 0.01, decay: 3.0 } },
       { id: "spk1", type: "speaker", x: 400, y: 200, props: { reverb: 0.9, pan: -0.5 } },
       
       { id: "src2", type: "source", x: 80, y: 350, props: { interval: 5, noteIndex: -1, intensity: 0.4 } },
       { id: "gate2", type: "gate", x: 180, y: 350, props: { prob: 0.5 } },
       { id: "p2", type: "pitch", x: 260, y: 350, props: { shift: 12 } },
-      { id: "pol2", type: "polariser", x: 340, y: 350, props: { wave: "triangle", attack: 0.01, decay: 2.5 } },
+      { id: "pol2", type: "oscillator", x: 340, y: 350, props: { wave: "triangle", attack: 0.01, decay: 2.5 } },
       { id: "spk2", type: "speaker", x: 460, y: 350, props: { reverb: 0.9, pan: 0.5 } },
       
       { id: "src3", type: "source", x: 80, y: 500, props: { interval: 7, midiNote: 36, intensity: 0.6 } },
-      { id: "pol3", type: "polariser", x: 200, y: 500, props: { wave: "sine", attack: 0.05, decay: 4.0 } },
+      { id: "pol3", type: "oscillator", x: 200, y: 500, props: { wave: "sine", attack: 0.05, decay: 4.0 } },
       { id: "spk3", type: "speaker", x: 350, y: 500, props: { reverb: 0.8, pan: 0 } }
     ],
     edges: [
@@ -748,20 +757,20 @@ export const EXAMPLES: Record<string, Example> = {
     nodes: [
       // Kick - every beat
       { id: "kick_src", type: "source", x: 60, y: 150, props: { interval: 1, midiNote: 36, intensity: 0.9 } },
-      { id: "kick_pol", type: "polariser", x: 180, y: 150, props: { wave: "sine", attack: 0.005, decay: 0.2 } },
+      { id: "kick_pol", type: "oscillator", x: 180, y: 150, props: { wave: "sine", attack: 0.005, decay: 0.2 } },
       { id: "kick_p", type: "pitch", x: 280, y: 150, props: { shift: -12 } },
       { id: "kick_out", type: "speaker", x: 400, y: 150, props: { reverb: 0.05, pan: 0 } },
       
       // Bass - every 2 beats
       { id: "bass_src", type: "source", x: 60, y: 280, props: { interval: 2, midiNote: 36, intensity: 0.7 } },
-      { id: "bass_pol", type: "polariser", x: 180, y: 280, props: { wave: "sawtooth", attack: 0.01, decay: 0.4 } },
+      { id: "bass_pol", type: "oscillator", x: 180, y: 280, props: { wave: "sawtooth", attack: 0.01, decay: 0.4 } },
       { id: "bass_flt", type: "filter", x: 300, y: 280, props: { cutoff: 300, mod: 600, attack: 0.01, decay: 0.15 } },
       { id: "bass_out", type: "speaker", x: 420, y: 280, props: { reverb: 0.1, pan: 0 } },
       
       // Hi-hat - every 0.5 beats with random gates
       { id: "hh_src", type: "source", x: 60, y: 410, props: { interval: 0.5, midiNote: 96, intensity: 0.3 } },
       { id: "hh_gate", type: "gate", x: 160, y: 410, props: { prob: 0.8 } },
-      { id: "hh_pol", type: "polariser", x: 260, y: 410, props: { wave: "square", attack: 0.001, decay: 0.03 } },
+      { id: "hh_pol", type: "oscillator", x: 260, y: 410, props: { wave: "square", attack: 0.001, decay: 0.03 } },
       { id: "hh_out", type: "speaker", x: 380, y: 410, props: { reverb: 0.2, pan: 0.3 } }
     ],
     edges: [
@@ -780,9 +789,9 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "src", type: "source", x: 60, y: 300, props: { interval: 6, midiNote: 60, intensity: 0.6 } },
       { id: "pad", type: "tunnel", x: 200, y: 300, props: {
         subNodes: [
-          { type: "polariser", props: { wave: "sine", attack: 0.8, decay: 3.0 } },
-          { type: "polariser", props: { wave: "triangle", attack: 1.2, decay: 2.5 } },
-          { type: "polariser", props: { wave: "sawtooth", attack: 0.5, decay: 2.0 } }
+          { type: "oscillator", props: { wave: "sine", attack: 0.8, decay: 3.0 } },
+          { type: "oscillator", props: { wave: "triangle", attack: 1.2, decay: 2.5 } },
+          { type: "oscillator", props: { wave: "sawtooth", attack: 0.5, decay: 2.0 } }
         ]
       }},
       { id: "out", type: "speaker", x: 340, y: 300, props: { reverb: 0.8, pan: 0 } },
@@ -791,7 +800,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "p_hi", type: "pitch", x: 280, y: 150, props: { shift: 12 } },
       { id: "sparkle", type: "tunnel", x: 380, y: 150, props: {
         subNodes: [
-          { type: "polariser", props: { wave: "triangle", attack: 0.01, decay: 0.4 } }
+          { type: "oscillator", props: { wave: "triangle", attack: 0.01, decay: 0.4 } }
         ]
       }},
       { id: "out_hi", type: "speaker", x: 500, y: 150, props: { reverb: 0.9, pan: 0.4 } }
@@ -817,9 +826,9 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "bass", type: "tunnel", x: 280, y: 300, props: {
         subNodes: [
           { type: "pitch", props: { shift: -12 } },
-          { type: "polariser", props: { wave: "sine", attack: 0.01, decay: 0.3 } },
-          { type: "polariser", props: { wave: "sawtooth", attack: 0.02, decay: 0.25 } },
-          { type: "polariser", props: { wave: "square", attack: 0.01, decay: 0.2 } }
+          { type: "oscillator", props: { wave: "sine", attack: 0.01, decay: 0.3 } },
+          { type: "oscillator", props: { wave: "sawtooth", attack: 0.02, decay: 0.25 } },
+          { type: "oscillator", props: { wave: "square", attack: 0.01, decay: 0.2 } }
         ]
       }},
       { id: "out", type: "speaker", x: 420, y: 300, props: { reverb: 0.15, pan: 0 } }
@@ -841,9 +850,9 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "v_src", type: "source", x: 60, y: 150, props: { interval: 4, midiNote: 72, intensity: 0.7 } },
       { id: "v_tun", type: "tunnel", x: 200, y: 150, props: {
         subNodes: [
-          { type: "polariser", props: { wave: "sawtooth", attack: 0.15, decay: 1.2 } },
-          { type: "harmonic", props: { ratio: 2, wave: "sine", attack: 0.12, decay: 1.0 } },
-          { type: "harmonic", props: { ratio: 3, wave: "sine", attack: 0.10, decay: 0.8 } },
+          { type: "oscillator", props: { wave: "sawtooth", attack: 0.15, decay: 1.2 } },
+          { type: "oscillator", props: { ratio: 2, wave: "sine", attack: 0.12, decay: 1.0 } },
+          { type: "oscillator", props: { ratio: 3, wave: "sine", attack: 0.10, decay: 0.8 } },
           { type: "modulator", props: { rate: 5.5, depth: 25 } },
           { type: "filter", props: { cutoff: 2200, mod: 2000, attack: 0.12, decay: 0.5 } }
         ]
@@ -855,9 +864,9 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "c_tun", type: "tunnel", x: 200, y: 300, props: {
         subNodes: [
           { type: "pitch", props: { shift: -12 } },
-          { type: "polariser", props: { wave: "sawtooth", attack: 0.25, decay: 1.8 } },
-          { type: "harmonic", props: { ratio: 2, wave: "sine", attack: 0.20, decay: 1.5 } },
-          { type: "harmonic", props: { ratio: 3, wave: "triangle", attack: 0.18, decay: 1.2 } },
+          { type: "oscillator", props: { wave: "sawtooth", attack: 0.25, decay: 1.8 } },
+          { type: "oscillator", props: { ratio: 2, wave: "sine", attack: 0.20, decay: 1.5 } },
+          { type: "oscillator", props: { ratio: 3, wave: "triangle", attack: 0.18, decay: 1.2 } },
           { type: "modulator", props: { rate: 5.0, depth: 20 } },
           { type: "filter", props: { cutoff: 700, mod: 1000, attack: 0.08, decay: 0.5 } }
         ]
@@ -869,8 +878,8 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "f_tun", type: "tunnel", x: 200, y: 450, props: {
         subNodes: [
           { type: "pitch", props: { shift: 12 } },
-          { type: "polariser", props: { wave: "sine", attack: 0.08, decay: 0.5 } },
-          { type: "harmonic", props: { ratio: 2, wave: "sine", attack: 0.06, decay: 0.4 } },
+          { type: "oscillator", props: { wave: "sine", attack: 0.08, decay: 0.5 } },
+          { type: "oscillator", props: { ratio: 2, wave: "sine", attack: 0.06, decay: 0.4 } },
           { type: "modulator", props: { rate: 5.0, depth: 15 } },
           { type: "filter", props: { cutoff: 4500, mod: 1200, attack: 0.05, decay: 0.3 } }
         ]
@@ -896,8 +905,8 @@ export const EXAMPLES: Record<string, Example> = {
       // Root note tunnel
       { id: "root_tun", type: "tunnel", x: 340, y: 180, props: {
         subNodes: [
-          { type: "polariser", props: { wave: "sine", attack: 0.05, decay: 0.8 } },
-          { type: "harmonic", props: { ratio: 2, wave: "sine", attack: 0.1, decay: 0.6 } },
+          { type: "oscillator", props: { wave: "sine", attack: 0.05, decay: 0.8 } },
+          { type: "oscillator", props: { ratio: 2, wave: "sine", attack: 0.1, decay: 0.6 } },
           { type: "filter", props: { cutoff: 2500, mod: 800, attack: 0.02, decay: 0.3 } }
         ]
       }},
@@ -908,7 +917,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "third_tun", type: "tunnel", x: 340, y: 300, props: {
         subNodes: [
           { type: "pitch", props: { shift: 4 } },
-          { type: "polariser", props: { wave: "triangle", attack: 0.02, decay: 0.5 } },
+          { type: "oscillator", props: { wave: "triangle", attack: 0.02, decay: 0.5 } },
           { type: "filter", props: { cutoff: 3500, mod: 1200, attack: 0.01, decay: 0.25 } }
         ]
       }},
@@ -919,8 +928,8 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "fifth_tun", type: "tunnel", x: 340, y: 420, props: {
         subNodes: [
           { type: "pitch", props: { shift: 7 } },
-          { type: "polariser", props: { wave: "sine", attack: 0.01, decay: 0.4 } },
-          { type: "harmonic", props: { ratio: 3, wave: "sine", attack: 0.02, decay: 0.25 } }
+          { type: "oscillator", props: { wave: "sine", attack: 0.01, decay: 0.4 } },
+          { type: "oscillator", props: { ratio: 3, wave: "sine", attack: 0.02, decay: 0.25 } }
         ]
       }},
       { id: "fifth_out", type: "speaker", x: 460, y: 420, props: { reverb: 0.7, pan: 0.4 } }
@@ -941,18 +950,18 @@ export const EXAMPLES: Record<string, Example> = {
     nodes: [
       { id: "src1", type: "source", x: 60, y: 200, props: { interval: 1, noteIndex: -1, intensity: 0.6 } },
       { id: "quant1", type: "quantizer", x: 160, y: 200, props: { strength: 1.0 } },
-      { id: "pol1", type: "polariser", x: 260, y: 200, props: { wave: "sine", attack: 0.01, decay: 0.3 } },
+      { id: "pol1", type: "oscillator", x: 260, y: 200, props: { wave: "sine", attack: 0.01, decay: 0.3 } },
       { id: "out1", type: "speaker", x: 380, y: 200, props: { reverb: 0.4, pan: -0.5 } },
       
       { id: "src2", type: "source", x: 60, y: 320, props: { interval: 2, noteIndex: -1, intensity: 0.5 } },
       { id: "quant2", type: "quantizer", x: 160, y: 320, props: { strength: 0.7 } },
-      { id: "pol2", type: "polariser", x: 260, y: 320, props: { wave: "triangle", attack: 0.01, decay: 0.5 } },
+      { id: "pol2", type: "oscillator", x: 260, y: 320, props: { wave: "triangle", attack: 0.01, decay: 0.5 } },
       { id: "out2", type: "speaker", x: 380, y: 320, props: { reverb: 0.5, pan: 0 } },
       
       { id: "src3", type: "source", x: 60, y: 440, props: { interval: 3, noteIndex: -1, intensity: 0.4 } },
       { id: "p_oct", type: "pitch", x: 140, y: 440, props: { shift: -12 } },
       { id: "quant3", type: "quantizer", x: 220, y: 440, props: { strength: 1.0 } },
-      { id: "pol3", type: "polariser", x: 320, y: 440, props: { wave: "sawtooth", attack: 0.1, decay: 0.8 } },
+      { id: "pol3", type: "oscillator", x: 320, y: 440, props: { wave: "sawtooth", attack: 0.1, decay: 0.8 } },
       { id: "out3", type: "speaker", x: 440, y: 440, props: { reverb: 0.3, pan: 0.5 } }
     ],
     edges: [
@@ -969,7 +978,7 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 80,
     nodes: [
       { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
-      { id: "pol", type: "polariser", x: 180, y: 300, props: { wave: "sawtooth", attack: 0.5, decay: 2.0 } },
+      { id: "pol", type: "oscillator", x: 180, y: 300, props: { wave: "sawtooth", attack: 0.5, decay: 2.0 } },
       { id: "flt", type: "filter", x: 300, y: 300, props: { cutoff: 800, mod: 0 } },
       { id: "out", type: "speaker", x: 420, y: 300, props: { reverb: 0.6, pan: 0 } },
       
@@ -992,7 +1001,7 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 70,
     nodes: [
       { id: "src", type: "source", x: 80, y: 300, props: { interval: 3, midiNote: 48, intensity: 0.7 } },
-      { id: "pol", type: "polariser", x: 200, y: 300, props: { wave: "sawtooth", attack: 0.8, decay: 2.5 } },
+      { id: "pol", type: "oscillator", x: 200, y: 300, props: { wave: "sawtooth", attack: 0.8, decay: 2.5 } },
       { id: "gain", type: "gain", x: 320, y: 300, props: { value: 0.8 } },
       { id: "flt", type: "filter", x: 440, y: 300, props: { cutoff: 1000, mod: 0 } },
       { id: "out", type: "speaker", x: 560, y: 300, props: { reverb: 0.7, pan: 0 } },
@@ -1002,7 +1011,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "lfo_gain", type: "lfo", x: 320, y: 450, props: { rate: 0.5, shape: "sine", min: 0.3, max: 1.0 } },
       
       { id: "src2", type: "source", x: 80, y: 500, props: { interval: 6, midiNote: 36, intensity: 0.8 } },
-      { id: "pol2", type: "polariser", x: 200, y: 500, props: { wave: "sine", attack: 0.5, decay: 3.0 } },
+      { id: "pol2", type: "oscillator", x: 200, y: 500, props: { wave: "sine", attack: 0.5, decay: 3.0 } },
       { id: "out2", type: "speaker", x: 320, y: 500, props: { reverb: 0.5, pan: 0 } }
     ],
     edges: [
@@ -1027,20 +1036,20 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "lead_src", type: "source", x: 60, y: 200, props: { interval: 0.75, noteIndex: -1, intensity: 0.6 } },
       { id: "lead_gate", type: "gate", x: 140, y: 200, props: { prob: 0.7 } },
       { id: "lead_q", type: "quantizer", x: 220, y: 200, props: { strength: 1.0 } },
-      { id: "lead_pol", type: "polariser", x: 320, y: 200, props: { wave: "sawtooth", attack: 0.01, decay: 0.3 } },
+      { id: "lead_pol", type: "oscillator", x: 320, y: 200, props: { wave: "sawtooth", attack: 0.01, decay: 0.3 } },
       { id: "lead_flt", type: "filter", x: 420, y: 200, props: { cutoff: 1800, mod: 2000, attack: 0.01, decay: 0.2 } },
       { id: "lead_out", type: "speaker", x: 520, y: 200, props: { reverb: 0.4, pan: 0.3 } },
       
       { id: "bass_src", type: "source", x: 60, y: 350, props: { interval: 2, noteIndex: -1, intensity: 0.8 } },
       { id: "bass_q", type: "quantizer", x: 160, y: 350, props: { strength: 1.0 } },
       { id: "bass_p", type: "pitch", x: 260, y: 350, props: { shift: -24 } },
-      { id: "bass_pol", type: "polariser", x: 360, y: 350, props: { wave: "triangle", attack: 0.02, decay: 0.6 } },
+      { id: "bass_pol", type: "oscillator", x: 360, y: 350, props: { wave: "triangle", attack: 0.02, decay: 0.6 } },
       { id: "bass_out", type: "speaker", x: 460, y: 350, props: { reverb: 0.2, pan: -0.2 } },
       
       { id: "rhythm_src", type: "source", x: 60, y: 500, props: { interval: 0.5, noteIndex: -1, intensity: 0.4 } },
       { id: "rhythm_gate", type: "gate", x: 140, y: 500, props: { prob: 0.5 } },
       { id: "rhythm_q", type: "quantizer", x: 220, y: 500, props: { strength: 0.8 } },
-      { id: "rhythm_pol", type: "polariser", x: 320, y: 500, props: { wave: "square", attack: 0.005, decay: 0.15 } },
+      { id: "rhythm_pol", type: "oscillator", x: 320, y: 500, props: { wave: "square", attack: 0.005, decay: 0.15 } },
       { id: "rhythm_out", type: "speaker", x: 420, y: 500, props: { reverb: 0.3, pan: -0.4 } },
       
       { id: "lfo_wah", type: "lfo", x: 420, y: 100, props: { rate: 3, shape: "sine", min: 400, max: 2500 } }
@@ -1070,17 +1079,17 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 40,
     nodes: [
       { id: "src1", type: "source", x: 60, y: 200, props: { interval: 8, midiNote: 48, intensity: 0.5 } },
-      { id: "pol1", type: "polariser", x: 180, y: 200, props: { wave: "sine", attack: 2.0, decay: 5.0 } },
+      { id: "pol1", type: "oscillator", x: 180, y: 200, props: { wave: "sine", attack: 2.0, decay: 5.0 } },
       { id: "out1", type: "speaker", x: 300, y: 200, props: { reverb: 0.95, pan: -0.5 } },
       
       { id: "src2", type: "source", x: 60, y: 350, props: { interval: 12, midiNote: 55, intensity: 0.4 } },
-      { id: "pol2", type: "polariser", x: 180, y: 350, props: { wave: "triangle", attack: 1.5, decay: 4.0 } },
+      { id: "pol2", type: "oscillator", x: 180, y: 350, props: { wave: "triangle", attack: 1.5, decay: 4.0 } },
       { id: "flt2", type: "filter", x: 280, y: 350, props: { cutoff: 500, mod: 300, attack: 0.5, decay: 2.0 } },
       { id: "out2", type: "speaker", x: 400, y: 350, props: { reverb: 0.9, pan: 0.5 } },
       
       { id: "src3", type: "source", x: 60, y: 500, props: { interval: 16, midiNote: 43, intensity: 0.3 } },
       { id: "d1", type: "delay", x: 150, y: 500, props: { delayTime: 4.0 } },
-      { id: "pol3", type: "polariser", x: 250, y: 500, props: { wave: "sine", attack: 1.0, decay: 6.0 } },
+      { id: "pol3", type: "oscillator", x: 250, y: 500, props: { wave: "sine", attack: 1.0, decay: 6.0 } },
       { id: "out3", type: "speaker", x: 380, y: 500, props: { reverb: 0.85, pan: 0 } },
       
       { id: "lfo_low", type: "lfo", x: 50, y: 100, props: { rate: 0.1, min: 200, max: 800, shape: "sine" } }
@@ -1107,16 +1116,16 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.7 } },
       { id: "split", type: "splitter", x: 200, y: 300, props: {} },
       
-      { id: "pol1", type: "polariser", x: 500, y: 150, props: { wave: "sine", attack: 0.01, decay: 0.3 } },
+      { id: "pol1", type: "oscillator", x: 500, y: 150, props: { wave: "sine", attack: 0.01, decay: 0.3 } },
       { id: "out1", type: "speaker", x: 620, y: 150, props: { reverb: 0.3, pan: -0.6 } },
       
-      { id: "pol2", type: "polariser", x: 500, y: 250, props: { wave: "sine", attack: 0.01, decay: 0.3 } },
+      { id: "pol2", type: "oscillator", x: 500, y: 250, props: { wave: "sine", attack: 0.01, decay: 0.3 } },
       { id: "out2", type: "speaker", x: 620, y: 250, props: { reverb: 0.3, pan: -0.3 } },
       
-      { id: "pol3", type: "polariser", x: 500, y: 350, props: { wave: "sine", attack: 0.01, decay: 0.3 } },
+      { id: "pol3", type: "oscillator", x: 500, y: 350, props: { wave: "sine", attack: 0.01, decay: 0.3 } },
       { id: "out3", type: "speaker", x: 620, y: 350, props: { reverb: 0.3, pan: 0 } },
       
-      { id: "pol4", type: "polariser", x: 500, y: 450, props: { wave: "sine", attack: 0.01, decay: 0.3 } },
+      { id: "pol4", type: "oscillator", x: 500, y: 450, props: { wave: "sine", attack: 0.01, decay: 0.3 } },
       { id: "out4", type: "speaker", x: 620, y: 450, props: { reverb: 0.3, pan: 0.3 } }
     ],
     edges: [
@@ -1141,20 +1150,20 @@ export const EXAMPLES: Record<string, Example> = {
       // Hi-hat with white noise
       { id: "hh_src", type: "source", x: 60, y: 150, props: { interval: 0.5, midiNote: 80, intensity: 0.4 } },
       { id: "hh_gate", type: "gate", x: 150, y: 150, props: { prob: 0.75 } },
-      { id: "hh_noise", type: "noise", x: 240, y: 150, props: { wave: "white", attack: 0.001, decay: 0.05 } },
+      { id: "hh_noise", type: "oscillator", x: 240, y: 150, props: { wave: "white", attack: 0.001, decay: 0.05 } },
       { id: "hh_flt", type: "filter", x: 330, y: 150, props: { cutoff: 8000, mod: 2000, attack: 0.001, decay: 0.03 } },
       { id: "hh_out", type: "speaker", x: 440, y: 150, props: { reverb: 0.15, pan: 0.3 } },
       
       // Snare with pink noise
       { id: "sn_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.7 } },
       { id: "sn_del", type: "delay", x: 140, y: 300, props: { delayTime: 1 } },
-      { id: "sn_noise", type: "noise", x: 240, y: 300, props: { wave: "pink", attack: 0.005, decay: 0.15 } },
+      { id: "sn_noise", type: "oscillator", x: 240, y: 300, props: { wave: "pink", attack: 0.005, decay: 0.15 } },
       { id: "sn_flt", type: "filter", x: 340, y: 300, props: { cutoff: 3000, mod: 2000, attack: 0.01, decay: 0.1 } },
       { id: "sn_out", type: "speaker", x: 460, y: 300, props: { reverb: 0.3, pan: -0.1 } },
       
       // Rumble with brown noise
       { id: "rm_src", type: "source", x: 60, y: 450, props: { interval: 4, midiNote: 36, intensity: 0.5 } },
-      { id: "rm_noise", type: "noise", x: 180, y: 450, props: { wave: "brown", attack: 0.1, decay: 1.5 } },
+      { id: "rm_noise", type: "oscillator", x: 180, y: 450, props: { wave: "brown", attack: 0.1, decay: 1.5 } },
       { id: "rm_flt", type: "filter", x: 300, y: 450, props: { cutoff: 200, mod: 150, attack: 0.05, decay: 0.8 } },
       { id: "rm_out", type: "speaker", x: 420, y: 450, props: { reverb: 0.4, pan: 0 } }
     ],
@@ -1181,25 +1190,25 @@ export const EXAMPLES: Record<string, Example> = {
     nodes: [
       // Violin with fast vibrato
       { id: "v_src", type: "source", x: 60, y: 180, props: { interval: 4, midiNote: 76, intensity: 0.6 } },
-      { id: "v_pol", type: "polariser", x: 180, y: 180, props: { wave: "sawtooth", attack: 0.2, decay: 1.5 } },
+      { id: "v_pol", type: "oscillator", x: 180, y: 180, props: { wave: "sawtooth", attack: 0.2, decay: 1.5 } },
       { id: "v_mod", type: "modulator", x: 300, y: 180, props: { rate: 6.0, depth: 20 } },
-      { id: "v_harm", type: "harmonic", x: 420, y: 180, props: { ratio: 2, wave: "sine", attack: 0.15, decay: 1.2 } },
+      { id: "v_harm", type: "oscillator", x: 420, y: 180, props: { ratio: 2, wave: "sine", attack: 0.15, decay: 1.2 } },
       { id: "v_flt", type: "filter", x: 540, y: 180, props: { cutoff: 3000, mod: 1500, attack: 0.1, decay: 0.5 } },
       { id: "v_out", type: "speaker", x: 660, y: 180, props: { reverb: 0.5, pan: -0.4 } },
       
       // Viola with medium vibrato
       { id: "va_src", type: "source", x: 60, y: 330, props: { interval: 6, midiNote: 60, intensity: 0.65 } },
-      { id: "va_pol", type: "polariser", x: 180, y: 330, props: { wave: "sawtooth", attack: 0.25, decay: 2.0 } },
+      { id: "va_pol", type: "oscillator", x: 180, y: 330, props: { wave: "sawtooth", attack: 0.25, decay: 2.0 } },
       { id: "va_mod", type: "modulator", x: 300, y: 330, props: { rate: 5.0, depth: 18 } },
-      { id: "va_harm", type: "harmonic", x: 420, y: 330, props: { ratio: 3, wave: "triangle", attack: 0.2, decay: 1.5 } },
+      { id: "va_harm", type: "oscillator", x: 420, y: 330, props: { ratio: 3, wave: "triangle", attack: 0.2, decay: 1.5 } },
       { id: "va_flt", type: "filter", x: 540, y: 330, props: { cutoff: 2000, mod: 1000, attack: 0.12, decay: 0.6 } },
       { id: "va_out", type: "speaker", x: 660, y: 330, props: { reverb: 0.55, pan: 0 } },
       
       // Cello with slow vibrato
       { id: "c_src", type: "source", x: 60, y: 480, props: { interval: 8, midiNote: 48, intensity: 0.7 } },
-      { id: "c_pol", type: "polariser", x: 180, y: 480, props: { wave: "sawtooth", attack: 0.3, decay: 2.5 } },
+      { id: "c_pol", type: "oscillator", x: 180, y: 480, props: { wave: "sawtooth", attack: 0.3, decay: 2.5 } },
       { id: "c_mod", type: "modulator", x: 300, y: 480, props: { rate: 4.5, depth: 15 } },
-      { id: "c_harm", type: "harmonic", x: 420, y: 480, props: { ratio: 2, wave: "sine", attack: 0.25, decay: 2.0 } },
+      { id: "c_harm", type: "oscillator", x: 420, y: 480, props: { ratio: 2, wave: "sine", attack: 0.25, decay: 2.0 } },
       { id: "c_flt", type: "filter", x: 540, y: 480, props: { cutoff: 1200, mod: 600, attack: 0.15, decay: 0.8 } },
       { id: "c_out", type: "speaker", x: 660, y: 480, props: { reverb: 0.6, pan: 0.4 } }
     ],
@@ -1223,7 +1232,7 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 100,
     nodes: [
       { id: "src", type: "source", x: 60, y: 250, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
-      { id: "pol", type: "polariser", x: 160, y: 250, props: { wave: "triangle", attack: 0.02, decay: 0.4 } },
+      { id: "pol", type: "oscillator", x: 160, y: 250, props: { wave: "triangle", attack: 0.02, decay: 0.4 } },
       { id: "out1", type: "speaker", x: 280, y: 250, props: { reverb: 0.3, pan: -0.5 } },
       
       // Teleporter sends to far right
@@ -1235,7 +1244,7 @@ export const EXAMPLES: Record<string, Example> = {
       
       // Second teleporter pair for octave
       { id: "src2", type: "source", x: 60, y: 400, props: { interval: 4, midiNote: 48, intensity: 0.7 } },
-      { id: "pol2", type: "polariser", x: 160, y: 400, props: { wave: "sine", attack: 0.1, decay: 1.0 } },
+      { id: "pol2", type: "oscillator", x: 160, y: 400, props: { wave: "sine", attack: 0.1, decay: 1.0 } },
       { id: "tele_in2", type: "teleporter", x: 280, y: 400, props: { channel: "B", isEntry: true } },
       { id: "tele_out2", type: "teleporter", x: 500, y: 400, props: { channel: "B", isEntry: false } },
       { id: "p_oct", type: "pitch", x: 600, y: 400, props: { shift: 12 } },
@@ -1264,23 +1273,23 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "split", type: "splitter", x: 160, y: 300, props: {} },
       
       // Fundamental
-      { id: "pol1", type: "polariser", x: 300, y: 120, props: { wave: "sine", attack: 0.1, decay: 2.0 } },
+      { id: "pol1", type: "oscillator", x: 300, y: 120, props: { wave: "sine", attack: 0.1, decay: 2.0 } },
       { id: "g1", type: "gain", x: 400, y: 120, props: { value: 1.0 } },
       
       // 2nd harmonic (octave)
-      { id: "h2", type: "harmonic", x: 300, y: 220, props: { ratio: 2, wave: "sine", attack: 0.08, decay: 1.8 } },
+      { id: "h2", type: "oscillator", x: 300, y: 220, props: { ratio: 2, wave: "sine", attack: 0.08, decay: 1.8 } },
       { id: "g2", type: "gain", x: 400, y: 220, props: { value: 0.5 } },
       
       // 3rd harmonic (fifth + octave)
-      { id: "h3", type: "harmonic", x: 300, y: 320, props: { ratio: 3, wave: "sine", attack: 0.06, decay: 1.5 } },
+      { id: "h3", type: "oscillator", x: 300, y: 320, props: { ratio: 3, wave: "sine", attack: 0.06, decay: 1.5 } },
       { id: "g3", type: "gain", x: 400, y: 320, props: { value: 0.33 } },
       
       // 4th harmonic (2 octaves)
-      { id: "h4", type: "harmonic", x: 300, y: 420, props: { ratio: 4, wave: "sine", attack: 0.05, decay: 1.2 } },
+      { id: "h4", type: "oscillator", x: 300, y: 420, props: { ratio: 4, wave: "sine", attack: 0.05, decay: 1.2 } },
       { id: "g4", type: "gain", x: 400, y: 420, props: { value: 0.25 } },
       
       // 5th harmonic (major third + 2 octaves)
-      { id: "h5", type: "harmonic", x: 300, y: 520, props: { ratio: 5, wave: "sine", attack: 0.04, decay: 1.0 } },
+      { id: "h5", type: "oscillator", x: 300, y: 520, props: { ratio: 5, wave: "sine", attack: 0.04, decay: 1.0 } },
       { id: "g5", type: "gain", x: 400, y: 520, props: { value: 0.2 } },
       
       // All merge to one speaker
@@ -1303,7 +1312,7 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 140,
     nodes: [
       { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 36, intensity: 0.8 } },
-      { id: "pol", type: "polariser", x: 180, y: 300, props: { wave: "sawtooth", attack: 0.01, decay: 0.8 } },
+      { id: "pol", type: "oscillator", x: 180, y: 300, props: { wave: "sawtooth", attack: 0.01, decay: 0.8 } },
       { id: "flt", type: "filter", x: 300, y: 300, props: { cutoff: 500, mod: 0 } },
       { id: "gain", type: "gain", x: 420, y: 300, props: { value: 0.8 } },
       { id: "out", type: "speaker", x: 540, y: 300, props: { reverb: 0.2, pan: 0 } },
@@ -1317,7 +1326,7 @@ export const EXAMPLES: Record<string, Example> = {
       // Sub bass layer
       { id: "src_sub", type: "source", x: 60, y: 450, props: { interval: 2, midiNote: 36, intensity: 0.9 } },
       { id: "p_sub", type: "pitch", x: 160, y: 450, props: { shift: -12 } },
-      { id: "pol_sub", type: "polariser", x: 260, y: 450, props: { wave: "sine", attack: 0.01, decay: 0.6 } },
+      { id: "pol_sub", type: "oscillator", x: 260, y: 450, props: { wave: "sine", attack: 0.01, decay: 0.6 } },
       { id: "out_sub", type: "speaker", x: 380, y: 450, props: { reverb: 0.1, pan: 0 } }
     ],
     edges: [
@@ -1343,7 +1352,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "seq1_src", type: "source", x: 60, y: 150, props: { interval: 0.25, noteIndex: -1, intensity: 0.5 } },
       { id: "seq1_gate", type: "gate", x: 160, y: 150, props: { prob: 0.4 } },
       { id: "seq1_quant", type: "quantizer", x: 260, y: 150, props: { strength: 1.0 } },
-      { id: "seq1_pol", type: "polariser", x: 360, y: 150, props: { wave: "square", attack: 0.005, decay: 0.1 } },
+      { id: "seq1_pol", type: "oscillator", x: 360, y: 150, props: { wave: "square", attack: 0.005, decay: 0.1 } },
       { id: "seq1_flt", type: "filter", x: 460, y: 150, props: { cutoff: 2000, mod: 1500, attack: 0.01, decay: 0.08 } },
       { id: "seq1_out", type: "speaker", x: 580, y: 150, props: { reverb: 0.3, pan: -0.4 } },
       
@@ -1352,17 +1361,17 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "seq2_gate", type: "gate", x: 160, y: 300, props: { prob: 0.6 } },
       { id: "seq2_quant", type: "quantizer", x: 260, y: 300, props: { strength: 0.9 } },
       { id: "seq2_split", type: "splitter", x: 350, y: 300, props: {} },
-      { id: "seq2_pol1", type: "polariser", x: 460, y: 250, props: { wave: "triangle", attack: 0.01, decay: 0.2 } },
+      { id: "seq2_pol1", type: "oscillator", x: 460, y: 250, props: { wave: "triangle", attack: 0.01, decay: 0.2 } },
       { id: "seq2_out1", type: "speaker", x: 580, y: 250, props: { reverb: 0.4, pan: 0 } },
       { id: "seq2_p", type: "pitch", x: 460, y: 350, props: { shift: 7 } },
-      { id: "seq2_pol2", type: "polariser", x: 560, y: 350, props: { wave: "sine", attack: 0.02, decay: 0.25 } },
+      { id: "seq2_pol2", type: "oscillator", x: 560, y: 350, props: { wave: "sine", attack: 0.02, decay: 0.25 } },
       { id: "seq2_out2", type: "speaker", x: 680, y: 350, props: { reverb: 0.5, pan: 0.3 } },
       
       // Slow bass with full quantization
       { id: "bass_src", type: "source", x: 60, y: 480, props: { interval: 2, noteIndex: -1, intensity: 0.7 } },
       { id: "bass_quant", type: "quantizer", x: 160, y: 480, props: { strength: 1.0 } },
       { id: "bass_p", type: "pitch", x: 260, y: 480, props: { shift: -24 } },
-      { id: "bass_pol", type: "polariser", x: 360, y: 480, props: { wave: "sawtooth", attack: 0.02, decay: 0.5 } },
+      { id: "bass_pol", type: "oscillator", x: 360, y: 480, props: { wave: "sawtooth", attack: 0.02, decay: 0.5 } },
       { id: "bass_flt", type: "filter", x: 460, y: 480, props: { cutoff: 600, mod: 400, attack: 0.02, decay: 0.2 } },
       { id: "bass_out", type: "speaker", x: 580, y: 480, props: { reverb: 0.2, pan: 0 } },
       
@@ -1388,7 +1397,7 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Full Tunnel Processing
   tunnel_processing: {
     name: "Advanced: Full Tunnel",
-    description: "Tunnels containing pitch, polariser, harmonic, modulator, and filter for complete synthesis.",
+    description: "Tunnels containing pitch, oscillator, modulator, and filter for complete synthesis.",
     bpm: 90,
     nodes: [
       { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.7 } },
@@ -1397,9 +1406,9 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "synth", type: "tunnel", x: 250, y: 300, props: {
         subNodes: [
           { type: "pitch", props: { shift: 0 } },
-          { type: "polariser", props: { wave: "sawtooth", attack: 0.02, decay: 0.8 } },
-          { type: "harmonic", props: { ratio: 2, wave: "sine", attack: 0.03, decay: 0.6 } },
-          { type: "harmonic", props: { ratio: 3, wave: "triangle", attack: 0.04, decay: 0.5 } },
+          { type: "oscillator", props: { wave: "sawtooth", attack: 0.02, decay: 0.8 } },
+          { type: "oscillator", props: { ratio: 2, wave: "sine", attack: 0.03, decay: 0.6 } },
+          { type: "oscillator", props: { ratio: 3, wave: "triangle", attack: 0.04, decay: 0.5 } },
           { type: "modulator", props: { rate: 5.5, depth: 20 } },
           { type: "filter", props: { cutoff: 2000, mod: 1500, attack: 0.02, decay: 0.4 } }
         ]
@@ -1410,9 +1419,9 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "src2", type: "source", x: 60, y: 480, props: { interval: 4, midiNote: 48, intensity: 0.6 } },
       { id: "pad", type: "tunnel", x: 250, y: 480, props: {
         subNodes: [
-          { type: "polariser", props: { wave: "sine", attack: 0.5, decay: 2.0 } },
-          { type: "harmonic", props: { ratio: 2, wave: "sine", attack: 0.4, decay: 1.8 } },
-          { type: "polariser", props: { wave: "triangle", attack: 0.6, decay: 1.5 } },
+          { type: "oscillator", props: { wave: "sine", attack: 0.5, decay: 2.0 } },
+          { type: "oscillator", props: { ratio: 2, wave: "sine", attack: 0.4, decay: 1.8 } },
+          { type: "oscillator", props: { wave: "triangle", attack: 0.6, decay: 1.5 } },
           { type: "modulator", props: { rate: 4.0, depth: 15 } }
         ]
       }},
@@ -1438,27 +1447,27 @@ export const EXAMPLES: Record<string, Example> = {
       // High density - 8 steps, ~5 hits (prob 0.625)
       { id: "h_src", type: "source", x: 60, y: 150, props: { interval: 0.5, midiNote: 72, intensity: 0.5 } },
       { id: "h_gate", type: "gate", x: 160, y: 150, props: { prob: 0.625 } },
-      { id: "h_pol", type: "polariser", x: 260, y: 150, props: { wave: "square", attack: 0.001, decay: 0.04 } },
+      { id: "h_pol", type: "oscillator", x: 260, y: 150, props: { wave: "square", attack: 0.001, decay: 0.04 } },
       { id: "h_p", type: "pitch", x: 360, y: 150, props: { shift: 24 } },
       { id: "h_out", type: "speaker", x: 460, y: 150, props: { reverb: 0.15, pan: 0.4 } },
       
       // Medium density - 8 steps, ~3 hits (prob 0.375)
       { id: "m_src", type: "source", x: 60, y: 300, props: { interval: 0.5, midiNote: 60, intensity: 0.6 } },
       { id: "m_gate", type: "gate", x: 160, y: 300, props: { prob: 0.375 } },
-      { id: "m_pol", type: "polariser", x: 260, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.15 } },
+      { id: "m_pol", type: "oscillator", x: 260, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.15 } },
       { id: "m_out", type: "speaker", x: 360, y: 300, props: { reverb: 0.25, pan: 0 } },
       
       // Low density - kick pattern (prob 0.25)
       { id: "k_src", type: "source", x: 60, y: 450, props: { interval: 0.5, midiNote: 36, intensity: 0.8 } },
       { id: "k_gate", type: "gate", x: 160, y: 450, props: { prob: 0.25 } },
-      { id: "k_pol", type: "polariser", x: 260, y: 450, props: { wave: "sine", attack: 0.005, decay: 0.2 } },
+      { id: "k_pol", type: "oscillator", x: 260, y: 450, props: { wave: "sine", attack: 0.005, decay: 0.2 } },
       { id: "k_p", type: "pitch", x: 360, y: 450, props: { shift: -12 } },
       { id: "k_out", type: "speaker", x: 460, y: 450, props: { reverb: 0.1, pan: -0.2 } },
       
       // Accent layer - very sparse (prob 0.125)
       { id: "a_src", type: "source", x: 500, y: 300, props: { interval: 1, midiNote: 84, intensity: 0.4 } },
       { id: "a_gate", type: "gate", x: 580, y: 300, props: { prob: 0.125 } },
-      { id: "a_pol", type: "polariser", x: 660, y: 300, props: { wave: "sine", attack: 0.01, decay: 0.5 } },
+      { id: "a_pol", type: "oscillator", x: 660, y: 300, props: { wave: "sine", attack: 0.01, decay: 0.5 } },
       { id: "a_out", type: "speaker", x: 760, y: 300, props: { reverb: 0.6, pan: 0.3 } }
     ],
     edges: [
@@ -1480,7 +1489,7 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 90,
     nodes: [
       { id: "src", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
-      { id: "pol", type: "polariser", x: 160, y: 300, props: { wave: "sine", attack: 0.05, decay: 0.6 } },
+      { id: "pol", type: "oscillator", x: 160, y: 300, props: { wave: "sine", attack: 0.05, decay: 0.6 } },
       { id: "split", type: "splitter", x: 260, y: 300, props: {} },
       
       // Direct path
@@ -1521,29 +1530,29 @@ export const EXAMPLES: Record<string, Example> = {
     nodes: [
       // Gong - low, slow
       { id: "gong_src", type: "source", x: 60, y: 150, props: { interval: 8, midiNote: 36, intensity: 0.8 } },
-      { id: "gong_pol", type: "polariser", x: 180, y: 150, props: { wave: "sine", attack: 0.02, decay: 4.0 } },
-      { id: "gong_h", type: "harmonic", x: 300, y: 150, props: { ratio: 2.2, wave: "sine", attack: 0.03, decay: 3.0 } },
+      { id: "gong_pol", type: "oscillator", x: 180, y: 150, props: { wave: "sine", attack: 0.02, decay: 4.0 } },
+      { id: "gong_h", type: "oscillator", x: 300, y: 150, props: { ratio: 2.2, wave: "sine", attack: 0.03, decay: 3.0 } },
       { id: "gong_out", type: "speaker", x: 420, y: 150, props: { reverb: 0.8, pan: 0 } },
       
       // Kenong - medium
       { id: "ken_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
-      { id: "ken_pol", type: "polariser", x: 180, y: 300, props: { wave: "triangle", attack: 0.01, decay: 1.5 } },
-      { id: "ken_h1", type: "harmonic", x: 300, y: 300, props: { ratio: 2.76, wave: "sine", attack: 0.02, decay: 1.2 } },
-      { id: "ken_h2", type: "harmonic", x: 400, y: 300, props: { ratio: 5.4, wave: "sine", attack: 0.03, decay: 0.8 } },
+      { id: "ken_pol", type: "oscillator", x: 180, y: 300, props: { wave: "triangle", attack: 0.01, decay: 1.5 } },
+      { id: "ken_h1", type: "oscillator", x: 300, y: 300, props: { ratio: 2.76, wave: "sine", attack: 0.02, decay: 1.2 } },
+      { id: "ken_h2", type: "oscillator", x: 400, y: 300, props: { ratio: 5.4, wave: "sine", attack: 0.03, decay: 0.8 } },
       { id: "ken_out", type: "speaker", x: 520, y: 300, props: { reverb: 0.6, pan: -0.3 } },
       
       // Bonang - high, fast
       { id: "bon_src", type: "source", x: 60, y: 450, props: { interval: 0.5, midiNote: 72, intensity: 0.5 } },
       { id: "bon_gate", type: "gate", x: 160, y: 450, props: { prob: 0.7 } },
-      { id: "bon_pol", type: "polariser", x: 260, y: 450, props: { wave: "sine", attack: 0.005, decay: 0.5 } },
-      { id: "bon_h", type: "harmonic", x: 360, y: 450, props: { ratio: 3.14, wave: "sine", attack: 0.01, decay: 0.3 } },
+      { id: "bon_pol", type: "oscillator", x: 260, y: 450, props: { wave: "sine", attack: 0.005, decay: 0.5 } },
+      { id: "bon_h", type: "oscillator", x: 360, y: 450, props: { ratio: 3.14, wave: "sine", attack: 0.01, decay: 0.3 } },
       { id: "bon_out", type: "speaker", x: 480, y: 450, props: { reverb: 0.5, pan: 0.3 } },
       
       // Peking - highest, fastest interlocking
       { id: "pek_src", type: "source", x: 550, y: 300, props: { interval: 0.25, midiNote: 84, intensity: 0.4 } },
       { id: "pek_gate", type: "gate", x: 640, y: 300, props: { prob: 0.5 } },
-      { id: "pek_pol", type: "polariser", x: 730, y: 300, props: { wave: "sine", attack: 0.002, decay: 0.2 } },
-      { id: "pek_h", type: "harmonic", x: 820, y: 300, props: { ratio: 4.16, wave: "sine", attack: 0.005, decay: 0.15 } },
+      { id: "pek_pol", type: "oscillator", x: 730, y: 300, props: { wave: "sine", attack: 0.002, decay: 0.2 } },
+      { id: "pek_h", type: "oscillator", x: 820, y: 300, props: { ratio: 4.16, wave: "sine", attack: 0.005, decay: 0.15 } },
       { id: "pek_out", type: "speaker", x: 910, y: 300, props: { reverb: 0.4, pan: 0.5 } }
     ],
     edges: [
@@ -1567,7 +1576,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "bass_src", type: "source", x: 60, y: 150, props: { interval: 2, noteIndex: -1, intensity: 0.8 } },
       { id: "bass_q", type: "quantizer", x: 160, y: 150, props: { strength: 1.0 } },
       { id: "bass_p", type: "pitch", x: 260, y: 150, props: { shift: -12 } },
-      { id: "bass_pol", type: "polariser", x: 360, y: 150, props: { wave: "sawtooth", attack: 0.02, decay: 0.5 } },
+      { id: "bass_pol", type: "oscillator", x: 360, y: 150, props: { wave: "sawtooth", attack: 0.02, decay: 0.5 } },
       { id: "bass_flt", type: "filter", x: 460, y: 150, props: { cutoff: 400, mod: 800, attack: 0.01, decay: 0.3 } },
       { id: "bass_out", type: "speaker", x: 560, y: 150, props: { reverb: 0.2, pan: 0 } },
       
@@ -1576,16 +1585,16 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "mel_q", type: "quantizer", x: 220, y: 300, props: { strength: 1.0 } },
       { id: "mel_split", type: "splitter", x: 300, y: 300, props: {} },
       
-      { id: "mel_pol1", type: "polariser", x: 400, y: 250, props: { wave: "triangle", attack: 0.01, decay: 0.25 } },
+      { id: "mel_pol1", type: "oscillator", x: 400, y: 250, props: { wave: "triangle", attack: 0.01, decay: 0.25 } },
       { id: "mel_out1", type: "speaker", x: 500, y: 250, props: { reverb: 0.5, pan: -0.4 } },
       
-      { id: "mel_pol2", type: "polariser", x: 400, y: 350, props: { wave: "sine", attack: 0.01, decay: 0.2 } },
+      { id: "mel_pol2", type: "oscillator", x: 400, y: 350, props: { wave: "sine", attack: 0.01, decay: 0.2 } },
       { id: "mel_out2", type: "speaker", x: 500, y: 350, props: { reverb: 0.5, pan: 0.4 } },
       
       { id: "arp_src", type: "source", x: 60, y: 480, props: { interval: 4, midiNote: 72, intensity: 0.4 } },
       { id: "arp_split", type: "splitter", x: 160, y: 480, props: {} },
       { id: "arp_q", type: "quantizer", x: 260, y: 480, props: { strength: 1.0 } },
-      { id: "arp_pol", type: "polariser", x: 360, y: 480, props: { wave: "sine", attack: 0.005, decay: 0.15 } },
+      { id: "arp_pol", type: "oscillator", x: 360, y: 480, props: { wave: "sine", attack: 0.005, decay: 0.15 } },
       { id: "arp_out", type: "speaker", x: 460, y: 480, props: { reverb: 0.7, pan: 0 } },
       
       { id: "lfo_filter", type: "lfo", x: 460, y: 80, props: { rate: 0.3, shape: "sine", min: 300, max: 1200 } }
@@ -1623,7 +1632,7 @@ export const EXAMPLES: Record<string, Example> = {
       
       { id: "lfo_decay", type: "lfo", x: 250, y: 150, props: { rate: 0.2, min: 0.1, max: 2.0, shape: "sine" } },
       
-      { id: "pol", type: "polariser", x: 400, y: 300, props: { wave: "sine", attack: 0.05, decay: 0.5 } },
+      { id: "pol", type: "oscillator", x: 400, y: 300, props: { wave: "sine", attack: 0.05, decay: 0.5 } },
       { id: "delay", type: "delay", x: 550, y: 300, props: { delayTime: 0.75 } },
       { id: "spk", type: "speaker", x: 700, y: 300, props: { reverb: 0.6, pan: 0 } }
     ],
@@ -1644,12 +1653,12 @@ export const EXAMPLES: Record<string, Example> = {
     nodes: [
       { id: "src1", type: "source", x: 60, y: 200, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
       { id: "light_gain", type: "gain", x: 200, y: 200, props: { value: 1.0 } },
-      { id: "pol1", type: "polariser", x: 340, y: 200, props: { wave: "sine", attack: 0.01, decay: 0.4 } },
+      { id: "pol1", type: "oscillator", x: 340, y: 200, props: { wave: "sine", attack: 0.01, decay: 0.4 } },
       { id: "out1", type: "speaker", x: 480, y: 200, props: { reverb: 0.3, pan: -0.5 } },
       
       { id: "src2", type: "source", x: 60, y: 350, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
       { id: "heavy_gain", type: "gain", x: 200, y: 350, props: { value: 1.0 } },
-      { id: "pol2", type: "polariser", x: 340, y: 350, props: { wave: "sine", attack: 0.01, decay: 0.4 } },
+      { id: "pol2", type: "oscillator", x: 340, y: 350, props: { wave: "sine", attack: 0.01, decay: 0.4 } },
       { id: "out2", type: "speaker", x: 480, y: 350, props: { reverb: 0.3, pan: 0.5 } },
       
       { id: "src3", type: "source", x: 60, y: 500, props: { interval: 2, midiNote: 48, intensity: 0.5 } },
@@ -1669,15 +1678,15 @@ export const EXAMPLES: Record<string, Example> = {
     bpm: 60,
     nodes: [
       { id: "src1", type: "source", x: 60, y: 180, props: { interval: 4, midiNote: 60, intensity: 0.7 } },
-      { id: "pol1", type: "polariser", x: 180, y: 180, props: { wave: "sine", attack: 0.01, decay: 0.2 } },
+      { id: "pol1", type: "oscillator", x: 180, y: 180, props: { wave: "sine", attack: 0.01, decay: 0.2 } },
       { id: "staccato", type: "speaker", x: 300, y: 180, props: { reverb: 0.2, pan: -0.5 } },
       
       { id: "src2", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.7 } },
-      { id: "pol2", type: "polariser", x: 180, y: 300, props: { wave: "sine", attack: 0.3, decay: 0.5 } },
+      { id: "pol2", type: "oscillator", x: 180, y: 300, props: { wave: "sine", attack: 0.3, decay: 0.5 } },
       { id: "sustained", type: "speaker", x: 300, y: 300, props: { reverb: 0.4, pan: 0 } },
       
       { id: "src3", type: "source", x: 60, y: 420, props: { interval: 4, midiNote: 60, intensity: 0.7 } },
-      { id: "pol3", type: "polariser", x: 180, y: 420, props: { wave: "triangle", attack: 0.8, decay: 0.1 } },
+      { id: "pol3", type: "oscillator", x: 180, y: 420, props: { wave: "triangle", attack: 0.8, decay: 0.1 } },
       { id: "organ", type: "speaker", x: 300, y: 420, props: { reverb: 0.6, pan: 0.5 } }
     ],
     edges: [
@@ -1741,11 +1750,11 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "bass_tun", type: "tunnel", x: 420, y: 740, props: {
         tunnelName: "Contrabass",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.28, decay: 1.8, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.32, decay: 1.6, mix: 0.22 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.25, decay: 1.5, mix: 0.45 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.22, decay: 1.3, mix: 0.2 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.3, decay: 1.2, mix: 0.04 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.28, decay: 1.8, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.32, decay: 1.6, mix: 0.22 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.25, decay: 1.5, mix: 0.45 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.22, decay: 1.3, mix: 0.2 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.3, decay: 1.2, mix: 0.04 } },
           { type: 'modulator', props: { rate: 4.2, depth: 12, delay: 0.7 } },
           { type: 'filter', props: { cutoff: 700, mod: 400, attack: 0.2, decay: 1.2 } }
         ]
@@ -1786,11 +1795,11 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "v1_tun", type: "tunnel", x: 500, y: 90, props: {
         tunnelName: "Violin 1",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.28, decay: 1.6, mix: 0.35 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.22, decay: 1.4, mix: 0.25 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.2, mix: 0.12 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.3, decay: 1.0, mix: 0.04 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.28, decay: 1.6, mix: 0.35 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.22, decay: 1.4, mix: 0.25 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.2, mix: 0.12 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.3, decay: 1.0, mix: 0.04 } },
           { type: 'modulator', props: { rate: 5.2, depth: 18, delay: 0.5 } },
           { type: 'filter', props: { cutoff: 2800, mod: 1200, attack: 0.2, decay: 1.0 } }
         ]
@@ -1820,11 +1829,11 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "v2_tun", type: "tunnel", x: 580, y: 250, props: {
         tunnelName: "Violin 2",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.28, decay: 1.6, mix: 0.35 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.22, decay: 1.4, mix: 0.25 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.2, mix: 0.12 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.3, decay: 1.0, mix: 0.04 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.28, decay: 1.6, mix: 0.35 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.22, decay: 1.4, mix: 0.25 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.2, mix: 0.12 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.3, decay: 1.0, mix: 0.04 } },
           { type: 'modulator', props: { rate: 5.3, depth: 17, delay: 0.5 } },
           { type: 'filter', props: { cutoff: 2800, mod: 1200, attack: 0.2, decay: 1.0 } }
         ]
@@ -1854,11 +1863,11 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "va_tun", type: "tunnel", x: 580, y: 430, props: {
         tunnelName: "Viola",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.2, decay: 1.7, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.23, decay: 1.5, mix: 0.28 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.18, decay: 1.4, mix: 0.35 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.15, decay: 1.2, mix: 0.18 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.22, decay: 1.0, mix: 0.03 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.2, decay: 1.7, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.23, decay: 1.5, mix: 0.28 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.18, decay: 1.4, mix: 0.35 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.15, decay: 1.2, mix: 0.18 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.22, decay: 1.0, mix: 0.03 } },
           { type: 'modulator', props: { rate: 5.0, depth: 20, delay: 0.55 } },
           { type: 'filter', props: { cutoff: 2200, mod: 1100, attack: 0.16, decay: 0.9 } }
         ]
@@ -1888,11 +1897,11 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "vc_tun", type: "tunnel", x: 580, y: 590, props: {
         tunnelName: "Cello",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.22, decay: 2.0, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 0.25 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.2, decay: 1.6, mix: 0.4 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.4, mix: 0.25 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.25, decay: 1.2, mix: 0.035 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.22, decay: 2.0, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 0.25 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.2, decay: 1.6, mix: 0.4 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.4, mix: 0.25 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.25, decay: 1.2, mix: 0.035 } },
           { type: 'modulator', props: { rate: 4.8, depth: 22, delay: 0.6 } },
           { type: 'filter', props: { cutoff: 1600, mod: 1000, attack: 0.18, decay: 1.2 } }
         ]
@@ -2005,8 +2014,8 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "drum_tun", type: "tunnel", x: 180, y: 100, props: {
         tunnelName: "Snare",
         subNodes: [
-          { type: 'noise', props: { wave: 'white', attack: 0.001, decay: 0.08, mix: 0.6 } },
-          { type: 'polariser', props: { wave: 'triangle', attack: 0.001, decay: 0.06, mix: 0.4 } },
+          { type: 'oscillator', props: { wave: 'white', attack: 0.001, decay: 0.08, mix: 0.6 } },
+          { type: 'oscillator', props: { wave: 'triangle', attack: 0.001, decay: 0.06, mix: 0.4 } },
           { type: 'filter', props: { cutoff: 3000, mod: 1500, attack: 0.001, decay: 0.05 } }
         ]
       }},
@@ -2017,11 +2026,11 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "flute_tun", type: "tunnel", x: 200, y: 200, props: {
         tunnelName: "Flute",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sine', attack: 0.1, decay: 1.0, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'triangle', attack: 0.12, decay: 0.9, mix: 0.1 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.1, decay: 0.8, mix: 0.18 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.08, decay: 0.6, mix: 0.06 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.06, decay: 0.35, mix: 0.1 } },
+          { type: 'oscillator', props: { wave: 'sine', attack: 0.1, decay: 1.0, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'triangle', attack: 0.12, decay: 0.9, mix: 0.1 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.1, decay: 0.8, mix: 0.18 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.08, decay: 0.6, mix: 0.06 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.06, decay: 0.35, mix: 0.1 } },
           { type: 'modulator', props: { rate: 5.5, depth: 15, delay: 0.35 } },
           { type: 'filter', props: { cutoff: 4500, mod: 800, attack: 0.08, decay: 0.6 } }
         ]
@@ -2034,12 +2043,12 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "clar_tun", type: "tunnel", x: 280, y: 300, props: {
         tunnelName: "Clarinet",
         subNodes: [
-          { type: 'polariser', props: { wave: 'square', attack: 0.06, decay: 0.85, mix: 1.0 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.05, decay: 0.7, mix: 0.5 } },
-          { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.04, decay: 0.6, mix: 0.3 } },
-          { type: 'harmonic', props: { ratio: 7, wave: 'sine', attack: 0.03, decay: 0.5, mix: 0.15 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.05, decay: 0.65, mix: 0.08 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.04, decay: 0.15, mix: 0.03 } },
+          { type: 'oscillator', props: { wave: 'square', attack: 0.06, decay: 0.85, mix: 1.0 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.05, decay: 0.7, mix: 0.5 } },
+          { type: 'oscillator', props: { ratio: 5, wave: 'sine', attack: 0.04, decay: 0.6, mix: 0.3 } },
+          { type: 'oscillator', props: { ratio: 7, wave: 'sine', attack: 0.03, decay: 0.5, mix: 0.15 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.05, decay: 0.65, mix: 0.08 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.04, decay: 0.15, mix: 0.03 } },
           { type: 'modulator', props: { rate: 5.0, depth: 12, delay: 0.4 } },
           { type: 'filter', props: { cutoff: 1800, mod: 800, attack: 0.05, decay: 0.5 } }
         ]
@@ -2052,13 +2061,13 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "oboe_tun", type: "tunnel", x: 280, y: 400, props: {
         tunnelName: "Oboe",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.08, decay: 0.9, mix: 1.0 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.07, decay: 0.8, mix: 0.55 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.06, decay: 0.7, mix: 0.4 } },
-          { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.05, decay: 0.6, mix: 0.28 } },
-          { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.04, decay: 0.5, mix: 0.18 } },
-          { type: 'harmonic', props: { ratio: 6, wave: 'sine', attack: 0.03, decay: 0.4, mix: 0.1 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.05, decay: 0.25, mix: 0.04 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.08, decay: 0.9, mix: 1.0 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.07, decay: 0.8, mix: 0.55 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.06, decay: 0.7, mix: 0.4 } },
+          { type: 'oscillator', props: { ratio: 4, wave: 'sine', attack: 0.05, decay: 0.6, mix: 0.28 } },
+          { type: 'oscillator', props: { ratio: 5, wave: 'sine', attack: 0.04, decay: 0.5, mix: 0.18 } },
+          { type: 'oscillator', props: { ratio: 6, wave: 'sine', attack: 0.03, decay: 0.4, mix: 0.1 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.05, decay: 0.25, mix: 0.04 } },
           { type: 'modulator', props: { rate: 5.5, depth: 25, delay: 0.3 } },
           { type: 'filter', props: { cutoff: 2200, mod: 1000, attack: 0.06, decay: 0.5 } }
         ]
@@ -2070,13 +2079,13 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "horn_tun", type: "tunnel", x: 640, y: 200, props: {
         tunnelName: "French Horn",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.15, decay: 1.4, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'triangle', attack: 0.18, decay: 1.2, mix: 0.2 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.14, decay: 1.1, mix: 0.5 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.12, decay: 0.9, mix: 0.28 } },
-          { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.1, decay: 0.7, mix: 0.15 } },
-          { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.08, decay: 0.5, mix: 0.08 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.04, decay: 0.18, mix: 0.05 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.15, decay: 1.4, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'triangle', attack: 0.18, decay: 1.2, mix: 0.2 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.14, decay: 1.1, mix: 0.5 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.12, decay: 0.9, mix: 0.28 } },
+          { type: 'oscillator', props: { ratio: 4, wave: 'sine', attack: 0.1, decay: 0.7, mix: 0.15 } },
+          { type: 'oscillator', props: { ratio: 5, wave: 'sine', attack: 0.08, decay: 0.5, mix: 0.08 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.04, decay: 0.18, mix: 0.05 } },
           { type: 'modulator', props: { rate: 4.2, depth: 10, delay: 0.45 } },
           { type: 'filter', props: { cutoff: 800, mod: 1200, attack: 0.12, decay: 0.8 } }
         ]
@@ -2088,12 +2097,12 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "strings_tun", type: "tunnel", x: 640, y: 320, props: {
         tunnelName: "String Pad",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.8, decay: 3.5, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.9, decay: 3.2, mix: 0.4 } },
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 1.0, decay: 3.0, mix: 0.25 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.7, decay: 2.8, mix: 0.25 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.6, decay: 2.4, mix: 0.12 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.8, decay: 2.0, mix: 0.025 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.8, decay: 3.5, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.9, decay: 3.2, mix: 0.4 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 1.0, decay: 3.0, mix: 0.25 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.7, decay: 2.8, mix: 0.25 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.6, decay: 2.4, mix: 0.12 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.8, decay: 2.0, mix: 0.025 } },
           { type: 'modulator', props: { rate: 4.0, depth: 12, delay: 0.8 } },
           { type: 'filter', props: { cutoff: 2400, mod: 800, attack: 0.6, decay: 2.0 } }
         ]
@@ -2106,13 +2115,13 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "trump_tun", type: "tunnel", x: 700, y: 440, props: {
         tunnelName: "Trumpet",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.06, decay: 0.8, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'square', attack: 0.04, decay: 0.6, mix: 0.15 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.05, decay: 0.65, mix: 0.4 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.04, decay: 0.55, mix: 0.28 } },
-          { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.03, decay: 0.45, mix: 0.18 } },
-          { type: 'harmonic', props: { ratio: 5, wave: 'sine', attack: 0.025, decay: 0.35, mix: 0.1 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.01, decay: 0.08, mix: 0.07 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.06, decay: 0.8, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'square', attack: 0.04, decay: 0.6, mix: 0.15 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.05, decay: 0.65, mix: 0.4 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.04, decay: 0.55, mix: 0.28 } },
+          { type: 'oscillator', props: { ratio: 4, wave: 'sine', attack: 0.03, decay: 0.45, mix: 0.18 } },
+          { type: 'oscillator', props: { ratio: 5, wave: 'sine', attack: 0.025, decay: 0.35, mix: 0.1 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.01, decay: 0.08, mix: 0.07 } },
           { type: 'modulator', props: { rate: 5.5, depth: 8, delay: 0.25 } },
           { type: 'filter', props: { cutoff: 1800, mod: 3000, attack: 0.04, decay: 0.4 } }
         ]
@@ -2126,8 +2135,8 @@ export const EXAMPLES: Record<string, Example> = {
         tunnelName: "Timpani",
         subNodes: [
           { type: 'pitch', props: { mode: 'shift', shift: -24, fixedMidiNote: 60 } },
-          { type: 'polariser', props: { wave: 'sine', attack: 0.005, decay: 1.5, mix: 1.0 } },
-          { type: 'harmonic', props: { ratio: 1.5, wave: 'sine', attack: 0.003, decay: 0.8, mix: 0.3 } },
+          { type: 'oscillator', props: { wave: 'sine', attack: 0.005, decay: 1.5, mix: 1.0 } },
+          { type: 'oscillator', props: { ratio: 1.5, wave: 'sine', attack: 0.003, decay: 0.8, mix: 0.3 } },
           { type: 'filter', props: { cutoff: 300, mod: 200, attack: 0.005, decay: 0.8 } }
         ]
       }},
@@ -2180,8 +2189,8 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "pizz_tun", type: "tunnel", x: 260, y: 150, props: {
         tunnelName: "Pizzicato",
         subNodes: [
-          { type: 'polariser', props: { wave: 'triangle', attack: 0.002, decay: 0.15, mix: 1.0 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.001, decay: 0.1, mix: 0.3 } },
+          { type: 'oscillator', props: { wave: 'triangle', attack: 0.002, decay: 0.15, mix: 1.0 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.001, decay: 0.1, mix: 0.3 } },
           { type: 'filter', props: { cutoff: 3500, mod: 2000, attack: 0.001, decay: 0.1 } }
         ]
       }},
@@ -2195,8 +2204,8 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "harp_tun1", type: "tunnel", x: 340, y: 230, props: {
         tunnelName: "Harp High",
         subNodes: [
-          { type: 'polariser', props: { wave: 'triangle', attack: 0.002, decay: 2.0, mix: 1.0 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.001, decay: 1.5, mix: 0.3 } },
+          { type: 'oscillator', props: { wave: 'triangle', attack: 0.002, decay: 2.0, mix: 1.0 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.001, decay: 1.5, mix: 0.3 } },
           { type: 'filter', props: { cutoff: 4000, mod: 2000, attack: 0.001, decay: 1.0 } }
         ]
       }},
@@ -2204,8 +2213,8 @@ export const EXAMPLES: Record<string, Example> = {
         tunnelName: "Harp Low",
         subNodes: [
           { type: 'pitch', props: { mode: 'shift', shift: -12, fixedMidiNote: 60 } },
-          { type: 'polariser', props: { wave: 'triangle', attack: 0.003, decay: 2.5, mix: 1.0 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.002, decay: 2.0, mix: 0.25 } },
+          { type: 'oscillator', props: { wave: 'triangle', attack: 0.003, decay: 2.5, mix: 1.0 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.002, decay: 2.0, mix: 0.25 } },
           { type: 'filter', props: { cutoff: 2500, mod: 1500, attack: 0.002, decay: 1.2 } }
         ]
       }},
@@ -2217,12 +2226,12 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "choir_tun", type: "tunnel", x: 220, y: 420, props: {
         tunnelName: "Choir",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sine', attack: 0.5, decay: 3.0, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'triangle', attack: 0.6, decay: 2.8, mix: 0.35 } },
-          { type: 'polariser', props: { wave: 'sine', attack: 0.55, decay: 2.6, mix: 0.2 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.45, decay: 2.4, mix: 0.3 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.4, decay: 2.0, mix: 0.15 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.3, decay: 0.6, mix: 0.04 } },
+          { type: 'oscillator', props: { wave: 'sine', attack: 0.5, decay: 3.0, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'triangle', attack: 0.6, decay: 2.8, mix: 0.35 } },
+          { type: 'oscillator', props: { wave: 'sine', attack: 0.55, decay: 2.6, mix: 0.2 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.45, decay: 2.4, mix: 0.3 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.4, decay: 2.0, mix: 0.15 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.3, decay: 0.6, mix: 0.04 } },
           { type: 'modulator', props: { rate: 5.2, depth: 18, delay: 0.6 } },
           { type: 'filter', props: { cutoff: 2200, mod: 600, attack: 0.4, decay: 2.0 } }
         ]
@@ -2235,12 +2244,12 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "horn_tun", type: "tunnel", x: 760, y: 180, props: {
         tunnelName: "French Horn",
         subNodes: [
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.15, decay: 1.4, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'triangle', attack: 0.18, decay: 1.2, mix: 0.2 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.14, decay: 1.1, mix: 0.5 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.12, decay: 0.9, mix: 0.28 } },
-          { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.1, decay: 0.7, mix: 0.15 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.04, decay: 0.18, mix: 0.05 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.15, decay: 1.4, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'triangle', attack: 0.18, decay: 1.2, mix: 0.2 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.14, decay: 1.1, mix: 0.5 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.12, decay: 0.9, mix: 0.28 } },
+          { type: 'oscillator', props: { ratio: 4, wave: 'sine', attack: 0.1, decay: 0.7, mix: 0.15 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.04, decay: 0.18, mix: 0.05 } },
           { type: 'filter', props: { cutoff: 800, mod: 1200, attack: 0.12, decay: 0.8 } },
           { type: 'modulator', props: { rate: 4.2, depth: 10, delay: 0.45 } }
         ]
@@ -2254,9 +2263,9 @@ export const EXAMPLES: Record<string, Example> = {
         tunnelName: "Glockenspiel",
         subNodes: [
           { type: 'pitch', props: { mode: 'shift', shift: 12, fixedMidiNote: 60 } },
-          { type: 'polariser', props: { wave: 'sine', attack: 0.001, decay: 2.0, mix: 1.0 } },
-          { type: 'harmonic', props: { ratio: 2.3, wave: 'sine', attack: 0.001, decay: 1.5, mix: 0.4 } },
-          { type: 'harmonic', props: { ratio: 5.4, wave: 'sine', attack: 0.001, decay: 0.8, mix: 0.2 } }
+          { type: 'oscillator', props: { wave: 'sine', attack: 0.001, decay: 2.0, mix: 1.0 } },
+          { type: 'oscillator', props: { ratio: 2.3, wave: 'sine', attack: 0.001, decay: 1.5, mix: 0.4 } },
+          { type: 'oscillator', props: { ratio: 5.4, wave: 'sine', attack: 0.001, decay: 0.8, mix: 0.2 } }
         ]
       }},
       { id: "glock_out", type: "speaker", x: 920, y: 300, props: { reverb: 0.7, pan: 0.5 } },
@@ -2267,12 +2276,12 @@ export const EXAMPLES: Record<string, Example> = {
         tunnelName: "Cello",
         subNodes: [
           { type: 'pitch', props: { mode: 'shift', shift: -12, fixedMidiNote: 60 } },
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.22, decay: 2.0, mix: 1.0 } },
-          { type: 'polariser', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 0.25 } },
-          { type: 'harmonic', props: { ratio: 2, wave: 'sine', attack: 0.2, decay: 1.6, mix: 0.4 } },
-          { type: 'harmonic', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.4, mix: 0.25 } },
-          { type: 'harmonic', props: { ratio: 4, wave: 'sine', attack: 0.15, decay: 1.2, mix: 0.12 } },
-          { type: 'noise', props: { wave: 'pink', attack: 0.25, decay: 1.2, mix: 0.035 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.22, decay: 2.0, mix: 1.0 } },
+          { type: 'oscillator', props: { wave: 'sawtooth', attack: 0.25, decay: 1.8, mix: 0.25 } },
+          { type: 'oscillator', props: { ratio: 2, wave: 'sine', attack: 0.2, decay: 1.6, mix: 0.4 } },
+          { type: 'oscillator', props: { ratio: 3, wave: 'sine', attack: 0.18, decay: 1.4, mix: 0.25 } },
+          { type: 'oscillator', props: { ratio: 4, wave: 'sine', attack: 0.15, decay: 1.2, mix: 0.12 } },
+          { type: 'oscillator', props: { wave: 'pink', attack: 0.25, decay: 1.2, mix: 0.035 } },
           { type: 'modulator', props: { rate: 4.8, depth: 22, delay: 0.6 } },
           { type: 'filter', props: { cutoff: 1600, mod: 1000, attack: 0.18, decay: 1.2 } }
         ]
@@ -2335,7 +2344,7 @@ export const EXAMPLES: Record<string, Example> = {
       
       // Fitness gate - only let through notes that fit the scale
       { id: "fitness", type: "gate", x: 300, y: 250, props: {
-        mode: "harmonic",
+        mode: "oscillator",
         prob: 0.5,
         harmonicThreshold: 0.7,
         energyThreshold: 0.1,
@@ -2349,7 +2358,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "quant", type: "quantizer", x: 420, y: 250, props: { strength: 1.0 } },
       
       // Shape the sound
-      { id: "pol", type: "polariser", x: 540, y: 250, props: { wave: "triangle", attack: 0.02, decay: 0.3 } },
+      { id: "pol", type: "oscillator", x: 540, y: 250, props: { wave: "triangle", attack: 0.02, decay: 0.3 } },
       { id: "out", type: "speaker", x: 660, y: 250, props: { reverb: 0.4, pan: 0 } },
       
       // Bass layer - more stable with less mutation
@@ -2365,7 +2374,7 @@ export const EXAMPLES: Record<string, Example> = {
         targets: ["pitch"]
       }},
       { id: "bass_fit", type: "gate", x: 300, y: 400, props: {
-        mode: "harmonic",
+        mode: "oscillator",
         prob: 0.5,
         harmonicThreshold: 0.8,
         energyThreshold: 0.2,
@@ -2375,7 +2384,7 @@ export const EXAMPLES: Record<string, Example> = {
         root: 0
       }},
       { id: "bass_p", type: "pitch", x: 420, y: 400, props: { shift: -12 } },
-      { id: "bass_pol", type: "polariser", x: 540, y: 400, props: { wave: "sawtooth", attack: 0.05, decay: 0.5 } },
+      { id: "bass_pol", type: "oscillator", x: 540, y: 400, props: { wave: "sawtooth", attack: 0.05, decay: 0.5 } },
       { id: "bass_flt", type: "filter", x: 660, y: 400, props: { cutoff: 600, mod: 400, attack: 0.02, decay: 0.3 } },
       { id: "bass_out", type: "speaker", x: 780, y: 400, props: { reverb: 0.2, pan: 0 } }
     ],
@@ -2410,7 +2419,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "split", type: "splitter", x: 160, y: 300, props: {} },
       
       // Pure voice - no mutation (for reference)
-      { id: "pure_pol", type: "polariser", x: 300, y: 180, props: { wave: "sine", attack: 0.1, decay: 1.0 } },
+      { id: "pure_pol", type: "oscillator", x: 300, y: 180, props: { wave: "sine", attack: 0.1, decay: 1.0 } },
       { id: "pure_out", type: "speaker", x: 440, y: 180, props: { reverb: 0.5, pan: -0.5 } },
       
       // Radiation voice - wild mutations
@@ -2424,7 +2433,7 @@ export const EXAMPLES: Record<string, Example> = {
         waveChange: true,
         targets: ["pitch", "wave", "gain"]
       }},
-      { id: "rad_pol", type: "polariser", x: 440, y: 300, props: { wave: "sawtooth", attack: 0.02, decay: 0.6 } },
+      { id: "rad_pol", type: "oscillator", x: 440, y: 300, props: { wave: "sawtooth", attack: 0.02, decay: 0.6 } },
       { id: "rad_flt", type: "filter", x: 560, y: 300, props: { cutoff: 2000, mod: 3000, attack: 0.02, decay: 0.4 } },
       { id: "rad_out", type: "speaker", x: 700, y: 300, props: { reverb: 0.6, pan: 0.5 } },
       
@@ -2440,7 +2449,7 @@ export const EXAMPLES: Record<string, Example> = {
         waveChange: true,
         targets: ["pitch"]
       }},
-      { id: "rad_pol2", type: "polariser", x: 560, y: 420, props: { wave: "triangle", attack: 0.05, decay: 0.8 } },
+      { id: "rad_pol2", type: "oscillator", x: 560, y: 420, props: { wave: "triangle", attack: 0.05, decay: 0.8 } },
       { id: "rad_out2", type: "speaker", x: 700, y: 420, props: { reverb: 0.7, pan: 0 } }
     ],
     edges: [
@@ -2458,33 +2467,6 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "ed2", from: "delay1", to: "rad_mut2" },
       { id: "ed3", from: "rad_mut2", to: "rad_pol2" },
       { id: "ed4", from: "rad_pol2", to: "rad_out2" }
-    ]
-  },
-
-  // ============================================================================
-  // Tutorial 9: Tunnels - Compact Sound Design
-  // ============================================================================
-  
-  tut_09_tunnels: {
-    name: "Tutorial 9: Tunnels",
-    description: "Tunnels pack multiple effects into one node. This creates a rich string sound using polarisers, harmonics, and modulation in a single tunnel.",
-    bpm: 80,
-    nodes: [
-      { id: "src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
-      { id: "string", type: "tunnel", x: 280, y: 300, props: {
-        tunnelName: "String",
-        subNodes: [
-          { type: "polariser", props: { wave: "sawtooth", attack: 0.2, decay: 1.5, mix: 1.0 } },
-          { type: "harmonic", props: { ratio: 2, wave: "sine", attack: 0.15, decay: 1.2, mix: 0.3 } },
-          { type: "modulator", props: { rate: 5, depth: 15, delay: 0.3 } },
-          { type: "filter", props: { cutoff: 2000, mod: 1000, attack: 0.1, decay: 0.8 } }
-        ]
-      }},
-      { id: "spk", type: "speaker", x: 460, y: 300, props: { reverb: 0.5, pan: 0 } }
-    ],
-    edges: [
-      { id: "e1", from: "src", to: "string" },
-      { id: "e2", from: "string", to: "spk" }
     ]
   }
 

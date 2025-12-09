@@ -81,11 +81,13 @@ interface TrackRowProps {
   scenePlayback: ReturnType<typeof selectScenePlayback>;
   pixelsPerBeat: number;
   totalBeats: number;
+  canDelete: boolean;
   onDropSlot: (sceneId: SceneId, beat: number, channel: number) => void;
   onRemoveSlot: (slotId: string) => void;
   onMoveSlot: (slotId: string, newBeat: number, newChannel: number) => void;
   onToggleMute: () => void;
   onToggleSolo: () => void;
+  onDelete: () => void;
 }
 
 function TrackRow({
@@ -97,11 +99,13 @@ function TrackRow({
   scenePlayback,
   pixelsPerBeat,
   totalBeats,
+  canDelete,
   onDropSlot,
   onRemoveSlot,
   onMoveSlot,
   onToggleMute,
-  onToggleSolo
+  onToggleSolo,
+  onDelete
 }: TrackRowProps) {
   const [dragOverBeat, setDragOverBeat] = useState<number | null>(null);
   
@@ -197,6 +201,15 @@ function TrackRow({
           >
             S
           </button>
+          {canDelete && (
+            <button 
+              className={`${styles.trackButton} ${styles.deleteButton}`}
+              onClick={onDelete}
+              title="Delete track"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
       
@@ -250,6 +263,7 @@ export function ArrangementTimeline() {
   const addToArrangement = useGraphStore(state => state.addToArrangement);
   const seekArrangement = useGraphStore(state => state.seekArrangement);
   const addArrangementChannel = useGraphStore(state => state.addArrangementChannel);
+  const removeArrangementChannel = useGraphStore(state => state.removeArrangementChannel);
   const updateArrangementChannel = useGraphStore(state => state.updateArrangementChannel);
   
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -467,11 +481,13 @@ export function ArrangementTimeline() {
             scenePlayback={scenePlayback}
             pixelsPerBeat={PIXELS_PER_BEAT}
             totalBeats={totalBeats}
+            canDelete={arrangementChannels.length > 1}
             onDropSlot={handleDropSlot}
             onRemoveSlot={removeFromArrangement}
             onMoveSlot={handleMoveSlot}
             onToggleMute={() => handleToggleMute(channel.id, channel.muted)}
             onToggleSolo={() => handleToggleSolo(channel.id, channel.solo)}
+            onDelete={() => removeArrangementChannel(channel.id)}
           />
         ))}
         

@@ -51,6 +51,43 @@
   background: var(--accent-hover, #3a8eef);
 }
 
+/* Mode Toggle */
+.modeToggle {
+  display: flex;
+  padding: 8px;
+  gap: 4px;
+  border-bottom: 1px solid var(--border-color, #333);
+  background: var(--bg-secondary, #1a1a2e);
+}
+
+.modeButton {
+  flex: 1;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--bg-tertiary, #0f0f1a);
+  color: var(--text-secondary, #888);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.modeButton:hover {
+  background: var(--bg-hover, #252538);
+  color: var(--text-primary, #aaa);
+}
+
+.modeButton.activeMode {
+  background: var(--accent-color, #4a9eff);
+  color: #fff;
+  border-color: var(--accent-color, #4a9eff);
+}
+
 /* Scene List */
 .sceneList {
   flex: 1;

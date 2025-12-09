@@ -5,7 +5,7 @@ import { getGraphStore } from './store';
 import type { 
   Packet, GraphNode, GraphEdge, AudioPayload, 
   NodeId, MidiNote, Frequency, QuantizerProps, SceneTriggerProps,
-  MutatorProps, GateProps, WaveType
+  MutatorProps, GateProps, WaveType, WaveLayer
 } from './types';
 import { 
   dist, midiToFreq, clampMidi, SCALES 
@@ -34,18 +34,14 @@ export function processNodeArrival(
   switch (node.type) {
     case 'pitch':
       return processPitch(payload, node);
-    case 'polariser':
-      return processPolariser(payload, node);
+    case 'oscillator':
+      return processOscillator(payload, node);
     case 'filter':
       return processFilter(payload, node);
     case 'gate':
       return processGate(payload, node);
     case 'gain':
       return processGain(payload, node);
-    case 'noise':
-      return processNoise(payload, node);
-    case 'harmonic':
-      return processHarmonic(payload, node);
     case 'modulator':
       return processModulator(payload, node);
     case 'quantizer':
@@ -88,24 +84,24 @@ function processPitch(payload: AudioPayload, node: GraphNode): AudioPayload {
   }
 }
 
-function processPolariser(payload: AudioPayload, node: GraphNode): AudioPayload {
-  const props = node.props as { wave: 'sine' | 'square' | 'sawtooth' | 'triangle'; attack: number; decay: number; mix: number };
+function processOscillator(payload: AudioPayload, node: GraphNode): AudioPayload {
+  const props = node.props as { wave: WaveType; ratio: number; attack: number; decay: number; mix: number };
   
-  const newLayer = {
+  const newLayer: WaveLayer = {
     wave: props.wave,
     attack: props.attack,
     decay: props.decay,
     gain: props.mix ?? 1.0,
+    ratio: props.ratio ?? 1.0,  // Default to fundamental
   };
   
-  // If waves already exist (from previous polariser/noise/harmonic), add to them
-  // Otherwise, start fresh with just this layer
+  // Add to existing waves array
   const existingWaves = payload.waves ?? [];
   
   return {
     ...payload,
-    wave: props.wave,
-    timbre: 0.8, // Set timbre to indicate this has been processed
+    wave: props.wave,  // Also set the primary wave type
+    timbre: 0.8,
     waves: [...existingWaves, newLayer],
   };
 }
@@ -219,41 +215,6 @@ function processGain(payload: AudioPayload, node: GraphNode): AudioPayload {
   return {
     ...payload,
     gain: payload.gain * props.value,
-  };
-}
-
-function processNoise(payload: AudioPayload, node: GraphNode): AudioPayload {
-  const props = node.props as { wave: 'white' | 'pink' | 'brown'; attack: number; decay: number; mix: number };
-  
-  const existingWaves = payload.waves ?? [];
-  const noiseLayer = {
-    wave: props.wave,
-    attack: props.attack,
-    decay: props.decay,
-    gain: props.mix,
-  };
-  
-  return {
-    ...payload,
-    waves: [...existingWaves, noiseLayer],
-  };
-}
-
-function processHarmonic(payload: AudioPayload, node: GraphNode): AudioPayload {
-  const props = node.props as { ratio: number; wave: 'sine' | 'square' | 'sawtooth' | 'triangle'; attack: number; decay: number; mix: number };
-  
-  const existingWaves = payload.waves ?? [];
-  const harmonicLayer = {
-    wave: props.wave,
-    attack: props.attack,
-    decay: props.decay,
-    gain: props.mix,
-    ratio: props.ratio,
-  };
-  
-  return {
-    ...payload,
-    waves: [...existingWaves, harmonicLayer],
   };
 }
 

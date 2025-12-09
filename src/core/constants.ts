@@ -3,9 +3,9 @@
 
 import type { 
   MidiNote, Frequency, ScaleName, ScaleIntervals,
-  SourceProps, SpeakerProps, PitchProps, PolariserProps,
-  FilterProps, GateProps, DelayProps, GainProps, NoiseProps,
-  HarmonicProps, ModulatorProps, TunnelProps, TeleporterProps,
+  SourceProps, SpeakerProps, PitchProps, OscillatorProps,
+  FilterProps, GateProps, DelayProps, GainProps,
+  ModulatorProps, TunnelProps, TeleporterProps,
   QuantizerProps, LfoProps, SplitterProps, MidiOutProps, MidiCcProps, SceneTriggerProps,
   MutatorProps, CrossoverProps,
   NodeType, Scene, SceneTransition, SceneTriggerConfig, ScenePlaybackState, ArrangementSlot
@@ -96,13 +96,11 @@ export const NODE_COLORS: Record<NodeType, string> = {
   source:        '#4caf50',  // Green
   speaker:       '#ff5722',  // Deep Orange
   pitch:         '#2196f3',  // Blue
-  polariser:     '#9c27b0',  // Purple
+  oscillator:    '#9c27b0',  // Purple (was polariser)
   filter:        '#00bcd4',  // Cyan
   gate:          '#ffeb3b',  // Yellow
   delay:         '#795548',  // Brown
   gain:          '#607d8b',  // Blue Grey
-  noise:         '#9e9e9e',  // Grey
-  harmonic:      '#e91e63',  // Pink
   modulator:     '#673ab7',  // Deep Purple
   tunnel:        '#3f51b5',  // Indigo
   teleporter:    '#00e676',  // Green Accent
@@ -121,19 +119,17 @@ export const NODE_COLORS: Record<NodeType, string> = {
 // ============================================================================
 
 export const NODE_ICONS: Record<NodeType, string> = {
-  source:        '◉',
+  source:        '💥',
   speaker:       '🔊',
   pitch:         '♪',
-  polariser:     '∿',
+  oscillator:    '∿',  // Wave symbol (was polariser)
   filter:        '⋈',
   gate:          '⊡',
   delay:         '⏱',
   gain:          '◐',
-  noise:         '≋',
-  harmonic:      '∞',
   modulator:     '〰',
   tunnel:        '▣',
-  teleporter:    '⚡',
+  teleporter:    '◉',
   quantizer:     '⌗',
   lfo:           '∼',
   splitter:      '⋈',
@@ -170,8 +166,9 @@ export const DEFAULT_PITCH_PROPS: PitchProps = {
   fixedMidiNote: 60 as MidiNote,
 };
 
-export const DEFAULT_POLARISER_PROPS: PolariserProps = {
+export const DEFAULT_OSCILLATOR_PROPS: OscillatorProps = {
   wave: 'sawtooth',
+  ratio: 1.0,              // Fundamental frequency
   attack: 0.01,
   decay: 0.4,
   mix: 1.0,
@@ -203,21 +200,6 @@ export const DEFAULT_DELAY_PROPS: DelayProps = {
 export const DEFAULT_GAIN_PROPS: GainProps = {
   value: 1.0,
   mass: 1.0,
-};
-
-export const DEFAULT_NOISE_PROPS: NoiseProps = {
-  wave: 'white',
-  attack: 0.01,
-  decay: 0.2,
-  mix: 0.2,
-};
-
-export const DEFAULT_HARMONIC_PROPS: HarmonicProps = {
-  ratio: 2,
-  wave: 'sine',
-  attack: 0.01,
-  decay: 0.4,
-  mix: 0.5,
 };
 
 export const DEFAULT_MODULATOR_PROPS: ModulatorProps = {
@@ -306,13 +288,11 @@ type DefaultPropsMap = {
   source: SourceProps;
   speaker: SpeakerProps;
   pitch: PitchProps;
-  polariser: PolariserProps;
+  oscillator: OscillatorProps;
   filter: FilterProps;
   gate: GateProps;
   delay: DelayProps;
   gain: GainProps;
-  noise: NoiseProps;
-  harmonic: HarmonicProps;
   modulator: ModulatorProps;
   tunnel: TunnelProps;
   teleporter: TeleporterProps;
@@ -330,13 +310,11 @@ const DEFAULT_PROPS_MAP: DefaultPropsMap = {
   source: DEFAULT_SOURCE_PROPS,
   speaker: DEFAULT_SPEAKER_PROPS,
   pitch: DEFAULT_PITCH_PROPS,
-  polariser: DEFAULT_POLARISER_PROPS,
+  oscillator: DEFAULT_OSCILLATOR_PROPS,
   filter: DEFAULT_FILTER_PROPS,
   gate: DEFAULT_GATE_PROPS,
   delay: DEFAULT_DELAY_PROPS,
   gain: DEFAULT_GAIN_PROPS,
-  noise: DEFAULT_NOISE_PROPS,
-  harmonic: DEFAULT_HARMONIC_PROPS,
   modulator: DEFAULT_MODULATOR_PROPS,
   tunnel: DEFAULT_TUNNEL_PROPS,
   teleporter: DEFAULT_TELEPORTER_PROPS,
@@ -370,12 +348,12 @@ export interface TunnelTemplate {
 export const TUNNEL_TEMPLATES: Record<string, TunnelTemplate> = {
   thick: {
     name: 'Thick',
-    nodes: ['polariser', 'noise'],
+    nodes: ['oscillator', 'oscillator'],  // Two oscillators for thick sound
     defaults: {},
   },
   dark: {
     name: 'Dark',
-    nodes: ['filter', 'polariser'],
+    nodes: ['filter', 'oscillator'],
     defaults: {},
   },
   voice: {
@@ -385,7 +363,7 @@ export const TUNNEL_TEMPLATES: Record<string, TunnelTemplate> = {
   },
   shimmer: {
     name: 'Shimmer',
-    nodes: ['harmonic', 'delay'],
+    nodes: ['oscillator', 'delay'],  // Harmonic + delay
     defaults: {},
   },
 } as const;

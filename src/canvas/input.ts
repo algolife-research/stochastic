@@ -1025,8 +1025,8 @@ export class CanvasInputHandler {
  */
 function isNodeTool(tool: Tool): boolean {
   const nodeTool: Tool[] = [
-    'source', 'speaker', 'pitch', 'polariser', 'filter', 
-    'gate', 'delay', 'gain', 'noise', 'harmonic', 
+    'source', 'speaker', 'pitch', 'oscillator', 'filter', 
+    'gate', 'delay', 'gain', 
     'modulator', 'tunnel', 'teleporter', 'quantizer', 
     'lfo', 'splitter', 'midi_out', 'midi_cc', 'scene_trigger',
     'mutator', 'crossover'

@@ -19,7 +19,7 @@ export function TransportBar(): React.ReactElement {
   const stopPlayback = useGraphStore(state => state.stopPlayback);
   const setIsMuted = useGraphStore(state => state.setIsMuted);
   const setMasterSpeed = useGraphStore(state => state.setMasterSpeed);
-  const setPlaybackMode = useGraphStore(state => state.setPlaybackMode);
+  // Mode is now controlled from ScenePanel
   
   // Format beat count for display
   const formatBeat = (beat: number): string => {
@@ -65,27 +65,6 @@ export function TransportBar(): React.ReactElement {
       >
         {isMuted ? '🔇' : '🔊'}
       </button>
-      
-      {/* Separator */}
-      <div className={styles.separator} />
-      
-      {/* Playback Mode Toggle */}
-      <div className={styles.modeControl}>
-        <button
-          className={`${styles.modeButton} ${playbackMode === 'arrangement' ? styles.activeMode : ''}`}
-          onClick={() => setPlaybackMode('arrangement')}
-          title="Composition Mode - Play through timeline"
-        >
-          📋 Compose
-        </button>
-        <button
-          className={`${styles.modeButton} ${playbackMode === 'jam' ? styles.activeMode : ''}`}
-          onClick={() => setPlaybackMode('jam')}
-          title="Jam Mode - Infinite looping with scene queuing"
-        >
-          🎵 Jam
-        </button>
-      </div>
       
       {/* Separator */}
       <div className={styles.separator} />

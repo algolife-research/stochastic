@@ -231,6 +231,16 @@
   color: #fff;
 }
 
+.trackButton.deleteButton {
+  font-size: 10px;
+}
+
+.trackButton.deleteButton:hover {
+  background: rgba(255, 100, 100, 0.3);
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+}
+
 /* Track lane */
 .trackLane {
   position: relative;

@@ -1,18 +1,19 @@
 // Phonon - Right Panel Component
-// Unified panel with toggle between Editor (Properties) and Visualisation modes
+// Unified panel with toggle between Editor (Properties), Visualisation, and Scene modes
 
 import React, { useState } from 'react';
 import type { GraphNode, Annotation, Region, GraphEdge } from '@core/types';
-import { PropertyPanel } from './PropertyPanel';
+import { PropertyPanel } from './property-panels';
 import { EdgePanel } from './EdgePanel';
 import { VizPanelContent } from './VizPanel';
+import { ScenePropertiesPanel } from './ScenePropertiesPanel';
 import styles from './RightPanel.module.css';
 
 // ============================================================================
 // RIGHT PANEL
 // ============================================================================
 
-type PanelMode = 'editor' | 'visualisation';
+type PanelMode = 'editor' | 'visualisation' | 'scene';
 
 interface RightPanelProps {
   selectedNode?: GraphNode;
@@ -43,7 +44,13 @@ export function RightPanel({
           className={`${styles.toggleButton} ${panelMode === 'visualisation' ? styles.active : ''}`}
           onClick={() => setPanelMode('visualisation')}
         >
-          Visualisation
+          Viz
+        </button>
+        <button
+          className={`${styles.toggleButton} ${panelMode === 'scene' ? styles.active : ''}`}
+          onClick={() => setPanelMode('scene')}
+        >
+          Scene
         </button>
       </div>
       
@@ -62,9 +69,12 @@ export function RightPanel({
           ) : (
             <PropertyPanel embedded />
           )
-        ) : (
+        ) : panelMode === 'visualisation' ? (
           // Visualisation mode - show viz panel content
           <VizPanelContent />
+        ) : (
+          // Scene mode - show scene properties panel
+          <ScenePropertiesPanel />
         )}
       </div>
     </div>
