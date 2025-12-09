@@ -1,8 +1,8 @@
-# Phonon AI Composition Generation Guide
+﻿# Phonon AI Composition Generation Guide
 
 This document provides complete specifications for AI systems to generate valid Phonon compositions programmatically.
 
-> **⚠️ STRICT GENERATION RULES ⚠️**
+> **âš ï¸ STRICT GENERATION RULES âš ï¸**
 >
 > 1.  **Structure:** Output must be wrapped in `{ "meta": {...}, "global": {...}, "scenes": [...], "arrangement": [...] }`.
 > 2.  **Timing:** **ALWAYS** use `timingMode: "fixed"` for edges with a valid `durationBeats` (e.g., 0.25, 0.5, 1.0). Do not rely on physical distance.
@@ -238,27 +238,45 @@ Shifts or sets the pitch of passing packets.
 
 ---
 
-### 4. Polariser Node (Waveform Shaper)
+### 4. Oscillator Node (Unified Waveform Layer)
 
-Assigns waveform and envelope to packets.
+Assigns waveform, envelope, and optional harmonics to packets. This node replaces the former polariser, noise, and harmonic nodes in a unified interface.
 
 ```json
 {
-  "type": "polariser",
+  "type": "oscillator",
   "props": {
-    "wave": "sawtooth",   // "sine", "square", "sawtooth", "triangle"
+    "wave": "sawtooth",   // See wave types below
+    "ratio": 1,           // Frequency multiplier (1 = fundamental)
     "attack": 0.01,       // Attack time in seconds
     "decay": 0.4,         // Decay time in seconds
-    "mix": 1.0            // Mix amount (0-1)
+    "mix": 1.0            // Mix/blend amount (0-1)
   }
 }
 ```
 
-**Wave Characteristics:**
-- `sine`: Pure, mellow tone
+**Oscillator Wave Types:**
+- `sine`: Pure, mellow tone (fundamental)
 - `sawtooth`: Bright, buzzy (good for bass/leads)
 - `square`: Hollow, woody (good for retro sounds)
 - `triangle`: Soft, flute-like
+
+**Noise Wave Types:**
+- `white`: Bright, harsh (hi-hats, snares)
+- `pink`: Balanced, natural
+- `brown`: Dark, rumbling (bass enhancement)
+
+**Using Ratio for Harmonics:**
+- `ratio: 1` = fundamental frequency (default)
+- `ratio: 2` = octave harmonic
+- `ratio: 3` = fifth + octave (12th)
+- `ratio: 4` = two octaves
+- `ratio: 5` = major third + two octaves
+
+**Tips:**
+- For noise-based percussion, use low `mix` values (0.1-0.3)
+- For rich harmonics, chain multiple oscillators with different ratios
+- Combine tonal and noise waves on parallel paths for textured sounds
 
 ---
 
@@ -341,55 +359,7 @@ Multiplies packet amplitude.
 
 ---
 
-### 9. Noise Node (Noise Layer)
-
-Adds noise component to sound.
-
-```json
-{
-  "type": "noise",
-  "props": {
-    "wave": "white",      // "white", "pink", "brown"
-    "attack": 0.01,
-    "decay": 0.2,
-    "mix": 0.2            // Blend amount (0-1)
-  }
-}
-```
-
-**Noise Types:**
-- `white`: Bright, harsh (hi-hats, snares)
-- `pink`: Balanced, natural
-- `brown`: Dark, rumbling (bass enhancement)
-
----
-
-### 10. Harmonic Node (Overtone Generator)
-
-Adds harmonic overtone to the sound.
-
-```json
-{
-  "type": "harmonic",
-  "props": {
-    "ratio": 2,           // Frequency multiplier
-    "wave": "sine",
-    "attack": 0.01,
-    "decay": 0.4,
-    "mix": 0.5
-  }
-}
-```
-
-**Common Ratios:**
-- 2 = octave
-- 3 = fifth + octave (12th)
-- 4 = two octaves
-- 5 = major third + two octaves
-
----
-
-### 11. Modulator Node (Vibrato/Tremolo)
+### 9. Modulator Node (Vibrato/Tremolo)
 
 Adds pitch modulation (vibrato) to packets.
 
@@ -411,7 +381,7 @@ Adds pitch modulation (vibrato) to packets.
 
 ---
 
-### 12. Quantizer Node (Scale Quantization)
+### 10. Quantizer Node (Scale Quantization)
 
 Snaps pitches to the global scale.
 
@@ -432,7 +402,7 @@ Snaps pitches to the global scale.
 
 ---
 
-### 13. Splitter Node (Signal Distributor)
+### 11. Splitter Node (Signal Distributor)
 
 Distributes packets to connected outputs based on behavior.
 
@@ -455,7 +425,7 @@ Distributes packets to connected outputs based on behavior.
 
 ---
 
-### 14. Tunnel Node (Compound Processor)
+### 12. Tunnel Node (Compound Processor)
 
 Groups multiple processing nodes into one unit.
 
@@ -466,7 +436,7 @@ Groups multiple processing nodes into one unit.
     "tunnelName": "Bass",
     "subNodes": [
       { "type": "pitch", "props": { "shift": -12 } },
-      { "type": "polariser", "props": { "wave": "sawtooth", "attack": 0.01, "decay": 0.3 } },
+      { "type": "oscillator", "props": { "wave": "sawtooth", "attack": 0.01, "decay": 0.3 } },
       { "type": "filter", "props": { "cutoff": 800, "mod": 1000 } }
     ]
   }
@@ -477,7 +447,7 @@ Groups multiple processing nodes into one unit.
 
 ---
 
-### 15. Teleporter Node (Instant Transport)
+### 13. Teleporter Node (Instant Transport)
 
 Instantly transports packets between locations.
 
@@ -498,7 +468,7 @@ Instantly transports packets between locations.
 
 ---
 
-### 16. LFO Node (Low Frequency Oscillator)
+### 14. LFO Node (Low Frequency Oscillator)
 
 Generates continuous modulation values for CV routing.
 
@@ -519,7 +489,7 @@ Generates continuous modulation values for CV routing.
 
 ---
 
-### 17. MIDI Out Node
+### 15. MIDI Out Node
 
 Sends MIDI note messages to external devices.
 
@@ -536,7 +506,7 @@ Sends MIDI note messages to external devices.
 
 ---
 
-### 18. MIDI CC Node
+### 16. MIDI CC Node
 
 Sends MIDI CC messages.
 
@@ -552,7 +522,7 @@ Sends MIDI CC messages.
 
 ---
 
-### 19. Scene Trigger Node
+### 17. Scene Trigger Node
 
 Triggers scene changes when a packet arrives.
 
@@ -565,6 +535,67 @@ Triggers scene changes when a packet arrives.
   }
 }
 ```
+
+---
+
+### 18. Mutator Node (Genetic Drift)
+
+Applies random mutations to passing packets based on probability and configured drift ranges.
+
+```json
+{
+  "type": "mutator",
+  "props": {
+    "mode": "drift",           // "drift" (small changes) or "radiation" (large jumps)
+    "probability": 0.5,        // Chance of mutation (0-1)
+    "pitchDrift": 2,           // +/- semitones for pitch drift
+    "pitchRadiation": 12,      // +/- semitones for radiation mode
+    "gainDrift": 0.1,          // +/- amplitude variation (0-1)
+    "cutoffDrift": 0.2,        // +/- filter cutoff variation (0-1)
+    "waveChange": false,       // Allow random wave type changes
+    "targets": ["pitch"]       // Properties to mutate: "pitch", "gain", "cutoff", "wave", "timbre"
+  }
+}
+```
+
+**Modes:**
+- `drift`: Small, gradual changes (musical evolution)
+- `radiation`: Large, dramatic jumps (experimental/glitch)
+
+**Tips:**
+- Use low probability (0.1-0.3) for subtle variation
+- Combine with quantizer to keep mutations in scale
+- Target multiple properties for rich evolution
+
+---
+
+### 19. Crossover Node (Genetic Recombination)
+
+Waits for two packets and combines their properties into offspring packets.
+
+```json
+{
+  "type": "crossover",
+  "props": {
+    "inheritance": "random",   // "random", "dominant_a", "dominant_b", "blend"
+    "pitchFrom": "random",     // "a", "b", "average", "random"
+    "waveFrom": "random",      // "a", "b", "random"
+    "gainMode": "average",     // "average", "max", "min", "random"
+    "timeout": 4               // Beats to wait for second parent
+  }
+}
+```
+
+**Inheritance Modes:**
+- `random`: Each property randomly chosen from parent A or B
+- `dominant_a`: Prefer parent A's properties
+- `dominant_b`: Prefer parent B's properties
+- `blend`: Average numeric properties, random for discrete
+
+**Tips:**
+- Connect two different source paths to crossover inputs
+- Use timeout to handle missing second parent gracefully
+- Combine with mutator for generative evolution systems
 
 ---
 
@@ -636,7 +667,7 @@ Connect LFOs to modulate node parameters:
 | gain | value |
 | gate | prob |
 | delay | delayTime |
-| polariser | mix |
+| oscillator | mix |
 | modulator | rate, depth |
 
 ---
@@ -645,60 +676,73 @@ Connect LFOs to modulate node parameters:
 
 ### Pattern 1: Basic Sound Chain
 ```
-Source → Polariser → Speaker
+Source â†’ Oscillator â†’ Speaker
 ```
 Minimal setup for a single voice.
 
 ### Pattern 2: Melodic Chain
 ```
-Source → Polariser → Speaker → Pitch → Speaker → Pitch → Speaker
+Source â†’ Oscillator â†’ Speaker â†’ Pitch â†’ Speaker â†’ Pitch â†’ Speaker
 ```
 Packets pass through multiple speakers, creating melodic sequences.
 
 ### Pattern 3: Chord Voicing
 ```
-                  ┌→ Pitch(+0) → Speaker
-Source → Splitter ├→ Pitch(+4) → Speaker  
-                  └→ Pitch(+7) → Speaker
+                  â”Œâ†’ Pitch(+0) â†’ Speaker
+Source â†’ Splitter â”œâ†’ Pitch(+4) â†’ Speaker  
+                  â””â†’ Pitch(+7) â†’ Speaker
 ```
 Split into parallel paths for chords.
 
 ### Pattern 4: Canon/Delay
 ```
-           ┌→ Speaker (immediate)
-Source → Pol ├→ Delay(2) → Speaker
-           └→ Delay(4) → Speaker
+            â”Œâ†’ Speaker (immediate)
+Source â†’ Osc â”œâ†’ Delay(2) â†’ Speaker
+            â””â†’ Delay(4) â†’ Speaker
 ```
 Same material at different times.
 
 ### Pattern 5: Generative with Gates
 ```
-Source(random) → Gate(0.6) → Quantizer → Polariser → Speaker
+Source(random) â†’ Gate(0.6) â†’ Quantizer â†’ Oscillator â†’ Speaker
 ```
 Random notes filtered by probability, quantized to scale.
 
 ### Pattern 6: CV Modulation
 ```
-Source → Polariser → Filter → Speaker
-                       ↑
-                      LFO -----(targetParam: cutoff)
+Source â†’ Oscillator â†’ Filter â†’ Speaker
+                        â†‘
+                       LFO -----(targetParam: cutoff)
 ```
 LFO continuously modulates filter cutoff.
 
 ### Pattern 7: Layered Sound (Tunnel)
 ```
-Source → Tunnel[Polariser, Harmonic, Filter] → Speaker
+Source â†’ Tunnel[Oscillator(ratio:1), Oscillator(ratio:2), Filter] â†’ Speaker
 ```
-Complex timbre in single visual node.
+Complex timbre with harmonics in single visual node.
 
 ### Pattern 8: Arpeggio with Fixed Timing
 ```
-              ┌─(0.0 beats)→ Speaker (root)
-Source → Pol ├─(0.5 beats)→ Pitch(+4) → Speaker (3rd)
-              ├─(1.0 beats)→ Pitch(+7) → Speaker (5th)
-              └─(1.5 beats)→ Pitch(+12) → Speaker (octave)
+              â”Œâ”€(0.0 beats)â†’ Speaker (root)
+Source â†’ Osc â”œâ”€(0.5 beats)â†’ Pitch(+4) â†’ Speaker (3rd)
+              â”œâ”€(1.0 beats)â†’ Pitch(+7) â†’ Speaker (5th)
+              â””â”€(1.5 beats)â†’ Pitch(+12) â†’ Speaker (octave)
 ```
 Precise timing creates arpeggiated chord.
+
+### Pattern 9: Evolutionary Sound
+```
+Source â†’ Mutator(drift) â†’ Quantizer â†’ Oscillator â†’ Speaker
+```
+Packets evolve over time while staying in scale.
+
+### Pattern 10: Genetic Recombination
+```
+Source A â†’ Crossover â†’ Oscillator â†’ Speaker
+Source B â”€â”€â”€â”˜
+```
+Two sources combine to create hybrid packets.
 
 ---
 
@@ -744,7 +788,7 @@ Precise timing creates arpeggiated chord.
           "props": { "prob": 0.5 } },
         { "id": "quant1", "type": "quantizer", "x": 340, "y": 200, 
           "props": { "strength": 1.0, "useGlobalKey": true } },
-        { "id": "pol1", "type": "polariser", "x": 460, "y": 200, 
+        { "id": "osc1", "type": "oscillator", "x": 460, "y": 200, 
           "props": { "wave": "sine", "attack": 0.3, "decay": 2.0 } },
         { "id": "spk1", "type": "speaker", "x": 580, "y": 200, 
           "props": { "reverb": 0.8, "pan": -0.3 } },
@@ -755,14 +799,14 @@ Precise timing creates arpeggiated chord.
           "props": { "delayTime": 2 } },
         { "id": "quant2", "type": "quantizer", "x": 340, "y": 350, 
           "props": { "strength": 1.0 } },
-        { "id": "pol2", "type": "polariser", "x": 460, "y": 350, 
+        { "id": "osc2", "type": "oscillator", "x": 460, "y": 350, 
           "props": { "wave": "triangle", "attack": 0.5, "decay": 3.0 } },
         { "id": "spk2", "type": "speaker", "x": 580, "y": 350, 
           "props": { "reverb": 0.9, "pan": 0.3 } },
         
         { "id": "src3", "type": "source", "x": 100, "y": 500, 
           "props": { "interval": 8, "midiNote": 36, "noteIndex": -2, "intensity": 0.5 } },
-        { "id": "pol3", "type": "polariser", "x": 250, "y": 500, 
+        { "id": "osc3", "type": "oscillator", "x": 250, "y": 500, 
           "props": { "wave": "sine", "attack": 0.2, "decay": 4.0 } },
         { "id": "spk3", "type": "speaker", "x": 400, "y": 500, 
           "props": { "reverb": 0.7, "pan": 0 } }
@@ -770,14 +814,14 @@ Precise timing creates arpeggiated chord.
       "edges": [
         { "id": "e1", "from": "src1", "to": "gate1", "timingMode": "fixed", "durationBeats": 0.1 },
         { "id": "e2", "from": "gate1", "to": "quant1", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e3", "from": "quant1", "to": "pol1", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e4", "from": "pol1", "to": "spk1", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e3", "from": "quant1", "to": "osc1", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e4", "from": "osc1", "to": "spk1", "timingMode": "fixed", "durationBeats": 0.1 },
         { "id": "e5", "from": "src2", "to": "delay1", "timingMode": "fixed", "durationBeats": 0.1 },
         { "id": "e6", "from": "delay1", "to": "quant2", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e7", "from": "quant2", "to": "pol2", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e8", "from": "pol2", "to": "spk2", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e9", "from": "src3", "to": "pol3", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e10", "from": "pol3", "to": "spk3", "timingMode": "fixed", "durationBeats": 0.1 }
+        { "id": "e7", "from": "quant2", "to": "osc2", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e8", "from": "osc2", "to": "spk2", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e9", "from": "src3", "to": "osc3", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e10", "from": "osc3", "to": "spk3", "timingMode": "fixed", "durationBeats": 0.1 }
       ],
       "annotations": [],
       "regions": []
@@ -823,7 +867,7 @@ Precise timing creates arpeggiated chord.
       "nodes": [
         { "id": "kick_src", "type": "source", "x": 60, "y": 150,
           "props": { "interval": 1, "midiNote": 36, "noteIndex": -2, "intensity": 0.9 } },
-        { "id": "kick_pol", "type": "polariser", "x": 180, "y": 150,
+        { "id": "kick_pol", "type": "oscillator", "x": 180, "y": 150,
           "props": { "wave": "sine", "attack": 0.005, "decay": 0.2 } },
         { "id": "kick_p", "type": "pitch", "x": 280, "y": 150,
           "props": { "mode": "shift", "shift": -12 } },
@@ -832,7 +876,7 @@ Precise timing creates arpeggiated chord.
         
         { "id": "bass_src", "type": "source", "x": 60, "y": 280,
           "props": { "interval": 2, "midiNote": 36, "noteIndex": -2, "intensity": 0.7 } },
-        { "id": "bass_pol", "type": "polariser", "x": 180, "y": 280,
+        { "id": "bass_pol", "type": "oscillator", "x": 180, "y": 280,
           "props": { "wave": "sawtooth", "attack": 0.01, "decay": 0.4 } },
         { "id": "bass_flt", "type": "filter", "x": 300, "y": 280,
           "props": { "cutoff": 300, "mod": 600, "attack": 0.01, "decay": 0.15 } },
@@ -843,7 +887,7 @@ Precise timing creates arpeggiated chord.
           "props": { "interval": 0.5, "midiNote": 96, "noteIndex": -2, "intensity": 0.3 } },
         { "id": "hh_gate", "type": "gate", "x": 160, "y": 410,
           "props": { "prob": 0.8 } },
-        { "id": "hh_pol", "type": "polariser", "x": 260, "y": 410,
+        { "id": "hh_pol", "type": "oscillator", "x": 260, "y": 410,
           "props": { "wave": "square", "attack": 0.001, "decay": 0.03 } },
         { "id": "hh_out", "type": "speaker", "x": 380, "y": 410,
           "props": { "reverb": 0.2, "pan": 0.3 } }
@@ -903,7 +947,7 @@ Precise timing creates arpeggiated chord.
       "nodes": [
         { "id": "src", "type": "source", "x": 80, "y": 300,
           "props": { "interval": 4, "midiNote": 48, "noteIndex": -2, "intensity": 0.6 } },
-        { "id": "pol", "type": "polariser", "x": 200, "y": 300,
+        { "id": "osc", "type": "oscillator", "x": 200, "y": 300,
           "props": { "wave": "sawtooth", "attack": 0.8, "decay": 3.0 } },
         { "id": "flt", "type": "filter", "x": 340, "y": 300,
           "props": { "cutoff": 1000, "mod": 0 } },
@@ -916,8 +960,8 @@ Precise timing creates arpeggiated chord.
           "props": { "rate": 0.1, "shape": "triangle", "min": -0.8, "max": 0.8 } }
       ],
       "edges": [
-        { "id": "e1", "from": "src", "to": "pol", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e2", "from": "pol", "to": "flt", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e1", "from": "src", "to": "osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e2", "from": "osc", "to": "flt", "timingMode": "fixed", "durationBeats": 0.1 },
         { "id": "e3", "from": "flt", "to": "out", "timingMode": "fixed", "durationBeats": 0.1 },
         { "id": "e_lfo1", "from": "lfo_cutoff", "to": "flt", "targetParam": "cutoff" },
         { "id": "e_lfo2", "from": "lfo_pan", "to": "out", "targetParam": "pan" }
@@ -971,21 +1015,21 @@ Precise timing creates arpeggiated chord.
         
         { "id": "p_root", "type": "pitch", "x": 280, "y": 150,
           "props": { "mode": "shift", "shift": 0 } },
-        { "id": "pol_root", "type": "polariser", "x": 380, "y": 150,
+        { "id": "osc_root", "type": "oscillator", "x": 380, "y": 150,
           "props": { "wave": "sine", "attack": 0.1, "decay": 1.5 } },
         { "id": "spk_root", "type": "speaker", "x": 500, "y": 150,
           "props": { "reverb": 0.5, "pan": -0.4 } },
         
         { "id": "p_third", "type": "pitch", "x": 280, "y": 250,
           "props": { "mode": "shift", "shift": 4 } },
-        { "id": "pol_third", "type": "polariser", "x": 380, "y": 250,
+        { "id": "osc_third", "type": "oscillator", "x": 380, "y": 250,
           "props": { "wave": "sine", "attack": 0.1, "decay": 1.5 } },
         { "id": "spk_third", "type": "speaker", "x": 500, "y": 250,
           "props": { "reverb": 0.5, "pan": 0 } },
         
         { "id": "p_fifth", "type": "pitch", "x": 280, "y": 350,
           "props": { "mode": "shift", "shift": 7 } },
-        { "id": "pol_fifth", "type": "polariser", "x": 380, "y": 350,
+        { "id": "osc_fifth", "type": "oscillator", "x": 380, "y": 350,
           "props": { "wave": "sine", "attack": 0.1, "decay": 1.5 } },
         { "id": "spk_fifth", "type": "speaker", "x": 500, "y": 350,
           "props": { "reverb": 0.5, "pan": 0.4 } }
@@ -993,14 +1037,14 @@ Precise timing creates arpeggiated chord.
       "edges": [
         { "id": "e1", "from": "src", "to": "split", "timingMode": "fixed", "durationBeats": 0.1 },
         { "id": "e2", "from": "split", "to": "p_root", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e3", "from": "p_root", "to": "pol_root", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e4", "from": "pol_root", "to": "spk_root", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e3", "from": "p_root", "to": "osc_root", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e4", "from": "osc_root", "to": "spk_root", "timingMode": "fixed", "durationBeats": 0.1 },
         { "id": "e5", "from": "split", "to": "p_third", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e6", "from": "p_third", "to": "pol_third", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e7", "from": "pol_third", "to": "spk_third", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e6", "from": "p_third", "to": "osc_third", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e7", "from": "osc_third", "to": "spk_third", "timingMode": "fixed", "durationBeats": 0.1 },
         { "id": "e8", "from": "split", "to": "p_fifth", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e9", "from": "p_fifth", "to": "pol_fifth", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e10", "from": "pol_fifth", "to": "spk_fifth", "timingMode": "fixed", "durationBeats": 0.1 }
+        { "id": "e9", "from": "p_fifth", "to": "osc_fifth", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e10", "from": "osc_fifth", "to": "spk_fifth", "timingMode": "fixed", "durationBeats": 0.1 }
       ],
       "annotations": [],
       "regions": []
@@ -1046,7 +1090,7 @@ Precise timing creates arpeggiated chord.
       "nodes": [
         { "id": "src", "type": "source", "x": 50, "y": 300,
           "props": { "interval": 4, "midiNote": 60, "noteIndex": -2, "intensity": 0.6 } },
-        { "id": "pol", "type": "polariser", "x": 130, "y": 300,
+        { "id": "osc", "type": "oscillator", "x": 130, "y": 300,
           "props": { "wave": "triangle", "attack": 0.02, "decay": 0.4 } },
         { "id": "spk1", "type": "speaker", "x": 210, "y": 300, "props": { "reverb": 0.3, "pan": -0.6 } },
         { "id": "p1", "type": "pitch", "x": 290, "y": 300, "props": { "mode": "shift", "shift": 2 } },
@@ -1057,8 +1101,8 @@ Precise timing creates arpeggiated chord.
         { "id": "spk4", "type": "speaker", "x": 690, "y": 300, "props": { "reverb": 0.3, "pan": 0.6 } }
       ],
       "edges": [
-        { "id": "e1", "from": "src", "to": "pol", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e2", "from": "pol", "to": "spk1", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e1", "from": "src", "to": "osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e2", "from": "osc", "to": "spk1", "timingMode": "fixed", "durationBeats": 0.1 },
         { "id": "e3", "from": "spk1", "to": "p1", "timingMode": "fixed", "durationBeats": 0.5 },
         { "id": "e4", "from": "p1", "to": "spk2", "timingMode": "fixed", "durationBeats": 0.1 },
         { "id": "e5", "from": "spk2", "to": "p2", "timingMode": "fixed", "durationBeats": 0.5 },
@@ -1089,14 +1133,14 @@ Precise timing creates arpeggiated chord.
 
 ### ID Conventions
 
-- Use descriptive prefixes: `src_`, `spk_`, `pol_`, `flt_`, etc.
+- Use descriptive prefixes: `src_`, `spk_`, `osc_`, `flt_`, etc.
 - Edge IDs: `e1`, `e2` or descriptive like `e_kick_to_speaker`
 - Keep IDs unique across the composition
 
 ### Musical Guidelines
 
 1. **Always include at least one speaker** - otherwise no sound
-2. **Use polariser before speaker** for defined sound shape
+2. **Use oscillator before speaker** for defined sound shape
 3. **Quantizer after random sources** for musical coherence
 4. **Balance volumes** - multiple voices may need gain adjustment
 5. **Consider stereo spread** - use pan for spatial interest
@@ -1111,7 +1155,7 @@ Precise timing creates arpeggiated chord.
 - [ ] Every edge `from` and `to` references valid node IDs within the scene
 - [ ] At least one source node exists per scene
 - [ ] At least one speaker node exists per scene
-- [ ] Audio paths connect source → (processing) → speaker
+- [ ] Audio paths connect source â†’ (processing) â†’ speaker
 - [ ] CV edges have valid `targetParam` for target node type
 - [ ] All edges use `timingMode: "fixed"` with `durationBeats`
 - [ ] All node IDs are unique within each scene
@@ -1286,14 +1330,14 @@ interface ArrangementSlot {
       "nodes": [
         { "id": "src", "type": "source", "x": 100, "y": 200, 
           "props": { "interval": 1, "midiNote": 60, "noteIndex": -2, "intensity": 0.5 } },
-        { "id": "pol", "type": "polariser", "x": 250, "y": 200, 
+        { "id": "osc", "type": "oscillator", "x": 250, "y": 200, 
           "props": { "wave": "sine", "attack": 0.01, "decay": 0.4 } },
         { "id": "spk", "type": "speaker", "x": 400, "y": 200, 
           "props": { "reverb": 0.3, "pan": 0 } }
       ],
       "edges": [
-        { "id": "e1", "from": "src", "to": "pol", "timingMode": "fixed", "durationBeats": 0.1 },
-        { "id": "e2", "from": "pol", "to": "spk", "timingMode": "fixed", "durationBeats": 0.1 }
+        { "id": "e1", "from": "src", "to": "osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e2", "from": "osc", "to": "spk", "timingMode": "fixed", "durationBeats": 0.1 }
       ],
       "annotations": [],
       "regions": []
@@ -1312,16 +1356,19 @@ interface ArrangementSlot {
 | source | Green | #4caf50 |
 | speaker | Deep Orange | #ff5722 |
 | pitch | Blue | #2196f3 |
-| polariser | Purple | #9c27b0 |
+| oscillator | Purple | #9c27b0 |
 | filter | Cyan | #00bcd4 |
 | gate | Yellow | #ffeb3b |
 | delay | Brown | #795548 |
 | gain | Blue Grey | #607d8b |
-| noise | Grey | #9e9e9e |
-| harmonic | Pink | #e91e63 |
 | modulator | Deep Purple | #673ab7 |
 | tunnel | Indigo | #3f51b5 |
 | teleporter | Green Accent | #00e676 |
 | quantizer | Orange | #ff9800 |
 | lfo | Light Green | #8bc34a |
 | splitter | Slate | #64748b |
+| mutator | Amber Dark | #ff6f00 |
+| crossover | Purple Accent | #d500f9 |
+| midi_out | Blue Accent | #448aff |
+| midi_cc | Blue Accent | #448aff |
+| scene_trigger | Deep Purple Accent | #7c4dff |

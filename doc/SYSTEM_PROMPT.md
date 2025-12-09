@@ -89,12 +89,16 @@ locrian, pentatonic, minorPentatonic, blues, wholeTone, diminished
 ### Sound Shaping
 | Type | Purpose | Key Props |
 |------|---------|-----------|
-| `polariser` | Waveform/envelope | `wave` (sine/square/sawtooth/triangle), `attack`, `decay`, `mix` |
+| `oscillator` | Waveform/envelope (unified) | `wave` (sine/square/sawtooth/triangle/white/pink/brown), `ratio`, `attack`, `decay`, `mix` |
 | `filter` | Low-pass filter | `cutoff`, `attack`, `decay`, `mod` |
-| `noise` | Adds noise | `wave` (white/pink/brown), `attack`, `decay`, `mix` |
-| `harmonic` | Overtones | `ratio`, `wave`, `attack`, `decay`, `mix` |
 | `modulator` | Vibrato | `rate`, `depth`, `delay` |
 | `gain` | Volume control | `value`, `mass` |
+
+### Evolutionary
+| Type | Purpose | Key Props |
+|------|---------|-----------|
+| `mutator` | Genetic drift/radiation | `mode`, `probability`, `pitchDrift`, `targets` |
+| `crossover` | Packet recombination | `inheritance`, `pitchFrom`, `waveFrom`, `timeout` |
 
 ### Pitch Control
 | Type | Purpose | Key Props |
@@ -172,7 +176,7 @@ CV edges do NOT need `timingMode` or `durationBeats` — they modulate continuou
 - `gain`: value
 - `gate`: prob
 - `delay`: delayTime
-- `polariser`: mix
+- `oscillator`: mix
 - `modulator`: rate, depth
 
 ---
@@ -183,12 +187,12 @@ Use these patterns as building blocks:
 
 ### Basic Sound Chain
 ```
-Source → Polariser → Speaker
+Source → Oscillator → Speaker
 ```
 
 ### Melodic Chain (Speaker forwarding)
 ```
-Source → Polariser → Speaker → Pitch → Speaker → Pitch → Speaker
+Source → Oscillator → Speaker → Pitch → Speaker → Pitch → Speaker
 ```
 
 ### Chord Voicing
@@ -200,27 +204,27 @@ Source → Splitter ├→ Pitch(+4) → Speaker
 
 ### Canon/Delay
 ```
-           ┌→ Speaker (immediate)
-Source → Pol ├→ Delay(2) → Speaker
-           └→ Delay(4) → Speaker
+            ┌→ Speaker (immediate)
+Source → Osc ├→ Delay(2) → Speaker
+            └→ Delay(4) → Speaker
 ```
 
 ### Generative with Gates
 ```
-Source(random) → Gate(0.6) → Quantizer → Polariser → Speaker
+Source(random) → Gate(0.6) → Quantizer → Oscillator → Speaker
 ```
 
 ### CV Modulation
 ```
-Source → Polariser → Filter → Speaker
-                       ↑
-                      LFO -----(targetParam: cutoff)
+Source → Oscillator → Filter → Speaker
+                        ↑
+                       LFO -----(targetParam: cutoff)
 ```
 
 ### Arpeggio with Fixed Timing
 ```
               ┌─(0.0 beats)→ Speaker (root)
-Source → Pol ├─(0.5 beats)→ Pitch(+4) → Speaker (3rd)
+Source → Osc ├─(0.5 beats)→ Pitch(+4) → Speaker (3rd)
               ├─(1.0 beats)→ Pitch(+7) → Speaker (5th)
               └─(1.5 beats)→ Pitch(+12) → Speaker (octave)
 ```
@@ -238,7 +242,7 @@ Source → Pol ├─(0.5 beats)→ Pitch(+4) → Speaker (3rd)
 
 ## ID Conventions
 
-- **Nodes:** Use descriptive prefixes: `src_`, `spk_`, `pol_`, `flt_`, `pitch_`, `gate_`, `lfo_`, etc.
+- **Nodes:** Use descriptive prefixes: `src_`, `spk_`, `osc_`, `flt_`, `pitch_`, `gate_`, `lfo_`, etc.
 - **Edges:** Use `e1`, `e2`... or descriptive like `e_kick_to_speaker`
 - **All IDs must be unique**
 
