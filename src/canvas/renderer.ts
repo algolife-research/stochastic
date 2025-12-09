@@ -305,8 +305,11 @@ export class CanvasRenderer {
       // Draw timing ticks
       this.drawEdgeTicks(fromNode, toNode, edge, globalSettings.pixelsPerBeat, globalSettings.subdivisions);
       
-      // Draw direction arrow
-      this.drawEdgeArrow(fromNode, toNode, isSelected);
+      // Draw direction indicator with duration info
+      const durationBeats = (edge.timingMode === 'fixed' && edge.durationBeats != null) 
+        ? edge.durationBeats 
+        : undefined;
+      this.drawEdgeIndicator(fromNode, toNode, isSelected, durationBeats);
     });
   }
   
@@ -355,33 +358,107 @@ export class CanvasRenderer {
   }
   
   /**
-   * Draw arrow chevron at edge center
+   * Draw directional triangle indicator at edge center with optional duration info
    */
-  private drawEdgeArrow(fromNode: GraphNode, toNode: GraphNode, isSelected: boolean): void {
+  private drawEdgeIndicator(
+    fromNode: GraphNode, 
+    toNode: GraphNode, 
+    isSelected: boolean,
+    durationBeats?: number
+  ): void {
     const { ctx } = this;
     
-    const arrowT = 0.5;
-    const arrowX = fromNode.x + (toNode.x - fromNode.x) * arrowT;
-    const arrowY = fromNode.y + (toNode.y - fromNode.y) * arrowT;
+    // Position at center of edge
+    const centerX = fromNode.x + (toNode.x - fromNode.x) * 0.5;
+    const centerY = fromNode.y + (toNode.y - fromNode.y) * 0.5;
     const angle = Math.atan2(toNode.y - fromNode.y, toNode.x - fromNode.x);
-    const arrowLen = 10;
-    const arrowAngle = 2.8;
     
-    ctx.strokeStyle = isSelected ? '#999999' : '#555555';
-    ctx.lineWidth = 2;
+    // Triangle size - larger when showing duration
+    const hasInfo = durationBeats !== undefined;
+    const triangleSize = hasInfo ? 18 : 12;
+    const triangleWidth = hasInfo ? 14 : 10;
+    
+    // Draw filled triangle pointing in edge direction
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(angle);
+    
+    // Triangle path (pointing right, will be rotated)
     ctx.beginPath();
-    ctx.moveTo(
-      arrowX + Math.cos(angle + arrowAngle) * arrowLen,
-      arrowY + Math.sin(angle + arrowAngle) * arrowLen
-    );
-    ctx.lineTo(arrowX, arrowY);
-    ctx.lineTo(
-      arrowX + Math.cos(angle - arrowAngle) * arrowLen,
-      arrowY + Math.sin(angle - arrowAngle) * arrowLen
-    );
+    ctx.moveTo(triangleSize, 0);  // Tip
+    ctx.lineTo(-triangleSize * 0.5, -triangleWidth);  // Top-left
+    ctx.lineTo(-triangleSize * 0.5, triangleWidth);   // Bottom-left
+    ctx.closePath();
+    
+    // Fill and stroke
+    ctx.fillStyle = isSelected ? '#444444' : '#2a2a2a';
+    ctx.fill();
+    ctx.strokeStyle = isSelected ? '#888888' : '#555555';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
+    
+    ctx.restore();
+    
+    // Draw duration text if available
+    if (hasInfo && durationBeats !== undefined) {
+      const { symbol, numeric } = this.formatBeatDurationFull(durationBeats);
+      
+      // Calculate position below the triangle (perpendicular to edge direction)
+      const perpX = Math.cos(angle + Math.PI / 2);
+      const perpY = Math.sin(angle + Math.PI / 2);
+      const labelOffset = triangleWidth + 10; // Below the triangle
+      
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      if (symbol) {
+        // Show symbol inside triangle (centered)
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillStyle = isSelected ? '#ffffff' : '#cccccc';
+        ctx.fillText(symbol, centerX, centerY);
+        
+        // Show numeric outside, below the triangle
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillStyle = isSelected ? '#aaaaaa' : '#888888';
+        ctx.fillText(numeric, centerX + perpX * labelOffset, centerY + perpY * labelOffset);
+      } else {
+        // Just show numeric inside triangle
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillStyle = isSelected ? '#ffffff' : '#aaaaaa';
+        ctx.fillText(numeric, centerX, centerY);
+      }
+    }
   }
   
+  /**
+   * Format beat duration with both symbol and numeric representation
+   */
+  private formatBeatDurationFull(beats: number): { symbol: string | null; numeric: string } {
+    // Common musical durations with symbols
+    if (beats === 4) return { symbol: '𝅝', numeric: '4' };       // Whole note
+    if (beats === 2) return { symbol: '𝅗𝅥', numeric: '2' };       // Half note
+    if (beats === 1) return { symbol: '♩', numeric: '1' };       // Quarter note
+    if (beats === 0.5) return { symbol: '♪', numeric: '½' };     // Eighth note
+    if (beats === 0.25) return { symbol: '𝅘𝅥𝅯', numeric: '¼' };   // Sixteenth note
+    if (beats === 0.125) return { symbol: '𝅘𝅥𝅰', numeric: '⅛' };  // 32nd note
+    
+    // Dotted notes
+    if (beats === 1.5) return { symbol: '♩.', numeric: '1.5' };  // Dotted quarter
+    if (beats === 0.75) return { symbol: '♪.', numeric: '.75' }; // Dotted eighth
+    if (beats === 3) return { symbol: '𝅗𝅥.', numeric: '3' };      // Dotted half
+    
+    // Triplets (approximate)
+    if (Math.abs(beats - 0.333) < 0.01) return { symbol: '♩₃', numeric: '⅓' };
+    if (Math.abs(beats - 0.667) < 0.01) return { symbol: '♪₃', numeric: '⅔' };
+    
+    // No standard symbol - show numeric only
+    if (beats < 1) {
+      const frac = Math.round(1 / beats);
+      return { symbol: null, numeric: `1/${frac}` };
+    }
+    return { symbol: null, numeric: beats.toFixed(beats % 1 === 0 ? 0 : 1) };
+  }
+
   /**
    * Draw the linking line when creating edges
    */
@@ -740,9 +817,10 @@ export class CanvasRenderer {
     
     switch (node.type) {
       case 'source': {
-        const props = node.props as { midiNote: number; interval: number };
-        const noteName = midiToNoteName(props.midiNote);
-        ctx.fillText(noteName, node.x, node.y + NODE_RADIUS + 12);
+        const props = node.props as { midiNote: number; interval: number; noteIndex: number };
+        // noteIndex: -1 = random, -2 = use midiNote
+        const label = props.noteIndex === -1 ? '🎲' : midiToNoteName(props.midiNote);
+        ctx.fillText(label, node.x, node.y + NODE_RADIUS + 12);
         break;
       }
       case 'teleporter': {
