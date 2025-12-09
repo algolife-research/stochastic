@@ -1,13 +1,92 @@
 // Phonon v2 - Canvas Renderer
 // High-performance HTML5 Canvas rendering at 60fps
-// Updated: 2025-12-05 with stars and brighter grid
+// Updated: 2025-12-09 with Bezier curve edges and flowing animation
 
 import { getGraphStore } from '@core/store';
 import type { GraphNode, GraphEdge, Packet, TunnelProps } from '@core/types';
 import { 
   NODE_RADIUS, GRID_SIZE, NODE_COLORS, NODE_ICONS, 
-  dist, midiToNoteName 
+  midiToNoteName 
 } from '@core/constants';
+
+// ============================================================================
+// BEZIER CURVE UTILITIES
+// ============================================================================
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface BezierControlPoints {
+  p0: Point;  // Start point
+  p1: Point;  // Control point 1
+  p2: Point;  // Control point 2
+  p3: Point;  // End point
+}
+
+/**
+ * Calculate a point on a cubic Bezier curve at parameter t (0-1)
+ * Formula: B(t) = (1-t)³P0 + 3(1-t)²tP1 + 3(1-t)t²P2 + t³P3
+ */
+function getBezierPoint(t: number, p0: Point, p1: Point, p2: Point, p3: Point): Point {
+  const mt = 1 - t;
+  const mt2 = mt * mt;
+  const mt3 = mt2 * mt;
+  const t2 = t * t;
+  const t3 = t2 * t;
+  
+  return {
+    x: mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x,
+    y: mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y
+  };
+}
+
+/**
+ * Calculate the tangent (derivative) of a cubic Bezier curve at parameter t
+ * Used for arrowhead rotation
+ */
+function getBezierTangent(t: number, p0: Point, p1: Point, p2: Point, p3: Point): Point {
+  const mt = 1 - t;
+  const mt2 = mt * mt;
+  const t2 = t * t;
+  
+  // Derivative: B'(t) = 3(1-t)²(P1-P0) + 6(1-t)t(P2-P1) + 3t²(P3-P2)
+  return {
+    x: 3 * mt2 * (p1.x - p0.x) + 6 * mt * t * (p2.x - p1.x) + 3 * t2 * (p3.x - p2.x),
+    y: 3 * mt2 * (p1.y - p0.y) + 6 * mt * t * (p2.y - p1.y) + 3 * t2 * (p3.y - p2.y)
+  };
+}
+
+/**
+ * Calculate control points for a smooth S-curve between two nodes
+ */
+function calculateBezierControlPoints(from: Point, to: Point): BezierControlPoints {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  // Curvature factor - more curve for longer distances
+  const curvature = Math.min(0.4, Math.max(0.2, distance / 400));
+  const offset = distance * curvature;
+  
+  // Determine if primarily horizontal or vertical
+  const isHorizontal = Math.abs(dx) > Math.abs(dy);
+  
+  let p1: Point, p2: Point;
+  
+  if (isHorizontal) {
+    // Horizontal S-curve: control points offset in X
+    p1 = { x: from.x + offset, y: from.y };
+    p2 = { x: to.x - offset, y: to.y };
+  } else {
+    // Vertical S-curve: control points offset in Y
+    p1 = { x: from.x, y: from.y + offset * Math.sign(dy) };
+    p2 = { x: to.x, y: to.y - offset * Math.sign(dy) };
+  }
+  
+  return { p0: from, p1, p2, p3: to };
+}
 
 // ============================================================================
 // RENDERER CLASS
@@ -22,6 +101,9 @@ export class CanvasRenderer {
   
   // Performance optimization: cached gradients
   private edgeGradientCache: Map<string, CanvasGradient> = new Map();
+  
+  // Animation state for flowing edges
+  private flowAnimationOffset: number = 0;
   
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -259,12 +341,21 @@ export class CanvasRenderer {
   }
   
   /**
-   * Draw all edges
+   * Draw all edges as smooth Bezier curves with flowing animation
    */
   private drawEdges(): void {
     const { ctx } = this;
     const store = getGraphStore();
-    const { selection, globalSettings } = store;
+    const { selection, masterSpeed, scenePlayback } = store;
+    const time = performance.now() / 1000;
+    
+    // Update flow animation based on BPM
+    const bpm = scenePlayback.effectiveBpm ?? masterSpeed ?? 120;
+    const beatsPerSecond = bpm / 60;
+    this.flowAnimationOffset = (time * beatsPerSecond * 20) % 40; // 20 pixels per beat
+    
+    // Check if playing
+    const isPlaying = scenePlayback.currentSceneId !== null || store.packets.size > 0;
     
     store.edges.forEach((edge: GraphEdge) => {
       const fromNode = store.getNode(edge.from);
@@ -272,195 +363,235 @@ export class CanvasRenderer {
       if (!fromNode || !toNode) return;
       
       const isSelected = selection.selectedEdgeId === edge.id;
+      const isCV = edge.targetParam != null;
       
-      // Draw edge line
-      ctx.lineWidth = isSelected ? 4 : 3;
+      // Calculate Bezier control points
+      const bezier = calculateBezierControlPoints(
+        { x: fromNode.x, y: fromNode.y },
+        { x: toNode.x, y: toNode.y }
+      );
+      
+      // Create gradient along the curve
+      const fromColor = NODE_COLORS[fromNode.type] ?? '#666666';
+      const toColor = NODE_COLORS[toNode.type] ?? '#666666';
+      
+      // Draw the main curve
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
       
       if (isSelected) {
+        // Selected edge: bright white with glow
         ctx.strokeStyle = '#ffffff';
         ctx.shadowColor = '#ffffff';
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 12;
+        ctx.lineWidth = 4;
+      } else if (isCV) {
+        // CV edge: dashed with modulation color
+        ctx.strokeStyle = '#ffeb3b';
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = 2;
       } else {
-        // Create or get cached gradient
-        const gradientKey = `${edge.id}`;
-        let gradient = this.edgeGradientCache.get(gradientKey);
-        
-        if (!gradient) {
-          gradient = ctx.createLinearGradient(fromNode.x, fromNode.y, toNode.x, toNode.y);
-          gradient.addColorStop(0, '#333333');
-          gradient.addColorStop(1, '#555555');
-          this.edgeGradientCache.set(gradientKey, gradient);
-        }
-        
+        // Normal edge: gradient from source to target
+        const gradient = ctx.createLinearGradient(
+          fromNode.x, fromNode.y, toNode.x, toNode.y
+        );
+        gradient.addColorStop(0, this.adjustColorOpacity(fromColor, 0.8));
+        gradient.addColorStop(1, this.adjustColorOpacity(toColor, 0.6));
         ctx.strokeStyle = gradient;
         ctx.shadowBlur = 0;
+        ctx.lineWidth = 3;
       }
       
+      // Draw the Bezier curve
       ctx.beginPath();
-      ctx.moveTo(fromNode.x, fromNode.y);
-      ctx.lineTo(toNode.x, toNode.y);
+      ctx.moveTo(bezier.p0.x, bezier.p0.y);
+      ctx.bezierCurveTo(
+        bezier.p1.x, bezier.p1.y,
+        bezier.p2.x, bezier.p2.y,
+        bezier.p3.x, bezier.p3.y
+      );
       ctx.stroke();
       ctx.shadowBlur = 0;
       
-      // Draw timing ticks
-      this.drawEdgeTicks(fromNode, toNode, edge, globalSettings.pixelsPerBeat, globalSettings.subdivisions);
+      // Draw flowing animation (marching ants) when playing
+      if (isPlaying && !isCV) {
+        this.drawFlowingAnimation(bezier, fromColor);
+      }
       
-      // Draw direction indicator with duration info
+      // Draw terminal arrowhead at the end
+      this.drawTerminalArrowhead(bezier, isSelected, isCV);
+      
+      // Draw duration pill badge at center
       const durationBeats = (edge.timingMode === 'fixed' && edge.durationBeats != null) 
         ? edge.durationBeats 
         : undefined;
-      this.drawEdgeIndicator(fromNode, toNode, isSelected, durationBeats);
+      
+      if (durationBeats !== undefined || isCV) {
+        this.drawEdgePillBadge(bezier, isSelected, durationBeats, isCV ? edge.targetParam : undefined);
+      }
     });
   }
   
   /**
-   * Draw timing ticks on an edge
+   * Draw flowing animation along the edge (marching ants effect)
    */
-  private drawEdgeTicks(
-    fromNode: GraphNode, 
-    toNode: GraphNode, 
-    edge: GraphEdge,
-    pixelsPerBeat: number,
-    subdivisions: number
-  ): void {
+  private drawFlowingAnimation(bezier: BezierControlPoints, color: string): void {
     const { ctx } = this;
     
-    const edgeLength = dist(fromNode.x, fromNode.y, toNode.x, toNode.y);
-    const steps = Math.max(1, Math.round(edgeLength / pixelsPerBeat));
-    const angle = Math.atan2(toNode.y - fromNode.y, toNode.x - fromNode.x);
-    const totalTicks = steps * subdivisions;
+    ctx.save();
+    ctx.strokeStyle = this.adjustColorOpacity(color, 0.4);
+    ctx.lineWidth = 6;
+    ctx.setLineDash([8, 12]);
+    ctx.lineDashOffset = -this.flowAnimationOffset;
     
-    for (let i = 1; i < totalTicks; i++) {
-      const t = i / totalTicks;
-      const tx = fromNode.x + (toNode.x - fromNode.x) * t;
-      const ty = fromNode.y + (toNode.y - fromNode.y) * t;
-      
-      if (i % subdivisions === 0) {
-        // Major tick (beat)
-        ctx.fillStyle = '#888888';
-        ctx.beginPath();
-        ctx.arc(tx, ty, 3, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        // Minor tick (subdivision)
-        const perpX = Math.cos(angle + Math.PI / 2);
-        const perpY = Math.sin(angle + Math.PI / 2);
-        const barLen = 8;
-        
-        ctx.strokeStyle = '#555555';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(tx - perpX * barLen / 2, ty - perpY * barLen / 2);
-        ctx.lineTo(tx + perpX * barLen / 2, ty + perpY * barLen / 2);
-        ctx.stroke();
-      }
-    }
+    ctx.beginPath();
+    ctx.moveTo(bezier.p0.x, bezier.p0.y);
+    ctx.bezierCurveTo(
+      bezier.p1.x, bezier.p1.y,
+      bezier.p2.x, bezier.p2.y,
+      bezier.p3.x, bezier.p3.y
+    );
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
   
   /**
-   * Draw directional triangle indicator at edge center with optional duration info
+   * Draw a small arrowhead at the terminal end of the edge
    */
-  private drawEdgeIndicator(
-    fromNode: GraphNode, 
-    toNode: GraphNode, 
-    isSelected: boolean,
-    durationBeats?: number
-  ): void {
+  private drawTerminalArrowhead(bezier: BezierControlPoints, isSelected: boolean, isCV: boolean): void {
     const { ctx } = this;
     
-    // Position at center of edge
-    const centerX = fromNode.x + (toNode.x - fromNode.x) * 0.5;
-    const centerY = fromNode.y + (toNode.y - fromNode.y) * 0.5;
-    const angle = Math.atan2(toNode.y - fromNode.y, toNode.x - fromNode.x);
+    // Get position and tangent at t=0.95 (near the end but not at the node)
+    const arrowT = 0.92;
+    const pos = getBezierPoint(arrowT, bezier.p0, bezier.p1, bezier.p2, bezier.p3);
+    const tangent = getBezierTangent(arrowT, bezier.p0, bezier.p1, bezier.p2, bezier.p3);
+    const angle = Math.atan2(tangent.y, tangent.x);
     
-    // Triangle size - larger when showing duration
-    const hasInfo = durationBeats !== undefined;
-    const triangleSize = hasInfo ? 18 : 12;
-    const triangleWidth = hasInfo ? 14 : 10;
+    const arrowSize = isCV ? 6 : 8;
+    const arrowWidth = isCV ? 4 : 5;
     
-    // Draw filled triangle pointing in edge direction
     ctx.save();
-    ctx.translate(centerX, centerY);
+    ctx.translate(pos.x, pos.y);
     ctx.rotate(angle);
     
-    // Triangle path (pointing right, will be rotated)
+    // Draw chevron arrowhead
     ctx.beginPath();
-    ctx.moveTo(triangleSize, 0);  // Tip
-    ctx.lineTo(-triangleSize * 0.5, -triangleWidth);  // Top-left
-    ctx.lineTo(-triangleSize * 0.5, triangleWidth);   // Bottom-left
+    ctx.moveTo(arrowSize, 0);
+    ctx.lineTo(-arrowSize * 0.3, -arrowWidth);
+    ctx.lineTo(-arrowSize * 0.3, arrowWidth);
     ctx.closePath();
     
-    // Fill and stroke
-    ctx.fillStyle = isSelected ? '#444444' : '#2a2a2a';
+    ctx.fillStyle = isSelected ? '#ffffff' : (isCV ? '#ffeb3b' : '#888888');
     ctx.fill();
-    ctx.strokeStyle = isSelected ? '#888888' : '#555555';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
     
     ctx.restore();
-    
-    // Draw duration text if available
-    if (hasInfo && durationBeats !== undefined) {
-      const { symbol, numeric } = this.formatBeatDurationFull(durationBeats);
-      
-      // Calculate position below the triangle (perpendicular to edge direction)
-      const perpX = Math.cos(angle + Math.PI / 2);
-      const perpY = Math.sin(angle + Math.PI / 2);
-      const labelOffset = triangleWidth + 10; // Below the triangle
-      
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      
-      if (symbol) {
-        // Show symbol inside triangle (centered)
-        ctx.font = 'bold 14px sans-serif';
-        ctx.fillStyle = isSelected ? '#ffffff' : '#cccccc';
-        ctx.fillText(symbol, centerX, centerY);
-        
-        // Show numeric outside, below the triangle
-        ctx.font = 'bold 10px sans-serif';
-        ctx.fillStyle = isSelected ? '#aaaaaa' : '#888888';
-        ctx.fillText(numeric, centerX + perpX * labelOffset, centerY + perpY * labelOffset);
-      } else {
-        // Just show numeric inside triangle
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillStyle = isSelected ? '#ffffff' : '#aaaaaa';
-        ctx.fillText(numeric, centerX, centerY);
-      }
-    }
   }
   
   /**
-   * Format beat duration with both symbol and numeric representation
+   * Draw a floating pill badge at the center of the edge
    */
-  private formatBeatDurationFull(beats: number): { symbol: string | null; numeric: string } {
-    // Common musical durations with symbols
-    if (beats === 4) return { symbol: '𝅝', numeric: '4' };       // Whole note
-    if (beats === 2) return { symbol: '𝅗𝅥', numeric: '2' };       // Half note
-    if (beats === 1) return { symbol: '♩', numeric: '1' };       // Quarter note
-    if (beats === 0.5) return { symbol: '♪', numeric: '½' };     // Eighth note
-    if (beats === 0.25) return { symbol: '𝅘𝅥𝅯', numeric: '¼' };   // Sixteenth note
-    if (beats === 0.125) return { symbol: '𝅘𝅥𝅰', numeric: '⅛' };  // 32nd note
+  private drawEdgePillBadge(
+    bezier: BezierControlPoints, 
+    isSelected: boolean, 
+    durationBeats?: number,
+    cvParam?: string
+  ): void {
+    const { ctx } = this;
+    
+    // Get center point of Bezier curve (t=0.5)
+    const center = getBezierPoint(0.5, bezier.p0, bezier.p1, bezier.p2, bezier.p3);
+    
+    // Determine label text
+    let label: string;
+    if (cvParam) {
+      label = cvParam;
+    } else if (durationBeats !== undefined) {
+      label = this.formatBeatDurationCompact(durationBeats);
+    } else {
+      return;
+    }
+    
+    // Measure text
+    ctx.font = 'bold 10px Inter, system-ui, sans-serif';
+    const textMetrics = ctx.measureText(label);
+    const textWidth = textMetrics.width;
+    
+    // Pill dimensions
+    const paddingX = 6;
+    const pillWidth = textWidth + paddingX * 2;
+    const pillHeight = 16;
+    const pillRadius = pillHeight / 2;
+    
+    // Draw pill background (capsule shape)
+    ctx.beginPath();
+    ctx.roundRect(
+      center.x - pillWidth / 2,
+      center.y - pillHeight / 2,
+      pillWidth,
+      pillHeight,
+      pillRadius
+    );
+    
+    // Fill with dark background to mask the wire
+    ctx.fillStyle = isSelected ? '#333333' : '#1a1a1a';
+    ctx.fill();
+    
+    // Border
+    ctx.strokeStyle = isSelected ? '#888888' : '#444444';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    
+    // Draw text
+    ctx.fillStyle = isSelected ? '#ffffff' : (cvParam ? '#ffeb3b' : '#cccccc');
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, center.x, center.y);
+  }
+  
+  /**
+   * Format beat duration in a compact form for the pill badge
+   */
+  private formatBeatDurationCompact(beats: number): string {
+    // Standard musical durations
+    if (beats === 4) return '𝅝';       // Whole note
+    if (beats === 2) return '𝅗𝅥';       // Half note
+    if (beats === 1) return '♩';       // Quarter note
+    if (beats === 0.5) return '♪';     // Eighth note
+    if (beats === 0.25) return '𝅘𝅥𝅯';   // Sixteenth note
+    if (beats === 0.125) return '𝅘𝅥𝅰';  // 32nd note
     
     // Dotted notes
-    if (beats === 1.5) return { symbol: '♩.', numeric: '1.5' };  // Dotted quarter
-    if (beats === 0.75) return { symbol: '♪.', numeric: '.75' }; // Dotted eighth
-    if (beats === 3) return { symbol: '𝅗𝅥.', numeric: '3' };      // Dotted half
+    if (beats === 1.5) return '♩.';    // Dotted quarter
+    if (beats === 0.75) return '♪.';   // Dotted eighth
+    if (beats === 3) return '𝅗𝅥.';      // Dotted half
     
-    // Triplets (approximate)
-    if (Math.abs(beats - 0.333) < 0.01) return { symbol: '♩₃', numeric: '⅓' };
-    if (Math.abs(beats - 0.667) < 0.01) return { symbol: '♪₃', numeric: '⅔' };
+    // Triplets
+    if (Math.abs(beats - 0.333) < 0.01) return '♩₃';
+    if (Math.abs(beats - 0.667) < 0.01) return '♪₃';
     
-    // No standard symbol - show numeric only
+    // Fractional or numeric
     if (beats < 1) {
       const frac = Math.round(1 / beats);
-      return { symbol: null, numeric: `1/${frac}` };
+      if (frac === Math.round(frac)) return `1/${frac}`;
     }
-    return { symbol: null, numeric: beats.toFixed(beats % 1 === 0 ? 0 : 1) };
+    
+    return beats % 1 === 0 ? String(beats) : beats.toFixed(1);
+  }
+  
+  /**
+   * Adjust color opacity by parsing and modifying
+   */
+  private adjustColorOpacity(hexColor: string, opacity: number): string {
+    // Convert hex to rgba
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
   }
 
   /**
-   * Draw the linking line when creating edges
+   * Draw the linking line when creating edges (Bezier preview)
    */
   private drawLinkingLine(): void {
     const { ctx } = this;
@@ -472,26 +603,37 @@ export class CanvasRenderer {
     const fromNode = store.getNode(selection.linkingFromId);
     if (!fromNode) return;
     
+    // Calculate Bezier control points for preview
+    const bezier = calculateBezierControlPoints(
+      { x: fromNode.x, y: fromNode.y },
+      { x: mouse.worldX, y: mouse.worldY }
+    );
+    
     ctx.strokeStyle = '#00e676';
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
+    ctx.lineCap = 'round';
     
     ctx.beginPath();
-    ctx.moveTo(fromNode.x, fromNode.y);
-    ctx.lineTo(mouse.worldX, mouse.worldY);
+    ctx.moveTo(bezier.p0.x, bezier.p0.y);
+    ctx.bezierCurveTo(
+      bezier.p1.x, bezier.p1.y,
+      bezier.p2.x, bezier.p2.y,
+      bezier.p3.x, bezier.p3.y
+    );
     ctx.stroke();
     
     ctx.setLineDash([]);
   }
   
   /**
-   * Draw all packets with trails
+   * Draw all packets with trails along Bezier curves
    */
   private drawPackets(): void {
     const { ctx } = this;
     const store = getGraphStore();
     const time = performance.now() / 1000;
-    const TRAIL_PIXEL_LENGTH = 40; // Constant trail length in pixels
+    const TRAIL_T_LENGTH = 0.15; // Trail length as fraction of curve
     
     store.packets.forEach((packet: Packet) => {
       const edge = store.getEdge(packet.edgeId);
@@ -501,19 +643,19 @@ export class CanvasRenderer {
       const toNode = store.getNode(edge.to);
       if (!fromNode || !toNode) return;
       
-      // Calculate edge vector
-      const edgeDx = toNode.x - fromNode.x;
-      const edgeDy = toNode.y - fromNode.y;
-      const edgeDist = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy);
+      // Calculate Bezier control points (same as edge drawing)
+      const bezier = calculateBezierControlPoints(
+        { x: fromNode.x, y: fromNode.y },
+        { x: toNode.x, y: toNode.y }
+      );
       
-      // Current packet position
-      const px = fromNode.x + edgeDx * packet.t;
-      const py = fromNode.y + edgeDy * packet.t;
+      // Current packet position on Bezier curve
+      const pos = getBezierPoint(packet.t, bezier.p0, bezier.p1, bezier.p2, bezier.p3);
+      const px = pos.x;
+      const py = pos.y;
       
-      // Trail position (constant pixel length behind)
-      const trailT = Math.max(0, packet.t - (TRAIL_PIXEL_LENGTH / (edgeDist || 1)));
-      const trailX = fromNode.x + edgeDx * trailT;
-      const trailY = fromNode.y + edgeDy * trailT;
+      // Trail start position (fraction behind on curve)
+      const trailT = Math.max(0, packet.t - TRAIL_T_LENGTH);
       
       // Color based on pitch class (chroma) - repeats every octave
       const chroma = packet.payload.midiNote % 12;
@@ -526,16 +668,12 @@ export class CanvasRenderer {
       const radius = Math.max(3, 12 - (packet.payload.midiNote / 127) * 9);
       const hasTimbre = packet.payload.timbre > 0.5;
       
-      // Draw trail
-      if (hasTimbre && edgeDist > 0) {
-        // Wavy trail for high timbre
+      // Draw trail along Bezier curve
+      if (hasTimbre) {
+        // Wavy trail for high timbre - sample along curve with wave offset
         const segments = 8;
         const waveAmplitude = 4;
         const waveFreq = 12;
-        
-        // Perpendicular vector for wave
-        const perpX = -edgeDy / edgeDist;
-        const perpY = edgeDx / edgeDist;
         
         ctx.strokeStyle = trailColor;
         ctx.lineWidth = 2;
@@ -544,19 +682,31 @@ export class CanvasRenderer {
         
         for (let i = 1; i <= segments; i++) {
           const segT = trailT + ((packet.t - trailT) * (1 - i / segments));
-          const baseX = fromNode.x + edgeDx * segT;
-          const baseY = fromNode.y + edgeDy * segT;
+          const segPos = getBezierPoint(segT, bezier.p0, bezier.p1, bezier.p2, bezier.p3);
+          const tangent = getBezierTangent(segT, bezier.p0, bezier.p1, bezier.p2, bezier.p3);
+          const tangentLen = Math.sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
+          
+          // Perpendicular for wave
+          const perpX = -tangent.y / tangentLen;
+          const perpY = tangent.x / tangentLen;
           const wave = Math.sin(time * waveFreq + i * 0.8) * waveAmplitude * (i / segments);
-          ctx.lineTo(baseX + perpX * wave, baseY + perpY * wave);
+          
+          ctx.lineTo(segPos.x + perpX * wave, segPos.y + perpY * wave);
         }
         ctx.stroke();
       } else {
-        // Straight trail
+        // Draw trail as smooth curve segment (sample points along Bezier)
         ctx.strokeStyle = trailColor;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(px, py);
-        ctx.lineTo(trailX, trailY);
+        
+        const trailSegments = 6;
+        for (let i = 1; i <= trailSegments; i++) {
+          const segT = packet.t - (packet.t - trailT) * (i / trailSegments);
+          const segPos = getBezierPoint(segT, bezier.p0, bezier.p1, bezier.p2, bezier.p3);
+          ctx.lineTo(segPos.x, segPos.y);
+        }
         ctx.stroke();
       }
       
