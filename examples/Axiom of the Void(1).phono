@@ -1,0 +1,810 @@
+{
+  "meta": {
+    "version": "3.0.0",
+    "created": 1733800000000,
+    "modified": 1733749200000,
+    "name": "Axiom of the Void",
+    "author": "The Architect"
+  },
+  "global": {
+    "rootNote": 24,
+    "scaleName": "wholeTone",
+    "gravity": 0,
+    "defaultEdgeBehaviour": "fixed",
+    "masterBpm": 60
+  },
+  "scenes": [
+    {
+      "id": "scene-chaos",
+      "name": "I. Primordial Soup",
+      "color": "#D32F2F",
+      "durationBeats": 32,
+      "loopCount": 1,
+      "localBpm": 140,
+      "localRoot": null,
+      "localScale": "chromatic",
+      "enterTransition": {
+        "type": "crossfade",
+        "durationBeats": 8
+      },
+      "exitTransition": {
+        "type": "crossfade",
+        "durationBeats": 8
+      },
+      "jamTrigger": {
+        "midiNote": null,
+        "midiChannel": 1,
+        "quantize": "bar",
+        "phraseLength": 4
+      },
+      "nodes": [
+        {
+          "id": "chaos_src",
+          "type": "source",
+          "x": 50,
+          "y": 300,
+          "props": {
+            "interval": 0.15,
+            "noteIndex": -1,
+            "intensity": 0.8
+          }
+        },
+        {
+          "id": "chaos_gate",
+          "type": "gate",
+          "x": 150,
+          "y": 300,
+          "props": {
+            "prob": 0.4
+          }
+        },
+        {
+          "id": "chaos_mod",
+          "type": "modulator",
+          "x": 250,
+          "y": 300,
+          "props": {
+            "rate": 50,
+            "depth": 100,
+            "delay": 0
+          }
+        },
+        {
+          "id": "chaos_split",
+          "type": "splitter",
+          "x": 350,
+          "y": 300,
+          "props": {
+            "entangled": true
+          }
+        },
+        {
+          "id": "voice_a_pol",
+          "type": "oscillator",
+          "x": 450,
+          "y": 200,
+          "props": {
+            "wave": "sawtooth",
+            "ratio": 1.0,
+            "attack": 0.01,
+            "decay": 0.1,
+            "mix": 1.0
+          }
+        },
+        {
+          "id": "voice_a_spk",
+          "type": "speaker",
+          "x": 550,
+          "y": 200,
+          "props": {
+            "reverb": 0.2,
+            "pan": -0.7,
+            "volume": 0.6
+          }
+        },
+        {
+          "id": "voice_b_delay",
+          "type": "delay",
+          "x": 450,
+          "y": 400,
+          "props": {
+            "delayTime": 0.11
+          }
+        },
+        {
+          "id": "voice_b_pol",
+          "type": "oscillator",
+          "x": 550,
+          "y": 400,
+          "props": {
+            "wave": "square",
+            "ratio": 1.0,
+            "attack": 0.01,
+            "decay": 0.1,
+            "mix": 1.0
+          }
+        },
+        {
+          "id": "voice_b_spk",
+          "type": "speaker",
+          "x": 650,
+          "y": 400,
+          "props": {
+            "reverb": 0.2,
+            "pan": 0.7,
+            "volume": 0.6
+          }
+        },
+        {
+          "id": "trigger_src",
+          "type": "source",
+          "x": 50,
+          "y": 550,
+          "props": {
+            "interval": 8,
+            "midiNote": 0,
+            "noteIndex": -2,
+            "intensity": 0
+          }
+        },
+        {
+          "id": "trigger_gate",
+          "type": "gate",
+          "x": 150,
+          "y": 550,
+          "props": {
+            "prob": 0.25
+          }
+        },
+        {
+          "id": "scene_jump",
+          "type": "scene_trigger",
+          "x": 300,
+          "y": 550,
+          "props": {
+            "targetSceneIndex": 1,
+            "behavior": "crossfade"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e_c1",
+          "from": "chaos_src",
+          "to": "chaos_gate",
+          "timingMode": "fixed",
+          "durationBeats": 0.05
+        },
+        {
+          "id": "e_c2",
+          "from": "chaos_gate",
+          "to": "chaos_mod",
+          "timingMode": "fixed",
+          "durationBeats": 0.05
+        },
+        {
+          "id": "e_c3",
+          "from": "chaos_mod",
+          "to": "chaos_split",
+          "timingMode": "fixed",
+          "durationBeats": 0.05
+        },
+        {
+          "id": "e_v1",
+          "from": "chaos_split",
+          "to": "voice_a_pol",
+          "timingMode": "fixed",
+          "durationBeats": 0.05
+        },
+        {
+          "id": "e_v2",
+          "from": "voice_a_pol",
+          "to": "voice_a_spk",
+          "timingMode": "fixed",
+          "durationBeats": 0.05
+        },
+        {
+          "id": "e_v3",
+          "from": "chaos_split",
+          "to": "voice_b_delay",
+          "timingMode": "fixed",
+          "durationBeats": 0.05
+        },
+        {
+          "id": "e_v4",
+          "from": "voice_b_delay",
+          "to": "voice_b_pol",
+          "timingMode": "fixed",
+          "durationBeats": 0.05
+        },
+        {
+          "id": "e_v5",
+          "from": "voice_b_pol",
+          "to": "voice_b_spk",
+          "timingMode": "fixed",
+          "durationBeats": 0.05
+        },
+        {
+          "id": "e_t1",
+          "from": "trigger_src",
+          "to": "trigger_gate",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_t2",
+          "from": "trigger_gate",
+          "to": "scene_jump",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        }
+      ],
+      "annotations": [],
+      "regions": [],
+      "vizMode": "editor",
+      "vizConfig": null,
+      "vizTransition": {
+        "type": "crossfade",
+        "durationBeats": 2
+      }
+    },
+    {
+      "id": "scene-order",
+      "name": "II. Crystallization",
+      "color": "#00BCD4",
+      "durationBeats": 32,
+      "loopCount": 1,
+      "localBpm": 60,
+      "localRoot": 36,
+      "localScale": "lydian",
+      "enterTransition": {
+        "type": "crossfade",
+        "durationBeats": 16
+      },
+      "exitTransition": {
+        "type": "crossfade",
+        "durationBeats": 16
+      },
+      "jamTrigger": {
+        "midiNote": null,
+        "midiChannel": 1,
+        "quantize": "bar",
+        "phraseLength": 4
+      },
+      "nodes": [
+        {
+          "id": "lfo_detune",
+          "type": "lfo",
+          "x": 100,
+          "y": 50,
+          "props": {
+            "rate": 0.05,
+            "shape": "sine",
+            "min": -20,
+            "max": 20
+          }
+        },
+        {
+          "id": "crystal_src",
+          "type": "source",
+          "x": 50,
+          "y": 250,
+          "props": {
+            "interval": 4,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "crystal_split",
+          "type": "splitter",
+          "x": 150,
+          "y": 250,
+          "props": {
+            "entangled": true
+          }
+        },
+        {
+          "id": "layer1_p",
+          "type": "pitch",
+          "x": 250,
+          "y": 150,
+          "props": {
+            "mode": "shift",
+            "shift": 0
+          }
+        },
+        {
+          "id": "layer1_mod",
+          "type": "modulator",
+          "x": 350,
+          "y": 150,
+          "props": {
+            "rate": 6,
+            "depth": 10,
+            "delay": 1
+          }
+        },
+        {
+          "id": "layer1_pol",
+          "type": "oscillator",
+          "x": 450,
+          "y": 150,
+          "props": {
+            "wave": "sine",
+            "ratio": 1.0,
+            "attack": 2,
+            "decay": 6,
+            "mix": 1.0
+          }
+        },
+        {
+          "id": "layer1_spk",
+          "type": "speaker",
+          "x": 580,
+          "y": 150,
+          "props": {
+            "reverb": 0.8,
+            "pan": -0.5,
+            "volume": 0.6
+          }
+        },
+        {
+          "id": "layer2_p",
+          "type": "pitch",
+          "x": 250,
+          "y": 250,
+          "props": {
+            "mode": "shift",
+            "shift": 7
+          }
+        },
+        {
+          "id": "layer2_pol",
+          "type": "oscillator",
+          "x": 450,
+          "y": 250,
+          "props": {
+            "wave": "triangle",
+            "ratio": 1.0,
+            "attack": 2.5,
+            "decay": 7,
+            "mix": 1.0
+          }
+        },
+        {
+          "id": "layer2_spk",
+          "type": "speaker",
+          "x": 580,
+          "y": 250,
+          "props": {
+            "reverb": 0.8,
+            "pan": 0.5,
+            "volume": 0.6
+          }
+        },
+        {
+          "id": "layer3_p",
+          "type": "pitch",
+          "x": 250,
+          "y": 350,
+          "props": {
+            "mode": "shift",
+            "shift": 11
+          }
+        },
+        {
+          "id": "layer3_pol",
+          "type": "oscillator",
+          "x": 450,
+          "y": 350,
+          "props": {
+            "wave": "sine",
+            "ratio": 1.0,
+            "attack": 3,
+            "decay": 8,
+            "mix": 1.0
+          }
+        },
+        {
+          "id": "layer3_spk",
+          "type": "speaker",
+          "x": 580,
+          "y": 350,
+          "props": {
+            "reverb": 0.8,
+            "pan": 0,
+            "volume": 0.6
+          }
+        },
+        {
+          "id": "trigger_src_2",
+          "type": "source",
+          "x": 50,
+          "y": 500,
+          "props": {
+            "interval": 12,
+            "midiNote": 0,
+            "noteIndex": -2,
+            "intensity": 0
+          }
+        },
+        {
+          "id": "trigger_gate_2",
+          "type": "gate",
+          "x": 150,
+          "y": 500,
+          "props": {
+            "prob": 0.2
+          }
+        },
+        {
+          "id": "scene_jump_2",
+          "type": "scene_trigger",
+          "x": 300,
+          "y": 500,
+          "props": {
+            "targetSceneIndex": 2,
+            "behavior": "crossfade"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "cv_detune",
+          "from": "lfo_detune",
+          "to": "layer1_mod",
+          "targetParam": "depth"
+        },
+        {
+          "id": "e_c1",
+          "from": "crystal_src",
+          "to": "crystal_split",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_l1a",
+          "from": "crystal_split",
+          "to": "layer1_p",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_l1b",
+          "from": "layer1_p",
+          "to": "layer1_mod",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_l1c",
+          "from": "layer1_mod",
+          "to": "layer1_pol",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_l1d",
+          "from": "layer1_pol",
+          "to": "layer1_spk",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_l2a",
+          "from": "crystal_split",
+          "to": "layer2_p",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_l2b",
+          "from": "layer2_p",
+          "to": "layer2_pol",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_l2c",
+          "from": "layer2_pol",
+          "to": "layer2_spk",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_l3a",
+          "from": "crystal_split",
+          "to": "layer3_p",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_l3b",
+          "from": "layer3_p",
+          "to": "layer3_pol",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_l3c",
+          "from": "layer3_pol",
+          "to": "layer3_spk",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_t3",
+          "from": "trigger_src_2",
+          "to": "trigger_gate_2",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_t4",
+          "from": "trigger_gate_2",
+          "to": "scene_jump_2",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        }
+      ],
+      "annotations": [],
+      "regions": [],
+      "vizMode": "editor",
+      "vizConfig": null,
+      "vizTransition": {
+        "type": "crossfade",
+        "durationBeats": 2
+      }
+    },
+    {
+      "id": "scene-entropy",
+      "name": "III. Heat Death",
+      "color": "#795548",
+      "durationBeats": 32,
+      "loopCount": 1,
+      "localBpm": 30,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": {
+        "type": "crossfade",
+        "durationBeats": 32
+      },
+      "exitTransition": {
+        "type": "crossfade",
+        "durationBeats": 32
+      },
+      "jamTrigger": {
+        "midiNote": null,
+        "midiChannel": 1,
+        "quantize": "bar",
+        "phraseLength": 4
+      },
+      "nodes": [
+        {
+          "id": "void_src",
+          "type": "source",
+          "x": 50,
+          "y": 300,
+          "props": {
+            "interval": 16,
+            "midiNote": 24,
+            "noteIndex": -2,
+            "intensity": 0.5
+          }
+        },
+        {
+          "id": "void_split",
+          "type": "splitter",
+          "x": 150,
+          "y": 300,
+          "props": {
+            "entangled": true
+          }
+        },
+        {
+          "id": "path_a_d",
+          "type": "delay",
+          "x": 250,
+          "y": 200,
+          "props": {
+            "delayTime": 4
+          }
+        },
+        {
+          "id": "path_a_flt",
+          "type": "filter",
+          "x": 350,
+          "y": 200,
+          "props": {
+            "cutoff": 200,
+            "mod": 0,
+            "attack": 4,
+            "decay": 10
+          }
+        },
+        {
+          "id": "path_a_spk",
+          "type": "speaker",
+          "x": 450,
+          "y": 200,
+          "props": {
+            "reverb": 1,
+            "pan": -0.9,
+            "volume": 0.8
+          }
+        },
+        {
+          "id": "path_b_d",
+          "type": "delay",
+          "x": 250,
+          "y": 400,
+          "props": {
+            "delayTime": 6
+          }
+        },
+        {
+          "id": "path_b_noise",
+          "type": "oscillator",
+          "x": 350,
+          "y": 400,
+          "props": {
+            "wave": "brown",
+            "ratio": 1.0,
+            "attack": 4,
+            "decay": 10,
+            "mix": 0.5
+          }
+        },
+        {
+          "id": "path_b_spk",
+          "type": "speaker",
+          "x": 450,
+          "y": 400,
+          "props": {
+            "reverb": 1,
+            "pan": 0.9,
+            "volume": 0.8
+          }
+        },
+        {
+          "id": "trigger_src_3",
+          "type": "source",
+          "x": 50,
+          "y": 550,
+          "props": {
+            "interval": 10,
+            "midiNote": 0,
+            "noteIndex": -2,
+            "intensity": 0
+          }
+        },
+        {
+          "id": "trigger_gate_3",
+          "type": "gate",
+          "x": 150,
+          "y": 550,
+          "props": {
+            "prob": 0.3
+          }
+        },
+        {
+          "id": "scene_jump_3",
+          "type": "scene_trigger",
+          "x": 300,
+          "y": 550,
+          "props": {
+            "targetSceneIndex": 0,
+            "behavior": "crossfade"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e_v1",
+          "from": "void_src",
+          "to": "void_split",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_v2",
+          "from": "void_split",
+          "to": "path_a_d",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_v3",
+          "from": "path_a_d",
+          "to": "path_a_flt",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_v4",
+          "from": "path_a_flt",
+          "to": "path_a_spk",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_v5",
+          "from": "void_split",
+          "to": "path_b_d",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_v6",
+          "from": "path_b_d",
+          "to": "path_b_noise",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_v7",
+          "from": "path_b_noise",
+          "to": "path_b_spk",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_t5",
+          "from": "trigger_src_3",
+          "to": "trigger_gate_3",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        },
+        {
+          "id": "e_t6",
+          "from": "trigger_gate_3",
+          "to": "scene_jump_3",
+          "timingMode": "fixed",
+          "durationBeats": 0.1
+        }
+      ],
+      "annotations": [],
+      "regions": [],
+      "vizMode": "editor",
+      "vizConfig": null,
+      "vizTransition": {
+        "type": "crossfade",
+        "durationBeats": 2
+      }
+    }
+  ],
+  "arrangement": [
+    {
+      "id": "slot-1",
+      "sceneId": "scene-chaos",
+      "startBeat": 0,
+      "channel": 0
+    },
+    {
+      "id": "282ebaee-cca5-4747-aafb-905adb8d8172",
+      "sceneId": "scene-order",
+      "startBeat": 0,
+      "channel": 1
+    }
+  ],
+  "channels": [
+    {
+      "id": "channel-0",
+      "name": "Track 1",
+      "color": "#4CAF50",
+      "muted": false,
+      "solo": false,
+      "volume": 1
+    },
+    {
+      "id": "99b9f328-ffe8-4999-b7c9-69676e359f6b",
+      "name": "Track 2",
+      "color": "#ab47bc",
+      "muted": false,
+      "solo": false,
+      "volume": 1
+    }
+  ]
+}
