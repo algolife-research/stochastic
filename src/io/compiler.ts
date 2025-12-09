@@ -138,7 +138,7 @@ export function compileGraph(
               timbre: 0,
               cutoff: 20000 as Frequency,
               gain: intensity,
-              holdTime: 0.05,
+              holdTime: 0,
               releaseTime: 0.1,
             },
           });
@@ -309,7 +309,6 @@ function processArrival(
           mod,
         };
       }
-      payload.timbre = Math.min(1, payload.timbre + 0.2);
       forwardPacket(node.id, payload, edges, simPackets, currentTime);
       break;
     }

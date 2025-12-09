@@ -11,6 +11,7 @@ import type { MIDIEvent } from '../io/midi';
 import type { AudioEvent } from '../io/compiler';
 import type { VideoResolution, VizConfig } from '@core/types';
 import { getDefaultVizConfig } from '@core/store';
+import { getEffectiveBpm } from '@core/constants';
 import styles from './ExportModal.module.css';
 // Video resolution options
 const RESOLUTIONS: VideoResolution[] = [
@@ -137,12 +138,17 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
         setProgressPhase('Compiling audio...');
         setProgress(2);
         
+        // Calculate effective BPM for video audio (use scene's local BPM if available)
+        const videoEffectiveBpm = useArrangement 
+          ? masterSpeed  // Arrangement handles scene BPMs internally
+          : getEffectiveBpm(currentScene ?? null, masterSpeed);
+        
         // Compile audio events
         let audioEvents: AudioEvent[];
         if (useArrangement) {
           audioEvents = compileArrangement(scenes, arrangement, musicalContext, globalSettings, masterSpeed);
         } else {
-          audioEvents = compileGraph(nodes, edges, videoDuration, musicalContext, globalSettings);
+          audioEvents = compileGraph(nodes, edges, videoDuration, musicalContext, globalSettings, videoEffectiveBpm);
         }
         
         if (audioEvents.length > 0) {
@@ -300,12 +306,17 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
     
     setProgress(10);
     
+    // Calculate effective BPM (use scene's local BPM if available)
+    const effectiveBpm = useArrangement 
+      ? masterSpeed  // Arrangement handles scene BPMs internally
+      : getEffectiveBpm(currentScene ?? null, masterSpeed);
+    
     // Compile graph or arrangement to audio events
     let events: AudioEvent[];
     if (useArrangement) {
       events = compileArrangement(scenes, arrangement, musicalContext, globalSettings, masterSpeed);
     } else {
-      events = compileGraph(nodes, edges, duration, musicalContext, globalSettings);
+      events = compileGraph(nodes, edges, duration, musicalContext, globalSettings, effectiveBpm);
     }
     
     setProgress(30);
@@ -341,12 +352,17 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
     
     setProgress(10);
     
+    // Calculate effective BPM (use scene's local BPM if available)
+    const effectiveBpm = useArrangement 
+      ? masterSpeed  // Arrangement handles scene BPMs internally
+      : getEffectiveBpm(currentScene ?? null, masterSpeed);
+    
     // Compile graph or arrangement to audio events
     let audioEvents: AudioEvent[];
     if (useArrangement) {
       audioEvents = compileArrangement(scenes, arrangement, musicalContext, globalSettings, masterSpeed);
     } else {
-      audioEvents = compileGraph(nodes, edges, duration, musicalContext, globalSettings);
+      audioEvents = compileGraph(nodes, edges, duration, musicalContext, globalSettings, effectiveBpm);
     }
     
     if (audioEvents.length === 0) {
@@ -358,7 +374,7 @@ export function ExportModal({ visible, onClose }: ExportModalProps): React.React
     
     // Convert audio events to MIDI events
     const midiEvents: MIDIEvent[] = [];
-    const bpm = masterSpeed;
+    const bpm = effectiveBpm;
     
     for (const event of audioEvents) {
       // Convert frequency to MIDI note (if not already available)
@@ -804,8 +820,133 @@ async function renderEventsToBuffer(
     }
   }
   
+  onProgress(0.9);
+  
+  // Apply reverb (matches live audio engine)
+  const reverbMix = 0.3; // Same as engine.ts reverbGain
+  applyReverb(audioBuffer, sampleRate, reverbMix);
+  
   onProgress(1);
   return audioBuffer;
+}
+
+/**
+ * Apply reverb to audio buffer using efficient Schroeder reverb
+ * This is much faster than true convolution while sounding similar
+ */
+function applyReverb(audioBuffer: AudioBuffer, sampleRate: number, wetMix: number): void {
+  const leftChannel = audioBuffer.getChannelData(0);
+  const rightChannel = audioBuffer.getChannelData(1);
+  const numSamples = audioBuffer.length;
+  
+  // Create wet buffers
+  const wetLeft = new Float32Array(numSamples);
+  const wetRight = new Float32Array(numSamples);
+  
+  // Schroeder reverb with 4 parallel comb filters + 2 allpass filters
+  // Delay times in samples (prime-ish numbers for less metallic sound)
+  const combDelays = [
+    Math.floor(0.0297 * sampleRate), // ~1307 samples at 44.1k
+    Math.floor(0.0371 * sampleRate), // ~1636 samples
+    Math.floor(0.0411 * sampleRate), // ~1812 samples  
+    Math.floor(0.0437 * sampleRate), // ~1927 samples
+  ];
+  const combFeedback = 0.84; // RT60 ~2 seconds
+  
+  const allpassDelays = [
+    Math.floor(0.0050 * sampleRate), // ~220 samples
+    Math.floor(0.0017 * sampleRate), // ~75 samples
+  ];
+  const allpassFeedback = 0.5;
+  
+  // Comb filter buffers
+  const combBuffersL = combDelays.map(d => new Float32Array(d));
+  const combBuffersR = combDelays.map(d => new Float32Array(d));
+  const combIdxs = combDelays.map(() => 0);
+  
+  // Allpass filter buffers
+  const allpassBuffersL = allpassDelays.map(d => new Float32Array(d));
+  const allpassBuffersR = allpassDelays.map(d => new Float32Array(d));
+  const allpassIdxs = allpassDelays.map(() => 0);
+  
+  // Process each sample
+  for (let i = 0; i < numSamples; i++) {
+    const inputL = leftChannel[i]!;
+    const inputR = rightChannel[i]!;
+    
+    // Parallel comb filters
+    let combOutL = 0;
+    let combOutR = 0;
+    
+    for (let c = 0; c < combDelays.length; c++) {
+      const delay = combDelays[c]!;
+      const bufL = combBuffersL[c]!;
+      const bufR = combBuffersR[c]!;
+      const idx = combIdxs[c]!;
+      
+      // Read delayed sample
+      const delayedL = bufL[idx]!;
+      const delayedR = bufR[idx]!;
+      
+      // Write new sample with feedback
+      bufL[idx] = inputL + delayedL * combFeedback;
+      bufR[idx] = inputR + delayedR * combFeedback;
+      
+      // Accumulate output
+      combOutL += delayedL;
+      combOutR += delayedR;
+      
+      // Advance index
+      combIdxs[c] = (idx + 1) % delay;
+    }
+    
+    // Scale comb output
+    combOutL *= 0.25;
+    combOutR *= 0.25;
+    
+    // Series allpass filters
+    let allpassOutL = combOutL;
+    let allpassOutR = combOutR;
+    
+    for (let a = 0; a < allpassDelays.length; a++) {
+      const delay = allpassDelays[a]!;
+      const bufL = allpassBuffersL[a]!;
+      const bufR = allpassBuffersR[a]!;
+      const idx = allpassIdxs[a]!;
+      
+      // Read delayed sample
+      const delayedL = bufL[idx]!;
+      const delayedR = bufR[idx]!;
+      
+      // Allpass formula: y[n] = -g*x[n] + x[n-D] + g*y[n-D]
+      const tempL = -allpassFeedback * allpassOutL + delayedL;
+      const tempR = -allpassFeedback * allpassOutR + delayedR;
+      
+      // Write to buffer
+      bufL[idx] = allpassOutL + allpassFeedback * delayedL;
+      bufR[idx] = allpassOutR + allpassFeedback * delayedR;
+      
+      allpassOutL = tempL;
+      allpassOutR = tempR;
+      
+      // Advance index
+      allpassIdxs[a] = (idx + 1) % delay;
+    }
+    
+    wetLeft[i] = allpassOutL;
+    wetRight[i] = allpassOutR;
+  }
+  
+  // Mix dry and wet signals
+  const dryMix = 1.0;
+  for (let i = 0; i < numSamples; i++) {
+    leftChannel[i] = Math.max(-1, Math.min(1, 
+      leftChannel[i]! * dryMix + wetLeft[i]! * wetMix
+    ));
+    rightChannel[i] = Math.max(-1, Math.min(1, 
+      rightChannel[i]! * dryMix + wetRight[i]! * wetMix
+    ));
+  }
 }
 
 function updateVoiceEnvelope(voice: RenderVoice, dt: number): void {
