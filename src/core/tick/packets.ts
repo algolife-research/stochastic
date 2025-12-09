@@ -2,7 +2,7 @@
 // Handles packet updates, movement, and arrival processing
 
 import { getGraphStore } from '../store';
-import type { Packet, GraphNode, PacketId, CrossoverProps } from '../types';
+import type { Packet, GraphNode, GraphEdge, PacketId, CrossoverProps } from '../types';
 import { createPacketId } from '../types';
 import { dist, MAX_PACKETS } from '../constants';
 import { processNodeArrival, getTeleporterExits, consumePendingTunnelSpeakers } from '../engine';
@@ -22,7 +22,7 @@ export function updatePackets(deltaTime: number): void {
   
   const packetsToDelete: PacketId[] = [];
   const packetsToSpawn: Packet[] = [];
-  const arrivals: Array<{ packet: Packet; node: GraphNode; edge: unknown }> = [];
+  const arrivals: Array<{ packet: Packet; node: GraphNode; edge: GraphEdge }> = [];
   
   store.packets.forEach((packet) => {
     const edge = store.getEdge(packet.edgeId);
@@ -94,7 +94,7 @@ export function updatePackets(deltaTime: number): void {
     }
     
     // Process node type
-    const processedPayload = processNodeArrival(packet, node, edge as never);
+    const processedPayload = processNodeArrival(packet, node, edge);
     
     // Handle special node types
     if (node.type === 'gate') {

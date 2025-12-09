@@ -11,6 +11,11 @@ import type { ArrangementSlot, ArrangementChannel, Scene, SceneId } from '@core/
 const PIXELS_PER_BEAT = 8;
 const TRACK_HEIGHT = 52;
 
+interface ArrangementTimelineProps {
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+}
+
 interface SlotBlockProps {
   slot: ArrangementSlot;
   scene: Scene | undefined;
@@ -247,7 +252,7 @@ function TrackRow({
   );
 }
 
-export function ArrangementTimeline() {
+export function ArrangementTimeline({ collapsed, onToggleCollapse }: ArrangementTimelineProps) {
   const scenes = useGraphStore(selectScenes);
   const arrangement = useGraphStore(selectArrangement);
   const arrangementChannels = useGraphStore(state => state.arrangementChannels);
@@ -413,7 +418,18 @@ export function ArrangementTimeline() {
   }
   
   return (
-    <div className={styles.timeline}>
+    <div className={`${styles.timeline} ${collapsed ? styles.collapsed : ''}`}>
+      {/* Collapse toggle button */}
+      <button 
+        className={styles.collapseToggle}
+        onClick={onToggleCollapse}
+        title={collapsed ? 'Expand Arrangement' : 'Collapse Arrangement'}
+      >
+        {collapsed ? '▲' : '▼'}
+      </button>
+      
+      {!collapsed && (
+        <>
       <div className={styles.header}>
         <h4>Composition</h4>
         <div className={styles.headerInfo}>
@@ -527,6 +543,8 @@ export function ArrangementTimeline() {
             ))
           )}
         </div>
+      )}
+        </>
       )}
     </div>
   );

@@ -5,9 +5,45 @@
   background: var(--bg-secondary, #1a1a2e);
   border-top: 1px solid var(--border-color, #333);
   font-size: 12px;
-  min-height: 100px;
+  min-height: 32px;
   display: flex;
   flex-direction: column;
+  height: 200px;
+  transition: height 0.3s ease;
+  overflow: hidden;
+}
+
+.timeline.collapsed {
+  height: 32px;
+}
+
+.collapseToggle {
+  position: absolute;
+  top: 4px;
+  right: 50%;
+  transform: translateX(50%);
+  z-index: 100;
+  width: 40px;
+  height: 24px;
+  border: 2px solid var(--border-color, #555);
+  border-radius: 4px;
+  background: var(--bg-primary, #252538);
+  color: var(--text-primary, #fff);
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.collapseToggle:hover {
+  background: var(--accent-color, #4a9eff);
+  border-color: var(--accent-color, #4a9eff);
+  color: #fff;
+  transform: translateX(50%) scale(1.05);
 }
 
 .header {

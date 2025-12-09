@@ -57,7 +57,7 @@ export const createPacketActions = (
             releaseTime: 0.1,
           },
         };
-        stateToUpdate.packets.set(packetId, packet as never);
+        stateToUpdate.packets.set(packetId, packet);
       });
       
       // Flash source node
@@ -70,7 +70,7 @@ export const createPacketActions = (
   
   addPacket: (packet: Packet): void => {
     set(state => {
-      state.packets.set(packet.id, packet as never);
+      state.packets.set(packet.id, packet);
     });
   },
   

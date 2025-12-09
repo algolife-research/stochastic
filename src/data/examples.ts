@@ -2533,11 +2533,11 @@ function loadSingleSceneExample(store: ReturnType<typeof import('@core/store').g
     const fromId = idMap.get(edge.from);
     const toId = idMap.get(edge.to);
     if (fromId && toId) {
-      store.addEdge(fromId as never, toId as never, {
+      store.addEdge(fromId, toId, {
         timingMode: edge.timingMode ?? 'physical',
         durationBeats: edge.durationBeats ?? null,
         targetParam: edge.targetParam ?? null
-      } as never);
+      });
     }
   });
   
@@ -2590,11 +2590,11 @@ function loadMultiSceneExample(store: ReturnType<typeof import('@core/store').ge
       const fromId = idMap.get(edge.from);
       const toId = idMap.get(edge.to);
       if (fromId && toId) {
-        store.addEdge(fromId as never, toId as never, {
+        store.addEdge(fromId, toId, {
           timingMode: edge.timingMode ?? 'physical',
           durationBeats: edge.durationBeats ?? null,
           targetParam: edge.targetParam ?? null
-        } as never);
+        });
       }
     });
     

@@ -61,19 +61,20 @@ export const createBulkActions = (
       state.regions.clear();
       
       nodes.forEach(node => {
-        state.nodes.set(node.id, { ...node } as never);
+        // Spread creates proper copy, type is already correct
+        state.nodes.set(node.id, { ...node });
       });
       
       edges.forEach(edge => {
-        state.edges.set(edge.id, { ...edge } as never);
+        state.edges.set(edge.id, { ...edge });
       });
       
       annotations.forEach(ann => {
-        state.annotations.set(ann.id, { ...ann } as never);
+        state.annotations.set(ann.id, { ...ann });
       });
       
       regions.forEach(region => {
-        state.regions.set(region.id, { ...region } as never);
+        state.regions.set(region.id, { ...region });
       });
       
       state.selection = defaultSelectionState();

@@ -2,6 +2,7 @@
 // Extracts musical data from the graph engine for visualization
 
 import { getGraphStore } from '@core/store';
+import { audioEngine } from '@audio/engine';
 import type { 
   VizMusicalData, 
   VizPacketData, 
@@ -122,9 +123,16 @@ function extractNodeData(state: GraphStoreState): VizNodeData[] {
 
 /** Extract active notes from audio engine */
 function extractActiveNotes(): VizNoteData[] {
-  // TODO: Hook into audio engine to get active voices
-  // For now, return empty array - will be implemented when audio integration is ready
-  return [];
+  // Get active voices from audio engine
+  const activeVoices = audioEngine.getActiveVoices();
+  
+  return activeVoices.map(voice => ({
+    frequency: voice.freq as Frequency,
+    gain: voice.gain,
+    pan: voice.pan,
+    envelope: voice.envelope,
+    waveType: voice.wave as import('@core/types').WaveType,
+  }));
 }
 
 /** Compute average frequency of active sounds */

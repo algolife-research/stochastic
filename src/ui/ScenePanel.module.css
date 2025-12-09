@@ -8,13 +8,51 @@
   border-left: 1px solid var(--border-color, #333);
   color: var(--text-primary, #e0e0e0);
   font-size: 13px;
+  position: relative;
+  width: 280px;
+  transition: width 0.3s ease;
+}
+
+.panel.collapsed {
+  width: 32px;
+  min-width: 32px;
+}
+
+.collapseToggle {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 10;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 4px;
+  background: var(--bg-tertiary, #0f0f1a);
+  color: var(--text-secondary, #888);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.collapsed .collapseToggle {
+  left: 4px;
+  top: 8px;
+}
+
+.collapseToggle:hover {
+  background: var(--bg-hover, #252538);
+  color: var(--text-primary, #fff);
+  border-color: var(--accent-color, #4a9eff);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 12px 16px 12px 36px;
   border-bottom: 1px solid var(--border-color, #333);
   background: var(--bg-tertiary, #0f0f1a);
 }

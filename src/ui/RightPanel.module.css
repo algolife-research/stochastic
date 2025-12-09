@@ -9,11 +9,49 @@
   width: 280px;
   min-width: 250px;
   max-width: 300px;
+  position: relative;
+  transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+}
+
+.panel.collapsed {
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+}
+
+.collapseToggle {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 10;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #0f0f1a;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.collapsed .collapseToggle {
+  left: 4px;
+  top: 8px;
+}
+
+.collapseToggle:hover {
+  background: #252538;
+  color: #fff;
+  border-color: #4a9eff;
 }
 
 .toggleHeader {
   display: flex;
-  padding: 8px;
+  padding: 8px 8px 8px 36px;
   gap: 4px;
   background: #222;
   border-bottom: 1px solid #333;

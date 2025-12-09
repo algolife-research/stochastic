@@ -222,7 +222,7 @@ export function deserializeGraph(data: SerializedGraph): {
       type: n.type as GraphNode['type'],
       x: n.x,
       y: n.y,
-      props: n.props as any,
+      props: n.props as Record<string, unknown>,
     })),
     edges: data.graph.edges.map(e => ({
       id: e.id as EdgeId,
@@ -379,7 +379,7 @@ export function deserializeScene(data: SerializedScene): Scene {
       type: n.type as GraphNode['type'],
       x: n.x,
       y: n.y,
-      props: n.props as any,
+      props: n.props as Record<string, unknown>,
       timer: 0,
       lastTrigger: 0,
       flash: 0,
@@ -412,9 +412,9 @@ export function deserializeScene(data: SerializedScene): Scene {
       color: r.color,
     })) ?? [],
     // Viz properties with defaults for backward compatibility
-    vizMode: (data as any).vizMode ?? 'editor',
-    vizConfig: (data as any).vizConfig ?? null,
-    vizTransition: (data as any).vizTransition ?? { type: 'crossfade', durationBeats: 2 },
+    vizMode: (data.vizMode ?? 'editor') as VizMode,
+    vizConfig: data.vizConfig as VizConfig | null ?? null,
+    vizTransition: (data.vizTransition ?? { type: 'crossfade', durationBeats: 2 }) as VizTransition,
   };
 }
 

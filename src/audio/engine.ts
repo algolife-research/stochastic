@@ -8,6 +8,20 @@ import { midiToFreq } from '@core/constants';
 import workletUrl from './worklet.ts?worker&url';
 
 // ============================================================================
+// TYPES
+// ============================================================================
+
+export interface ActiveVoice {
+  id: string;
+  freq: number;
+  gain: number;
+  pan: number;
+  wave: string;
+  envelope: number;
+  state: 'attack' | 'hold' | 'decay' | 'release';
+}
+
+// ============================================================================
 // AUDIO ENGINE CLASS
 // ============================================================================
 
@@ -19,6 +33,8 @@ export class AudioEngine {
   private reverbGain: GainNode | null = null;
   private isInitialized: boolean = false;
   private isMuted: boolean = false;
+  private activeVoices: ActiveVoice[] = [];
+  private voiceQueryPending: boolean = false;
   
   /**
    * Initialize the audio engine
@@ -45,6 +61,14 @@ export class AudioEngine {
       numberOfOutputs: 1,
       outputChannelCount: [2], // Stereo output
     });
+    
+    // Listen for voice updates from worklet
+    this.synthNode.port.onmessage = (event) => {
+      if (event.data.type === 'voicesResponse') {
+        this.activeVoices = event.data.voices;
+        this.voiceQueryPending = false;
+      }
+    };
     
     // Create master gain
     this.masterGain = this.audioContext.createGain();
@@ -233,6 +257,20 @@ export class AudioEngine {
         0.01
       );
     }
+  }
+  
+  /**
+   * Get currently active voices for visualization
+   * This queries the worklet and returns cached results
+   */
+  getActiveVoices(): ActiveVoice[] {
+    // Request update from worklet if not already pending
+    if (!this.voiceQueryPending && this.synthNode) {
+      this.voiceQueryPending = true;
+      this.synthNode.port.postMessage({ type: 'getVoices' });
+    }
+    
+    return this.activeVoices;
   }
   
   /**

@@ -33,6 +33,11 @@ export function App(): React.ReactElement {
   const [showSettings, setShowSettings] = useState(false);
   const [showExport, setShowExport] = useState(false);
   
+  // Panel collapse state
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
+  const [bottomPanelCollapsed, setBottomPanelCollapsed] = useState(false);
+  
   const isRunning = useGraphStore(state => state.isRunning);
   const selection = useGraphStore(state => state.selection);
   const nodes = useGraphStore(state => state.nodes);
@@ -162,7 +167,10 @@ export function App(): React.ReactElement {
       {/* Main content area */}
       <div className={styles['mainContent']}>
         {/* Scene panel on the left */}
-        <ScenePanel />
+        <ScenePanel 
+          collapsed={leftPanelCollapsed}
+          onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+        />
         
         {/* Canvas container */}
         <div ref={containerRef} className={styles['canvasContainer']}>
@@ -185,11 +193,16 @@ export function App(): React.ReactElement {
           selectedEdge={selectedEdge ?? undefined}
           selectedAnnotation={selectedAnnotation ?? undefined}
           selectedRegion={selectedRegion ?? undefined}
+          collapsed={rightPanelCollapsed}
+          onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
         />
       </div>
       
       {/* Arrangement timeline (bottom) */}
-      <ArrangementTimeline />
+      <ArrangementTimeline 
+        collapsed={bottomPanelCollapsed}
+        onToggleCollapse={() => setBottomPanelCollapsed(!bottomPanelCollapsed)}
+      />
       
       {/* Transport bar */}
       <TransportBar />

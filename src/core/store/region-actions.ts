@@ -6,6 +6,7 @@ import type {
   RegionId, NodeId, Region, GraphNode, GraphEdge, Annotation
 } from '../types';
 import { createRegionId, createNodeId, createEdgeId, createAnnotationId } from '../types';
+import { cloneNode } from '../type-guards';
 import { MIN_REGION_SIZE } from '../constants';
 
 export const createRegionActions = (
@@ -42,7 +43,7 @@ export const createRegionActions = (
     };
     
     set(s => {
-      s.regions.set(id, region as never);
+      s.regions.set(id, region);
       s.isDirty = true;
     });
     
@@ -133,24 +134,14 @@ export const createRegionActions = (
     const nodeIdMap = new Map<NodeId, NodeId>();
     
     set(s => {
-      s.regions.set(newId, newRegion as never);
+      s.regions.set(newId, newRegion);
       
       // Duplicate nodes
       contents.nodes.forEach(node => {
         const newNodeId = createNodeId();
         nodeIdMap.set(node.id, newNodeId);
-        const newNode: GraphNode = {
-          id: newNodeId,
-          type: node.type,
-          x: node.x + offsetX,
-          y: node.y + offsetY,
-          props: JSON.parse(JSON.stringify(node.props)),
-          timer: 0,
-          lastTrigger: 0,
-          flash: 0,
-          heldPackets: [],
-        };
-        s.nodes.set(newNodeId, newNode as never);
+        const newNode = cloneNode(node, newNodeId, node.x + offsetX, node.y + offsetY);
+        s.nodes.set(newNodeId, newNode);
       });
       
       // Duplicate edges
@@ -167,7 +158,7 @@ export const createRegionActions = (
             durationBeats: edge.durationBeats,
             targetParam: edge.targetParam,
           };
-          s.edges.set(newEdgeId, newEdge as never);
+          s.edges.set(newEdgeId, newEdge);
         }
       });
       
@@ -182,7 +173,7 @@ export const createRegionActions = (
           fontSize: ann.fontSize,
           color: ann.color,
         };
-        s.annotations.set(newAnnId, newAnn as never);
+        s.annotations.set(newAnnId, newAnn);
       });
       
       s.isDirty = true;

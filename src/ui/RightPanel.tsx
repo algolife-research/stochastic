@@ -20,18 +20,33 @@ interface RightPanelProps {
   selectedEdge?: GraphEdge;
   selectedAnnotation?: Annotation;
   selectedRegion?: Region;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 export function RightPanel({ 
   selectedNode, 
   selectedEdge, 
   selectedAnnotation, 
-  selectedRegion 
+  selectedRegion,
+  collapsed,
+  onToggleCollapse
 }: RightPanelProps): React.ReactElement {
   const [panelMode, setPanelMode] = useState<PanelMode>('editor');
   
   return (
-    <div className={styles.panel}>
+    <div className={`${styles.panel} ${collapsed ? styles.collapsed : ''}`}>
+      {/* Collapse toggle button */}
+      <button 
+        className={styles.collapseToggle}
+        onClick={onToggleCollapse}
+        title={collapsed ? 'Expand Panel' : 'Collapse Panel'}
+      >
+        {collapsed ? '◀' : '▶'}
+      </button>
+      
+      {!collapsed && (
+        <>
       {/* Mode Toggle */}
       <div className={styles.toggleHeader}>
         <button
@@ -77,6 +92,8 @@ export function RightPanel({
           <ScenePropertiesPanel />
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

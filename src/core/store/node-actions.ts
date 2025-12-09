@@ -3,10 +3,11 @@
 
 import type { GraphStore, ImmerSet } from './types';
 import type { 
-  NodeId, EdgeId, GraphNode, GraphEdge, NodeType, AudioPayload
+  NodeId, EdgeId, GraphNode, NodeType, AudioPayload
 } from '../types';
 import { createNodeId, createEdgeId } from '../types';
 import { getDefaultProps } from '../constants';
+import { createTypedNode, createTypedEdge, createTypedHeldPacket, cloneNode } from '../type-guards';
 
 export const createNodeActions = (
   set: ImmerSet,
@@ -37,20 +38,10 @@ export const createNodeActions = (
       finalProps = { ...props, channel, isEntry: true };
     }
     
-    const node: GraphNode = {
-      id,
-      type,
-      x,
-      y,
-      props: finalProps as GraphNode['props'],
-      timer: 0,
-      lastTrigger: 0,
-      flash: 0,
-      heldPackets: [],
-    };
+    const node = createTypedNode(type, id, x, y, finalProps);
     
     set(state => {
-      state.nodes.set(id, node as never);
+      state.nodes.set(id, node);
       state.isDirty = true;
     });
     
@@ -76,9 +67,9 @@ export const createNodeActions = (
           props: {
             ...node.props,
             ...props,
-          } as any,
+          },
         };
-        state.nodes.set(id, newNode as never);
+        state.nodes.set(id, newNode);
         state.isDirty = true;
       }
     });
@@ -139,7 +130,7 @@ export const createNodeActions = (
     set(state => {
       const node = state.nodes.get(id);
       if (node) {
-        node.heldPackets.push({ payload: { ...payload } as never, releaseTime });
+        node.heldPackets.push(createTypedHeldPacket(payload, releaseTime));
       }
     });
   },
@@ -162,20 +153,10 @@ export const createNodeActions = (
     if (!node) return null;
     
     const newId = createNodeId();
-    const newNode: GraphNode = {
-      id: newId,
-      type: node.type,
-      x: node.x + 50,
-      y: node.y + 50,
-      props: JSON.parse(JSON.stringify(node.props)),
-      timer: 0,
-      lastTrigger: 0,
-      flash: 0,
-      heldPackets: [],
-    };
+    const newNode = cloneNode(node, newId, node.x + 50, node.y + 50);
     
     set(s => {
-      s.nodes.set(newId, newNode as never);
+      s.nodes.set(newId, newNode);
       s.isDirty = true;
     });
     
@@ -199,20 +180,10 @@ export const createNodeActions = (
       nodeIdMap.set(id, newId);
       newNodeIds.push(newId);
       
-      const newNode: GraphNode = {
-        id: newId,
-        type: node.type,
-        x: node.x + 50,
-        y: node.y + 50,
-        props: JSON.parse(JSON.stringify(node.props)),
-        timer: 0,
-        lastTrigger: 0,
-        flash: 0,
-        heldPackets: [],
-      };
+      const newNode = cloneNode(node, newId, node.x + 50, node.y + 50);
       
       set(s => {
-        s.nodes.set(newId, newNode as never);
+        s.nodes.set(newId, newNode);
       });
     });
     
@@ -222,16 +193,16 @@ export const createNodeActions = (
       const newTo = nodeIdMap.get(edge.to);
       if (newFrom && newTo) {
         const newEdgeId = createEdgeId();
-        const newEdge: GraphEdge = {
-          id: newEdgeId,
-          from: newFrom,
-          to: newTo,
-          timingMode: edge.timingMode,
-          durationBeats: edge.durationBeats,
-          targetParam: edge.targetParam,
-        };
+        const newEdge = createTypedEdge(
+          newEdgeId,
+          newFrom,
+          newTo,
+          edge.timingMode,
+          edge.durationBeats,
+          edge.targetParam
+        );
         set(s => {
-          s.edges.set(newEdgeId, newEdge as never);
+          s.edges.set(newEdgeId, newEdge);
         });
       }
     });
@@ -311,20 +282,17 @@ export const createNodeActions = (
       const newId = createNodeId();
       newNodeIds.push(newId);
       
-      const newNode: GraphNode = {
-        id: newId,
-        type: clipNode.type,
-        x: pasteX + clipNode.relX,
-        y: pasteY + clipNode.relY,
-        props: JSON.parse(JSON.stringify(clipNode.props)),
-        timer: 0,
-        lastTrigger: 0,
-        flash: 0,
-        heldPackets: [],
-      };
+      // Use JSON for deep copy to maintain type compatibility
+      const newNode = createTypedNode(
+        clipNode.type,
+        newId,
+        pasteX + clipNode.relX,
+        pasteY + clipNode.relY,
+        JSON.parse(JSON.stringify(clipNode.props)) as any
+      );
       
       set(s => {
-        s.nodes.set(newId, newNode as never);
+        s.nodes.set(newId, newNode);
       });
     });
     
@@ -333,16 +301,16 @@ export const createNodeActions = (
       const toId = newNodeIds[clipEdge.toIndex];
       if (fromId && toId) {
         const newEdgeId = createEdgeId();
-        const newEdge: GraphEdge = {
-          id: newEdgeId,
-          from: fromId,
-          to: toId,
-          timingMode: clipEdge.timingMode,
-          durationBeats: clipEdge.durationBeats,
-          targetParam: clipEdge.targetParam,
-        };
+        const newEdge = createTypedEdge(
+          newEdgeId,
+          fromId,
+          toId,
+          clipEdge.timingMode,
+          clipEdge.durationBeats,
+          clipEdge.targetParam
+        );
         set(s => {
-          s.edges.set(newEdgeId, newEdge as never);
+          s.edges.set(newEdgeId, newEdge);
         });
       }
     });
@@ -435,22 +403,19 @@ export const createNodeActions = (
       });
       
       // Create tunnel
-      const tunnelNode: GraphNode<'tunnel'> = {
-        id: tunnelId,
-        type: 'tunnel',
-        x: centerX,
-        y: centerY,
-        props: {
+      const tunnelNode = createTypedNode(
+        'tunnel',
+        tunnelId,
+        centerX,
+        centerY,
+        {
           tunnelName: 'Custom',
           subNodes,
-        },
-        timer: 0,
-        lastTrigger: 0,
-        flash: 0,
-        heldPackets: [],
-      };
+        }
+      );
       
-      s.nodes.set(tunnelId, tunnelNode as never);
+      // Widen type for Map insertion
+      s.nodes.set(tunnelId, tunnelNode as GraphNode);
       s.selection.selectedNodeIds = [tunnelId];
       s.isDirty = true;
     });

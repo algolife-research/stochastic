@@ -10,7 +10,8 @@ import type {
   MidiNote,
   WaveOrNoiseType,
   MusicalContext,
-  GlobalSettings 
+  GlobalSettings,
+  PropsForNodeType
 } from '@core/types';
 
 export interface AudioEvent {
@@ -79,7 +80,8 @@ export function compileGraph(
   // Initialize source node timers
   for (const node of nodes.values()) {
     if (node.type === 'source') {
-      const interval = (node.props as any).interval || 2;
+      const props = node.props as PropsForNodeType<'source'>;
+      const interval = props.interval || 2;
       nodeTimers.set(node.id, { lastEmit: -Infinity, interval });
     }
   }
@@ -99,7 +101,7 @@ export function compileGraph(
       if (currentBeat - timer.lastEmit >= timer.interval) {
         timer.lastEmit = currentBeat;
         
-        const props = node.props as any;
+        const props = node.props as PropsForNodeType<'source'>;
         const noteIndex = props.noteIndex ?? -1;
         const intensity = props.intensity ?? 0.5;
         
@@ -229,7 +231,7 @@ function processArrival(
   
   switch (node.type) {
     case 'speaker': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'speaker'>;
       const volume = props.volume ?? 1.0;
       const pan = props.pan ?? 0;
       const reverb = props.reverb ?? 0;
@@ -256,8 +258,9 @@ function processArrival(
     }
     
     case 'pitch': {
-      const props = node.props as any;
-      const semitones = props.semitones ?? 0;
+      const props = node.props as PropsForNodeType<'pitch'>;
+      // Compiler only supports shift mode for now
+      const semitones = props.shift ?? 0;
       const newMidi = Math.max(0, Math.min(127, payload.midiNote + semitones));
       payload.midiNote = newMidi as MidiNote;
       payload.freq = (440 * Math.pow(2, (newMidi - 69) / 12)) as Frequency;
@@ -266,7 +269,7 @@ function processArrival(
     }
     
     case 'oscillator': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'oscillator'>;
       const wave = props.wave ?? 'sawtooth';
       const attack = props.attack ?? 0.01;
       const decay = props.decay ?? 0.4;
@@ -290,7 +293,7 @@ function processArrival(
     }
     
     case 'modulator': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'modulator'>;
       payload.vibratoRate = props.rate ?? 5;
       payload.vibratoDepth = props.depth ?? 20;
       payload.vibratoDelay = props.delay ?? 0.2;
@@ -299,7 +302,7 @@ function processArrival(
     }
     
     case 'filter': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'filter'>;
       payload.cutoff = (props.cutoff ?? 20000) as Frequency;
       const mod = props.mod ?? 0;
       if (mod !== 0) {
@@ -314,7 +317,7 @@ function processArrival(
     }
     
     case 'gate': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'gate'>;
       const mode = props.mode ?? 'probability';
       
       // Probability mode - simple random gate
@@ -363,7 +366,7 @@ function processArrival(
     }
     
     case 'delay': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'delay'>;
       const delayBeats = props.delayTime ?? 1;
       const delaySeconds = delayBeats * beatDuration;
       
@@ -378,7 +381,7 @@ function processArrival(
     }
     
     case 'gain': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'gain'>;
       const gainMult = props.value ?? 1.0;
       payload.gain *= gainMult;
       forwardPacket(node.id, payload, edges, simPackets, currentTime);
@@ -394,19 +397,20 @@ function processArrival(
     }
     
     case 'tunnel': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'tunnel'>;
       const subNodes = props.subNodes ?? [];
       
       let currentPayload = { ...payload };
       
       for (const subNode of subNodes) {
-        // Process each sub-node
+        // Process each sub-node (subNode.props is Record<string, unknown>)
         switch (subNode.type) {
           case 'speaker': {
             // Speaker inside tunnel - emit event
-            const volume = subNode.props.volume ?? 1.0;
-            const pan = subNode.props.pan ?? 0;
-            const reverb = subNode.props.reverb ?? 0;
+            const subProps = subNode.props as any; // SubNode type limitation
+            const volume = subProps.volume ?? 1.0;
+            const pan = subProps.pan ?? 0;
+            const reverb = subProps.reverb ?? 0;
             
             events.push({
               time: currentTime,
@@ -430,7 +434,8 @@ function processArrival(
           }
           
           case 'pitch': {
-            const semitones = subNode.props.semitones ?? subNode.props.shift ?? 0;
+            const subProps = subNode.props as any; // SubNode type limitation
+            const semitones = subProps.semitones ?? subProps.shift ?? 0;
             const newMidi = Math.max(0, Math.min(127, currentPayload.midiNote + semitones));
             currentPayload.midiNote = newMidi as MidiNote;
             currentPayload.freq = (440 * Math.pow(2, (newMidi - 69) / 12)) as Frequency;
@@ -438,15 +443,16 @@ function processArrival(
           }
           
           case 'oscillator': {
-            const attack = subNode.props.attack ?? 0.01;
-            const decay = subNode.props.decay ?? 0.4;
-            const mix = subNode.props.mix ?? 1.0;
-            const ratio = subNode.props.ratio ?? 1;
+            const subProps = subNode.props as any; // SubNode type limitation
+            const attack = subProps.attack ?? 0.01;
+            const decay = subProps.decay ?? 0.4;
+            const mix = subProps.mix ?? 1.0;
+            const ratio = subProps.ratio ?? 1;
             const existingWaves = currentPayload.waves ?? [];
-            currentPayload.wave = subNode.props.wave ?? 'sawtooth';
+            currentPayload.wave = subProps.wave ?? 'sawtooth';
             currentPayload.timbre = 0.8;
             currentPayload.waves = [...existingWaves, {
-              wave: subNode.props.wave ?? 'sawtooth',
+              wave: subProps.wave ?? 'sawtooth',
               attack,
               decay,
               gain: mix,
@@ -456,19 +462,21 @@ function processArrival(
           }
           
           case 'modulator': {
-            currentPayload.vibratoRate = subNode.props.rate ?? 5;
-            currentPayload.vibratoDepth = subNode.props.depth ?? 20;
-            currentPayload.vibratoDelay = subNode.props.delay ?? 0.2;
+            const subProps = subNode.props as any; // SubNode type limitation
+            currentPayload.vibratoRate = subProps.rate ?? 5;
+            currentPayload.vibratoDepth = subProps.depth ?? 20;
+            currentPayload.vibratoDelay = subProps.delay ?? 0.2;
             break;
           }
           
           case 'filter': {
-            currentPayload.cutoff = (subNode.props.cutoff ?? 20000) as Frequency;
-            const mod = subNode.props.mod ?? 0;
+            const subProps = subNode.props as any; // SubNode type limitation
+            currentPayload.cutoff = (subProps.cutoff ?? 20000) as Frequency;
+            const mod = subProps.mod ?? 0;
             if (mod !== 0) {
               currentPayload.filterEnv = {
-                attack: subNode.props.attack ?? 0,
-                decay: subNode.props.decay ?? 0,
+                attack: subProps.attack ?? 0,
+                decay: subProps.decay ?? 0,
                 mod,
               };
             }
@@ -476,12 +484,14 @@ function processArrival(
           }
           
           case 'gain': {
-            currentPayload.gain *= subNode.props.value ?? 1.0;
+            const subProps = subNode.props as any; // SubNode type limitation
+            currentPayload.gain *= subProps.value ?? 1.0;
             break;
           }
           
           case 'gate': {
-            if (Math.random() > (subNode.props.prob ?? 0.5)) {
+            const subProps = subNode.props as any; // SubNode type limitation
+            if (Math.random() > (subProps.prob ?? 0.5)) {
               return; // Gate blocked
             }
             break;
@@ -496,7 +506,7 @@ function processArrival(
     }
     
     case 'teleporter': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'teleporter'>;
       const channel = props.channel;
       const isEntry = props.isEntry ?? true;
       
@@ -504,7 +514,7 @@ function processArrival(
         // Find exit teleporters
         for (const n of nodes.values()) {
           if (n.type === 'teleporter' && n.id !== node.id) {
-            const nProps = n.props as any;
+            const nProps = n.props as PropsForNodeType<'teleporter'>;
             if (nProps.channel === channel && !nProps.isEntry) {
               forwardPacket(n.id, payload, edges, simPackets, currentTime);
             }
@@ -515,7 +525,7 @@ function processArrival(
     }
     
     case 'mutator': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'mutator'>;
       const probability = props.probability ?? 0.5;
       const mode = props.mode ?? 'drift';
       const targets = props.targets ?? ['pitch'];
@@ -564,7 +574,7 @@ function processArrival(
     case 'crossover': {
       // Crossover waits for two parents - simplified: just pass through with slight variation
       // For proper crossover simulation, we'd need to track packet pairs per node
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'crossover'>;
       const held = heldPackets.get(node.id) || [];
       
       if (held.length === 0) {

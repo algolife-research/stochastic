@@ -18,6 +18,7 @@ import type {
   ScaleName,
   VideoFrameData,
   VizPacketData,
+  PropsForNodeType,
   VizNodeData,
   VizNoteData,
   VizEdgeData,
@@ -87,7 +88,8 @@ export function compileVideoFrames(
   // Initialize source node timers
   for (const node of nodes.values()) {
     if (node.type === 'source') {
-      const interval = (node.props as any).interval || 2;
+      const props = node.props as PropsForNodeType<'source'>;
+      const interval = props.interval || 2;
       nodeTimers.set(node.id, { lastEmit: -Infinity, interval });
     }
     nodeFlashes.set(node.id, 0);
@@ -115,7 +117,7 @@ export function compileVideoFrames(
       if (currentBeat - timer.lastEmit >= timer.interval) {
         timer.lastEmit = currentBeat;
         
-        const props = node.props as any;
+        const props = node.props as PropsForNodeType<'source'>;
         const noteIndex = props.noteIndex ?? -1;
         const intensity = props.intensity ?? 0.5;
         
@@ -341,7 +343,7 @@ function processVideoArrival(
   
   switch (node.type) {
     case 'speaker': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'speaker'>;
       const volume = props.volume ?? 1.0;
       const pan = props.pan ?? 0;
       
@@ -359,8 +361,8 @@ function processVideoArrival(
     }
     
     case 'pitch': {
-      const props = node.props as any;
-      const semitones = props.semitones ?? 0;
+      const props = node.props as PropsForNodeType<'pitch'>;
+      const semitones = props.shift ?? 0;
       const newMidi = Math.max(0, Math.min(127, payload.midiNote + semitones));
       payload.midiNote = newMidi as MidiNote;
       payload.freq = (440 * Math.pow(2, (newMidi - 69) / 12)) as Frequency;
@@ -369,14 +371,14 @@ function processVideoArrival(
     }
     
     case 'oscillator': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'oscillator'>;
       payload.wave = props.wave ?? 'sawtooth';
       forwardPacket(node.id, payload, edges, simPackets, currentTime);
       break;
     }
     
     case 'gate': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'gate'>;
       const probability = props.prob ?? 1.0;
       // Use deterministic random for reproducibility
       if (seededRandom(currentTime * 1000 + packet.id.charCodeAt(0)) < probability) {
@@ -386,7 +388,7 @@ function processVideoArrival(
     }
     
     case 'gain': {
-      const props = node.props as any;
+      const props = node.props as PropsForNodeType<'gain'>;
       payload.gain *= props.value ?? 1.0;
       forwardPacket(node.id, payload, edges, simPackets, currentTime);
       break;

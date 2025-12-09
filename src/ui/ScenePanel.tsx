@@ -9,7 +9,12 @@ import styles from './ScenePanel.module.css';
 // SCENE PANEL
 // ============================================================================
 
-export function ScenePanel(): React.ReactElement {
+interface ScenePanelProps {
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+}
+
+export function ScenePanel({ collapsed, onToggleCollapse }: ScenePanelProps): React.ReactElement {
   const scenes = useGraphStore(selectScenes);
   const editingSceneId = useGraphStore(selectEditingSceneId);
   const activeSceneId = useGraphStore(selectActiveSceneId);
@@ -56,60 +61,72 @@ export function ScenePanel(): React.ReactElement {
   }, [queueScene]);
   
   return (
-    <div className={styles.panel}>
-      <div className={styles.header}>
-        <h3>Scenes</h3>
-        <div className={styles.headerActions}>
-          <button 
-            className={styles.iconButton} 
-            onClick={handleCreateScene}
-            title="New Scene"
-          >
-            +
-          </button>
-        </div>
-      </div>
+    <div className={`${styles.panel} ${collapsed ? styles.collapsed : ''}`}>
+      <button 
+        className={styles.collapseToggle}
+        onClick={onToggleCollapse}
+        title={collapsed ? "Expand Scenes Panel" : "Collapse Scenes Panel"}
+      >
+        {collapsed ? '▶' : '◀'}
+      </button>
       
-      {/* Playback Mode Toggle */}
-      <div className={styles.modeToggle}>
-        <button
-          className={`${styles.modeButton} ${playbackMode === 'jam' ? styles.activeMode : ''}`}
-          onClick={() => setPlaybackMode('jam')}
-          title="Jam Mode - Infinite looping with scene queuing"
-        >
-          🎵 Jam
-        </button>
-        <button
-          className={`${styles.modeButton} ${playbackMode === 'arrangement' ? styles.activeMode : ''}`}
-          onClick={() => setPlaybackMode('arrangement')}
-          title="Composition Mode - Play through timeline"
-        >
-          📋 Compose
-        </button>
-      </div>
-      
-      <div className={styles.sceneList}>
-        {scenesArray.length === 0 ? (
-          <div className={styles.emptyState}>
-            No scenes yet. Click + to create one.
+      {!collapsed && (
+        <>
+          <div className={styles.header}>
+            <h3>Scenes</h3>
+            <div className={styles.headerActions}>
+              <button 
+                className={styles.iconButton} 
+                onClick={handleCreateScene}
+                title="New Scene"
+              >
+                +
+              </button>
+            </div>
           </div>
-        ) : (
-          scenesArray.map((scene) => (
-            <SceneListItem
-              key={scene.id}
-              scene={scene}
-              isEditing={scene.id === editingSceneId}
-              isActive={scene.id === activeSceneId}
-              isSelected={scene.id === effectiveSelectedId}
-              isQueued={scene.id === scenePlayback.queuedSceneId}
-              isRunning={isRunning}
-              onClick={() => handleSceneClick(scene.id)}
-              onDoubleClick={() => handleSceneDoubleClick(scene.id)}
-              onQueue={() => handleQueueScene(scene.id)}
-            />
-          ))
-        )}
-      </div>
+          
+          {/* Playback Mode Toggle */}
+          <div className={styles.modeToggle}>
+            <button
+              className={`${styles.modeButton} ${playbackMode === 'jam' ? styles.activeMode : ''}`}
+              onClick={() => setPlaybackMode('jam')}
+              title="Jam Mode - Infinite looping with scene queuing"
+            >
+              🎵 Jam
+            </button>
+            <button
+              className={`${styles.modeButton} ${playbackMode === 'arrangement' ? styles.activeMode : ''}`}
+              onClick={() => setPlaybackMode('arrangement')}
+              title="Composition Mode - Play through timeline"
+            >
+              📋 Compose
+            </button>
+          </div>
+          
+          <div className={styles.sceneList}>
+            {scenesArray.length === 0 ? (
+              <div className={styles.emptyState}>
+                No scenes yet. Click + to create one.
+              </div>
+            ) : (
+              scenesArray.map((scene) => (
+                <SceneListItem
+                  key={scene.id}
+                  scene={scene}
+                  isEditing={scene.id === editingSceneId}
+                  isActive={scene.id === activeSceneId}
+                  isSelected={scene.id === effectiveSelectedId}
+                  isQueued={scene.id === scenePlayback.queuedSceneId}
+                  isRunning={isRunning}
+                  onClick={() => handleSceneClick(scene.id)}
+                  onDoubleClick={() => handleSceneDoubleClick(scene.id)}
+                  onQueue={() => handleQueueScene(scene.id)}
+                />
+              ))
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

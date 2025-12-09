@@ -8,7 +8,7 @@ import type {
   ModulatorProps, TunnelProps, TeleporterProps,
   QuantizerProps, LfoProps, SplitterProps, MidiOutProps, MidiCcProps, SceneTriggerProps,
   MutatorProps, CrossoverProps,
-  NodeType, Scene, SceneTransition, SceneTriggerConfig, ScenePlaybackState, ArrangementSlot
+  NodeType, Scene, SceneId, SceneTransition, SceneTriggerConfig, ScenePlaybackState, ArrangementSlot
 } from './types';
 
 // ============================================================================
@@ -479,7 +479,7 @@ export function createDefaultScene(
 ): Scene {
   const color = SCENE_COLORS[colorIndex % SCENE_COLORS.length] ?? SCENE_COLORS[0];
   return {
-    id: id as any,  // SceneId branding
+    id: id as SceneId,  // Brand string as SceneId
     name,
     color,
     nodes: [],

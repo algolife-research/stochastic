@@ -39,7 +39,7 @@ export function updateSources(now: number): void {
       spawnPacketFromSource(node.id, props);
       
       // Update last trigger time
-      store.updateNode(node.id, { lastTrigger: now } as never);
+      store.updateNode(node.id, { lastTrigger: now });
     }
   });
 }

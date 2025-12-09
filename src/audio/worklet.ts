@@ -46,7 +46,11 @@ interface SetParamMessage {
   value: number;
 }
 
-type WorkletMessage = NoteOnMessage | NoteOffMessage | SetParamMessage;
+interface GetVoicesMessage {
+  type: 'getVoices';
+}
+
+type WorkletMessage = NoteOnMessage | NoteOffMessage | SetParamMessage | GetVoicesMessage;
 
 // Voice state
 interface Voice {
@@ -131,6 +135,22 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
         if (data.param === 'masterGain') {
           this.masterGain = data.value;
         }
+        break;
+        
+      case 'getVoices':
+        // Send active voices back to main thread
+        const activeVoices = Array.from(this.voices.values())
+          .filter(v => v.state !== 'dead')
+          .map(v => ({
+            id: v.id,
+            freq: v.freq,
+            gain: v.gain * v.envelope,
+            pan: v.pan,
+            wave: v.wave,
+            envelope: v.envelope,
+            state: v.state,
+          }));
+        this.port.postMessage({ type: 'voicesResponse', voices: activeVoices });
         break;
     }
   }

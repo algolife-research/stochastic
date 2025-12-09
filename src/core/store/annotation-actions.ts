@@ -21,7 +21,7 @@ export const createAnnotationActions = (
     };
     
     set(state => {
-      state.annotations.set(id, annotation as never);
+      state.annotations.set(id, annotation);
       state.isDirty = true;
     });
     
