@@ -4,10 +4,110 @@
 import { getGraphStore } from '../store';
 import type { Packet, GraphNode, GraphEdge, PacketId, CrossoverProps } from '../types';
 import { createPacketId } from '../types';
-import { dist, MAX_PACKETS } from '../constants';
+import { 
+  dist, MAX_PACKETS, MAX_PACKET_HOPS, MAX_EDGE_VISITS, 
+  MAX_PACKET_AGE_MS, EDGE_SPAWN_COOLDOWN_MS 
+} from '../constants';
 import { processNodeArrival, getTeleporterExits, consumePendingTunnelSpeakers } from '../engine';
 import { audioEngine } from '@audio/engine';
 import { syncEntangledPayloads, performCrossover } from './crossover';
+
+// ============================================================================
+// EDGE SPAWN RATE LIMITING
+// ============================================================================
+
+/** Track last spawn time per edge to prevent burst spawning */
+const edgeLastSpawnTime = new Map<string, number>();
+
+/**
+ * Check if spawning on an edge is allowed (rate limiting)
+ */
+function canSpawnOnEdge(edgeId: string, now: number): boolean {
+  const lastSpawn = edgeLastSpawnTime.get(edgeId) ?? 0;
+  return (now - lastSpawn) >= EDGE_SPAWN_COOLDOWN_MS;
+}
+
+/**
+ * Record that a packet was spawned on an edge
+ */
+function recordEdgeSpawn(edgeId: string, now: number): void {
+  edgeLastSpawnTime.set(edgeId, now);
+}
+
+/**
+ * Clean up old edge spawn records (call periodically)
+ */
+export function cleanupEdgeSpawnRecords(): void {
+  const now = performance.now();
+  const staleThreshold = 5000; // 5 seconds
+  
+  for (const [edgeId, lastTime] of edgeLastSpawnTime.entries()) {
+    if (now - lastTime > staleThreshold) {
+      edgeLastSpawnTime.delete(edgeId);
+    }
+  }
+}
+
+// ============================================================================
+// PACKET VALIDATION
+// ============================================================================
+
+/**
+ * Check if a packet should be expired based on anti-explosion rules
+ */
+function shouldExpirePacket(packet: Packet, now: number): { expired: boolean; reason?: string } {
+  // Check TTL (hop count)
+  if (packet.hopCount !== undefined && packet.hopCount >= MAX_PACKET_HOPS) {
+    return { expired: true, reason: 'max_hops' };
+  }
+  
+  // Check age
+  if (packet.birthTime !== undefined && (now - packet.birthTime) >= MAX_PACKET_AGE_MS) {
+    return { expired: true, reason: 'max_age' };
+  }
+  
+  return { expired: false };
+}
+
+/**
+ * Check if a packet has visited an edge too many times (loop detection)
+ */
+function hasExceededEdgeVisits(packet: Packet, edgeId: string): boolean {
+  if (!packet.visitedEdges) return false;
+  
+  const visitCount = packet.visitedEdges.filter(id => id === edgeId).length;
+  return visitCount >= MAX_EDGE_VISITS;
+}
+
+/**
+ * Create packet metadata for a new/spawned packet
+ */
+function createPacketMetadata(parentPacket?: Packet, edgeId?: string): {
+  hopCount: number;
+  visitedEdges: string[];
+  birthTime: number;
+} {
+  const now = performance.now();
+  
+  if (parentPacket) {
+    // Inherit and increment from parent
+    const visitedEdges = [...(parentPacket.visitedEdges ?? [])];
+    if (edgeId) visitedEdges.push(edgeId);
+    
+    return {
+      hopCount: (parentPacket.hopCount ?? 0) + 1,
+      visitedEdges,
+      birthTime: parentPacket.birthTime ?? now,
+    };
+  }
+  
+  // New packet (from source)
+  return {
+    hopCount: 0,
+    visitedEdges: edgeId ? [edgeId] : [],
+    birthTime: now,
+  };
+}
 
 // ============================================================================
 // PACKET MOVEMENT
@@ -19,12 +119,25 @@ import { syncEntangledPayloads, performCrossover } from './crossover';
 export function updatePackets(deltaTime: number): void {
   const store = getGraphStore();
   const { globalSettings, masterSpeed } = store;
+  const now = performance.now();
   
   const packetsToDelete: PacketId[] = [];
   const packetsToSpawn: Packet[] = [];
   const arrivals: Array<{ packet: Packet; node: GraphNode; edge: GraphEdge }> = [];
   
+  // Periodically clean up edge spawn records
+  if (Math.random() < 0.01) { // ~1% of frames
+    cleanupEdgeSpawnRecords();
+  }
+  
   store.packets.forEach((packet) => {
+    // Check anti-explosion expiry first
+    const expiry = shouldExpirePacket(packet, now);
+    if (expiry.expired) {
+      packetsToDelete.push(packet.id);
+      return;
+    }
+    
     const edge = store.getEdge(packet.edgeId);
     if (!edge) {
       packetsToDelete.push(packet.id);
@@ -130,15 +243,21 @@ export function updatePackets(deltaTime: number): void {
           if (exitNode) {
             const exitEdges = store.getOutgoingEdges(exitId);
             exitEdges.forEach(outEdge => {
-              if (store.packets.size < MAX_PACKETS) {
-                packetsToSpawn.push({
-                  id: createPacketId(),
-                  edgeId: outEdge.id,
-                  t: 0,
-                  payload: { ...processedPayload },
-                  entanglementGroupId: packet.entanglementGroupId,  // Preserve entanglement
-                });
-              }
+              // Anti-explosion checks
+              if (store.packets.size >= MAX_PACKETS) return;
+              if (!canSpawnOnEdge(outEdge.id, now)) return;
+              if (hasExceededEdgeVisits(packet, outEdge.id)) return;
+              
+              const metadata = createPacketMetadata(packet, outEdge.id);
+              packetsToSpawn.push({
+                id: createPacketId(),
+                edgeId: outEdge.id,
+                t: 0,
+                payload: { ...processedPayload },
+                entanglementGroupId: packet.entanglementGroupId,  // Preserve entanglement
+                ...metadata,
+              });
+              recordEdgeSpawn(outEdge.id, now);
             });
           }
         });
@@ -192,14 +311,20 @@ export function updatePackets(deltaTime: number): void {
           // Spawn offspring on outgoing edges
           const outgoingEdges = store.getOutgoingEdges(node.id);
           outgoingEdges.forEach(outEdge => {
-            if (store.packets.size + packetsToSpawn.length < MAX_PACKETS) {
-              packetsToSpawn.push({
-                id: createPacketId(),
-                edgeId: outEdge.id,
-                t: 0,
-                payload: offspring,
-              });
-            }
+            // Anti-explosion checks
+            if (store.packets.size + packetsToSpawn.length >= MAX_PACKETS) return;
+            if (!canSpawnOnEdge(outEdge.id, now)) return;
+            if (hasExceededEdgeVisits(packet, outEdge.id)) return;
+            
+            const metadata = createPacketMetadata(packet, outEdge.id);
+            packetsToSpawn.push({
+              id: createPacketId(),
+              edgeId: outEdge.id,
+              t: 0,
+              payload: offspring,
+              ...metadata,
+            });
+            recordEdgeSpawn(outEdge.id, now);
           });
           
           return; // Don't propagate the parents
@@ -263,16 +388,22 @@ export function updatePackets(deltaTime: number): void {
     
     // Propagate to outgoing edges
     targetEdges.forEach(outEdge => {
-      if (store.packets.size + packetsToSpawn.length < MAX_PACKETS) {
-        const newPayload = { ...processedPayload };
-        packetsToSpawn.push({
-          id: createPacketId(),
-          edgeId: outEdge.id,
-          t: 0,
-          payload: newPayload,
-          entanglementGroupId,  // Propagate entanglement
-        });
-      }
+      // Anti-explosion checks
+      if (store.packets.size + packetsToSpawn.length >= MAX_PACKETS) return;
+      if (!canSpawnOnEdge(outEdge.id, now)) return;
+      if (hasExceededEdgeVisits(packet, outEdge.id)) return;
+      
+      const metadata = createPacketMetadata(packet, outEdge.id);
+      const newPayload = { ...processedPayload };
+      packetsToSpawn.push({
+        id: createPacketId(),
+        edgeId: outEdge.id,
+        t: 0,
+        payload: newPayload,
+        entanglementGroupId,  // Propagate entanglement
+        ...metadata,
+      });
+      recordEdgeSpawn(outEdge.id, now);
     });
   });
   
@@ -339,14 +470,21 @@ export function updateDelayNodes(now: number): void {
         // Spawn packets on outgoing edges
         const outgoingEdges = store.getOutgoingEdges(node.id);
         outgoingEdges.forEach(edge => {
-          if (store.packets.size < MAX_PACKETS) {
-            store.addPacket({
-              id: createPacketId(),
-              edgeId: edge.id,
-              t: 0,
-              payload: hp.payload,
-            });
-          }
+          // Anti-explosion checks
+          if (store.packets.size >= MAX_PACKETS) return;
+          if (!canSpawnOnEdge(edge.id, now)) return;
+          
+          // Delay-released packets start fresh (no inherited hop count or history)
+          store.addPacket({
+            id: createPacketId(),
+            edgeId: edge.id,
+            t: 0,
+            payload: hp.payload,
+            hopCount: 0,
+            visitedEdges: [edge.id],
+            birthTime: now,
+          });
+          recordEdgeSpawn(edge.id, now);
         });
         
         // Flash node

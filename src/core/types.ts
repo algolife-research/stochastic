@@ -382,6 +382,11 @@ export interface Packet {
   t: number;                // 0-1 progress along edge
   payload: AudioPayload;
   entanglementGroupId?: string;  // Entangled packets share payload changes
+  
+  // Anti-explosion mechanisms
+  hopCount?: number;        // Number of nodes visited (TTL)
+  visitedEdges?: string[];  // Edge IDs visited (loop detection)
+  birthTime?: number;       // Creation timestamp for age-based expiry
 }
 
 // ============================================================================

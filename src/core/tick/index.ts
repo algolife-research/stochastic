@@ -15,7 +15,7 @@ import {
 import { updateScenePlayback } from './scene-playback';
 import { updateSources } from './sources';
 import { updateLFOs } from './lfo';
-import { updatePackets, updateNodeFlash, updateDelayNodes } from './packets';
+import { updatePackets, updateNodeFlash, updateDelayNodes, cleanupEdgeSpawnRecords } from './packets';
 import { updateVirtualChannelScenes } from './virtual-channels';
 
 // Re-export types for external use
@@ -66,6 +66,11 @@ export function tick(currentTime: number): void {
     
     // Update virtual channel scenes (multi-channel audio)
     updateVirtualChannelScenes(currentTime, dt);
+    
+    // Periodically cleanup stale edge spawn records (every ~5s worth of frames)
+    if (Math.random() < 0.003) {
+      cleanupEdgeSpawnRecords();
+    }
   } catch (error) {
     console.error('Tick error:', error);
   }

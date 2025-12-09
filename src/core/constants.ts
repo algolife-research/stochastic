@@ -50,6 +50,22 @@ export const FRAME_TIME = 1000 / TARGET_FPS;
 export const MAX_PACKETS = 1000;
 
 // ============================================================================
+// ANTI-EXPLOSION CONSTANTS
+// ============================================================================
+
+/** Maximum number of nodes a packet can visit before expiring (TTL) */
+export const MAX_PACKET_HOPS = 64;
+
+/** Maximum times a packet can visit the same edge (loop detection) */
+export const MAX_EDGE_VISITS = 4;
+
+/** Maximum packet age in milliseconds before forced expiry */
+export const MAX_PACKET_AGE_MS = 30000; // 30 seconds
+
+/** Cooldown period per edge to limit spawn rate (ms) */
+export const EDGE_SPAWN_COOLDOWN_MS = 10; // Minimum 10ms between spawns on same edge
+
+// ============================================================================
 // MIDI CONSTANTS
 // ============================================================================
 

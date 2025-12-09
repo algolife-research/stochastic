@@ -4,7 +4,20 @@
 import { getGraphStore } from '../store';
 import type { Packet, NodeId, MidiNote, Frequency } from '../types';
 import { createPacketId } from '../types';
-import { midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS } from '../constants';
+import { midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS, EDGE_SPAWN_COOLDOWN_MS } from '../constants';
+
+// Track edge spawn times for source emissions
+const sourceEdgeSpawnTimes = new Map<string, number>();
+
+function canSpawnOnEdgeFromSource(edgeId: string, now: number): boolean {
+  const lastSpawn = sourceEdgeSpawnTimes.get(edgeId);
+  if (!lastSpawn) return true;
+  return now - lastSpawn >= EDGE_SPAWN_COOLDOWN_MS;
+}
+
+function recordSourceEdgeSpawn(edgeId: string, now: number): void {
+  sourceEdgeSpawnTimes.set(edgeId, now);
+}
 
 // ============================================================================
 // SOURCE EMISSION
@@ -52,6 +65,7 @@ export function spawnPacketFromSource(
   props: { noteIndex: number; midiNote: MidiNote; intensity: number }
 ): void {
   const store = getGraphStore();
+  const now = performance.now();
   if (store.packets.size >= MAX_PACKETS) return;
   
   // Determine MIDI note
@@ -73,6 +87,10 @@ export function spawnPacketFromSource(
   
   // Create packets for each outgoing edge
   outgoingEdges.forEach(edge => {
+    // Anti-explosion check: edge cooldown
+    if (!canSpawnOnEdgeFromSource(edge.id, now)) return;
+    if (store.packets.size >= MAX_PACKETS) return;
+    
     const packetId = createPacketId();
     const packet: Packet = {
       id: packetId,
@@ -88,10 +106,15 @@ export function spawnPacketFromSource(
         holdTime: 0,
         releaseTime: 0.1,
       },
+      // Initialize anti-explosion metadata for new packets
+      hopCount: 0,
+      visitedEdges: [edge.id],
+      birthTime: now,
     };
     
     // Add packet to store
     store.addPacket(packet);
+    recordSourceEdgeSpawn(edge.id, now);
   });
   
   // Flash node
