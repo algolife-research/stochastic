@@ -108,8 +108,9 @@ export function stopTick(): void {
 
 /**
  * Reset tick timing (call when starting playback)
+ * @param resetPosition - If true, reset arrangement position to 0. Default false to allow resume.
  */
-export function resetTick(): void {
+export function resetTick(resetPosition: boolean = false): void {
   setLastTime(performance.now());
   setBeatAccumulator(0);
   
@@ -123,34 +124,62 @@ export function resetTick(): void {
     }
   });
   
-  // Reset scene playback state
+  // Reset scene playback state only if explicitly requested
   const { scenePlayback, arrangement, scenes } = store;
   
   if (scenePlayback.mode === 'arrangement' && arrangement.length > 0) {
-    // In arrangement mode, start from the first slot
-    const firstSlot = arrangement[0];
-    const scene = firstSlot ? scenes.get(firstSlot.sceneId) : undefined;
-    
-    store.setScenePlayback({
-      arrangementBeat: 0,
-      currentSlotIndex: 0,
-      currentSceneId: firstSlot?.sceneId ?? null,
-      sceneBeat: 0,
-      sceneLoopIteration: 0,
-      isTransitioning: false,
-      transitionProgress: 0,
-      effectiveBpm: scene ? getEffectiveBpm(scene, store.masterSpeed) : store.masterSpeed,
-      effectiveRoot: scene ? getEffectiveRoot(scene, store.musicalContext.root) : store.musicalContext.root,
-      effectiveScale: scene ? getEffectiveScale(scene, store.musicalContext.scaleName) : store.musicalContext.scaleName
-    });
-    
-    // Load the first scene to canvas if in arrangement mode
-    if (firstSlot) {
-      store.loadSceneToCanvas(firstSlot.sceneId);
+    // In arrangement mode, only reset position if explicitly requested
+    if (resetPosition) {
+      const firstSlot = arrangement[0];
+      const scene = firstSlot ? scenes.get(firstSlot.sceneId) : undefined;
+      
+      store.setScenePlayback({
+        arrangementBeat: 0,
+        currentSlotIndex: 0,
+        currentSceneId: firstSlot?.sceneId ?? null,
+        sceneBeat: 0,
+        sceneLoopIteration: 0,
+        isTransitioning: false,
+        transitionProgress: 0,
+        effectiveBpm: scene ? getEffectiveBpm(scene, store.masterSpeed) : store.masterSpeed,
+        effectiveRoot: scene ? getEffectiveRoot(scene, store.musicalContext.root) : store.musicalContext.root,
+        effectiveScale: scene ? getEffectiveScale(scene, store.musicalContext.scaleName) : store.musicalContext.scaleName
+      });
+      
+      // Load the first scene to canvas if in arrangement mode
+      if (firstSlot) {
+        store.loadSceneToCanvas(firstSlot.sceneId);
+      }
+      
+      // Clear any existing virtual channel scenes
+      clearActiveChannelScenes();
+    } else {
+      // Just update effective musical parameters for current position
+      const currentBeat = scenePlayback.arrangementBeat;
+      // Find the current slot based on beat position
+      let currentSlot = null;
+      for (const slot of arrangement) {
+        const scene = scenes.get(slot.sceneId);
+        if (!scene) continue;
+        const loops = slot.instanceLoopCount ?? scene.loopCount;
+        const slotEnd = slot.startBeat + scene.durationBeats * loops;
+        if (currentBeat >= slot.startBeat && currentBeat < slotEnd) {
+          currentSlot = slot;
+          break;
+        }
+      }
+      
+      if (currentSlot) {
+        const scene = scenes.get(currentSlot.sceneId);
+        if (scene) {
+          store.setScenePlayback({
+            effectiveBpm: getEffectiveBpm(scene, store.masterSpeed),
+            effectiveRoot: getEffectiveRoot(scene, store.musicalContext.root),
+            effectiveScale: getEffectiveScale(scene, store.musicalContext.scaleName)
+          });
+        }
+      }
     }
-    
-    // Clear any existing virtual channel scenes
-    clearActiveChannelScenes();
   } else if (scenePlayback.mode === 'jam') {
     // In jam mode, use the editing scene if currentSceneId is not set
     const jamSceneId = scenePlayback.currentSceneId ?? store.editingSceneId;

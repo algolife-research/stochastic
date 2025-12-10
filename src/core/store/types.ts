@@ -187,6 +187,7 @@ export interface GraphActions {
   createScene: (name?: string) => SceneId;
   duplicateScene: (id: SceneId) => SceneId | null;
   deleteScene: (id: SceneId) => void;
+  reorderScenes: (fromId: SceneId, toId: SceneId) => void;
   updateScene: (id: SceneId, updates: Partial<Scene>) => void;
   saveCurrentToScene: (id: SceneId) => void;
   loadSceneToCanvas: (id: SceneId) => void;

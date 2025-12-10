@@ -241,6 +241,7 @@ interface GraphActions {
   createScene: (name?: string) => SceneId;
   duplicateScene: (id: SceneId) => SceneId | null;
   deleteScene: (id: SceneId) => void;
+  reorderScenes: (fromId: SceneId, toId: SceneId) => void;
   updateScene: (id: SceneId, updates: Partial<Scene>) => void;
   saveCurrentToScene: (id: SceneId) => void;
   loadSceneToCanvas: (id: SceneId) => void;
@@ -1835,6 +1836,33 @@ export const useGraphStore = create<GraphStore>()(
           }
           if (state.activeSceneId === id) {
             state.activeSceneId = null;
+          }
+          state.isDirty = true;
+        });
+      },
+      
+      reorderScenes: (fromId, toId) => {
+        set(state => {
+          // Get scenes as plain array (need to extract from Immer draft)
+          const scenesArray: [SceneId, Scene][] = [];
+          state.scenes.forEach((scene, id) => {
+            scenesArray.push([id, JSON.parse(JSON.stringify(scene))]);
+          });
+          
+          const fromIndex = scenesArray.findIndex(([id]) => id === fromId);
+          const toIndex = scenesArray.findIndex(([id]) => id === toId);
+          
+          if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
+          
+          // Remove the dragged scene and insert at new position
+          const removed = scenesArray.splice(fromIndex, 1)[0];
+          if (!removed) return;
+          scenesArray.splice(toIndex, 0, removed);
+          
+          // Clear and rebuild the Map to preserve new order (Immer-compatible)
+          state.scenes.clear();
+          for (const [id, scene] of scenesArray) {
+            state.scenes.set(id, scene as any);
           }
           state.isDirty = true;
         });

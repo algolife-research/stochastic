@@ -17,22 +17,8 @@ export function ScenePropertiesPanel(): React.ReactElement {
   const editingSceneId = useGraphStore(selectEditingSceneId);
   const masterSpeed = useGraphStore(state => state.masterSpeed);
   const musicalContext = useGraphStore(state => state.musicalContext);
-  const duplicateScene = useGraphStore(state => state.duplicateScene);
-  const deleteScene = useGraphStore(state => state.deleteScene);
   
   const selectedScene = editingSceneId ? scenes.get(editingSceneId) : null;
-  
-  const handleDuplicateScene = useCallback(() => {
-    if (editingSceneId) {
-      duplicateScene(editingSceneId);
-    }
-  }, [editingSceneId, duplicateScene]);
-  
-  const handleDeleteScene = useCallback(() => {
-    if (editingSceneId && scenes.size > 1) {
-      deleteScene(editingSceneId);
-    }
-  }, [editingSceneId, deleteScene, scenes.size]);
   
   if (!selectedScene) {
     return (
@@ -48,23 +34,6 @@ export function ScenePropertiesPanel(): React.ReactElement {
     <div className={styles.panel}>
       <div className={styles.header}>
         <span className={styles.sceneName}>{selectedScene.name}</span>
-        <div className={styles.actions}>
-          <button 
-            className={styles.actionButton}
-            onClick={handleDuplicateScene}
-            title="Duplicate Scene"
-          >
-            📋
-          </button>
-          <button 
-            className={styles.actionButton}
-            onClick={handleDeleteScene}
-            disabled={scenes.size <= 1}
-            title="Delete Scene"
-          >
-            🗑️
-          </button>
-        </div>
       </div>
       
       <div className={styles.content}>

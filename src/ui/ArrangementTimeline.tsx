@@ -116,7 +116,7 @@ function TrackRow({
   
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'copy';
+    e.dataTransfer.dropEffect = 'move';
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const beat = Math.max(0, Math.round(x / pixelsPerBeat));
@@ -328,7 +328,9 @@ export function ArrangementTimeline({ collapsed, onToggleCollapse }: Arrangement
   const handleScrub = useCallback((e: MouseEvent | React.MouseEvent) => {
     if (!timelineRef.current || totalBeats === 0) return;
     const rect = timelineRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left - 100; // Account for track header width
+    const scrollLeft = timelineRef.current.scrollLeft;
+    // Account for track header width (100px) and scroll position
+    const x = e.clientX - rect.left - 100 + scrollLeft;
     const beat = Math.max(0, x / PIXELS_PER_BEAT);
     seekArrangement(beat);
   }, [totalBeats, seekArrangement]);
@@ -461,7 +463,13 @@ export function ArrangementTimeline({ collapsed, onToggleCollapse }: Arrangement
         ref={timelineRef}
         className={styles.multiTrackContainer}
         onMouseDown={(e) => {
+          // Don't start scrubbing if clicking on track header, a slot, or the scrollbar area
           if ((e.target as HTMLElement).closest(`.${styles.trackHeader}`)) return;
+          if ((e.target as HTMLElement).closest(`.${styles.slot}`)) return;
+          // Check if click is on scrollbar (rough check: click near edges of container)
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          const scrollbarWidth = 16; // Approximate scrollbar width
+          if (e.clientX > rect.right - scrollbarWidth || e.clientY > rect.bottom - scrollbarWidth) return;
           setIsScrubbing(true);
           handleScrub(e);
         }}

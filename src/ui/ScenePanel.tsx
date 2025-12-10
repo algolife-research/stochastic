@@ -26,10 +26,13 @@ export function ScenePanel({ collapsed, onToggleCollapse }: ScenePanelProps): Re
   const triggerSceneImmediate = useGraphStore(state => state.triggerSceneImmediate);
   const queueScene = useGraphStore(state => state.queueScene);
   const setPlaybackMode = useGraphStore(state => state.setPlaybackMode);
+  const deleteScene = useGraphStore(state => state.deleteScene);
+  const reorderScenes = useGraphStore(state => state.reorderScenes);
   const isRunning = useGraphStore(state => state.isRunning);
   
   const scenesArray = Array.from(scenes.values());
   const [selectedSceneId, setSelectedSceneId] = useState<SceneId | null>(null);
+  const [dragOverSceneId, setDragOverSceneId] = useState<SceneId | null>(null);
   
   // Auto-select the editing scene if no scene is selected
   const effectiveSelectedId = selectedSceneId ?? editingSceneId;
@@ -59,6 +62,39 @@ export function ScenePanel({ collapsed, onToggleCollapse }: ScenePanelProps): Re
   const handleQueueScene = useCallback((sceneId: SceneId) => {
     queueScene(sceneId, 'bar');
   }, [queueScene]);
+  
+  const handleDeleteScene = useCallback((sceneId: SceneId) => {
+    if (scenes.size > 1) {
+      deleteScene(sceneId);
+      // Select next available scene
+      const remaining = Array.from(scenes.keys()).filter(id => id !== sceneId);
+      if (remaining.length > 0 && remaining[0]) {
+        setSelectedSceneId(remaining[0]);
+        loadSceneToCanvas(remaining[0]);
+      }
+    }
+  }, [scenes, deleteScene, loadSceneToCanvas]);
+  
+  const handleDragOver = useCallback((e: React.DragEvent, targetSceneId: SceneId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverSceneId(targetSceneId);
+  }, []);
+  
+  const handleDragLeave = useCallback(() => {
+    setDragOverSceneId(null);
+  }, []);
+  
+  const handleDrop = useCallback((e: React.DragEvent, targetSceneId: SceneId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const fromId = e.dataTransfer.getData('application/x-scene-id') as SceneId;
+    if (fromId && fromId !== targetSceneId) {
+      reorderScenes(fromId, targetSceneId);
+    }
+    setDragOverSceneId(null);
+  }, [reorderScenes]);
   
   return (
     <div className={`${styles.panel} ${collapsed ? styles.collapsed : ''}`}>
@@ -118,9 +154,15 @@ export function ScenePanel({ collapsed, onToggleCollapse }: ScenePanelProps): Re
                   isSelected={scene.id === effectiveSelectedId}
                   isQueued={scene.id === scenePlayback.queuedSceneId}
                   isRunning={isRunning}
+                  isDragOver={scene.id === dragOverSceneId}
+                  canDelete={scenes.size > 1}
                   onClick={() => handleSceneClick(scene.id)}
                   onDoubleClick={() => handleSceneDoubleClick(scene.id)}
                   onQueue={() => handleQueueScene(scene.id)}
+                  onDelete={() => handleDeleteScene(scene.id)}
+                  onDragOver={(e) => handleDragOver(e, scene.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, scene.id)}
                 />
               ))
             )}
@@ -142,9 +184,15 @@ interface SceneListItemProps {
   isSelected: boolean;
   isQueued: boolean;
   isRunning: boolean;
+  isDragOver: boolean;
+  canDelete: boolean;
   onClick: () => void;
   onDoubleClick: () => void;
   onQueue: () => void;
+  onDelete: () => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDragLeave: () => void;
+  onDrop: (e: React.DragEvent) => void;
 }
 
 function SceneListItem({
@@ -154,24 +202,41 @@ function SceneListItem({
   isSelected,
   isQueued,
   isRunning,
+  isDragOver,
+  canDelete,
   onClick,
   onDoubleClick,
   onQueue,
+  onDelete,
+  onDragOver,
+  onDragLeave,
+  onDrop,
 }: SceneListItemProps): React.ReactElement {
   const hasOverrides = scene.localBpm !== null || scene.localRoot !== null || scene.localScale !== null;
   
   const handleDragStart = (e: React.DragEvent) => {
-    e.dataTransfer.setData('text/plain', scene.id);
-    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('application/x-scene-id', scene.id);
+    e.dataTransfer.setData('text/plain', scene.id); // For arrangement timeline
+    e.dataTransfer.effectAllowed = 'copyMove';
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (canDelete) {
+      onDelete();
+    }
   };
   
   return (
     <div
-      className={`${styles.sceneItem} ${isSelected ? styles.selected : ''} ${isActive ? styles.active : ''}`}
+      className={`${styles.sceneItem} ${isSelected ? styles.selected : ''} ${isActive ? styles.active : ''} ${isDragOver ? styles.dragOver : ''}`}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       draggable
       onDragStart={handleDragStart}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
       style={{ borderLeftColor: scene.color, cursor: 'grab' }}
     >
       <div className={styles.sceneInfo}>
@@ -187,15 +252,25 @@ function SceneListItem({
           {hasOverrides && <span className={styles.overrides}>⚙</span>}
         </div>
       </div>
-      {isRunning && !isActive && (
+      <div className={styles.sceneActions}>
+        {isRunning && !isActive && (
+          <button 
+            className={styles.queueButton}
+            onClick={(e) => { e.stopPropagation(); onQueue(); }}
+            title="Queue scene"
+          >
+            ⏭
+          </button>
+        )}
         <button 
-          className={styles.queueButton}
-          onClick={(e) => { e.stopPropagation(); onQueue(); }}
-          title="Queue scene"
+          className={`${styles.deleteButton} ${!canDelete ? styles.disabled : ''}`}
+          onClick={handleDeleteClick}
+          disabled={!canDelete}
+          title={canDelete ? "Delete scene" : "Cannot delete last scene"}
         >
-          ⏭
+          ×
         </button>
-      )}
+      </div>
     </div>
   );
 }
