@@ -1,0 +1,172 @@
+{
+  "meta": {
+    "version": "3.0.0",
+    "name": "The Dune Symphony",
+    "author": "Phonon AI",
+    "created": 1733920000000,
+    "modified": 1733920000000
+  },
+  "global": {
+    "masterBpm": 48,
+    "rootNote": 38,
+    "scaleName": "phrygian",
+    "gravity": 0.5,
+    "defaultEdgeBehaviour": "fixed"
+  },
+  "scenes": [
+    {
+      "id": "scene-strings",
+      "name": "I. The String Section (Organic Layers)",
+      "color": "#5D4037",
+      "durationBeats": 64,
+      "loopCount": 1,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "fade", "durationBeats": 8 },
+      "exitTransition": { "type": "crossfade", "durationBeats": 8 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 16 },
+      "nodes": [
+        { "id": "str_src", "type": "source", "x": 50, "y": 250, "props": { "interval": 8, "midiNote": 38, "noteIndex": -2, "intensity": 0.7 } },
+        { "id": "str_split", "type": "splitter", "x": 150, "y": 250, "props": { "entangled": true, "behavior": "broadcast" } },
+
+        { "id": "str_p_cello", "type": "pitch", "x": 300, "y": 150, "props": { "mode": "shift", "shift": 0 } },
+        { "id": "str_p_viola", "type": "pitch", "x": 300, "y": 250, "props": { "mode": "shift", "shift": 7 } },
+        { "id": "str_p_violin", "type": "pitch", "x": 300, "y": 350, "props": { "mode": "shift", "shift": 12 } },
+
+        { "id": "str_osc_cello", "type": "oscillator", "x": 450, "y": 150, "props": { "wave": "sawtooth", "attack": 2.5, "decay": 6.0 } },
+        { "id": "str_osc_viola", "type": "oscillator", "x": 450, "y": 250, "props": { "wave": "sawtooth", "attack": 2.0, "decay": 6.0 } },
+        { "id": "str_osc_violin", "type": "oscillator", "x": 450, "y": 350, "props": { "wave": "sawtooth", "attack": 1.5, "decay": 6.0 } },
+
+        { "id": "str_flt_cello", "type": "filter", "x": 600, "y": 150, "props": { "cutoff": 400, "mod": 100 } },
+        { "id": "str_flt_viola", "type": "filter", "x": 600, "y": 250, "props": { "cutoff": 800, "mod": 100 } },
+        { "id": "str_flt_violin", "type": "filter", "x": 600, "y": 350, "props": { "cutoff": 1200, "mod": 100 } },
+
+        { "id": "str_spk_L", "type": "speaker", "x": 750, "y": 200, "props": { "reverb": 0.85, "pan": -0.4, "volume": 0.6 } },
+        { "id": "str_spk_R", "type": "speaker", "x": 750, "y": 300, "props": { "reverb": 0.85, "pan": 0.4, "volume": 0.6 } },
+
+        { "id": "air_src", "type": "source", "x": 50, "y": 500, "props": { "interval": 1, "noteIndex": -1, "intensity": 0.2 } },
+        { "id": "air_osc", "type": "oscillator", "x": 200, "y": 500, "props": { "wave": "pink", "attack": 0.5, "decay": 0.5, "mix": 0.15 } },
+        { "id": "air_spk", "type": "speaker", "x": 350, "y": 500, "props": { "reverb": 0.5, "pan": 0 } },
+        
+        { "id": "s1_lfo_vib", "type": "lfo", "x": 600, "y": 50, "props": { "rate": 5, "shape": "sine", "min": -10, "max": 10 } }
+      ],
+      "edges": [
+        { "id": "e_str1", "from": "str_src", "to": "str_split", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str2", "from": "str_split", "to": "str_p_cello", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str3", "from": "str_split", "to": "str_p_viola", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str4", "from": "str_split", "to": "str_p_violin", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str5", "from": "str_p_cello", "to": "str_osc_cello", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str6", "from": "str_p_viola", "to": "str_osc_viola", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str7", "from": "str_p_violin", "to": "str_osc_violin", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str8", "from": "str_osc_cello", "to": "str_flt_cello", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str9", "from": "str_osc_viola", "to": "str_flt_viola", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str10", "from": "str_osc_violin", "to": "str_flt_violin", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str11", "from": "str_flt_cello", "to": "str_spk_L", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str12", "from": "str_flt_viola", "to": "str_spk_L", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str13", "from": "str_flt_viola", "to": "str_spk_R", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_str14", "from": "str_flt_violin", "to": "str_spk_R", "timingMode": "fixed", "durationBeats": 0.1 },
+        
+        { "id": "e_air1", "from": "air_src", "to": "air_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_air2", "from": "air_osc", "to": "air_spk", "timingMode": "fixed", "durationBeats": 0.1 }
+      ],
+      "annotations": [],
+      "regions": []
+    },
+    {
+      "id": "scene-war",
+      "name": "II. War Drums (Skin & Wood)",
+      "color": "#4E342E",
+      "durationBeats": 64,
+      "loopCount": 2,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "crossfade", "durationBeats": 4 },
+      "exitTransition": { "type": "crossfade", "durationBeats": 4 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 4 },
+      "nodes": [
+        { "id": "drum_src", "type": "source", "x": 50, "y": 200, "props": { "interval": 4, "midiNote": 36, "noteIndex": -2, "intensity": 1.0 } },
+        { "id": "drum_split", "type": "splitter", "x": 150, "y": 200, "props": { "entangled": true, "behavior": "broadcast" } },
+
+        { "id": "drum_skin", "type": "oscillator", "x": 300, "y": 150, "props": { "wave": "brown", "attack": 0.01, "decay": 0.4, "mix": 0.8 } },
+        { "id": "drum_body", "type": "oscillator", "x": 300, "y": 250, "props": { "wave": "sine", "attack": 0.01, "decay": 0.6 } },
+        
+        { "id": "drum_flt", "type": "filter", "x": 450, "y": 150, "props": { "cutoff": 150, "mod": 0 } },
+        { "id": "drum_spk", "type": "speaker", "x": 600, "y": 200, "props": { "reverb": 0.7, "pan": 0, "volume": 1.2 } },
+
+        { "id": "wood_src", "type": "source", "x": 50, "y": 450, "props": { "interval": 1, "midiNote": 60, "noteIndex": -1, "intensity": 0.6 } },
+        { "id": "wood_gate", "type": "gate", "x": 150, "y": 450, "props": { "prob": 0.5 } },
+        { "id": "wood_mut", "type": "mutator", "x": 250, "y": 450, "props": { "mode": "drift", "probability": 0.9, "pitchDrift": 0, "targets": ["cutoff"] } },
+        
+        { "id": "wood_osc", "type": "oscillator", "x": 350, "y": 450, "props": { "wave": "square", "attack": 0.005, "decay": 0.05 } },
+        { "id": "wood_flt", "type": "filter", "x": 450, "y": 450, "props": { "cutoff": 800, "mod": -200, "decay": 0.05 } },
+        { "id": "wood_spk", "type": "speaker", "x": 600, "y": 450, "props": { "reverb": 0.4, "pan": 0.3 } }
+      ],
+      "edges": [
+        { "id": "e_d1", "from": "drum_src", "to": "drum_split", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_d2", "from": "drum_split", "to": "drum_skin", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_d3", "from": "drum_split", "to": "drum_body", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_d4", "from": "drum_skin", "to": "drum_flt", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_d5", "from": "drum_flt", "to": "drum_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_d6", "from": "drum_body", "to": "drum_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        
+        { "id": "e_w1", "from": "wood_src", "to": "wood_gate", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_w2", "from": "wood_gate", "to": "wood_mut", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_w3", "from": "wood_mut", "to": "wood_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_w4", "from": "wood_osc", "to": "wood_flt", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_w5", "from": "wood_flt", "to": "wood_spk", "timingMode": "fixed", "durationBeats": 0.1 }
+      ],
+      "annotations": [],
+      "regions": []
+    },
+    {
+      "id": "scene-duduk",
+      "name": "III. The Duduk (Simulated Wind)",
+      "color": "#FFCA28",
+      "durationBeats": 64,
+      "loopCount": 1,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "crossfade", "durationBeats": 8 },
+      "exitTransition": { "type": "fade", "durationBeats": 16 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 4 },
+      "nodes": [
+        { "id": "mod_vibrato", "type": "modulator", "x": 400, "y": 300, "props": { "rate": 4.5, "depth": 15, "delay": 0.5 } },
+
+        { "id": "flute_src", "type": "source", "x": 50, "y": 250, "props": { "interval": 4, "midiNote": 62, "noteIndex": -1, "intensity": 0.8 } },
+        { "id": "flute_mut", "type": "mutator", "x": 150, "y": 250, "props": { "mode": "drift", "probability": 0.8, "pitchDrift": 1, "targets": ["pitch", "timbre"] } },
+        { "id": "flute_quant", "type": "quantizer", "x": 270, "y": 250, "props": { "strength": 0.9, "useGlobalKey": true } },
+        
+        { "id": "flute_split", "type": "splitter", "x": 390, "y": 250, "props": { "entangled": true, "behavior": "broadcast" } },
+
+        { "id": "flute_tone", "type": "oscillator", "x": 550, "y": 200, "props": { "wave": "triangle", "attack": 0.3, "decay": 1.5 } },
+        { "id": "flute_breath", "type": "oscillator", "x": 550, "y": 300, "props": { "wave": "white", "attack": 0.3, "decay": 1.5, "mix": 0.15 } },
+
+        { "id": "flute_flt", "type": "filter", "x": 700, "y": 200, "props": { "cutoff": 1200, "mod": -300, "decay": 0.8 } },
+        { "id": "flute_spk", "type": "speaker", "x": 850, "y": 250, "props": { "reverb": 0.9, "pan": 0, "volume": 0.8 } }
+      ],
+      "edges": [
+        { "id": "e_fl1", "from": "flute_src", "to": "flute_mut", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fl2", "from": "flute_mut", "to": "flute_quant", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fl3", "from": "flute_quant", "to": "flute_split", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fl4", "from": "flute_split", "to": "flute_tone", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fl5", "from": "flute_split", "to": "flute_breath", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fl6", "from": "flute_tone", "to": "flute_flt", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fl7", "from": "flute_breath", "to": "flute_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fl8", "from": "flute_flt", "to": "flute_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_vib", "from": "mod_vibrato", "to": "flute_src", "targetParam": "pitch" }
+      ],
+      "annotations": [],
+      "regions": []
+    }
+  ],
+  "arrangement": [
+    { "id": "slot-1", "sceneId": "scene-strings", "startBeat": 0 },
+    { "id": "slot-2", "sceneId": "scene-war", "startBeat": 64 },
+    { "id": "slot-3", "sceneId": "scene-duduk", "startBeat": 192 },
+    { "id": "slot-4", "sceneId": "scene-war", "startBeat": 256 },
+    { "id": "slot-5", "sceneId": "scene-strings", "startBeat": 384 }
+  ]
+}

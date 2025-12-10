@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "version": "3.0.0",
+    "name": "Arrakis Awakening",
+    "author": "Phonon AI",
+    "created": 1733870000000,
+    "modified": 1733870000000
+  },
+  "global": {
+    "masterBpm": 60,
+    "rootNote": 38,
+    "scaleName": "phrygian",
+    "gravity": 0.5,
+    "defaultEdgeBehaviour": "fixed"
+  },
+  "scenes": [
+    {
+      "id": "scene-desert",
+      "name": "I. The Endless Sands",
+      "color": "#FFCC80",
+      "durationBeats": 32,
+      "loopCount": 1,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "crossfade", "durationBeats": 8 },
+      "exitTransition": { "type": "crossfade", "durationBeats": 8 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 4 },
+      "nodes": [
+        { "id": "wind_src", "type": "source", "x": 50, "y": 200, "props": { "interval": 0.5, "noteIndex": -1, "intensity": 0.4 } },
+        { "id": "wind_gate", "type": "gate", "x": 150, "y": 200, "props": { "prob": 0.6 } },
+        { "id": "wind_split", "type": "splitter", "x": 250, "y": 200, "props": { "behavior": "random" } },
+        
+        { "id": "wind_osc_pink", "type": "oscillator", "x": 350, "y": 150, "props": { "wave": "pink", "attack": 0.5, "decay": 1.0, "mix": 0.4 } },
+        { "id": "wind_osc_brown", "type": "oscillator", "x": 350, "y": 250, "props": { "wave": "brown", "attack": 1.0, "decay": 2.0, "mix": 0.5 } },
+        
+        { "id": "wind_spk_L", "type": "speaker", "x": 500, "y": 150, "props": { "reverb": 0.8, "pan": -0.8, "volume": 0.6 } },
+        { "id": "wind_spk_R", "type": "speaker", "x": 500, "y": 250, "props": { "reverb": 0.8, "pan": 0.8, "volume": 0.6 } },
+
+        { "id": "wail_src", "type": "source", "x": 50, "y": 400, "props": { "interval": 12, "midiNote": 62, "noteIndex": -1, "intensity": 0.7 } },
+        { "id": "wail_mut", "type": "mutator", "x": 150, "y": 400, "props": { "mode": "drift", "probability": 0.8, "pitchDrift": 2, "targets": ["pitch"] } },
+        { "id": "wail_quant", "type": "quantizer", "x": 270, "y": 400, "props": { "strength": 1.0, "useGlobalKey": true } },
+        { "id": "wail_osc", "type": "oscillator", "x": 390, "y": 400, "props": { "wave": "triangle", "attack": 2.0, "decay": 4.0 } },
+        { "id": "wail_spk", "type": "speaker", "x": 550, "y": 400, "props": { "reverb": 0.95, "pan": 0, "volume": 0.5 } },
+        
+        { "id": "s1_next", "type": "scene_trigger", "x": 300, "y": 550, "props": { "targetSceneIndex": 1, "behavior": "crossfade" } },
+        { "id": "s1_trig", "type": "source", "x": 100, "y": 550, "props": { "interval": 32, "midiNote": 60, "intensity": 1.0 } }
+      ],
+      "edges": [
+        { "id": "e_w1", "from": "wind_src", "to": "wind_gate", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_w2", "from": "wind_gate", "to": "wind_split", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_w3", "from": "wind_split", "to": "wind_osc_pink", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_w4", "from": "wind_split", "to": "wind_osc_brown", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_w5", "from": "wind_osc_pink", "to": "wind_spk_L", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_w6", "from": "wind_osc_brown", "to": "wind_spk_R", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_wl1", "from": "wail_src", "to": "wail_mut", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_wl2", "from": "wail_mut", "to": "wail_quant", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_wl3", "from": "wail_quant", "to": "wail_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_wl4", "from": "wail_osc", "to": "wail_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_trig1", "from": "s1_trig", "to": "s1_next", "timingMode": "fixed", "durationBeats": 0.1 }
+      ],
+      "annotations": [],
+      "regions": []
+    },
+    {
+      "id": "scene-worm",
+      "name": "II. The Maker (The Wall of Sound)",
+      "color": "#5D4037",
+      "durationBeats": 64,
+      "loopCount": 2,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "cut", "durationBeats": 0 },
+      "exitTransition": { "type": "cut", "durationBeats": 0 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 4 },
+      "nodes": [
+        { "id": "hit_src", "type": "source", "x": 50, "y": 300, "props": { "interval": 4, "midiNote": 26, "noteIndex": -2, "intensity": 1.0 } },
+        { "id": "hit_split", "type": "splitter", "x": 150, "y": 300, "props": { "entangled": true, "behavior": "broadcast" } },
+
+        { "id": "bass_osc", "type": "oscillator", "x": 300, "y": 200, "props": { "wave": "sawtooth", "attack": 0.05, "decay": 2.0, "ratio": 1 } },
+        { "id": "bass_flt", "type": "filter", "x": 450, "y": 200, "props": { "cutoff": 200, "mod": 800, "decay": 1.0 } },
+        
+        { "id": "sub_osc", "type": "oscillator", "x": 300, "y": 300, "props": { "wave": "sine", "attack": 0.05, "decay": 2.5, "ratio": 0.5 } },
+        
+        { "id": "grit_osc", "type": "oscillator", "x": 300, "y": 400, "props": { "wave": "square", "attack": 0.01, "decay": 0.5, "ratio": 1 } },
+        { "id": "grit_flt", "type": "filter", "x": 450, "y": 400, "props": { "cutoff": 800, "mod": 2000, "decay": 0.2 } },
+
+        { "id": "main_spk", "type": "speaker", "x": 600, "y": 300, "props": { "reverb": 0.6, "pan": 0, "volume": 1.0 } },
+
+        { "id": "perc_src", "type": "source", "x": 50, "y": 550, "props": { "interval": 1, "midiNote": 36, "noteIndex": -2, "intensity": 0.8 } },
+        { "id": "perc_gate", "type": "gate", "x": 150, "y": 550, "props": { "prob": 0.3 } },
+        { "id": "perc_osc", "type": "oscillator", "x": 250, "y": 550, "props": { "wave": "sawtooth", "attack": 0.001, "decay": 0.1 } },
+        { "id": "perc_spk", "type": "speaker", "x": 350, "y": 550, "props": { "reverb": 0.3, "pan": 0.5 } },
+        
+        { "id": "s2_next", "type": "scene_trigger", "x": 300, "y": 650, "props": { "targetSceneIndex": 2, "behavior": "jump" } },
+        { "id": "s2_trig", "type": "source", "x": 100, "y": 650, "props": { "interval": 64, "midiNote": 60, "intensity": 1.0 } }
+      ],
+      "edges": [
+        { "id": "e_h1", "from": "hit_src", "to": "hit_split", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_h2", "from": "hit_split", "to": "bass_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_h3", "from": "hit_split", "to": "sub_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_h4", "from": "hit_split", "to": "grit_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_h5", "from": "bass_osc", "to": "bass_flt", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_h6", "from": "grit_osc", "to": "grit_flt", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_h7", "from": "bass_flt", "to": "main_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_h8", "from": "sub_osc", "to": "main_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_h9", "from": "grit_flt", "to": "main_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        
+        { "id": "e_p1", "from": "perc_src", "to": "perc_gate", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_p2", "from": "perc_gate", "to": "perc_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_p3", "from": "perc_osc", "to": "perc_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_trig2", "from": "s2_trig", "to": "s2_next", "timingMode": "fixed", "durationBeats": 0.1 }
+      ],
+      "annotations": [],
+      "regions": []
+    },
+    {
+      "id": "scene-voice",
+      "name": "III. The Prophecy (Choral Swells)",
+      "color": "#FDD835",
+      "durationBeats": 64,
+      "loopCount": 1,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "crossfade", "durationBeats": 8 },
+      "exitTransition": { "type": "fade", "durationBeats": 16 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 4 },
+      "nodes": [
+        { "id": "lfo_swell", "type": "lfo", "x": 500, "y": 50, "props": { "rate": 0.1, "shape": "sine", "min": 600, "max": 1800 } },
+
+        { "id": "voice_src", "type": "source", "x": 50, "y": 250, "props": { "interval": 8, "midiNote": 50, "noteIndex": -2, "intensity": 0.8 } },
+        { "id": "voice_split", "type": "splitter", "x": 150, "y": 250, "props": { "entangled": true, "behavior": "broadcast" } },
+        
+        { "id": "v_p_root", "type": "pitch", "x": 300, "y": 150, "props": { "mode": "shift", "shift": 0 } },
+        { "id": "v_p_3rd", "type": "pitch", "x": 300, "y": 250, "props": { "mode": "shift", "shift": 3 } },
+        { "id": "v_p_5th", "type": "pitch", "x": 300, "y": 350, "props": { "mode": "shift", "shift": 7 } },
+        
+        { "id": "v_osc_1", "type": "oscillator", "x": 450, "y": 150, "props": { "wave": "sawtooth", "attack": 2.0, "decay": 6.0 } },
+        { "id": "v_osc_2", "type": "oscillator", "x": 450, "y": 250, "props": { "wave": "sawtooth", "attack": 2.0, "decay": 6.0 } },
+        { "id": "v_osc_3", "type": "oscillator", "x": 450, "y": 350, "props": { "wave": "sawtooth", "attack": 2.0, "decay": 6.0 } },
+        
+        { "id": "v_flt_1", "type": "filter", "x": 600, "y": 150, "props": { "cutoff": 800, "mod": 0 } },
+        { "id": "v_flt_2", "type": "filter", "x": 600, "y": 250, "props": { "cutoff": 800, "mod": 0 } },
+        { "id": "v_flt_3", "type": "filter", "x": 600, "y": 350, "props": { "cutoff": 800, "mod": 0 } },
+        
+        { "id": "v_spk", "type": "speaker", "x": 750, "y": 250, "props": { "reverb": 0.9, "pan": 0, "volume": 0.7 } },
+        
+        { "id": "s3_next", "type": "scene_trigger", "x": 300, "y": 500, "props": { "targetSceneIndex": 0, "behavior": "crossfade" } },
+        { "id": "s3_trig", "type": "source", "x": 100, "y": 500, "props": { "interval": 64, "midiNote": 60, "intensity": 1.0 } }
+      ],
+      "edges": [
+        { "id": "e_v1", "from": "voice_src", "to": "voice_split", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v2", "from": "voice_split", "to": "v_p_root", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v3", "from": "voice_split", "to": "v_p_3rd", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v4", "from": "voice_split", "to": "v_p_5th", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v5", "from": "v_p_root", "to": "v_osc_1", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v6", "from": "v_p_3rd", "to": "v_osc_2", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v7", "from": "v_p_5th", "to": "v_osc_3", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v8", "from": "v_osc_1", "to": "v_flt_1", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v9", "from": "v_osc_2", "to": "v_flt_2", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v10", "from": "v_osc_3", "to": "v_flt_3", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v11", "from": "v_flt_1", "to": "v_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v12", "from": "v_flt_2", "to": "v_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_v13", "from": "v_flt_3", "to": "v_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_lfo1", "from": "lfo_swell", "to": "v_flt_1", "targetParam": "cutoff" },
+        { "id": "e_lfo2", "from": "lfo_swell", "to": "v_flt_2", "targetParam": "cutoff" },
+        { "id": "e_lfo3", "from": "lfo_swell", "to": "v_flt_3", "targetParam": "cutoff" },
+        { "id": "e_trig3", "from": "s3_trig", "to": "s3_next", "timingMode": "fixed", "durationBeats": 0.1 }
+      ],
+      "annotations": [],
+      "regions": []
+    }
+  ],
+  "arrangement": [
+    { "id": "slot-1", "sceneId": "scene-desert", "startBeat": 0 }
+  ]
+}

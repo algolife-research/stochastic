@@ -1,0 +1,157 @@
+{
+  "meta": {
+    "version": "3.0.0",
+    "name": "The Golden Path",
+    "author": "Phonon AI",
+    "created": 1733880000000,
+    "modified": 1733880000000
+  },
+  "global": {
+    "masterBpm": 60,
+    "rootNote": 38,
+    "scaleName": "phrygian",
+    "gravity": 0.5,
+    "defaultEdgeBehaviour": "fixed"
+  },
+  "scenes": [
+    {
+      "id": "scene-intro",
+      "name": "I. The Shield Wall",
+      "color": "#CFD8DC",
+      "durationBeats": 64,
+      "loopCount": 1,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "fade", "durationBeats": 8 },
+      "exitTransition": { "type": "crossfade", "durationBeats": 16 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 16 },
+      "nodes": [
+        { "id": "i_wind_src", "type": "source", "x": 50, "y": 200, "props": { "interval": 0.25, "noteIndex": -1, "intensity": 0.4 } },
+        { "id": "i_wind_gate", "type": "gate", "x": 150, "y": 200, "props": { "prob": 0.3 } },
+        { "id": "i_wind_split", "type": "splitter", "x": 250, "y": 200, "props": { "behavior": "random" } },
+        { "id": "i_wind_osc1", "type": "oscillator", "x": 350, "y": 150, "props": { "wave": "pink", "attack": 1.0, "decay": 3.0, "mix": 0.3 } },
+        { "id": "i_wind_osc2", "type": "oscillator", "x": 350, "y": 250, "props": { "wave": "brown", "attack": 1.0, "decay": 3.0, "mix": 0.4 } },
+        { "id": "i_wind_spk", "type": "speaker", "x": 500, "y": 200, "props": { "reverb": 0.9, "pan": 0, "volume": 0.6 } },
+
+        { "id": "i_spark_src", "type": "source", "x": 50, "y": 400, "props": { "interval": 7, "midiNote": 86, "noteIndex": -1, "intensity": 0.3 } },
+        { "id": "i_spark_gate", "type": "gate", "x": 150, "y": 400, "props": { "prob": 0.4 } },
+        { "id": "i_spark_quant", "type": "quantizer", "x": 250, "y": 400, "props": { "strength": 1.0, "useGlobalKey": true } },
+        { "id": "i_spark_osc", "type": "oscillator", "x": 350, "y": 400, "props": { "wave": "sine", "attack": 0.01, "decay": 0.5 } },
+        { "id": "i_spark_delay", "type": "delay", "x": 450, "y": 400, "props": { "delayTime": 0.75 } },
+        { "id": "i_spark_spk", "type": "speaker", "x": 550, "y": 400, "props": { "reverb": 0.8, "pan": 0.6 } }
+      ],
+      "edges": [
+        { "id": "e_i1", "from": "i_wind_src", "to": "i_wind_gate", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_i2", "from": "i_wind_gate", "to": "i_wind_split", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_i3", "from": "i_wind_split", "to": "i_wind_osc1", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_i4", "from": "i_wind_split", "to": "i_wind_osc2", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_i5", "from": "i_wind_osc1", "to": "i_wind_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_i6", "from": "i_wind_osc2", "to": "i_wind_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_isp1", "from": "i_spark_src", "to": "i_spark_gate", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_isp2", "from": "i_spark_gate", "to": "i_spark_quant", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_isp3", "from": "i_spark_quant", "to": "i_spark_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_isp4", "from": "i_spark_osc", "to": "i_spark_delay", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_isp5", "from": "i_spark_delay", "to": "i_spark_spk", "timingMode": "fixed", "durationBeats": 0.1 }
+      ],
+      "annotations": [],
+      "regions": []
+    },
+    {
+      "id": "scene-maker",
+      "name": "II. Shai-Hulud (Generative Rhythm)",
+      "color": "#D84315",
+      "durationBeats": 128,
+      "loopCount": 1,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "crossfade", "durationBeats": 4 },
+      "exitTransition": { "type": "crossfade", "durationBeats": 4 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 4 },
+      "nodes": [
+        { "id": "m_hit_src", "type": "source", "x": 50, "y": 200, "props": { "interval": 4, "midiNote": 26, "noteIndex": -2, "intensity": 1.0 } },
+        { "id": "m_hit_split", "type": "splitter", "x": 150, "y": 200, "props": { "entangled": true, "behavior": "broadcast" } },
+
+        { "id": "m_bass_osc", "type": "oscillator", "x": 300, "y": 150, "props": { "wave": "sawtooth", "attack": 0.05, "decay": 1.5 } },
+        { "id": "m_bass_flt", "type": "filter", "x": 450, "y": 150, "props": { "cutoff": 200, "mod": 800, "decay": 1.0 } },
+        { "id": "m_sub_osc", "type": "oscillator", "x": 300, "y": 250, "props": { "wave": "sine", "attack": 0.05, "decay": 2.5 } },
+        { "id": "m_main_spk", "type": "speaker", "x": 600, "y": 200, "props": { "reverb": 0.6, "pan": 0, "volume": 1.0 } },
+        
+        { "id": "m_lfo_growl", "type": "lfo", "x": 450, "y": 50, "props": { "rate": 0.05, "shape": "sine", "min": 200, "max": 1000 } },
+
+        { "id": "m_fill_src", "type": "source", "x": 50, "y": 450, "props": { "interval": 0.5, "midiNote": 36, "noteIndex": -2, "intensity": 0.8 } },
+        { "id": "m_fill_gate", "type": "gate", "x": 150, "y": 450, "props": { "prob": 0.4 } },
+        { "id": "m_fill_split", "type": "splitter", "x": 250, "y": 450, "props": { "behavior": "random" } },
+        
+        { "id": "m_perc1_osc", "type": "oscillator", "x": 350, "y": 400, "props": { "wave": "square", "attack": 0.001, "decay": 0.05 } },
+        { "id": "m_perc2_osc", "type": "oscillator", "x": 350, "y": 500, "props": { "wave": "white", "attack": 0.001, "decay": 0.1, "mix": 0.5 } },
+        { "id": "m_perc_spk", "type": "speaker", "x": 500, "y": 450, "props": { "reverb": 0.4, "pan": 0 } }
+      ],
+      "edges": [
+        { "id": "e_m1", "from": "m_hit_src", "to": "m_hit_split", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_m2", "from": "m_hit_split", "to": "m_bass_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_m3", "from": "m_hit_split", "to": "m_sub_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_m4", "from": "m_bass_osc", "to": "m_bass_flt", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_m5", "from": "m_bass_flt", "to": "m_main_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_m6", "from": "m_sub_osc", "to": "m_main_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_mlfo", "from": "m_lfo_growl", "to": "m_bass_flt", "targetParam": "cutoff" },
+        
+        { "id": "e_mf1", "from": "m_fill_src", "to": "m_fill_gate", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_mf2", "from": "m_fill_gate", "to": "m_fill_split", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_mf3", "from": "m_fill_split", "to": "m_perc1_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_mf4", "from": "m_fill_split", "to": "m_perc2_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_mf5", "from": "m_perc1_osc", "to": "m_perc_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_mf6", "from": "m_perc2_osc", "to": "m_perc_spk", "timingMode": "fixed", "durationBeats": 0.1 }
+      ],
+      "annotations": [],
+      "regions": []
+    },
+    {
+      "id": "scene-oracle",
+      "name": "III. The Oracle (Generative Solo)",
+      "color": "#FBC02D",
+      "durationBeats": 128,
+      "loopCount": 1,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "crossfade", "durationBeats": 16 },
+      "exitTransition": { "type": "fade", "durationBeats": 16 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 4 },
+      "nodes": [
+        { "id": "o_pad_src", "type": "source", "x": 50, "y": 150, "props": { "interval": 8, "midiNote": 50, "noteIndex": -2, "intensity": 0.6 } },
+        { "id": "o_pad_osc", "type": "oscillator", "x": 200, "y": 150, "props": { "wave": "triangle", "attack": 2.0, "decay": 6.0 } },
+        { "id": "o_pad_spk", "type": "speaker", "x": 350, "y": 150, "props": { "reverb": 0.9, "pan": 0, "volume": 0.5 } },
+
+        { "id": "o_solo_src", "type": "source", "x": 50, "y": 350, "props": { "interval": 2, "midiNote": 62, "noteIndex": -1, "intensity": 0.8 } },
+        { "id": "o_solo_mut", "type": "mutator", "x": 150, "y": 350, "props": { "mode": "drift", "probability": 0.7, "pitchDrift": 2, "targets": ["pitch"] } },
+        { "id": "o_solo_quant", "type": "quantizer", "x": 270, "y": 350, "props": { "strength": 1.0, "useGlobalKey": true } },
+        { "id": "o_solo_osc", "type": "oscillator", "x": 390, "y": 350, "props": { "wave": "sawtooth", "attack": 0.2, "decay": 1.0 } },
+        { "id": "o_solo_flt", "type": "filter", "x": 510, "y": 350, "props": { "cutoff": 1200, "mod": -400, "decay": 0.5 } },
+        { "id": "o_solo_delay", "type": "delay", "x": 630, "y": 350, "props": { "delayTime": 0.75 } },
+        { "id": "o_solo_spk", "type": "speaker", "x": 750, "y": 350, "props": { "reverb": 0.85, "pan": 0 } }
+      ],
+      "edges": [
+        { "id": "e_o1", "from": "o_pad_src", "to": "o_pad_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_o2", "from": "o_pad_osc", "to": "o_pad_spk", "timingMode": "fixed", "durationBeats": 0.1 },
+        
+        { "id": "e_os1", "from": "o_solo_src", "to": "o_solo_mut", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_os2", "from": "o_solo_mut", "to": "o_solo_quant", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_os3", "from": "o_solo_quant", "to": "o_solo_osc", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_os4", "from": "o_solo_osc", "to": "o_solo_flt", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_os5", "from": "o_solo_flt", "to": "o_solo_delay", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_os6", "from": "o_solo_delay", "to": "o_solo_spk", "timingMode": "fixed", "durationBeats": 0.1 }
+      ],
+      "annotations": [],
+      "regions": []
+    }
+  ],
+  "arrangement": [
+    { "id": "slot-1", "sceneId": "scene-intro", "startBeat": 0 },
+    { "id": "slot-2", "sceneId": "scene-maker", "startBeat": 64 },
+    { "id": "slot-3", "sceneId": "scene-oracle", "startBeat": 192 },
+    { "id": "slot-4", "sceneId": "scene-maker", "startBeat": 320 },
+    { "id": "slot-5", "sceneId": "scene-intro", "startBeat": 448 }
+  ]
+}
