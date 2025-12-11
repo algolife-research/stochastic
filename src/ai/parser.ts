@@ -9,6 +9,7 @@ import type {
   AddEdgeOperation,
   ModifyEdgeOperation,
   DeleteEdgeOperation,
+  AutoLayoutOperation,
   GenerationResponse,
   ValidationResult,
   ValidationError,
@@ -115,45 +116,87 @@ export function parseAIResponse(response: string): GenerationResponse {
 function parseOperations(rawOps: unknown[]): CanvasOperation[] {
   const operations: CanvasOperation[] = [];
   
+  console.log('[AI Parser] Parsing operations:', JSON.stringify(rawOps, null, 2));
+  
   for (const raw of rawOps) {
-    if (!raw || typeof raw !== 'object') continue;
+    if (!raw || typeof raw !== 'object') {
+      console.warn('[AI Parser] Skipping non-object operation:', raw);
+      continue;
+    }
     
     const op = raw as Record<string, unknown>;
     const type = op.type;
     
+    console.log('[AI Parser] Processing operation type:', type);
+    
     switch (type) {
       case 'add_node': {
         const parsed = parseAddNodeOperation(op);
-        if (parsed) operations.push(parsed);
+        if (parsed) {
+          operations.push(parsed);
+        } else {
+          console.warn('[AI Parser] add_node operation failed validation:', op);
+        }
         break;
       }
       case 'modify_node': {
         const parsed = parseModifyNodeOperation(op);
-        if (parsed) operations.push(parsed);
+        if (parsed) {
+          operations.push(parsed);
+        } else {
+          console.warn('[AI Parser] modify_node operation failed validation:', op);
+        }
         break;
       }
       case 'delete_node': {
         const parsed = parseDeleteNodeOperation(op);
-        if (parsed) operations.push(parsed);
+        if (parsed) {
+          operations.push(parsed);
+        } else {
+          console.warn('[AI Parser] delete_node operation failed validation:', op);
+        }
         break;
       }
       case 'add_edge': {
         const parsed = parseAddEdgeOperation(op);
-        if (parsed) operations.push(parsed);
+        if (parsed) {
+          operations.push(parsed);
+        } else {
+          console.warn('[AI Parser] add_edge operation failed validation:', op);
+        }
         break;
       }
       case 'modify_edge': {
         const parsed = parseModifyEdgeOperation(op);
-        if (parsed) operations.push(parsed);
+        if (parsed) {
+          operations.push(parsed);
+        } else {
+          console.warn('[AI Parser] modify_edge operation failed validation:', op);
+        }
         break;
       }
       case 'delete_edge': {
         const parsed = parseDeleteEdgeOperation(op);
-        if (parsed) operations.push(parsed);
+        if (parsed) {
+          operations.push(parsed);
+        } else {
+          console.warn('[AI Parser] delete_edge operation failed validation:', op);
+        }
         break;
       }
+      case 'auto_layout': {
+        const parsed = parseAutoLayoutOperation(op);
+        if (parsed) {
+          operations.push(parsed);
+        }
+        break;
+      }
+      default:
+        console.warn('[AI Parser] Unknown operation type:', type, 'Full operation:', op);
     }
   }
+  
+  console.log('[AI Parser] Successfully parsed operations:', operations.length, 'of', rawOps.length);
   
   return operations;
 }
@@ -224,12 +267,21 @@ function parseAddEdgeOperation(op: Record<string, unknown>): AddEdgeOperation | 
 }
 
 function parseModifyEdgeOperation(op: Record<string, unknown>): ModifyEdgeOperation | null {
-  const edgeId = op.edgeId as string;
-  if (!edgeId) return null;
+  const edgeId = op.edgeId as string | undefined;
+  const from = op.from as string | undefined;
+  const to = op.to as string | undefined;
+  
+  // Must have either edgeId or both from/to
+  if (!edgeId && (!from || !to)) {
+    console.warn('[AI Parser] modify_edge requires either edgeId or from+to');
+    return null;
+  }
   
   return {
     type: 'modify_edge',
-    edgeId: edgeId as import('@core/types').EdgeId,
+    edgeId: edgeId as import('@core/types').EdgeId | undefined,
+    from,
+    to,
     timingMode: op.timingMode as 'physical' | 'fixed' | undefined,
     durationBeats: typeof op.durationBeats === 'number' ? op.durationBeats : undefined,
     targetParam: typeof op.targetParam === 'string' ? op.targetParam : undefined,
@@ -238,12 +290,33 @@ function parseModifyEdgeOperation(op: Record<string, unknown>): ModifyEdgeOperat
 }
 
 function parseDeleteEdgeOperation(op: Record<string, unknown>): DeleteEdgeOperation | null {
-  const edgeId = op.edgeId as string;
-  if (!edgeId) return null;
+  const edgeId = op.edgeId as string | undefined;
+  const from = op.from as string | undefined;
+  const to = op.to as string | undefined;
+  
+  // Must have either edgeId or both from/to
+  if (!edgeId && (!from || !to)) {
+    console.warn('[AI Parser] delete_edge requires either edgeId or from+to');
+    return null;
+  }
   
   return {
     type: 'delete_edge',
-    edgeId: edgeId as import('@core/types').EdgeId,
+    edgeId: edgeId as import('@core/types').EdgeId | undefined,
+    from,
+    to,
+  };
+}
+
+function parseAutoLayoutOperation(op: Record<string, unknown>): AutoLayoutOperation {
+  const algorithm = op.algorithm as string | undefined;
+  const validAlgorithms = ['hierarchical', 'force', 'circular'];
+  
+  return {
+    type: 'auto_layout',
+    algorithm: validAlgorithms.includes(algorithm || '') 
+      ? algorithm as 'hierarchical' | 'force' | 'circular'
+      : 'hierarchical',
   };
 }
 
@@ -322,15 +395,21 @@ export function validateOperations(
       }
         
       case 'modify_edge':
-      case 'delete_edge':
-        if (!existingEdgeIds.has(op.edgeId)) {
+      case 'delete_edge': {
+        // Can use edgeId directly or from/to lookup
+        const hasValidRef = op.edgeId 
+          ? existingEdgeIds.has(op.edgeId)
+          : (op.from && op.to); // Will be resolved at apply time
+        
+        if (!hasValidRef) {
           errors.push({
             operation: op,
-            message: `Edge not found: ${op.edgeId}`,
+            message: `Edge not found: ${op.edgeId || `${op.from} -> ${op.to}`}`,
             code: 'EDGE_NOT_FOUND',
           });
         }
         break;
+      }
     }
   }
   

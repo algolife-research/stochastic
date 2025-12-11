@@ -8,11 +8,34 @@ import type {
   AIAgentState, 
   ChatMessage, 
   CanvasOperation,
-  AIProvider,
 } from './types';
 import { DEFAULT_CONFIGS } from './types';
 import { aiAgent } from './agent';
 import { applyOperations } from './operations';
+import { useAuthStore } from '@auth/store';
+
+// ============================================================================
+// ENVIRONMENT CONFIGURATION
+// ============================================================================
+
+// Read config from environment (set in .env file)
+const ENV_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY as string | undefined;
+const ENV_MODEL = import.meta.env.VITE_AI_MODEL as string | undefined;
+
+// Check if AI is pre-configured via environment
+function getEnvConfig(): AIAgentConfig | null {
+  if (!ENV_API_KEY) return null;
+  
+  const defaults = DEFAULT_CONFIGS['openrouter'];
+  return {
+    provider: 'openrouter',
+    apiKey: ENV_API_KEY,
+    model: ENV_MODEL || defaults.model || 'anthropic/claude-sonnet-4',
+    maxTokens: defaults.maxTokens || 4096,
+    temperature: defaults.temperature || 0.7,
+    baseUrl: defaults.baseUrl,
+  };
+}
 
 // ============================================================================
 // STORE INTERFACE
@@ -21,7 +44,8 @@ import { applyOperations } from './operations';
 interface AIStoreState extends AIAgentState {
   // Actions
   setConfig: (config: AIAgentConfig) => void;
-  setProvider: (provider: AIProvider, apiKey: string) => void;
+  setApiKey: (apiKey: string) => void;
+  setProvider: (provider: string, apiKey: string) => void;
   clearConfig: () => void;
   
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
@@ -29,6 +53,7 @@ interface AIStoreState extends AIAgentState {
   clearMessages: () => void;
   
   setGenerating: (generating: boolean) => void;
+  setStreamingText: (text: string) => void;
   setError: (error: string | null) => void;
   
   setPreviewOperations: (operations: CanvasOperation[]) => void;
@@ -44,15 +69,24 @@ interface AIStoreState extends AIAgentState {
 // INITIAL STATE
 // ============================================================================
 
+// Try to initialize from environment
+const envConfig = getEnvConfig();
+
 const initialState: AIAgentState = {
-  config: null,
-  isConfigured: false,
+  config: envConfig,
+  isConfigured: !!envConfig,
   messages: [],
   isGenerating: false,
+  streamingText: '',
   previewOperations: [],
   isPreviewActive: false,
   lastError: null,
 };
+
+// If we have env config, configure the agent immediately
+if (envConfig) {
+  aiAgent.configure(envConfig);
+}
 
 // ============================================================================
 // STORE CREATION
@@ -72,12 +106,25 @@ export const useAIStore = create<AIStoreState>()(
       });
     },
     
-    setProvider: (provider: AIProvider, apiKey: string) => {
-      const defaults = DEFAULT_CONFIGS[provider];
+    setApiKey: (apiKey: string) => {
+      const defaults = DEFAULT_CONFIGS['openrouter'];
       const config: AIAgentConfig = {
-        provider,
+        provider: 'openrouter',
         apiKey,
-        model: defaults.model || 'gpt-4o',
+        model: ENV_MODEL || defaults.model || 'anthropic/claude-sonnet-4',
+        maxTokens: defaults.maxTokens || 4096,
+        temperature: defaults.temperature || 0.7,
+        baseUrl: defaults.baseUrl,
+      };
+      get().setConfig(config);
+    },
+    
+    setProvider: (provider: string, apiKey: string) => {
+      const defaults = DEFAULT_CONFIGS[provider as keyof typeof DEFAULT_CONFIGS] || DEFAULT_CONFIGS['openrouter'];
+      const config: AIAgentConfig = {
+        provider: provider as AIAgentConfig['provider'],
+        apiKey,
+        model: defaults.model || 'anthropic/claude-sonnet-4',
         maxTokens: defaults.maxTokens || 4096,
         temperature: defaults.temperature || 0.7,
         baseUrl: defaults.baseUrl,
@@ -126,6 +173,10 @@ export const useAIStore = create<AIStoreState>()(
       set({ isGenerating: generating });
     },
     
+    setStreamingText: (text) => {
+      set({ streamingText: text });
+    },
+    
     setError: (error) => {
       set({ lastError: error });
     },
@@ -169,17 +220,37 @@ export const useAIStore = create<AIStoreState>()(
         return;
       }
       
+      // Check and consume credits
+      const authStore = useAuthStore.getState();
+      if (authStore.user) {
+        // Check if user has enough credits
+        if (!authStore.hasEnoughCredits('ai_generation_basic')) {
+          set({ lastError: 'Insufficient credits for AI generation' });
+          return;
+        }
+        
+        // Consume credits
+        const result = await authStore.useCredits('ai_generation_basic');
+        if (!result.success) {
+          set({ lastError: result.error || 'Failed to use credits' });
+          return;
+        }
+      }
+      
       // Add user message
       get().addMessage({
         role: 'user',
         content: prompt,
       });
       
-      // Start generating
-      set({ isGenerating: true, lastError: null });
+      // Start generating with streaming
+      set({ isGenerating: true, lastError: null, streamingText: '' });
       
       try {
         const response = await aiAgent.generate(prompt);
+        
+        // Clear streaming text
+        set({ streamingText: '' });
         
         // Add assistant message
         get().addMessage({
@@ -196,7 +267,7 @@ export const useAIStore = create<AIStoreState>()(
         }
       } catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        set({ lastError: error });
+        set({ lastError: error, streamingText: '' });
         get().addMessage({
           role: 'assistant',
           content: `Error: ${error}`,
@@ -220,6 +291,7 @@ export const useAIStore = create<AIStoreState>()(
 export const selectIsConfigured = (state: AIStoreState) => state.isConfigured;
 export const selectIsGenerating = (state: AIStoreState) => state.isGenerating;
 export const selectMessages = (state: AIStoreState) => state.messages;
+export const selectStreamingText = (state: AIStoreState) => state.streamingText;
 export const selectPreviewOperations = (state: AIStoreState) => state.previewOperations;
 export const selectHasPreview = (state: AIStoreState) => state.isPreviewActive;
 export const selectLastError = (state: AIStoreState) => state.lastError;
@@ -235,6 +307,7 @@ export function useAIPanel() {
   const isConfigured = useAIStore(selectIsConfigured);
   const isGenerating = useAIStore(selectIsGenerating);
   const messages = useAIStore(selectMessages);
+  const streamingText = useAIStore(selectStreamingText);
   const hasPreview = useAIStore(selectHasPreview);
   const previewOperations = useAIStore(selectPreviewOperations);
   const lastError = useAIStore(selectLastError);
@@ -243,6 +316,7 @@ export function useAIPanel() {
   const applyPreview = useAIStore(state => state.applyPreview);
   const clearPreview = useAIStore(state => state.clearPreview);
   const clearMessages = useAIStore(state => state.clearMessages);
+  const setApiKey = useAIStore(state => state.setApiKey);
   const setProvider = useAIStore(state => state.setProvider);
   const cancelGeneration = useAIStore(state => state.cancelGeneration);
   
@@ -250,6 +324,7 @@ export function useAIPanel() {
     isConfigured,
     isGenerating,
     messages,
+    streamingText,
     hasPreview,
     previewOperations,
     lastError,
@@ -257,6 +332,7 @@ export function useAIPanel() {
     applyPreview,
     clearPreview,
     clearMessages,
+    setApiKey,
     setProvider,
     cancelGeneration,
   };

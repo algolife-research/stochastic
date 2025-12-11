@@ -145,7 +145,7 @@ function serializeNodeProps(type: NodeType, props: Record<string, unknown>): str
     case 'pitch':
       return props.mode === 'shift' ? `shift=${props.shift}` : `fixed=${props.fixedMidiNote}`;
     case 'gate':
-      return `prob=${props.prob}, mode=${props.mode}`;
+      return `probability=${props.probability}, mode=${props.mode}`;
     case 'delay':
       return `time=${props.delayTime}`;
     case 'gain':

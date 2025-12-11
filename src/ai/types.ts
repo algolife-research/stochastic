@@ -157,7 +157,9 @@ export interface AddEdgeOperation {
 /** Edge modification operation */
 export interface ModifyEdgeOperation {
   type: 'modify_edge';
-  edgeId: EdgeId;
+  edgeId?: EdgeId;  // Can be provided directly
+  from?: string;    // Or lookup by endpoints
+  to?: string;
   timingMode?: 'physical' | 'fixed';
   durationBeats?: number;
   targetParam?: string | null;
@@ -167,7 +169,15 @@ export interface ModifyEdgeOperation {
 /** Edge deletion operation */
 export interface DeleteEdgeOperation {
   type: 'delete_edge';
-  edgeId: EdgeId;
+  edgeId?: EdgeId;  // Can be provided directly
+  from?: string;    // Or lookup by endpoints
+  to?: string;
+}
+
+/** Auto-layout operation */
+export interface AutoLayoutOperation {
+  type: 'auto_layout';
+  algorithm?: 'hierarchical' | 'force' | 'circular';
 }
 
 /** Union type for all canvas operations */
@@ -177,7 +187,8 @@ export type CanvasOperation =
   | DeleteNodeOperation
   | AddEdgeOperation
   | ModifyEdgeOperation
-  | DeleteEdgeOperation;
+  | DeleteEdgeOperation
+  | AutoLayoutOperation;
 
 /** Union type for all node props */
 export type NodePropsUnion = 
@@ -286,6 +297,7 @@ export interface AIAgentState {
   // Conversation
   messages: ChatMessage[];
   isGenerating: boolean;
+  streamingText: string;
   
   // Preview
   previewOperations: CanvasOperation[];

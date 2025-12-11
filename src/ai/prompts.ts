@@ -3,6 +3,7 @@
 
 import type { CanvasContext, GenerationConstraints, NodeTypeDoc } from './types';
 import { serializeContext } from './context-builder';
+import { getRelevantKnowledge } from './knowledge-base';
 import type { NodeType } from '@core/types';
 
 // ============================================================================
@@ -136,7 +137,7 @@ export const NODE_DOCS: NodeTypeDoc[] = [
     inputs: ['audio packets'],
     outputs: ['audio packets'],
     props: [
-      { name: 'prob', type: 'number', description: 'Pass probability (0-1)', default: 0.5, range: { min: 0, max: 1 } },
+      { name: 'probability', type: 'number', description: 'Pass probability (0-1)', default: 0.5, range: { min: 0, max: 1 } },
       { name: 'mode', type: 'string', description: 'Gate mode', options: ['probability', 'harmonic', 'energy', 'density', 'all'] },
     ],
   },
@@ -336,10 +337,13 @@ Example response:
 - \`modify_node\`: Update properties of an existing node (use the actual nodeId from canvas state)
 - \`delete_node\`: Remove a node
 - \`add_edge\`: Connect two nodes (use actual nodeId for existing nodes, or tempId for newly created nodes)
-- \`modify_edge\`: Update edge properties
-- \`delete_edge\`: Remove an edge
+- \`modify_edge\`: Update edge properties (use edgeId or from/to node references)
+- \`delete_edge\`: Remove an edge (use edgeId or from/to node references)
+- \`auto_layout\`: Automatically arrange all nodes. Algorithm options: "hierarchical" (left-to-right flow), "force" (physics simulation), "circular" (circle arrangement)
 
 **IMPORTANT**: When adding edges to EXISTING nodes on the canvas, use their actual node ID from the canvas state (shown in the context). When connecting to NEW nodes you're creating, use the tempId you assigned.
+
+**TIP**: After creating multiple nodes, use \`auto_layout\` to automatically arrange them nicely.
 
 ${generateNodeTypeReference()}
 
@@ -390,6 +394,13 @@ export function buildPrompt(
     parts.push('');
   }
   
+  // Add relevant knowledge
+  const knowledge = getRelevantKnowledge(userMessage);
+  if (knowledge) {
+    parts.push(knowledge);
+    parts.push('');
+  }
+
   // Add user message
   parts.push('=== USER REQUEST ===');
   parts.push(userMessage);

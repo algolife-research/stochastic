@@ -11,6 +11,7 @@ import type {
   AddEdgeOperation,
   ModifyEdgeOperation,
   DeleteEdgeOperation,
+  AutoLayoutOperation,
 } from './types';
 
 // ============================================================================
@@ -70,6 +71,9 @@ export function applyOperations(operations: CanvasOperation[]): ApplyResult {
           break;
         case 'delete_edge':
           applyDeleteEdge(operation, result, store);
+          break;
+        case 'auto_layout':
+          applyAutoLayout(operation, store);
           break;
       }
       result.appliedCount++;
@@ -173,14 +177,58 @@ function applyAddEdge(
   }
 }
 
+/**
+ * Resolve edge ID from operation (either direct edgeId or lookup by from/to)
+ */
+function resolveEdgeId(
+  op: { edgeId?: import('@core/types').EdgeId; from?: string; to?: string },
+  nodeIdMap: Map<string, NodeId>,
+  store: StoreType
+): import('@core/types').EdgeId | null {
+  // If edgeId is provided directly, use it
+  if (op.edgeId) {
+    if (store.edges.has(op.edgeId)) {
+      return op.edgeId;
+    }
+    // Try partial ID match
+    for (const [edgeId] of store.edges) {
+      if (edgeId.startsWith(op.edgeId) || op.edgeId.startsWith(edgeId.slice(0, 8))) {
+        return edgeId;
+      }
+    }
+    return null;
+  }
+  
+  // Otherwise, look up by from/to
+  if (op.from && op.to) {
+    const fromId = resolveNodeId(op.from, nodeIdMap);
+    const toId = resolveNodeId(op.to, nodeIdMap);
+    
+    if (!fromId || !toId) {
+      console.warn(`[AI Operations] Could not resolve from/to nodes: ${op.from} -> ${op.to}`);
+      return null;
+    }
+    
+    // Find edge connecting these nodes
+    for (const [edgeId, edge] of store.edges) {
+      if (edge.from === fromId && edge.to === toId) {
+        return edgeId;
+      }
+    }
+    console.warn(`[AI Operations] No edge found from ${fromId} to ${toId}`);
+  }
+  
+  return null;
+}
+
 function applyModifyEdge(
   op: ModifyEdgeOperation,
-  _result: ApplyResult,
+  result: ApplyResult,
   store: StoreType
 ): void {
-  const edge = store.getEdge(op.edgeId);
-  if (!edge) {
-    throw new Error(`Edge not found: ${op.edgeId}`);
+  const edgeId = resolveEdgeId(op, result.nodeIdMap, store);
+  if (!edgeId) {
+    throw new Error(`Edge not found: ${op.edgeId || `${op.from} -> ${op.to}`}`);
   }
   
   // Build updates object
@@ -190,20 +238,27 @@ function applyModifyEdge(
   if (op.targetParam !== undefined) updates.targetParam = op.targetParam;
   if (op.weight !== undefined) updates.weight = op.weight;
   
-  store.updateEdge(op.edgeId, updates);
+  store.updateEdge(edgeId, updates);
 }
 
 function applyDeleteEdge(
   op: DeleteEdgeOperation,
-  _result: ApplyResult,
+  result: ApplyResult,
   store: StoreType
 ): void {
-  const edge = store.getEdge(op.edgeId);
-  if (!edge) {
-    throw new Error(`Edge not found: ${op.edgeId}`);
+  const edgeId = resolveEdgeId(op, result.nodeIdMap, store);
+  if (!edgeId) {
+    throw new Error(`Edge not found: ${op.edgeId || `${op.from} -> ${op.to}`}`);
   }
   
-  store.deleteEdge(op.edgeId);
+  store.deleteEdge(edgeId);
+}
+
+function applyAutoLayout(
+  op: AutoLayoutOperation,
+  store: StoreType
+): void {
+  store.autoLayout(op.algorithm || 'hierarchical');
 }
 
 // ============================================================================
