@@ -148,6 +148,8 @@ function WaveformPreview({
 export function OscillatorProps({ props, onChange }: PropsEditorProps<OscillatorPropsType>): React.ReactElement {
   // Determine if this is a noise wave
   const isNoiseWave = props.wave === 'white' || props.wave === 'pink' || props.wave === 'brown';
+  const isFMMode = props.mode === 'fm';
+  const hasUnison = (props.unison ?? 1) > 1;
   
   return (
     <>
@@ -171,6 +173,18 @@ export function OscillatorProps({ props, onChange }: PropsEditorProps<Oscillator
         />
       </PropertyRow>
       
+      <PropertyRow label="Mode">
+        <Select
+          value={props.mode ?? 'additive'}
+          options={[
+            { value: 'additive', label: 'Additive (sum)' },
+            { value: 'ring', label: 'Ring (multiply)' },
+            { value: 'fm', label: 'FM (modulate next)' },
+          ]}
+          onChange={v => onChange('mode', v)}
+        />
+      </PropertyRow>
+      
       {!isNoiseWave && (
         <PropertyRow label="Ratio">
           <NumberInput
@@ -181,6 +195,68 @@ export function OscillatorProps({ props, onChange }: PropsEditorProps<Oscillator
             onChange={v => onChange('ratio', v)}
           />
         </PropertyRow>
+      )}
+      
+      {isFMMode && (
+        <>
+          <PropertyRow label="FM Index">
+            <SliderInput
+              value={props.modulationIndex ?? 2}
+              min={0}
+              max={10}
+              step={0.1}
+              onChange={(v: number) => onChange('modulationIndex', v)}
+            />
+          </PropertyRow>
+          
+          <PropertyRow label="Feedback">
+            <SliderInput
+              value={props.feedback ?? 0}
+              min={0}
+              max={1}
+              step={0.01}
+              onChange={(v: number) => onChange('feedback', v)}
+            />
+          </PropertyRow>
+        </>
+      )}
+      
+      {!isNoiseWave && (
+        <>
+          <PropertyRow label="Unison Voices">
+            <NumberInput
+              value={props.unison ?? 1}
+              min={1}
+              max={8}
+              step={1}
+              onChange={v => onChange('unison', v)}
+            />
+          </PropertyRow>
+          
+          {hasUnison && (
+            <>
+              <PropertyRow label="Detune (cents)">
+                <SliderInput
+                  value={props.detune ?? 0}
+                  min={0}
+                  max={50}
+                  step={1}
+                  onChange={(v: number) => onChange('detune', v)}
+                />
+              </PropertyRow>
+              
+              <PropertyRow label="Stereo Spread">
+                <SliderInput
+                  value={props.stereoSpread ?? 0.5}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  onChange={(v: number) => onChange('stereoSpread', v)}
+                />
+              </PropertyRow>
+            </>
+          )}
+        </>
       )}
       
       <PropertyRow label="Attack">

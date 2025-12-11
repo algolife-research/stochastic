@@ -8,11 +8,30 @@ import type { ScaleName } from '@core/types';
 export type SourcePropsType = { interval: number; midiNote: number; noteIndex: number; intensity: number; autoTrigger: boolean };
 export type SpeakerPropsType = { volume: number; reverb: number; pan: number; holdTime: number; releaseTime: number };
 export type PitchPropsType = { mode: string; shift: number; fixedMidiNote: number };
-export type OscillatorPropsType = { wave: 'sine' | 'square' | 'sawtooth' | 'triangle' | 'white' | 'pink' | 'brown'; ratio: number; attack: number; decay: number; mix: number };
-export type FilterPropsType = { cutoff: number; attack: number; decay: number; mod: number };
+export type OscillatorPropsType = { 
+  wave: 'sine' | 'square' | 'sawtooth' | 'triangle' | 'white' | 'pink' | 'brown'; 
+  ratio: number; 
+  attack: number; 
+  decay: number; 
+  mix: number;
+  mode?: 'additive' | 'ring' | 'fm';
+  modulationIndex?: number;
+  feedback?: number;
+  unison?: number;
+  detune?: number;
+  stereoSpread?: number;
+};
+export type FilterPropsType = { 
+  cutoff: number; 
+  attack: number; 
+  decay: number; 
+  mod: number;
+  type?: 'lowpass' | 'highpass' | 'bandpass' | 'notch';
+  resonance?: number;
+};
 export type GatePropsType = { 
   mode: 'probability' | 'harmonic' | 'energy' | 'density' | 'all';
-  prob: number; 
+  probability: number; 
   harmonicThreshold: number;
   energyThreshold: number;
   densityThreshold: number;
