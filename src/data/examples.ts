@@ -1,6 +1,7 @@
 // Phonon v2 - Example Compositions
 
-import type { NodeType, ScaleName } from '@core/types';
+import type { NodeType, ScaleName, NodeId } from '@core/types';
+import { getGraphStore } from '@core/store';
 
 // ============================================================================
 // EXAMPLE TYPE
@@ -2468,6 +2469,580 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "ed3", from: "rad_mut2", to: "rad_pol2" },
       { id: "ed4", from: "rad_pol2", to: "rad_out2" }
     ]
+  },
+
+  // ============================================================================
+  // OSCILLATOR MODES TUTORIAL
+  // ============================================================================
+
+  oscillatorModes: {
+    name: "Tutorial: Oscillator Modes",
+    description: "Learn the three oscillator modes: Additive (layering), Ring (multiplication), and FM (frequency modulation). Each scene demonstrates one mode with the same base frequency for easy comparison.",
+    bpm: 80,
+    scenes: [
+      // Scene 1: Introduction
+      {
+        name: "1. Introduction",
+        color: "#9c27b0",
+        durationBeats: 16,
+        loopCount: -1,
+        nodes: [
+          { id: "intro_src", type: "source", x: 200, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          { id: "intro_osc", type: "oscillator", x: 400, y: 300, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1 } },
+          { id: "intro_spk", type: "speaker", x: 600, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.5, releaseTime: 0.8 } }
+        ],
+        edges: [
+          { id: "e1", from: "intro_src", to: "intro_osc" },
+          { id: "e2", from: "intro_osc", to: "intro_spk" }
+        ]
+      },
+
+      // Scene 2: Additive Mode - Layered Harmonics
+      {
+        name: "2. Additive: Organ",
+        color: "#4caf50",
+        durationBeats: 16,
+        loopCount: -1,
+        nodes: [
+          { id: "add_src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.6 } },
+          // Fundamental
+          { id: "add_osc1", type: "oscillator", x: 280, y: 200, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.01, decay: 2, mix: 1 } },
+          // 2nd harmonic (octave)
+          { id: "add_osc2", type: "oscillator", x: 280, y: 300, props: { wave: "sine", ratio: 2, mode: "additive", attack: 0.01, decay: 1.5, mix: 0.5 } },
+          // 3rd harmonic (fifth above octave)
+          { id: "add_osc3", type: "oscillator", x: 280, y: 400, props: { wave: "sine", ratio: 3, mode: "additive", attack: 0.01, decay: 1, mix: 0.3 } },
+          { id: "add_spk", type: "speaker", x: 500, y: 300, props: { reverb: 0.5, pan: 0, holdTime: 0.5, releaseTime: 1 } }
+        ],
+        edges: [
+          { id: "e1", from: "add_src", to: "add_osc1" },
+          { id: "e2", from: "add_src", to: "add_osc2" },
+          { id: "e3", from: "add_src", to: "add_osc3" },
+          { id: "e4", from: "add_osc1", to: "add_spk" },
+          { id: "e5", from: "add_osc2", to: "add_spk" },
+          { id: "e6", from: "add_osc3", to: "add_spk" }
+        ]
+      },
+
+      // Scene 3: Ring Mode - Metallic Bell
+      {
+        name: "3. Ring: Metallic",
+        color: "#ff9800",
+        durationBeats: 16,
+        loopCount: -1,
+        nodes: [
+          { id: "ring_src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          // Carrier (this will be multiplied)
+          { id: "ring_osc1", type: "oscillator", x: 280, y: 250, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.01, decay: 2, mix: 1 } },
+          // Modulator - non-integer ratio creates inharmonic sidebands
+          { id: "ring_osc2", type: "oscillator", x: 280, y: 350, props: { wave: "sine", ratio: 1.4, mode: "ring", attack: 0.01, decay: 2, mix: 1 } },
+          { id: "ring_spk", type: "speaker", x: 500, y: 300, props: { reverb: 0.6, pan: 0, holdTime: 0.3, releaseTime: 1.5 } }
+        ],
+        edges: [
+          { id: "e1", from: "ring_src", to: "ring_osc1" },
+          { id: "e2", from: "ring_src", to: "ring_osc2" },
+          { id: "e3", from: "ring_osc1", to: "ring_spk" },
+          { id: "e4", from: "ring_osc2", to: "ring_spk" }
+        ]
+      },
+
+      // Scene 4: FM Mode - Classic Bell
+      {
+        name: "4. FM: Bell",
+        color: "#2196f3",
+        durationBeats: 16,
+        loopCount: -1,
+        nodes: [
+          { id: "fm_src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.7 } },
+          // Modulator (mode:fm) - this is SILENT, only modulates the next osc
+          { id: "fm_mod", type: "oscillator", x: 300, y: 300, props: { wave: "sine", ratio: 3.5, mode: "fm", modulationIndex: 5, feedback: 0, attack: 0.001, decay: 1.5, mix: 0.5 } },
+          // Carrier (mode:additive) - this produces the sound
+          { id: "fm_car", type: "oscillator", x: 500, y: 300, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.001, decay: 3, mix: 1 } },
+          { id: "fm_spk", type: "speaker", x: 700, y: 300, props: { reverb: 0.7, pan: 0, holdTime: 0.1, releaseTime: 2 } }
+        ],
+        edges: [
+          { id: "e1", from: "fm_src", to: "fm_mod" },
+          { id: "e2", from: "fm_mod", to: "fm_car" },
+          { id: "e3", from: "fm_car", to: "fm_spk" }
+        ]
+      },
+
+      // Scene 5: FM Mode - Electric Piano
+      {
+        name: "5. FM: E-Piano",
+        color: "#3f51b5",
+        durationBeats: 16,
+        loopCount: -1,
+        nodes: [
+          { id: "ep_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 60, intensity: 0.6 } },
+          // Modulator - ratio:2 (octave) with moderate index
+          { id: "ep_mod", type: "oscillator", x: 300, y: 300, props: { wave: "sine", ratio: 2, mode: "fm", modulationIndex: 2.5, feedback: 0, attack: 0.01, decay: 0.8, mix: 0.8 } },
+          // Carrier - fundamental
+          { id: "ep_car", type: "oscillator", x: 500, y: 300, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1 } },
+          { id: "ep_spk", type: "speaker", x: 700, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.2, releaseTime: 0.8 } }
+        ],
+        edges: [
+          { id: "e1", from: "ep_src", to: "ep_mod" },
+          { id: "e2", from: "ep_mod", to: "ep_car" },
+          { id: "e3", from: "ep_car", to: "ep_spk" }
+        ]
+      },
+
+      // Scene 6: FM with Feedback - Gritty Bass
+      {
+        name: "6. FM: Feedback Bass",
+        color: "#673ab7",
+        durationBeats: 16,
+        loopCount: -1,
+        nodes: [
+          { id: "fb_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.8 } },
+          // Modulator with self-feedback for grittier sound
+          { id: "fb_mod", type: "oscillator", x: 300, y: 300, props: { wave: "sine", ratio: 1, mode: "fm", modulationIndex: 3, feedback: 0.4, attack: 0.001, decay: 0.3, mix: 1 } },
+          // Carrier at sub-octave
+          { id: "fb_car", type: "oscillator", x: 500, y: 300, props: { wave: "sine", ratio: 0.5, mode: "additive", attack: 0.001, decay: 0.5, mix: 1 } },
+          { id: "fb_flt", type: "filter", x: 650, y: 300, props: { cutoff: 800, attack: 0.01, decay: 0.2, mod: 0.5 } },
+          { id: "fb_spk", type: "speaker", x: 800, y: 300, props: { reverb: 0.2, pan: 0, holdTime: 0.1, releaseTime: 0.3 } }
+        ],
+        edges: [
+          { id: "e1", from: "fb_src", to: "fb_mod" },
+          { id: "e2", from: "fb_mod", to: "fb_car" },
+          { id: "e3", from: "fb_car", to: "fb_flt" },
+          { id: "e4", from: "fb_flt", to: "fb_spk" }
+        ]
+      },
+
+      // Scene 7: Comparison - All Three Modes
+      {
+        name: "7. Compare All",
+        color: "#e91e63",
+        durationBeats: 24,
+        loopCount: -1,
+        nodes: [
+          // Shared trigger
+          { id: "cmp_src", type: "source", x: 100, y: 300, props: { interval: 3, midiNote: 48, intensity: 0.6 } },
+          { id: "cmp_split", type: "splitter", x: 220, y: 300, props: { mode: "all" } },
+          
+          // Top: Additive (warm organ)
+          { id: "cmp_add1", type: "oscillator", x: 380, y: 150, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.01, decay: 2, mix: 1 } },
+          { id: "cmp_add2", type: "oscillator", x: 380, y: 220, props: { wave: "sine", ratio: 2, mode: "additive", attack: 0.01, decay: 1.5, mix: 0.4 } },
+          { id: "cmp_add_spk", type: "speaker", x: 560, y: 185, props: { reverb: 0.3, pan: -0.7, holdTime: 0.5, releaseTime: 0.8 } },
+          
+          // Middle: Ring (metallic)
+          { id: "cmp_ring1", type: "oscillator", x: 380, y: 300, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.01, decay: 2, mix: 1 } },
+          { id: "cmp_ring2", type: "oscillator", x: 500, y: 300, props: { wave: "sine", ratio: 1.5, mode: "ring", attack: 0.01, decay: 2, mix: 1 } },
+          { id: "cmp_ring_spk", type: "speaker", x: 650, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.5, releaseTime: 1 } },
+          
+          // Bottom: FM (bell)
+          { id: "cmp_fm_mod", type: "oscillator", x: 380, y: 420, props: { wave: "sine", ratio: 3, mode: "fm", modulationIndex: 4, feedback: 0, attack: 0.001, decay: 1, mix: 0.6 } },
+          { id: "cmp_fm_car", type: "oscillator", x: 530, y: 420, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.001, decay: 2.5, mix: 1 } },
+          { id: "cmp_fm_spk", type: "speaker", x: 680, y: 420, props: { reverb: 0.6, pan: 0.7, holdTime: 0.2, releaseTime: 1.5 } }
+        ],
+        edges: [
+          { id: "e0", from: "cmp_src", to: "cmp_split" },
+          // Additive path (top, panned left)
+          { id: "ea1", from: "cmp_split", to: "cmp_add1" },
+          { id: "ea2", from: "cmp_split", to: "cmp_add2" },
+          { id: "ea3", from: "cmp_add1", to: "cmp_add_spk" },
+          { id: "ea4", from: "cmp_add2", to: "cmp_add_spk" },
+          // Ring path (middle, center)
+          { id: "er1", from: "cmp_split", to: "cmp_ring1" },
+          { id: "er2", from: "cmp_split", to: "cmp_ring2" },
+          { id: "er3", from: "cmp_ring1", to: "cmp_ring_spk" },
+          { id: "er4", from: "cmp_ring2", to: "cmp_ring_spk" },
+          // FM path (bottom, panned right)
+          { id: "ef1", from: "cmp_split", to: "cmp_fm_mod" },
+          { id: "ef2", from: "cmp_fm_mod", to: "cmp_fm_car" },
+          { id: "ef3", from: "cmp_fm_car", to: "cmp_fm_spk" }
+        ]
+      }
+    ]
+  },
+
+  // ============================================================================
+  // FILTER TYPES TUTORIAL
+  // ============================================================================
+
+  filterTypesTutorial: {
+    name: "Tutorial: Filter Types",
+    description: "Learn the four filter types: Lowpass (removes highs), Highpass (removes lows), Bandpass (isolates a band), and Notch (removes a band). Each scene demonstrates one filter type with the same source for easy comparison.",
+    bpm: 90,
+    scenes: [
+      // Scene 1: Introduction - Raw Source
+      {
+        name: "1. Raw Source",
+        color: "#9c27b0",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "raw_src", type: "source", x: 150, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "raw_osc", type: "oscillator", x: 300, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.8, mix: 1 } },
+          { id: "raw_spk", type: "speaker", x: 500, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
+        ],
+        edges: [
+          { id: "e1", from: "raw_src", to: "raw_osc" },
+          { id: "e2", from: "raw_osc", to: "raw_spk" }
+        ]
+      },
+
+      // Scene 2: Lowpass - Removes high frequencies
+      {
+        name: "2. Lowpass: Warm",
+        color: "#4caf50",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "lp_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "lp_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.8, mix: 1 } },
+          { id: "lp_flt", type: "filter", x: 400, y: 300, props: { type: "lowpass", cutoff: 800, resonance: 0.3, attack: 0, decay: 0, mod: 0 } },
+          { id: "lp_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
+        ],
+        edges: [
+          { id: "e1", from: "lp_src", to: "lp_osc" },
+          { id: "e2", from: "lp_osc", to: "lp_flt" },
+          { id: "e3", from: "lp_flt", to: "lp_spk" }
+        ]
+      },
+
+      // Scene 3: Highpass - Removes low frequencies
+      {
+        name: "3. Highpass: Thin",
+        color: "#2196f3",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "hp_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "hp_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.8, mix: 1 } },
+          { id: "hp_flt", type: "filter", x: 400, y: 300, props: { type: "highpass", cutoff: 1000, resonance: 0.2, attack: 0, decay: 0, mod: 0 } },
+          { id: "hp_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
+        ],
+        edges: [
+          { id: "e1", from: "hp_src", to: "hp_osc" },
+          { id: "e2", from: "hp_osc", to: "hp_flt" },
+          { id: "e3", from: "hp_flt", to: "hp_spk" }
+        ]
+      },
+
+      // Scene 4: Bandpass - Isolates a frequency band
+      {
+        name: "4. Bandpass: Focused",
+        color: "#ff9800",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "bp_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "bp_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.8, mix: 1 } },
+          { id: "bp_flt", type: "filter", x: 400, y: 300, props: { type: "bandpass", cutoff: 500, resonance: 0.6, attack: 0, decay: 0, mod: 0 } },
+          { id: "bp_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
+        ],
+        edges: [
+          { id: "e1", from: "bp_src", to: "bp_osc" },
+          { id: "e2", from: "bp_osc", to: "bp_flt" },
+          { id: "e3", from: "bp_flt", to: "bp_spk" }
+        ]
+      },
+
+      // Scene 5: Notch - Removes a frequency band
+      {
+        name: "5. Notch: Phaser-like",
+        color: "#e91e63",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "nt_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "nt_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.8, mix: 1 } },
+          { id: "nt_flt", type: "filter", x: 400, y: 300, props: { type: "notch", cutoff: 1000, resonance: 0.7, attack: 0, decay: 0, mod: 0 } },
+          { id: "nt_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
+        ],
+        edges: [
+          { id: "e1", from: "nt_src", to: "nt_osc" },
+          { id: "e2", from: "nt_osc", to: "nt_flt" },
+          { id: "e3", from: "nt_flt", to: "nt_spk" }
+        ]
+      },
+
+      // Scene 6: Filter Envelope - Animated cutoff
+      {
+        name: "6. Filter Envelope",
+        color: "#673ab7",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "env_src", type: "source", x: 100, y: 300, props: { interval: 0.5, midiNote: 36, intensity: 0.7 } },
+          { id: "env_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.001, decay: 0.5, mix: 1 } },
+          { id: "env_flt", type: "filter", x: 400, y: 300, props: { type: "lowpass", cutoff: 200, resonance: 0.5, attack: 0.01, decay: 0.3, mod: 4000 } },
+          { id: "env_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.2, pan: 0, holdTime: 0.1, releaseTime: 0.4 } }
+        ],
+        edges: [
+          { id: "e1", from: "env_src", to: "env_osc" },
+          { id: "e2", from: "env_osc", to: "env_flt" },
+          { id: "e3", from: "env_flt", to: "env_spk" }
+        ]
+      },
+
+      // Scene 7: High Resonance - Self-oscillation
+      {
+        name: "7. Resonance Peak",
+        color: "#f44336",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "res_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.5 } },
+          { id: "res_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.6, mix: 1 } },
+          { id: "res_flt", type: "filter", x: 400, y: 300, props: { type: "lowpass", cutoff: 600, resonance: 0.85, attack: 0, decay: 0, mod: 0 } },
+          { id: "res_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
+        ],
+        edges: [
+          { id: "e1", from: "res_src", to: "res_osc" },
+          { id: "e2", from: "res_osc", to: "res_flt" },
+          { id: "e3", from: "res_flt", to: "res_spk" }
+        ]
+      }
+    ]
+  },
+
+  // ============================================================================
+  // UNISON & DETUNE TUTORIAL
+  // ============================================================================
+
+  unisonTutorial: {
+    name: "Tutorial: Unison & Detune",
+    description: "Learn how unison voices and detuning create thick, chorus-like sounds. Unison duplicates the oscillator, detune spreads the pitch, and stereo spread places voices across the stereo field.",
+    bpm: 80,
+    scenes: [
+      // Scene 1: Single Voice - Baseline
+      {
+        name: "1. Single Voice",
+        color: "#9c27b0",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "sv_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          { id: "sv_osc", type: "oscillator", x: 350, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 1, detune: 0, stereoSpread: 0.5 } },
+          { id: "sv_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.5, releaseTime: 0.8 } }
+        ],
+        edges: [
+          { id: "e1", from: "sv_src", to: "sv_osc" },
+          { id: "e2", from: "sv_osc", to: "sv_spk" }
+        ]
+      },
+
+      // Scene 2: 2 Voices - Subtle thickness
+      {
+        name: "2. Two Voices",
+        color: "#4caf50",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "2v_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          { id: "2v_osc", type: "oscillator", x: 350, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 2, detune: 10, stereoSpread: 0.7 } },
+          { id: "2v_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.5, releaseTime: 0.8 } }
+        ],
+        edges: [
+          { id: "e1", from: "2v_src", to: "2v_osc" },
+          { id: "e2", from: "2v_osc", to: "2v_spk" }
+        ]
+      },
+
+      // Scene 3: 4 Voices - Classic supersaw
+      {
+        name: "3. Supersaw (4)",
+        color: "#2196f3",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "4v_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          { id: "4v_osc", type: "oscillator", x: 350, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 4, detune: 15, stereoSpread: 0.8 } },
+          { id: "4v_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.5, releaseTime: 0.8 } }
+        ],
+        edges: [
+          { id: "e1", from: "4v_src", to: "4v_osc" },
+          { id: "e2", from: "4v_osc", to: "4v_spk" }
+        ]
+      },
+
+      // Scene 4: 8 Voices - Massive
+      {
+        name: "4. Massive (8)",
+        color: "#ff9800",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "8v_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.6 } },
+          { id: "8v_osc", type: "oscillator", x: 350, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 8, detune: 25, stereoSpread: 1.0 } },
+          { id: "8v_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.5, releaseTime: 0.8 } }
+        ],
+        edges: [
+          { id: "e1", from: "8v_src", to: "8v_osc" },
+          { id: "e2", from: "8v_osc", to: "8v_spk" }
+        ]
+      },
+
+      // Scene 5: Wide vs Narrow stereo spread
+      {
+        name: "5. Stereo Spread",
+        color: "#e91e63",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          // Narrow spread (left)
+          { id: "ns_src", type: "source", x: 100, y: 200, props: { interval: 2, midiNote: 48, intensity: 0.6 } },
+          { id: "ns_osc", type: "oscillator", x: 280, y: 200, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 4, detune: 20, stereoSpread: 0.2 } },
+          { id: "ns_spk", type: "speaker", x: 460, y: 200, props: { reverb: 0.3, pan: -0.5, holdTime: 0.5, releaseTime: 0.8 } },
+          // Wide spread (right)
+          { id: "ws_src", type: "source", x: 100, y: 400, props: { interval: 2, midiNote: 48, intensity: 0.6 } },
+          { id: "ws_osc", type: "oscillator", x: 280, y: 400, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 4, detune: 20, stereoSpread: 1.0 } },
+          { id: "ws_spk", type: "speaker", x: 460, y: 400, props: { reverb: 0.3, pan: 0.5, holdTime: 0.5, releaseTime: 0.8 } }
+        ],
+        edges: [
+          { id: "e1", from: "ns_src", to: "ns_osc" },
+          { id: "e2", from: "ns_osc", to: "ns_spk" },
+          { id: "e3", from: "ws_src", to: "ws_osc" },
+          { id: "e4", from: "ws_osc", to: "ws_spk" }
+        ]
+      },
+
+      // Scene 6: Unison with filter
+      {
+        name: "6. Unison + Filter",
+        color: "#673ab7",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "uf_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "uf_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.001, decay: 0.8, mix: 1, unison: 6, detune: 20, stereoSpread: 0.8 } },
+          { id: "uf_flt", type: "filter", x: 400, y: 300, props: { type: "lowpass", cutoff: 300, resonance: 0.4, attack: 0.01, decay: 0.4, mod: 3000 } },
+          { id: "uf_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.2, releaseTime: 0.6 } }
+        ],
+        edges: [
+          { id: "e1", from: "uf_src", to: "uf_osc" },
+          { id: "e2", from: "uf_osc", to: "uf_flt" },
+          { id: "e3", from: "uf_flt", to: "uf_spk" }
+        ]
+      }
+    ]
+  },
+
+  // ============================================================================
+  // NOISE TYPES TUTORIAL  
+  // ============================================================================
+
+  noiseTypesTutorial: {
+    name: "Tutorial: Noise Types",
+    description: "Learn the three noise types: White (equal energy per frequency), Pink (-3dB/octave, natural), and Brown (-6dB/octave, deep rumble). Use noise for percussion, textures, and effects.",
+    bpm: 100,
+    scenes: [
+      // Scene 1: White Noise - Bright, hissy
+      {
+        name: "1. White Noise",
+        color: "#ffffff",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "wn_src", type: "source", x: 150, y: 300, props: { interval: 0.5, midiNote: 60, intensity: 0.4 } },
+          { id: "wn_osc", type: "oscillator", x: 350, y: 300, props: { wave: "white", ratio: 1, mode: "additive", attack: 0.001, decay: 0.15, mix: 1 } },
+          { id: "wn_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.2, pan: 0, holdTime: 0.05, releaseTime: 0.1 } }
+        ],
+        edges: [
+          { id: "e1", from: "wn_src", to: "wn_osc" },
+          { id: "e2", from: "wn_osc", to: "wn_spk" }
+        ]
+      },
+
+      // Scene 2: Pink Noise - Natural, balanced
+      {
+        name: "2. Pink Noise",
+        color: "#e91e63",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "pn_src", type: "source", x: 150, y: 300, props: { interval: 0.5, midiNote: 60, intensity: 0.5 } },
+          { id: "pn_osc", type: "oscillator", x: 350, y: 300, props: { wave: "pink", ratio: 1, mode: "additive", attack: 0.001, decay: 0.2, mix: 1 } },
+          { id: "pn_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.05, releaseTime: 0.15 } }
+        ],
+        edges: [
+          { id: "e1", from: "pn_src", to: "pn_osc" },
+          { id: "e2", from: "pn_osc", to: "pn_spk" }
+        ]
+      },
+
+      // Scene 3: Brown Noise - Deep rumble
+      {
+        name: "3. Brown Noise",
+        color: "#795548",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "bn_src", type: "source", x: 150, y: 300, props: { interval: 0.5, midiNote: 60, intensity: 0.6 } },
+          { id: "bn_osc", type: "oscillator", x: 350, y: 300, props: { wave: "brown", ratio: 1, mode: "additive", attack: 0.001, decay: 0.3, mix: 1 } },
+          { id: "bn_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.1, releaseTime: 0.2 } }
+        ],
+        edges: [
+          { id: "e1", from: "bn_src", to: "bn_osc" },
+          { id: "e2", from: "bn_osc", to: "bn_spk" }
+        ]
+      },
+
+      // Scene 4: Hi-hat (white + highpass filter)
+      {
+        name: "4. Hi-Hat Pattern",
+        color: "#9e9e9e",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "hh_src", type: "source", x: 100, y: 300, props: { interval: 0.25, midiNote: 60, intensity: 0.35 } },
+          { id: "hh_osc", type: "oscillator", x: 250, y: 300, props: { wave: "white", ratio: 1, mode: "additive", attack: 0.001, decay: 0.08, mix: 1 } },
+          { id: "hh_flt", type: "filter", x: 400, y: 300, props: { type: "highpass", cutoff: 8000, resonance: 0.2, attack: 0, decay: 0, mod: 0 } },
+          { id: "hh_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.15, pan: 0, holdTime: 0.02, releaseTime: 0.05 } }
+        ],
+        edges: [
+          { id: "e1", from: "hh_src", to: "hh_osc" },
+          { id: "e2", from: "hh_osc", to: "hh_flt" },
+          { id: "e3", from: "hh_flt", to: "hh_spk" }
+        ]
+      },
+
+      // Scene 5: Snare (pink + bandpass)
+      {
+        name: "5. Snare Hit",
+        color: "#ff5722",
+        durationBeats: 8,
+        loopCount: -1,
+        nodes: [
+          { id: "sn_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 60, intensity: 0.6 } },
+          { id: "sn_osc", type: "oscillator", x: 250, y: 300, props: { wave: "pink", ratio: 1, mode: "additive", attack: 0.001, decay: 0.2, mix: 1 } },
+          { id: "sn_flt", type: "filter", x: 400, y: 300, props: { type: "bandpass", cutoff: 2000, resonance: 0.3, attack: 0, decay: 0, mod: 0 } },
+          { id: "sn_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.25, pan: 0, holdTime: 0.05, releaseTime: 0.15 } }
+        ],
+        edges: [
+          { id: "e1", from: "sn_src", to: "sn_osc" },
+          { id: "e2", from: "sn_osc", to: "sn_flt" },
+          { id: "e3", from: "sn_flt", to: "sn_spk" }
+        ]
+      },
+
+      // Scene 6: Ambient pad (brown noise layered with sine)
+      {
+        name: "6. Textured Pad",
+        color: "#3f51b5",
+        durationBeats: 16,
+        loopCount: -1,
+        nodes: [
+          { id: "pad_src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 48, intensity: 0.5 } },
+          // Tonal component
+          { id: "pad_sine", type: "oscillator", x: 280, y: 200, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.5, decay: 3, mix: 0.8 } },
+          // Noise texture
+          { id: "pad_noise", type: "oscillator", x: 280, y: 400, props: { wave: "brown", ratio: 1, mode: "additive", attack: 0.3, decay: 2.5, mix: 0.15 } },
+          { id: "pad_flt", type: "filter", x: 450, y: 300, props: { type: "lowpass", cutoff: 1500, resonance: 0.1, attack: 0, decay: 0, mod: 0 } },
+          { id: "pad_spk", type: "speaker", x: 600, y: 300, props: { reverb: 0.6, pan: 0, holdTime: 2, releaseTime: 2 } }
+        ],
+        edges: [
+          { id: "e1", from: "pad_src", to: "pad_sine" },
+          { id: "e2", from: "pad_src", to: "pad_noise" },
+          { id: "e3", from: "pad_sine", to: "pad_flt" },
+          { id: "e4", from: "pad_noise", to: "pad_flt" },
+          { id: "e5", from: "pad_flt", to: "pad_spk" }
+        ]
+      }
+    ]
   }
 
 };
@@ -2486,32 +3061,29 @@ export function loadExample(exampleKey: string): void {
     return;
   }
   
-  // Get store dynamically to avoid circular imports
-  import('@core/store').then(({ getGraphStore }) => {
-    const store = getGraphStore();
-    
-    // Set BPM
-    store.setMasterSpeed(example.bpm);
-    
-    // Check if this is a multi-scene example
-    if (example.scenes && example.scenes.length > 0) {
-      loadMultiSceneExample(store, example);
-    } else if (example.nodes && example.edges) {
-      loadSingleSceneExample(store, example);
-    }
-    
-    // Reset view
-    store.setPan(0, 0);
-    store.setZoom(1);
-    
-    console.log(`Loaded example: ${example.name}`);
-  });
+  const store = getGraphStore();
+  
+  // Set BPM
+  store.setMasterSpeed(example.bpm);
+  
+  // Check if this is a multi-scene example
+  if (example.scenes && example.scenes.length > 0) {
+    loadMultiSceneExample(store, example);
+  } else if (example.nodes && example.edges) {
+    loadSingleSceneExample(store, example);
+  }
+  
+  // Reset view
+  store.setPan(0, 0);
+  store.setZoom(1);
+  
+  console.log(`Loaded example: ${example.name}`);
 }
 
 /**
  * Load a single-scene example - ADDS a new scene to the project
  */
-function loadSingleSceneExample(store: ReturnType<typeof import('@core/store').getGraphStore>, example: Example): void {
+function loadSingleSceneExample(store: ReturnType<typeof getGraphStore>, example: Example): void {
   // Create a new scene for this example
   const sceneId = store.createScene(example.name);
   
@@ -2519,7 +3091,7 @@ function loadSingleSceneExample(store: ReturnType<typeof import('@core/store').g
   store.loadSceneToCanvas(sceneId);
   
   // Create ID mapping
-  const idMap = new Map<string, string>();
+  const idMap = new Map<string, NodeId>();
   
   // Add nodes
   example.nodes!.forEach(node => {
@@ -2548,7 +3120,7 @@ function loadSingleSceneExample(store: ReturnType<typeof import('@core/store').g
 /**
  * Load a multi-scene example - ADDS new scenes to the project
  */
-function loadMultiSceneExample(store: ReturnType<typeof import('@core/store').getGraphStore>, example: Example): void {
+function loadMultiSceneExample(store: ReturnType<typeof getGraphStore>, example: Example): void {
   // Track the first scene we create so we can switch to it at the end
   let firstSceneId: string | null = null;
   
@@ -2576,7 +3148,7 @@ function loadMultiSceneExample(store: ReturnType<typeof import('@core/store').ge
     store.loadSceneToCanvas(sceneId);
     
     // Create ID mapping for this scene
-    const idMap = new Map<string, string>();
+    const idMap = new Map<string, NodeId>();
     
     // Add nodes
     sceneData.nodes.forEach(node => {
