@@ -1,7 +1,10 @@
 // Phonon v2 - Audio Worklet Processor
 // Runs on the audio thread for sample-accurate scheduling
-// Updated: 2025-12-05 with pan support
+// Updated: 2025-12-11 with filter types, unison, proper noise
 /// <reference path="../vite-env.d.ts" />
+
+// Filter types
+type FilterType = 'lowpass' | 'highpass' | 'bandpass' | 'notch';
 
 // Message types
 interface NoteOnMessage {
@@ -16,6 +19,8 @@ interface NoteOnMessage {
   releaseTime: number;
   cutoff: number;
   timbre: number;
+  filterType?: FilterType;
+  filterResonance?: number;
   startTime: number;
   layers?: Array<{
     wave: string;
@@ -23,6 +28,12 @@ interface NoteOnMessage {
     decay: number;
     gain: number;
     ratio?: number;
+    mode?: 'additive' | 'ring' | 'fm';
+    modulationIndex?: number;
+    feedback?: number;
+    unison?: number;
+    detune?: number;
+    stereoSpread?: number;
   }>;
   vibratoRate?: number;
   vibratoDepth?: number;
@@ -66,6 +77,8 @@ interface Voice {
   releaseTime: number;
   cutoff: number;
   timbre: number;
+  filterType: FilterType;
+  filterResonance: number;
   state: 'attack' | 'hold' | 'decay' | 'release' | 'dead';
   envelope: number;
   time: number;
@@ -79,6 +92,14 @@ interface Voice {
     gain: number;
     ratio: number;
     envelope: number;
+    mode: 'additive' | 'ring' | 'fm';
+    modulationIndex: number;
+    feedback: number;
+    lastSample: number;  // For FM feedback
+    unison: number;
+    detune: number;
+    stereoSpread: number;
+    unisonPhases: number[];  // Phase for each unison voice
   }>;
   
   // Vibrato
@@ -109,6 +130,18 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
   private voices: Map<string, Voice> = new Map();
   private masterGain: number = 0.5;
   private sampleRate: number;
+  
+  // Pink noise state (Paul Kellet's refined method)
+  private pinkB0 = 0;
+  private pinkB1 = 0;
+  private pinkB2 = 0;
+  private pinkB3 = 0;
+  private pinkB4 = 0;
+  private pinkB5 = 0;
+  private pinkB6 = 0;
+  
+  // Brown noise state
+  private brownLast = 0;
   
   constructor() {
     super();
@@ -180,19 +213,32 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
       releaseTime: msg.releaseTime,
       cutoff: msg.cutoff,
       timbre: msg.timbre,
+      filterType: msg.filterType ?? 'lowpass',
+      filterResonance: msg.filterResonance ?? 0,
       state: 'attack',
       envelope: 0,
       time: 0,
       
-      layers: layers.map(l => ({
-        wave: l.wave,
-        phase: Math.random() * Math.PI * 2, // Slight random phase for chorus
-        attack: l.attack,
-        decay: l.decay,
-        gain: l.gain,
-        ratio: l.ratio ?? 1,
-        envelope: 0,
-      })),
+      layers: layers.map(l => {
+        const unison = l.unison ?? 1;
+        return {
+          wave: l.wave,
+          phase: Math.random() * Math.PI * 2, // Slight random phase for chorus
+          attack: l.attack,
+          decay: l.decay,
+          gain: l.gain,
+          ratio: l.ratio ?? 1,
+          envelope: 0,
+          mode: l.mode ?? 'additive',
+          modulationIndex: l.modulationIndex ?? 2,
+          feedback: l.feedback ?? 0,
+          lastSample: 0,
+          unison,
+          detune: l.detune ?? 0,
+          stereoSpread: l.stereoSpread ?? 0.5,
+          unisonPhases: Array.from({ length: unison }, () => Math.random() * Math.PI * 2),
+        };
+      }),
       
       vibratoRate: msg.vibratoRate ?? 0,
       vibratoDepth: msg.vibratoDepth ?? 0,
@@ -259,9 +305,6 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
           break;
         }
         
-        // Calculate sample
-        let sample = 0;
-        
         // Update vibrato
         if (voice.vibratoRate > 0 && voice.time > voice.vibratoDelay) {
           voice.vibratoPhase += voice.vibratoRate * dt * Math.PI * 2;
@@ -271,37 +314,119 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
           ? Math.pow(2, (Math.sin(voice.vibratoPhase) * voice.vibratoDepth) / 1200)
           : 1;
         
-        // Process each layer
-        for (const layer of voice.layers) {
+        // Process each layer with FM/Ring/Additive modes and Unison
+        let fmModulation = 0;  // Accumulated FM modulation for next layer
+        let prevLayerSample = 0;  // For ring modulation
+        let sampleL = 0;  // Left channel accumulator for unison stereo spread
+        let sampleR = 0;  // Right channel accumulator for unison stereo spread
+        
+        for (let layerIdx = 0; layerIdx < voice.layers.length; layerIdx++) {
+          const layer = voice.layers[layerIdx]!;
           this.updateLayerEnvelope(layer, voice.state, dt);
           
-          const layerFreq = voice.freq * layer.ratio * vibratoMod;
-          const phaseDelta = (layerFreq / this.sampleRate) * Math.PI * 2;
-          layer.phase += phaseDelta;
+          const baseLayerFreq = voice.freq * layer.ratio * vibratoMod;
           
-          if (layer.phase > Math.PI * 2) {
-            layer.phase -= Math.PI * 2;
+          // Process unison voices
+          let layerSampleL = 0;
+          let layerSampleR = 0;
+          const unisonCount = layer.unison;
+          const gainPerVoice = 1 / Math.sqrt(unisonCount); // Normalize gain
+          
+          for (let u = 0; u < unisonCount; u++) {
+            // Calculate detune for this unison voice (-1 to +1 spread)
+            const detuneSpread = unisonCount > 1 ? (u / (unisonCount - 1)) * 2 - 1 : 0;
+            const detuneCents = detuneSpread * layer.detune;
+            const detuneRatio = Math.pow(2, detuneCents / 1200);
+            const layerFreq = baseLayerFreq * detuneRatio;
+            
+            const phaseDelta = (layerFreq / this.sampleRate) * Math.PI * 2;
+            
+            // Apply FM modulation from previous FM-mode layer
+            const modulatedPhase = layer.unisonPhases[u]! + fmModulation;
+            layer.unisonPhases[u]! += phaseDelta;
+            
+            if (layer.unisonPhases[u]! > Math.PI * 2) {
+              layer.unisonPhases[u]! -= Math.PI * 2;
+            }
+            
+            let unisonSample = this.oscillate(layer.wave, modulatedPhase) * layer.gain * layer.envelope * gainPerVoice;
+            
+            // Calculate stereo position for this unison voice
+            const stereoPos = detuneSpread * layer.stereoSpread;
+            const unisonLeftGain = Math.cos((stereoPos + 1) * Math.PI / 4);
+            const unisonRightGain = Math.sin((stereoPos + 1) * Math.PI / 4);
+            
+            layerSampleL += unisonSample * unisonLeftGain;
+            layerSampleR += unisonSample * unisonRightGain;
           }
           
-          const osc = this.oscillate(layer.wave, layer.phase);
-          sample += osc * layer.gain * layer.envelope;
+          // Update main phase for backwards compatibility
+          layer.phase = layer.unisonPhases[0]!;
+          
+          // Apply self-feedback for FM mode (use mono sum)
+          const layerSampleMono = (layerSampleL + layerSampleR) / 2;
+          if (layer.mode === 'fm' && layer.feedback > 0) {
+            const feedbackSample = layer.lastSample * layer.feedback * 0.5;
+            layerSampleL += feedbackSample;
+            layerSampleR += feedbackSample;
+          }
+          layer.lastSample = layerSampleMono;
+          
+          // Handle different blend modes
+          switch (layer.mode) {
+            case 'fm':
+              // FM mode: modulate NEXT layer's frequency, don't add to output
+              fmModulation = layerSampleMono * layer.modulationIndex;
+              break;
+              
+            case 'ring':
+              // Ring mode: multiply with previous layer's output
+              if (layerIdx > 0) {
+                sampleL = prevLayerSample * layerSampleL;
+                sampleR = prevLayerSample * layerSampleR;
+              } else {
+                sampleL += layerSampleL;
+                sampleR += layerSampleR;
+              }
+              fmModulation = 0;  // Reset FM after non-FM layer
+              break;
+              
+            case 'additive':
+            default:
+              // Additive mode: sum with output
+              sampleL += layerSampleL;
+              sampleR += layerSampleR;
+              fmModulation = 0;  // Reset FM after carrier
+              break;
+          }
+          
+          prevLayerSample = layerSampleMono;
         }
         
         // Apply main envelope and gain
-        sample *= voice.envelope * voice.gain;
+        sampleL *= voice.envelope * voice.gain;
+        sampleR *= voice.envelope * voice.gain;
         
-        // Apply filter
+        // Apply filter (mono, then re-expand)
         if (voice.cutoff < 20000 || voice.filterEnv) {
-          sample = this.applyFilter(voice, sample);
+          const monoForFilter = (sampleL + sampleR) / 2;
+          const filtered = this.applyFilter(voice, monoForFilter);
+          const filterRatio = monoForFilter !== 0 ? filtered / monoForFilter : 1;
+          sampleL *= filterRatio;
+          sampleR *= filterRatio;
         }
         
-        // Mix to output with panning
+        // Apply voice panning on top of unison stereo spread
         const pan = voice.pan; // -1 (left) to +1 (right)
-        const leftGain = Math.cos((pan + 1) * Math.PI / 4);
-        const rightGain = Math.sin((pan + 1) * Math.PI / 4);
-        const monoSample = sample * this.masterGain;
-        left[i]! += monoSample * leftGain;
-        right[i]! += monoSample * rightGain;
+        const panLeftGain = Math.cos((pan + 1) * Math.PI / 4);
+        const panRightGain = Math.sin((pan + 1) * Math.PI / 4);
+        
+        // Mix L/R with pan (crossfade based on pan)
+        const finalL = sampleL * panLeftGain + sampleR * (1 - panRightGain) * 0.3;
+        const finalR = sampleR * panRightGain + sampleL * (1 - panLeftGain) * 0.3;
+        
+        left[i]! += finalL * this.masterGain;
+        right[i]! += finalR * this.masterGain;
         
         voice.time += dt;
       }
@@ -410,9 +535,10 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
         return Math.random() * 2 - 1;
         
       case 'pink':
+        return this.generatePinkNoise();
+        
       case 'brown':
-        // Simplified - proper pink/brown noise needs state
-        return Math.random() * 2 - 1;
+        return this.generateBrownNoise();
         
       default:
         return Math.sin(phase);
@@ -420,7 +546,38 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
   }
   
   /**
-   * Apply biquad lowpass filter
+   * Generate pink noise using Paul Kellet's refined method
+   * -3dB/octave spectrum
+   */
+  private generatePinkNoise(): number {
+    const white = Math.random() * 2 - 1;
+    
+    this.pinkB0 = 0.99886 * this.pinkB0 + white * 0.0555179;
+    this.pinkB1 = 0.99332 * this.pinkB1 + white * 0.0750759;
+    this.pinkB2 = 0.96900 * this.pinkB2 + white * 0.1538520;
+    this.pinkB3 = 0.86650 * this.pinkB3 + white * 0.3104856;
+    this.pinkB4 = 0.55000 * this.pinkB4 + white * 0.5329522;
+    this.pinkB5 = -0.7616 * this.pinkB5 - white * 0.0168980;
+    
+    const pink = this.pinkB0 + this.pinkB1 + this.pinkB2 + this.pinkB3 + 
+                 this.pinkB4 + this.pinkB5 + this.pinkB6 + white * 0.5362;
+    this.pinkB6 = white * 0.115926;
+    
+    return pink * 0.11; // Normalize to approximately -1 to 1
+  }
+  
+  /**
+   * Generate brown noise (Brownian/red noise)
+   * -6dB/octave spectrum using random walk
+   */
+  private generateBrownNoise(): number {
+    const white = Math.random() * 2 - 1;
+    this.brownLast = (this.brownLast + (0.02 * white)) / 1.02;
+    return this.brownLast * 3.5; // Normalize
+  }
+  
+  /**
+   * Apply biquad filter with selectable type
    */
   private applyFilter(voice: Voice, input: number): number {
     let cutoff = voice.cutoff;
@@ -430,19 +587,55 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
       cutoff = Math.max(20, Math.min(20000, cutoff + voice.filterEnv.mod * voice.filterEnvValue));
     }
     
-    // Calculate biquad coefficients (lowpass)
+    // Calculate biquad coefficients based on filter type
     const w0 = (2 * Math.PI * cutoff) / this.sampleRate;
     const cosw0 = Math.cos(w0);
     const sinw0 = Math.sin(w0);
-    const Q = 1 + voice.timbre * 10;
+    
+    // Q from resonance (0-1 maps to 0.707-20)
+    const Q = 0.707 + voice.filterResonance * 19.293;
     const alpha = sinw0 / (2 * Q);
     
-    const b0 = (1 - cosw0) / 2;
-    const b1 = 1 - cosw0;
-    const b2 = (1 - cosw0) / 2;
-    const a0 = 1 + alpha;
-    const a1 = -2 * cosw0;
-    const a2 = 1 - alpha;
+    let b0: number, b1: number, b2: number, a0: number, a1: number, a2: number;
+    
+    switch (voice.filterType) {
+      case 'highpass':
+        b0 = (1 + cosw0) / 2;
+        b1 = -(1 + cosw0);
+        b2 = (1 + cosw0) / 2;
+        a0 = 1 + alpha;
+        a1 = -2 * cosw0;
+        a2 = 1 - alpha;
+        break;
+        
+      case 'bandpass':
+        b0 = alpha;
+        b1 = 0;
+        b2 = -alpha;
+        a0 = 1 + alpha;
+        a1 = -2 * cosw0;
+        a2 = 1 - alpha;
+        break;
+        
+      case 'notch':
+        b0 = 1;
+        b1 = -2 * cosw0;
+        b2 = 1;
+        a0 = 1 + alpha;
+        a1 = -2 * cosw0;
+        a2 = 1 - alpha;
+        break;
+        
+      case 'lowpass':
+      default:
+        b0 = (1 - cosw0) / 2;
+        b1 = 1 - cosw0;
+        b2 = (1 - cosw0) / 2;
+        a0 = 1 + alpha;
+        a1 = -2 * cosw0;
+        a2 = 1 - alpha;
+        break;
+    }
     
     // Normalize
     const nb0 = b0 / a0;
