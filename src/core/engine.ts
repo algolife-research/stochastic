@@ -85,14 +85,32 @@ function processPitch(payload: AudioPayload, node: GraphNode): AudioPayload {
 }
 
 function processOscillator(payload: AudioPayload, node: GraphNode): AudioPayload {
-  const props = node.props as { wave: WaveType; ratio: number; attack: number; decay: number; mix: number };
+  const props = node.props as { 
+    wave: WaveType; 
+    ratio: number; 
+    attack: number; 
+    decay: number; 
+    mix: number;
+    mode?: 'additive' | 'ring' | 'fm';
+    modulationIndex?: number;
+    feedback?: number;
+    unison?: number;
+    detune?: number;
+    stereoSpread?: number;
+  };
   
   const newLayer: WaveLayer = {
     wave: props.wave,
     attack: props.attack,
     decay: props.decay,
     gain: props.mix ?? 1.0,
-    ratio: props.ratio ?? 1.0,  // Default to fundamental
+    ratio: props.ratio ?? 1.0,
+    mode: props.mode ?? 'additive',
+    modulationIndex: props.modulationIndex ?? 2,
+    feedback: props.feedback ?? 0,
+    unison: props.unison ?? 1,
+    detune: props.detune ?? 0,
+    stereoSpread: props.stereoSpread ?? 0.5,
   };
   
   // Add to existing waves array
@@ -107,11 +125,20 @@ function processOscillator(payload: AudioPayload, node: GraphNode): AudioPayload
 }
 
 function processFilter(payload: AudioPayload, node: GraphNode): AudioPayload {
-  const props = node.props as { cutoff: Frequency; attack: number; decay: number; mod: number };
+  const props = node.props as { 
+    type?: 'lowpass' | 'highpass' | 'bandpass' | 'notch';
+    cutoff: Frequency; 
+    resonance?: number;
+    attack: number; 
+    decay: number; 
+    mod: number;
+  };
   
   return {
     ...payload,
     cutoff: props.cutoff,
+    filterType: props.type ?? 'lowpass',
+    filterResonance: props.resonance ?? 0,
     filterEnv: props.mod !== 0 ? {
       attack: props.attack,
       decay: props.decay,
@@ -126,7 +153,7 @@ function processGate(payload: AudioPayload, node: GraphNode): AudioPayload {
   
   // Probability mode - simple random gate
   if (mode === 'probability') {
-    if (Math.random() > props.prob) {
+    if (Math.random() > props.probability) {
       return { ...payload, gain: -1 };
     }
     return payload;

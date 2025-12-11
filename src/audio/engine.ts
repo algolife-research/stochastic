@@ -156,13 +156,19 @@ export class AudioEngine {
     
     const noteId = id ?? crypto.randomUUID();
     
-    // Prepare layers
+    // Prepare layers with all properties including unison/mode
     const layers = payload.waves?.map(w => ({
       wave: w.wave,
       attack: w.attack,
       decay: w.decay,
       gain: w.gain,
       ratio: w.ratio ?? 1,
+      mode: w.mode ?? 'additive',
+      modulationIndex: w.modulationIndex ?? 2,
+      feedback: w.feedback ?? 0,
+      unison: w.unison ?? 1,
+      detune: w.detune ?? 0,
+      stereoSpread: w.stereoSpread ?? 0.5,
     }));
     
     // Calculate envelope times
@@ -189,6 +195,8 @@ export class AudioEngine {
       holdTime: payload.holdTime,
       releaseTime: payload.releaseTime,
       cutoff: payload.cutoff as number,
+      filterType: payload.filterType ?? 'lowpass',
+      filterResonance: payload.filterResonance ?? 0,
       timbre: payload.timbre,
       startTime: this.getCurrentTime(),
       layers,
