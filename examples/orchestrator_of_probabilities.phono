@@ -1,0 +1,112 @@
+{
+  "meta": {
+    "version": "3.0.0",
+    "name": "The Orchestrator of Infinite Probabilities",
+    "created": 1764977000000,
+    "modified": 1764977000000,
+    "author": "Gemini Future Architect"
+  },
+  "global": {
+    "masterBpm": 120,
+    "rootNote": 62,
+    "scaleName": "mixolydian",
+    "gravity": 0.5,
+    "defaultEdgeBehaviour": "fixed"
+  },
+  "scenes": [
+    {
+      "id": "scene-probabilities",
+      "name": "Infinite Probabilities",
+      "color": "#FFB74D",
+      "durationBeats": 32,
+      "loopCount": 1,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "fade", "durationBeats": 2 },
+      "exitTransition": { "type": "fade", "durationBeats": 2 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 8 },
+      "nodes": [
+        {
+          "id": "lfo_optimist",
+          "type": "lfo",
+          "x": 100,
+          "y": 50,
+          "props": { "rate": 0.05, "shape": "sine", "min": 0.0, "max": 0.9, "phase": 0 }
+        },
+        {
+          "id": "lfo_pessimist",
+          "type": "lfo",
+          "x": 100,
+          "y": 150,
+          "props": { "rate": 0.05, "shape": "sine", "min": 0.0, "max": 0.9, "phase": 0.5 }
+        },
+
+        {
+          "id": "src_conductor",
+          "type": "source",
+          "x": 50,
+          "y": 300,
+          "props": { "interval": 2, "midiNote": 62, "noteIndex": -1, "intensity": 1.0, "autoTrigger": true }
+        },
+        { "id": "quant_main", "type": "quantizer", "x": 150, "y": 300, "props": { "strength": 1.0, "useGlobalKey": true } },
+        { "id": "split_reality", "type": "splitter", "x": 250, "y": 300, "props": { "entangled": true, "behavior": "broadcast" } },
+
+        {
+          "id": "gate_optimist",
+          "type": "gate",
+          "x": 350,
+          "y": 200,
+          "props": { "prob": 0.0 }
+        },
+        { "id": "p_opt_up", "type": "pitch", "x": 450, "y": 200, "props": { "mode": "shift", "shift": 12 } },
+        { "id": "tun_harp", "type": "tunnel", "x": 550, "y": 200, "props": { "tunnelName": "Light Harp", "subNodes": [{ "type": "oscillator", "props": { "wave": "triangle", "attack": 0.01, "decay": 0.3, "mix": 1.0 } }, { "type": "filter", "props": { "cutoff": 2000, "mod": 500 } }] } },
+        { "id": "delay_glitter", "type": "delay", "x": 650, "y": 200, "props": { "delayTime": 0.25 } },
+        { "id": "spk_opt", "type": "speaker", "x": 800, "y": 200, "props": { "volume": 0.6, "reverb": 0.3, "pan": 0.6 } },
+
+        {
+          "id": "gate_pessimist",
+          "type": "gate",
+          "x": 350,
+          "y": 400,
+          "props": { "prob": 1.0 }
+        },
+        { "id": "p_pess_down", "type": "pitch", "x": 450, "y": 400, "props": { "mode": "shift", "shift": -12 } },
+        { "id": "tun_cello", "type": "tunnel", "x": 550, "y": 400, "props": { "tunnelName": "Dark Cello", "subNodes": [{ "type": "oscillator", "props": { "wave": "sawtooth", "attack": 0.4, "decay": 1.5, "mix": 1.0 } }, { "type": "filter", "props": { "cutoff": 400, "mod": 200 } }] } },
+        { "id": "spk_pess", "type": "speaker", "x": 800, "y": 400, "props": { "volume": 0.8, "reverb": 0.8, "pan": -0.6 } },
+
+        { "id": "tele_ghost_in", "type": "teleporter", "x": 350, "y": 600, "props": { "channel": "Ghost", "isEntry": true } },
+        { "id": "src_ghost_trigger", "type": "source", "x": 50, "y": 600, "props": { "interval": 13, "midiNote": 0, "intensity": 0.0, "autoTrigger": true } }, 
+        
+        { "id": "tele_ghost_out", "type": "teleporter", "x": 500, "y": 600, "props": { "channel": "Ghost", "isEntry": false } },
+        { "id": "tun_nebula", "type": "tunnel", "x": 650, "y": 600, "props": { "tunnelName": "Nebula Cloud", "subNodes": [{ "type": "oscillator", "props": { "wave": "white", "attack": 1.0, "decay": 4.0, "mix": 0.2 } }, { "type": "oscillator", "props": { "wave": "sine", "attack": 1.0, "decay": 4.0, "ratio": 2, "mix": 0.5 } }] } },
+        { "id": "spk_nebula", "type": "speaker", "x": 800, "y": 600, "props": { "volume": 0.5, "reverb": 1.0, "pan": 0 } }
+      ],
+      "edges": [
+        { "id": "cv_opt", "from": "lfo_optimist", "to": "gate_optimist", "targetParam": "prob" },
+        { "id": "cv_pess", "from": "lfo_pessimist", "to": "gate_pessimist", "targetParam": "prob" },
+
+        { "id": "e_src_1", "from": "src_conductor", "to": "quant_main", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_src_2", "from": "quant_main", "to": "split_reality", "timingMode": "fixed", "durationBeats": 0.1 },
+
+        { "id": "e_opt_1", "from": "split_reality", "to": "gate_optimist", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_opt_2", "from": "gate_optimist", "to": "p_opt_up", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_opt_3", "from": "p_opt_up", "to": "tun_harp", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_opt_4", "from": "tun_harp", "to": "delay_glitter", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_opt_5", "from": "delay_glitter", "to": "spk_opt", "timingMode": "fixed", "durationBeats": 0.1 },
+
+        { "id": "e_pess_1", "from": "split_reality", "to": "gate_pessimist", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_pess_2", "from": "gate_pessimist", "to": "p_pess_down", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_pess_3", "from": "p_pess_down", "to": "tun_cello", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_pess_4", "from": "tun_cello", "to": "spk_pess", "timingMode": "fixed", "durationBeats": 0.1 },
+
+        { "id": "e_ghost_1", "from": "src_ghost_trigger", "to": "tele_ghost_in", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_ghost_2", "from": "tele_ghost_out", "to": "tun_nebula", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_ghost_3", "from": "tun_nebula", "to": "spk_nebula", "timingMode": "fixed", "durationBeats": 0.1 }
+      ]
+    }
+  ],
+  "arrangement": [
+    { "id": "slot-1", "sceneId": "scene-probabilities", "startBeat": 0 }
+  ]
+}

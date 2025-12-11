@@ -1,0 +1,172 @@
+{
+  "meta": {
+    "version": "3.0.0",
+    "name": "The Quantum Turing Machine",
+    "created": 1764975000000,
+    "modified": 1764975000000,
+    "author": "Gemini Future Architect"
+  },
+  "global": {
+    "masterBpm": 140,
+    "rootNote": 48,
+    "scaleName": "minorPentatonic",
+    "gravity": 0.5,
+    "defaultEdgeBehaviour": "fixed"
+  },
+  "scenes": [
+    {
+      "id": "scene-quantum",
+      "name": "Quantum State",
+      "color": "#7C4DFF",
+      "durationBeats": 32,
+      "loopCount": 1,
+      "localBpm": null,
+      "localRoot": null,
+      "localScale": null,
+      "enterTransition": { "type": "fade", "durationBeats": 2 },
+      "exitTransition": { "type": "fade", "durationBeats": 2 },
+      "jamTrigger": { "midiNote": null, "midiChannel": 1, "quantize": "bar", "phraseLength": 8 },
+      "nodes": [
+        {
+          "id": "lfo_binary_state",
+          "type": "lfo",
+          "x": 50,
+          "y": 100,
+          "props": { "rate": 0.1, "shape": "square", "min": 0.0, "max": 1.0, "phase": 0 }
+        },
+        
+        {
+          "id": "src_clock",
+          "type": "source",
+          "x": 50,
+          "y": 300,
+          "props": { "interval": 0.5, "midiNote": 48, "noteIndex": -1, "intensity": 1.0, "autoTrigger": true }
+        },
+        {
+          "id": "split_entangled_main",
+          "type": "splitter",
+          "x": 150,
+          "y": 300,
+          "props": { "entangled": true, "behavior": "broadcast" }
+        },
+
+        {
+          "id": "gate_entropy",
+          "type": "gate",
+          "x": 300,
+          "y": 200,
+          "props": { "prob": 0.5 }
+        },
+        { "id": "tele_entropy_in", "type": "teleporter", "x": 400, "y": 200, "props": { "channel": "Entropy", "isEntry": true } },
+
+        {
+          "id": "gate_order",
+          "type": "gate",
+          "x": 300,
+          "y": 400,
+          "props": { "prob": 0.0 }
+        },
+        { "id": "quant_order", "type": "quantizer", "x": 400, "y": 400, "props": { "strength": 1.0, "useGlobalKey": true } },
+        
+        {
+          "id": "delay_prime",
+          "type": "delay",
+          "x": 500,
+          "y": 400,
+          "props": { "delayTime": 1.3 }
+        },
+        { "id": "split_feedback", "type": "splitter", "x": 600, "y": 400, "props": { "entangled": false, "behavior": "broadcast" } },
+        
+        {
+          "id": "pitch_stack_A",
+          "type": "pitch",
+          "x": 700,
+          "y": 350,
+          "props": { "mode": "shift", "shift": 7 }
+        },
+        {
+          "id": "tun_glass_engine",
+          "type": "tunnel",
+          "x": 800,
+          "y": 350,
+          "props": { "tunnelName": "Crystalline", "subNodes": [{ "type": "oscillator", "props": { "wave": "sine", "attack": 0.01, "decay": 0.5, "mix": 1.0 } }, { "type": "oscillator", "props": { "wave": "sine", "attack": 0.01, "decay": 0.5, "ratio": 3, "mix": 0.4 } }] }
+        },
+        { "id": "spk_order_L", "type": "speaker", "x": 950, "y": 350, "props": { "volume": 0.6, "reverb": 0.5, "pan": -0.6 } },
+
+        {
+          "id": "pitch_stack_B",
+          "type": "pitch",
+          "x": 700,
+          "y": 450,
+          "props": { "mode": "shift", "shift": 19 }
+        },
+        { "id": "gate_feedback_limiter", "type": "gate", "x": 800, "y": 450, "props": { "prob": 0.8 } },
+        { "id": "tele_feedback_return", "type": "teleporter", "x": 900, "y": 450, "props": { "channel": "LoopBack", "isEntry": true } },
+        { "id": "tele_feedback_exit", "type": "teleporter", "x": 450, "y": 450, "props": { "channel": "LoopBack", "isEntry": false } },
+
+        { "id": "tele_entropy_out", "type": "teleporter", "x": 500, "y": 200, "props": { "channel": "Entropy", "isEntry": false } },
+        { "id": "split_chaos", "type": "splitter", "x": 600, "y": 200, "props": { "entangled": false, "behavior": "broadcast" } },
+        
+        {
+          "id": "tun_glitch_A",
+          "type": "tunnel",
+          "x": 750,
+          "y": 150,
+          "props": { "tunnelName": "Bitcrush", "subNodes": [{ "type": "oscillator", "props": { "wave": "white", "attack": 0.001, "decay": 0.1, "mix": 1.0 } }, { "type": "filter", "props": { "cutoff": 8000, "mod": -4000, "decay": 0.05 } }] }
+        },
+        { "id": "spk_chaos_R", "type": "speaker", "x": 900, "y": 150, "props": { "volume": 0.7, "reverb": 0.1, "pan": 0.7 } },
+
+        {
+          "id": "tun_glitch_B",
+          "type": "tunnel",
+          "x": 750,
+          "y": 250,
+          "props": { "tunnelName": "Sub Zap", "subNodes": [{ "type": "oscillator", "props": { "wave": "sawtooth", "attack": 0.001, "decay": 0.2, "mix": 1.0 } }, { "type": "pitch", "props": { "mode": "shift", "shift": -24 } }] }
+        },
+        { "id": "spk_chaos_C", "type": "speaker", "x": 900, "y": 250, "props": { "volume": 0.8, "reverb": 0.0, "pan": 0.0 } },
+
+        {
+          "id": "lfo_pan_scan",
+          "type": "lfo",
+          "x": 750,
+          "y": 50,
+          "props": { "rate": 2.0, "shape": "triangle", "min": -1.0, "max": 1.0 }
+        }
+      ],
+      "edges": [
+        { "id": "cv_state_entropy", "from": "lfo_binary_state", "to": "gate_entropy", "targetParam": "prob" },
+        { "id": "cv_state_order", "from": "lfo_binary_state", "to": "gate_order", "targetParam": "prob" },
+
+        { "id": "cv_pan_chaos", "from": "lfo_pan_scan", "to": "spk_chaos_C", "targetParam": "pan" },
+
+        { "id": "e_src_split", "from": "src_clock", "to": "split_entangled_main", "timingMode": "fixed", "durationBeats": 0.1 },
+        
+        { "id": "e_path_ent_1", "from": "split_entangled_main", "to": "gate_entropy", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_path_ent_2", "from": "gate_entropy", "to": "tele_entropy_in", "timingMode": "fixed", "durationBeats": 0.1 },
+        
+        { "id": "e_path_ord_1", "from": "split_entangled_main", "to": "gate_order", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_path_ord_2", "from": "gate_order", "to": "quant_order", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_path_ord_3", "from": "quant_order", "to": "delay_prime", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_path_ord_4", "from": "delay_prime", "to": "split_feedback", "timingMode": "fixed", "durationBeats": 0.1 },
+
+        { "id": "e_fb_out_1", "from": "split_feedback", "to": "pitch_stack_A", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fb_out_2", "from": "pitch_stack_A", "to": "tun_glass_engine", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fb_out_3", "from": "tun_glass_engine", "to": "spk_order_L", "timingMode": "fixed", "durationBeats": 0.1 },
+
+        { "id": "e_fb_loop_1", "from": "split_feedback", "to": "pitch_stack_B", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fb_loop_2", "from": "pitch_stack_B", "to": "gate_feedback_limiter", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fb_loop_3", "from": "gate_feedback_limiter", "to": "tele_feedback_return", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_fb_loop_4", "from": "tele_feedback_exit", "to": "delay_prime", "timingMode": "fixed", "durationBeats": 0.1 },
+
+        { "id": "e_chaos_1", "from": "tele_entropy_out", "to": "split_chaos", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_chaos_2", "from": "split_chaos", "to": "tun_glitch_A", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_chaos_3", "from": "tun_glitch_A", "to": "spk_chaos_R", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_chaos_4", "from": "split_chaos", "to": "tun_glitch_B", "timingMode": "fixed", "durationBeats": 0.1 },
+        { "id": "e_chaos_5", "from": "tun_glitch_B", "to": "spk_chaos_C", "timingMode": "fixed", "durationBeats": 0.1 }
+      ]
+    }
+  ],
+  "arrangement": [
+    { "id": "slot-1", "sceneId": "scene-quantum", "startBeat": 0 }
+  ]
+}
