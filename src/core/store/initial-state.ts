@@ -17,6 +17,7 @@ export const initialState: GraphState = {
   isRunning: false,
   isMuted: false,
   masterSpeed: DEFAULT_SPEED,
+  masterVolume: 0.5,
   
   musicalContext: {
     root: 0,
@@ -29,6 +30,10 @@ export const initialState: GraphState = {
     pixelsPerBeat: 200,
     gravityConstant: 0.5,
     defaultEdgeBehaviour: 'fixed',
+    uiScale: 100,
+    leftPanelWidth: 280,
+    rightPanelWidth: 280,
+    bottomPanelHeight: 200,
   },
   
   projectMeta: {

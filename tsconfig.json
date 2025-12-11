@@ -46,7 +46,9 @@
       "@ui/*": ["src/ui/*"],
       "@canvas/*": ["src/canvas/*"],
       "@viz/*": ["src/viz/*"],
-      "@ai/*": ["src/ai/*"]
+      "@ai/*": ["src/ai/*"],
+      "@auth/*": ["src/auth/*"],
+      "@io/*": ["src/io/*"]
     }
   },
   "include": ["src"],

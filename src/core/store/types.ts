@@ -27,6 +27,7 @@ export interface GraphState {
   isRunning: boolean;
   isMuted: boolean;
   masterSpeed: number;  // BPM
+  masterVolume: number; // 0-1
   
   // Musical context
   musicalContext: MusicalContext;
@@ -153,6 +154,7 @@ export interface GraphActions {
   stopPlayback: () => void;
   setIsMuted: (muted: boolean) => void;
   setMasterSpeed: (bpm: number) => void;
+  setMasterVolume: (volume: number) => void;
   
   // Viewport
   setPan: (x: number, y: number) => void;
@@ -182,6 +184,7 @@ export interface GraphActions {
   clearCanvas: () => void;
   saveCurrentScene: () => void;
   loadGraph: (nodes: GraphNode[], edges: GraphEdge[], annotations?: Annotation[], regions?: Region[]) => void;
+  autoLayout: (algorithm?: 'hierarchical' | 'force' | 'circular') => void;
   
   // Scene operations
   createScene: (name?: string) => SceneId;

@@ -1,10 +1,11 @@
 // Bulk Actions
-// Operations for clearing, loading graphs, and saving scenes
+// Operations for clearing, loading graphs, saving scenes, and layout
 
 import type { GraphStore, ImmerSet } from './types';
 import type { GraphNode, GraphEdge, Annotation, Region } from '../types';
 import { INITIAL_SCENE_PLAYBACK_STATE } from '../constants';
 import { defaultSelectionState } from './initial-state';
+import { calculateLayout, type LayoutAlgorithm } from '../layout';
 
 export const createBulkActions = (
   set: ImmerSet,
@@ -50,6 +51,37 @@ export const createBulkActions = (
     if (editingSceneId) {
       get().saveCurrentToScene(editingSceneId);
     }
+  },
+  
+  /**
+   * Auto-layout nodes using the specified algorithm
+   */
+  autoLayout: (algorithm: LayoutAlgorithm = 'hierarchical'): void => {
+    const { nodes, edges, viewport } = get();
+    
+    if (nodes.size === 0) return;
+    
+    // Calculate center based on viewport
+    const centerX = 600 - viewport.panOffset.x / viewport.zoomLevel;
+    const centerY = 400 - viewport.panOffset.y / viewport.zoomLevel;
+    
+    const positions = calculateLayout(nodes, edges, {
+      algorithm,
+      spacing: 180,
+      centerX,
+      centerY,
+    });
+    
+    set(state => {
+      positions.forEach((pos, id) => {
+        const node = state.nodes.get(id);
+        if (node) {
+          node.x = pos.x;
+          node.y = pos.y;
+        }
+      });
+      state.isDirty = true;
+    });
   },
   
   loadGraph: (nodes: GraphNode[], edges: GraphEdge[], annotations: Annotation[] = [], regions: Region[] = []): void => {

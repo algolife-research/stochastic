@@ -71,4 +71,14 @@ export const createPlaybackActions = (
       }
     });
   },
+  
+  setMasterVolume: (volume: number): void => {
+    set(state => {
+      state.masterVolume = Math.max(0, Math.min(1, volume));
+    });
+    // Sync with audio engine
+    import('@audio/engine').then(({ audioEngine }) => {
+      audioEngine.setMasterGain(volume);
+    });
+  },
 });
