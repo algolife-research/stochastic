@@ -70,6 +70,12 @@ export type LfoShape = OscillatorWave | 'random' | 'noise';
 export type WaveOrNoiseType = WaveType;
 export type NoiseType = NoiseWave;
 
+/** Oscillator blend mode: additive sums, ring multiplies, fm modulates next oscillator */
+export type OscillatorMode = 'additive' | 'ring' | 'fm';
+
+/** Filter type for biquad filter */
+export type FilterType = 'lowpass' | 'highpass' | 'bandpass' | 'notch';
+
 // ============================================================================
 // NODE TYPES
 // ============================================================================
@@ -148,10 +154,18 @@ export interface LocalKeyConfig {
 export interface OscillatorProps extends EnvelopedLayer {
   readonly wave: WaveType;         // Oscillator or noise type
   readonly ratio: number;          // Frequency multiplier (1.0 = fundamental)
+  readonly mode: OscillatorMode;   // Blend mode: additive, ring, or fm
+  readonly modulationIndex?: number; // FM depth (0-10), only used when mode = 'fm'
+  readonly feedback?: number;      // Self-modulation (0-1), only used when mode = 'fm'
+  readonly unison?: number;        // Number of detuned voices (1-8)
+  readonly detune?: number;        // Detune spread in cents (0-100)
+  readonly stereoSpread?: number;  // Stereo width for unison (0-1)
 }
 
 export interface FilterProps {
+  readonly type: FilterType;       // Filter type: lowpass, highpass, bandpass, notch
   readonly cutoff: Frequency;      // Hz
+  readonly resonance: number;      // Q factor (0-1 maps to 0.5-20)
   readonly attack: Seconds;
   readonly decay: Seconds;
   readonly mod: number;            // Modulation amount
@@ -162,7 +176,7 @@ export type GateMode = 'probability' | 'harmonic' | 'energy' | 'density' | 'all'
 
 export interface GateProps extends LocalKeyConfig {
   readonly mode: GateMode;         // Gating mode
-  readonly prob: number;           // 0-1 pass probability (probability mode)
+  readonly probability: number;    // 0-1 pass probability (probability mode)
   // Fitness mode properties
   readonly harmonicThreshold: number;    // 0-1, kill dissonant notes below this
   readonly energyThreshold: number;      // 0-1, minimum gain to survive
@@ -341,8 +355,10 @@ export interface AudioPayload {
   freq: Frequency;
   midiNote: MidiNote;
   wave: WaveOrNoiseType;
-  timbre: number;           // 0-1 filter resonance
+  timbre: number;           // 0-1 filter resonance (legacy)
   cutoff: Frequency;
+  filterType?: FilterType;  // Filter type: lowpass, highpass, bandpass, notch
+  filterResonance?: number; // Q factor (0.5-20)
   gain: number;             // 0-1
   holdTime: Seconds;
   releaseTime: Seconds;
@@ -373,6 +389,12 @@ export interface WaveLayer {
   readonly decay: Seconds;
   readonly gain: number;
   readonly ratio?: number;  // Harmonic ratio
+  readonly mode?: OscillatorMode;  // Blend mode: additive, ring, or fm
+  readonly modulationIndex?: number;  // FM depth (0-10)
+  readonly feedback?: number;  // Self-modulation (0-1)
+  readonly unison?: number;  // Number of detuned voices (1-8)
+  readonly detune?: number;  // Detune spread in cents
+  readonly stereoSpread?: number;  // Stereo width for unison (0-1)
 }
 
 /** Packet traveling along edges */
@@ -751,6 +773,10 @@ export interface GlobalSettings {
   readonly pixelsPerBeat: number;
   readonly gravityConstant: number;
   readonly defaultEdgeBehaviour: 'physical' | 'fixed';
+  readonly uiScale: number;  // UI scale percentage (100 = 100%)
+  readonly leftPanelWidth: number;
+  readonly rightPanelWidth: number;
+  readonly bottomPanelHeight: number;
 }
 
 // ============================================================================

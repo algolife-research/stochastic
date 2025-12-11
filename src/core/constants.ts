@@ -188,10 +188,18 @@ export const DEFAULT_OSCILLATOR_PROPS: OscillatorProps = {
   attack: 0.01,
   decay: 0.4,
   mix: 1.0,
+  mode: 'additive',        // Default: sum with other layers
+  modulationIndex: 2,      // FM depth (only used when mode = 'fm')
+  feedback: 0,             // Self-modulation (only used when mode = 'fm')
+  unison: 1,               // Single voice by default
+  detune: 0,               // No detune by default
+  stereoSpread: 0.5,       // Medium stereo spread for unison
 };
 
 export const DEFAULT_FILTER_PROPS: FilterProps = {
+  type: 'lowpass',
   cutoff: 20000 as Frequency,
+  resonance: 0.0,          // No resonance by default (Q = 0.707)
   attack: 0,
   decay: 0,
   mod: 0,
@@ -199,7 +207,7 @@ export const DEFAULT_FILTER_PROPS: FilterProps = {
 
 export const DEFAULT_GATE_PROPS: GateProps = {
   mode: 'probability',
-  prob: 0.5,
+  probability: 0.5,
   // Fitness mode properties
   harmonicThreshold: 0.5,  // 50% consonance required
   energyThreshold: 0.1,    // Min 10% gain to survive

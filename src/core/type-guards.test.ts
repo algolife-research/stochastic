@@ -125,7 +125,7 @@ describe('createTypedNode', () => {
       'filter',
       'node-2' as NodeId,
       50, 50,
-      { cutoff: 5000 as Frequency, attack: 0.1, decay: 0.2, mod: 0.5 }
+      { type: 'lowpass', cutoff: 5000 as Frequency, resonance: 0.3, attack: 0.1, decay: 0.2, mod: 0.5 }
     );
     
     expect(node.type).toBe('filter');
@@ -271,7 +271,7 @@ describe('cloneNode', () => {
     'filter',
     'original-id' as NodeId,
     100, 200,
-    { cutoff: 5000 as Frequency, attack: 0.1, decay: 0.2, mod: 0.5 }
+    { type: 'lowpass', cutoff: 5000 as Frequency, resonance: 0.3, attack: 0.1, decay: 0.2, mod: 0.5 }
   );
 
   it('should clone node with same values', () => {
@@ -314,7 +314,7 @@ describe('updateNodeProps', () => {
     'filter',
     'node-1' as NodeId,
     0, 0,
-    { cutoff: 5000 as Frequency, attack: 0.1, decay: 0.2, mod: 0.5 }
+    { type: 'lowpass', cutoff: 5000 as Frequency, resonance: 0.3, attack: 0.1, decay: 0.2, mod: 0.5 }
   );
 
   it('should update specified props', () => {
