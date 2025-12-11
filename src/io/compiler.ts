@@ -22,11 +22,25 @@ export interface AudioEvent {
   gain: number;
   timbre: number;
   cutoff: Frequency;
+  filterType: 'lowpass' | 'highpass' | 'bandpass' | 'notch';
+  filterResonance: number;
   holdTime: number;
   releaseTime: number;
   pan?: number;
   reverb?: number;
-  waves?: Array<{ wave: WaveOrNoiseType; attack: number; decay: number; gain: number; ratio?: number }>;
+  waves?: Array<{ 
+    wave: WaveOrNoiseType; 
+    attack: number; 
+    decay: number; 
+    gain: number; 
+    ratio?: number;
+    mode?: 'additive' | 'ring' | 'fm';
+    modulationIndex?: number;
+    feedback?: number;
+    unison?: number;
+    detune?: number;
+    stereoSpread?: number;
+  }>;
   vibratoRate?: number;
   vibratoDepth?: number;
   vibratoDelay?: number;
@@ -44,10 +58,24 @@ interface SimPacket {
     wave: WaveOrNoiseType;
     timbre: number;
     cutoff: Frequency;
+    filterType: 'lowpass' | 'highpass' | 'bandpass' | 'notch';
+    filterResonance: number;
     gain: number;
     holdTime: number;
     releaseTime: number;
-    waves?: Array<{ wave: WaveOrNoiseType; attack: number; decay: number; gain: number; ratio?: number }>;
+    waves?: Array<{ 
+      wave: WaveOrNoiseType; 
+      attack: number; 
+      decay: number; 
+      gain: number; 
+      ratio?: number;
+      mode?: 'additive' | 'ring' | 'fm';
+      modulationIndex?: number;
+      feedback?: number;
+      unison?: number;
+      detune?: number;
+      stereoSpread?: number;
+    }>;
     vibratoRate?: number;
     vibratoDepth?: number;
     vibratoDelay?: number;
@@ -139,6 +167,8 @@ export function compileGraph(
               wave: 'sine',
               timbre: 0,
               cutoff: 20000 as Frequency,
+              filterType: 'lowpass',
+              filterResonance: 0,
               gain: intensity,
               holdTime: 0,
               releaseTime: 0.1,
@@ -244,6 +274,8 @@ function processArrival(
         gain: payload.gain * volume,
         timbre: payload.timbre,
         cutoff: payload.cutoff,
+        filterType: payload.filterType,
+        filterResonance: payload.filterResonance,
         holdTime: payload.holdTime,
         releaseTime: payload.releaseTime,
         pan,
@@ -275,6 +307,12 @@ function processArrival(
       const decay = props.decay ?? 0.4;
       const mix = props.mix ?? 1.0;
       const ratio = props.ratio ?? 1;
+      const mode = props.mode ?? 'additive';
+      const modulationIndex = props.modulationIndex ?? 2;
+      const feedback = props.feedback ?? 0;
+      const unison = props.unison ?? 1;
+      const detune = props.detune ?? 0;
+      const stereoSpread = props.stereoSpread ?? 0.5;
       
       // Add wave layer
       const existingWaves = payload.waves ?? [];
@@ -286,6 +324,12 @@ function processArrival(
         decay,
         gain: mix,
         ratio,
+        mode,
+        modulationIndex,
+        feedback,
+        unison,
+        detune,
+        stereoSpread,
       }];
       
       forwardPacket(node.id, payload, edges, simPackets, currentTime);
@@ -304,6 +348,8 @@ function processArrival(
     case 'filter': {
       const props = node.props as PropsForNodeType<'filter'>;
       payload.cutoff = (props.cutoff ?? 20000) as Frequency;
+      payload.filterType = props.type ?? 'lowpass';
+      payload.filterResonance = props.resonance ?? 0;
       const mod = props.mod ?? 0;
       if (mod !== 0) {
         payload.filterEnv = {
@@ -322,7 +368,7 @@ function processArrival(
       
       // Probability mode - simple random gate
       if (mode === 'probability') {
-        const probability = props.prob ?? 1.0;
+        const probability = props.probability ?? 1.0;
         if (Math.random() < probability) {
           forwardPacket(node.id, payload, edges, simPackets, currentTime);
         }
@@ -420,6 +466,8 @@ function processArrival(
               gain: currentPayload.gain * volume,
               timbre: currentPayload.timbre,
               cutoff: currentPayload.cutoff,
+              filterType: currentPayload.filterType,
+              filterResonance: currentPayload.filterResonance,
               holdTime: currentPayload.holdTime,
               releaseTime: currentPayload.releaseTime,
               pan,
@@ -448,6 +496,9 @@ function processArrival(
             const decay = subProps.decay ?? 0.4;
             const mix = subProps.mix ?? 1.0;
             const ratio = subProps.ratio ?? 1;
+            const mode = subProps.mode ?? 'additive';
+            const modulationIndex = subProps.modulationIndex ?? 2;
+            const feedback = subProps.feedback ?? 0;
             const existingWaves = currentPayload.waves ?? [];
             currentPayload.wave = subProps.wave ?? 'sawtooth';
             currentPayload.timbre = 0.8;
@@ -457,6 +508,9 @@ function processArrival(
               decay,
               gain: mix,
               ratio,
+              mode,
+              modulationIndex,
+              feedback,
             }];
             break;
           }
@@ -491,7 +545,7 @@ function processArrival(
           
           case 'gate': {
             const subProps = subNode.props as any; // SubNode type limitation
-            if (Math.random() > (subProps.prob ?? 0.5)) {
+            if (Math.random() > (subProps.probability ?? 0.5)) {
               return; // Gate blocked
             }
             break;
