@@ -45,7 +45,8 @@
       "@audio/*": ["src/audio/*"],
       "@ui/*": ["src/ui/*"],
       "@canvas/*": ["src/canvas/*"],
-      "@viz/*": ["src/viz/*"]
+      "@viz/*": ["src/viz/*"],
+      "@ai/*": ["src/ai/*"]
     }
   },
   "include": ["src"],

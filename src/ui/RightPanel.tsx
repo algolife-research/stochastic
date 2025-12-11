@@ -1,5 +1,5 @@
 // Phonon - Right Panel Component
-// Unified panel with toggle between Editor (Properties), Visualisation, and Scene modes
+// Unified panel with toggle between Editor (Properties), Visualisation, Scene, and AI modes
 
 import React, { useState } from 'react';
 import type { GraphNode, Annotation, Region, GraphEdge } from '@core/types';
@@ -7,13 +7,14 @@ import { PropertyPanel } from './property-panels';
 import { EdgePanel } from './EdgePanel';
 import { VizPanelContent } from './VizPanel';
 import { ScenePropertiesPanel } from './ScenePropertiesPanel';
+import { AIPanel } from './AIPanel';
 import styles from './RightPanel.module.css';
 
 // ============================================================================
 // RIGHT PANEL
 // ============================================================================
 
-type PanelMode = 'editor' | 'visualisation' | 'scene';
+type PanelMode = 'editor' | 'visualisation' | 'scene' | 'ai';
 
 interface RightPanelProps {
   selectedNode?: GraphNode;
@@ -67,6 +68,12 @@ export function RightPanel({
         >
           Scene
         </button>
+        <button
+          className={`${styles.toggleButton} ${panelMode === 'ai' ? styles.active : ''}`}
+          onClick={() => setPanelMode('ai')}
+        >
+          AI
+        </button>
       </div>
       
       {/* Panel Content */}
@@ -87,6 +94,9 @@ export function RightPanel({
         ) : panelMode === 'visualisation' ? (
           // Visualisation mode - show viz panel content
           <VizPanelContent />
+        ) : panelMode === 'ai' ? (
+          // AI mode - show AI assistant panel
+          <AIPanel embedded />
         ) : (
           // Scene mode - show scene properties panel
           <ScenePropertiesPanel />

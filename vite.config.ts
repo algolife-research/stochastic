@@ -35,6 +35,7 @@ export default defineConfig({
       '@ui': path.resolve(__dirname, './src/ui'),
       '@canvas': path.resolve(__dirname, './src/canvas'),
       '@viz': path.resolve(__dirname, './src/viz'),
+      '@ai': path.resolve(__dirname, './src/ai'),
     },
   },
 });
