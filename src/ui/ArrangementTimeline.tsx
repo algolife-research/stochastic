@@ -1,5 +1,6 @@
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import { useGraphStore, selectScenes, selectArrangement, selectScenePlayback, selectIsRunning } from '@core/store';
+import { ResizeHandle } from './ResizeHandle';
 import styles from './ArrangementTimeline.module.css';
 import type { ArrangementSlot, ArrangementChannel, Scene, SceneId } from '@core/types';
 
@@ -10,6 +11,8 @@ import type { ArrangementSlot, ArrangementChannel, Scene, SceneId } from '@core/
 
 const PIXELS_PER_BEAT = 8;
 const TRACK_HEIGHT = 52;
+const MIN_PANEL_HEIGHT = 100;
+const MAX_PANEL_HEIGHT = 500;
 
 interface ArrangementTimelineProps {
   collapsed: boolean;
@@ -262,6 +265,16 @@ export function ArrangementTimeline({ collapsed, onToggleCollapse }: Arrangement
   const editingSceneId = useGraphStore(state => state.editingSceneId);
   const canvasNodeCount = useGraphStore(state => state.nodes.size);
   
+  const globalSettings = useGraphStore(state => state.globalSettings);
+  const setGlobalSettings = useGraphStore(state => state.setGlobalSettings);
+  
+  const panelHeight = globalSettings.bottomPanelHeight;
+  
+  const handleResize = useCallback((delta: number) => {
+    const newHeight = Math.min(MAX_PANEL_HEIGHT, Math.max(MIN_PANEL_HEIGHT, panelHeight + delta));
+    setGlobalSettings({ bottomPanelHeight: newHeight });
+  }, [panelHeight, setGlobalSettings]);
+  
   const removeFromArrangement = useGraphStore(state => state.removeFromArrangement);
   const updateArrangementSlot = useGraphStore(state => state.updateArrangementSlot);
   const clearArrangement = useGraphStore(state => state.clearArrangement);
@@ -380,48 +393,18 @@ export function ArrangementTimeline({ collapsed, onToggleCollapse }: Arrangement
     updateArrangementChannel(channelId, { solo: !currentSolo });
   }, [updateArrangementChannel]);
   
-  // Empty state
-  if (arrangement.length === 0 && arrangementChannels.length === 1) {
-    return (
-      <div className={styles.timeline}>
-        <div className={styles.header}>
-          <h4>Composition</h4>
-          <div className={styles.headerInfo}>
-            <span>0 scenes</span>
-            <span>·</span>
-            <span>0:00</span>
-          </div>
-        </div>
-        
-        <div className={styles.emptyTimeline}>
-          <p>No scenes in composition</p>
-          <p className={styles.hint}>
-            Drag scenes from the Scene Panel onto tracks below
-          </p>
-          
-          {availableScenes.length > 0 && (
-            <div className={styles.quickAdd}>
-              <span>Quick add to Track 1:</span>
-              {availableScenes.slice(0, 4).map(scene => (
-                <button
-                  key={scene.id}
-                  className={styles.quickAddButton}
-                  style={{ borderColor: scene.color }}
-                  onClick={() => addToArrangement(scene.id, 0, 0)}
-                >
-                  {scene.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // Empty state - still show tracks but with a helpful message
+  const isEmpty = arrangement.length === 0;
   
   return (
-    <div className={`${styles.timeline} ${collapsed ? styles.collapsed : ''}`}>
-      {/* Collapse toggle button */}
+    <div 
+      className={`${styles.timeline} ${collapsed ? styles.collapsed : ''}`}
+      style={collapsed ? undefined : { height: panelHeight }}
+    >
+      {/* Resize handle on top edge */}
+      {!collapsed && <ResizeHandle direction="top" onResize={handleResize} />}
+      
+      {/* Collapse toggle button - always visible */}
       <button 
         className={styles.collapseToggle}
         onClick={onToggleCollapse}
@@ -514,6 +497,13 @@ export function ArrangementTimeline({ collapsed, onToggleCollapse }: Arrangement
             onDelete={() => removeArrangementChannel(channel.id)}
           />
         ))}
+        
+        {/* Empty state hint - shown overlaid on tracks when empty */}
+        {isEmpty && (
+          <div className={styles.emptyHint}>
+            Drag scenes from the left panel to compose
+          </div>
+        )}
         
         {/* Playhead */}
         {scenePlayback.mode === 'arrangement' && totalBeats > 0 && (

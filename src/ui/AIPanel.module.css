@@ -48,6 +48,15 @@
   opacity: 1;
 }
 
+/* Warning banner */
+.warning {
+  padding: 10px 16px;
+  background: rgba(241, 196, 15, 0.1);
+  border-bottom: 1px solid rgba(241, 196, 15, 0.3);
+  color: #f1c40f;
+  font-size: 12px;
+}
+
 /* Messages */
 .messages {
   flex: 1;
@@ -102,6 +111,7 @@
   gap: 4px;
   padding: 12px;
   align-self: flex-start;
+  align-items: center;
 }
 
 .loadingDot {
@@ -117,9 +127,45 @@
   animation-delay: 0.4s;
 }
 
+.thinkingText {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--text-secondary, #888);
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
+}
+
+/* Streaming */
+.streamingContainer {
+  padding: 12px;
+  align-self: flex-start;
+  max-width: 85%;
+}
+
+.streamingText {
+  background: var(--bg-tertiary, #252525);
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-primary, #e0e0e0);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.streamingCursor {
+  animation: blink 1s infinite;
+  color: var(--accent-color, #4caf50);
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }
 
 /* Error */
@@ -235,6 +281,25 @@
 .sendButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.stopButton {
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: #f44336;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stopButton:hover {
+  background: #d32f2f;
 }
 
 /* Quick Actions */

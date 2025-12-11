@@ -1,0 +1,50 @@
+/* Phonon v2 - Resize Handle Styles */
+
+.handle {
+  position: absolute;
+  background: transparent;
+  z-index: 50;
+  transition: background 0.15s;
+}
+
+.handle:hover {
+  background: rgba(74, 158, 255, 0.3);
+}
+
+.handle:active {
+  background: rgba(74, 158, 255, 0.5);
+}
+
+/* Vertical handles (left/right edges) */
+.left,
+.right {
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: ew-resize;
+}
+
+.left {
+  left: -2px;
+}
+
+.right {
+  right: -2px;
+}
+
+/* Horizontal handles (top/bottom edges) */
+.top,
+.bottom {
+  left: 0;
+  right: 0;
+  height: 5px;
+  cursor: ns-resize;
+}
+
+.top {
+  top: -2px;
+}
+
+.bottom {
+  bottom: -2px;
+}

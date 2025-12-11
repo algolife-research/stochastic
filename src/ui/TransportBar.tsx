@@ -12,6 +12,7 @@ export function TransportBar(): React.ReactElement {
   const isRunning = useGraphStore(state => state.isRunning);
   const isMuted = useGraphStore(state => state.isMuted);
   const masterSpeed = useGraphStore(state => state.masterSpeed);
+  const masterVolume = useGraphStore(state => state.masterVolume);
   const scenePlayback = useGraphStore(selectScenePlayback);
   const playbackMode = useGraphStore(selectPlaybackMode);
   
@@ -19,6 +20,7 @@ export function TransportBar(): React.ReactElement {
   const stopPlayback = useGraphStore(state => state.stopPlayback);
   const setIsMuted = useGraphStore(state => state.setIsMuted);
   const setMasterSpeed = useGraphStore(state => state.setMasterSpeed);
+  const setMasterVolume = useGraphStore(state => state.setMasterVolume);
   // Mode is now controlled from ScenePanel
   
   // Format beat count for display
@@ -108,6 +110,25 @@ export function TransportBar(): React.ReactElement {
           onChange={e => setMasterSpeed(parseInt(e.target.value))}
           disabled={scenePlayback.currentSceneId !== null && playbackMode === 'jam'}
         />
+      </div>
+      
+      {/* Separator */}
+      <div className={styles.separator} />
+      
+      {/* Master Volume */}
+      <div className={styles.volumeControl}>
+        <label className={styles.volumeLabel}>Vol</label>
+        <input
+          type="range"
+          className={styles.volumeSlider}
+          value={masterVolume}
+          min={0}
+          max={1}
+          step={0.01}
+          onChange={e => setMasterVolume(parseFloat(e.target.value))}
+          title={`Master Volume: ${Math.round(masterVolume * 100)}%`}
+        />
+        <span className={styles.volumeValue}>{Math.round(masterVolume * 100)}%</span>
       </div>
       
       {/* Spacer */}

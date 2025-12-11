@@ -4,6 +4,9 @@ import { useGraphStore } from '@core/store';
 import { loadCompositionFromFile, detectFileVersion, migrateV2ToV3, deserializeComposition, saveCompositionToFile, serializeComposition } from '../io/file-io';
 import type { SerializedGraph, SerializedComposition } from '../io/file-io';
 import { fs, isTauri } from '../io/filesystem';
+import { isCloudStorageAvailable, saveProjectToCloud, loadProjectFromCloud, listCloudProjects, deleteCloudProject } from '../io/cloud-storage';
+import type { CloudProjectSummary } from '../io/cloud-storage';
+import { useAuth } from '@auth/store';
 import { SCALES } from '@core/constants';
 import type { ScaleName } from '@core/types';
 import { NewCompositionDialog, LoadCompositionDialog } from './ProjectDialogs';
@@ -18,18 +21,18 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
   const [isOpen, setIsOpen] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(false);
+  const [showCloudDialog, setShowCloudDialog] = useState(false);
+  const [cloudProjects, setCloudProjects] = useState<CloudProjectSummary[]>([]);
+  const [cloudLoading, setCloudLoading] = useState(false);
+  const [currentCloudProjectId, setCurrentCloudProjectId] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { isAuthenticated } = useAuth();
 
   const project = useGraphStore(state => state.project);
-  const scenes = useGraphStore(state => state.scenes);
-  const arrangement = useGraphStore(state => state.arrangement);
-  const arrangementChannels = useGraphStore(state => state.arrangementChannels);
-  const masterSpeed = useGraphStore(state => state.masterSpeed);
-  const musicalContext = useGraphStore(state => state.musicalContext);
-  const globalSettings = useGraphStore(state => state.globalSettings);
   const projectMeta = useGraphStore(state => state.projectMeta);
   
   const loadComposition = useGraphStore(state => state.loadComposition);
@@ -116,10 +119,20 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
     // Save current canvas state to the editing scene before serializing
     saveCurrentScene();
     
+    // Get FRESH state from store after saving (avoid stale closure)
+    const store = useGraphStore.getState();
+    const freshScenes = store.scenes;
+    const freshArrangement = store.arrangement;
+    const freshChannels = store.arrangementChannels;
+    const freshMusicalContext = store.musicalContext;
+    const freshGlobalSettings = store.globalSettings;
+    const freshProjectMeta = store.projectMeta;
+    const freshMasterSpeed = store.masterSpeed;
+    
     if (project.isProjectMode && project.path && isTauri()) {
       // Save to project folder
       const phonoFilename = filename.endsWith('.phono') ? filename : `${filename}.phono`;
-      const data = serializeComposition(scenes, arrangement, arrangementChannels, musicalContext, globalSettings, projectMeta, masterSpeed);
+      const data = serializeComposition(freshScenes, freshArrangement, freshChannels, freshMusicalContext, freshGlobalSettings, freshProjectMeta, freshMasterSpeed);
       
       const success = await fs.writeComposition(project.path, phonoFilename, JSON.stringify(data, null, 2));
       if (success) {
@@ -134,13 +147,111 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
     } else {
       // Download as file
       try {
-        await saveCompositionToFile(filename, scenes, arrangement, arrangementChannels, musicalContext, globalSettings, projectMeta, masterSpeed);
+        await saveCompositionToFile(filename, freshScenes, freshArrangement, freshChannels, freshMusicalContext, freshGlobalSettings, freshProjectMeta, freshMasterSpeed);
         markClean();
         console.log('Composition exported:', filename);
       } catch (err) {
         console.error('Export failed:', err);
         alert('Failed to export file');
       }
+    }
+  };
+
+  // =========================================================================
+  // CLOUD SAVE/LOAD
+  // =========================================================================
+
+  const handleSaveToCloud = async () => {
+    setIsOpen(false);
+    
+    if (!isCloudStorageAvailable()) {
+      alert('Please sign in to save to cloud');
+      return;
+    }
+    
+    // Save current canvas state
+    saveCurrentScene();
+    
+    // Get FRESH state from store after saving (avoid stale closure)
+    const store = useGraphStore.getState();
+    const freshScenes = store.scenes;
+    const freshArrangement = store.arrangement;
+    const freshChannels = store.arrangementChannels;
+    const freshMusicalContext = store.musicalContext;
+    const freshGlobalSettings = store.globalSettings;
+    const freshProjectMeta = store.projectMeta;
+    const freshMasterSpeed = store.masterSpeed;
+    
+    const data = serializeComposition(
+      freshScenes, 
+      freshArrangement, 
+      freshChannels, 
+      freshMusicalContext, 
+      freshGlobalSettings, 
+      freshProjectMeta, 
+      freshMasterSpeed
+    );
+    
+    const result = await saveProjectToCloud(data, {
+      id: currentCloudProjectId ?? undefined,
+      name: projectMeta.name,
+    });
+    
+    if (result.success) {
+      setCurrentCloudProjectId(result.projectId ?? null);
+      markClean();
+      alert('Project saved to cloud!');
+    } else {
+      alert(`Failed to save: ${result.error}`);
+    }
+  };
+
+  const handleOpenCloudDialog = async () => {
+    setIsOpen(false);
+    
+    if (!isCloudStorageAvailable()) {
+      alert('Please sign in to access cloud projects');
+      return;
+    }
+    
+    setCloudLoading(true);
+    setShowCloudDialog(true);
+    
+    const result = await listCloudProjects();
+    if (result.success && result.projects) {
+      setCloudProjects(result.projects);
+    } else {
+      console.error('Failed to load cloud projects:', result.error);
+    }
+    setCloudLoading(false);
+  };
+
+  const handleLoadFromCloud = async (projectId: string) => {
+    const result = await loadProjectFromCloud(projectId);
+    
+    if (result.success && result.project) {
+      loadCompositionData(result.project.data);
+      setCurrentCloudProjectId(result.project.id);
+      setProjectMeta({ name: result.project.name });
+      setShowCloudDialog(false);
+    } else {
+      alert(`Failed to load: ${result.error}`);
+    }
+  };
+
+  const handleDeleteFromCloud = async (projectId: string) => {
+    if (!confirm('Delete this project from the cloud? This cannot be undone.')) {
+      return;
+    }
+    
+    const result = await deleteCloudProject(projectId);
+    if (result.success) {
+      setCloudProjects(prev => prev.filter(p => p.id !== projectId));
+      if (currentCloudProjectId === projectId) {
+        setCurrentCloudProjectId(null);
+      }
+    } else {
+      alert(`Failed to delete: ${result.error}`);
     }
   };
 
@@ -314,7 +425,32 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
           </button>
           
           <button className={styles.menuItem} onClick={() => { handleExportComposition(); setIsOpen(false); }}>
-            <span>💾</span> Export Composition <span className={styles.shortcut}>Ctrl+S</span>
+            <span>💾</span> Save Local <span className={styles.shortcut}>Ctrl+S</span>
+          </button>
+          
+          <div className={styles.separator} />
+          
+          {/* Cloud Storage Options */}
+          {!isAuthenticated && (
+            <div className={styles.cloudHint}>
+              <span>🔑</span> Sign in for cloud features
+            </div>
+          )}
+          
+          <button 
+            className={`${styles.menuItem} ${!isAuthenticated ? styles.disabled : ''}`} 
+            onClick={isAuthenticated ? handleSaveToCloud : undefined}
+            title={isAuthenticated ? 'Save to cloud' : 'Sign in to save to cloud'}
+          >
+            <span>☁️</span> Save to Cloud {currentCloudProjectId && '✓'}
+          </button>
+          
+          <button 
+            className={`${styles.menuItem} ${!isAuthenticated ? styles.disabled : ''}`} 
+            onClick={isAuthenticated ? handleOpenCloudDialog : undefined}
+            title={isAuthenticated ? 'Load from cloud' : 'Sign in to access cloud projects'}
+          >
+            <span>☁️</span> Load from Cloud...
           </button>
           
           <div className={styles.separator} />
@@ -322,6 +458,52 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
           <button className={styles.menuItem} onClick={() => { onShowExport(); setIsOpen(false); }}>
             <span>📤</span> Export Audio/MIDI
           </button>
+        </div>,
+        document.body
+      )}
+      
+      {/* Cloud Projects Dialog */}
+      {showCloudDialog && createPortal(
+        <div className={styles.modalOverlay} onClick={() => setShowCloudDialog(false)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>☁️ Cloud Projects</h3>
+              <button className={styles.closeButton} onClick={() => setShowCloudDialog(false)}>×</button>
+            </div>
+            <div className={styles.modalContent}>
+              {cloudLoading ? (
+                <div className={styles.loading}>Loading projects...</div>
+              ) : cloudProjects.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <p>No cloud projects yet</p>
+                  <p className={styles.hint}>Save your first project to the cloud!</p>
+                </div>
+              ) : (
+                <div className={styles.projectList}>
+                  {cloudProjects.map(project => (
+                    <div 
+                      key={project.id} 
+                      className={`${styles.projectItem} ${project.id === currentCloudProjectId ? styles.active : ''}`}
+                    >
+                      <div className={styles.projectInfo} onClick={() => handleLoadFromCloud(project.id)}>
+                        <span className={styles.projectName}>{project.name}</span>
+                        <span className={styles.projectDate}>
+                          {new Date(project.updatedAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <button 
+                        className={styles.deleteButton}
+                        onClick={() => handleDeleteFromCloud(project.id)}
+                        title="Delete project"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>,
         document.body
       )}

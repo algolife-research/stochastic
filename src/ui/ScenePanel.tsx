@@ -3,11 +3,22 @@
 import React, { useCallback, useState } from 'react';
 import { useGraphStore, selectScenes, selectEditingSceneId, selectScenePlayback, selectActiveSceneId, selectPlaybackMode } from '@core/store';
 import type { Scene, SceneId } from '@core/types';
+import { ProjectsPanel } from './ProjectsPanel';
+import { ResizeHandle } from './ResizeHandle';
 import styles from './ScenePanel.module.css';
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const MIN_PANEL_WIDTH = 180;
+const MAX_PANEL_WIDTH = 450;
 
 // ============================================================================
 // SCENE PANEL
 // ============================================================================
+
+type PanelTab = 'scenes' | 'projects';
 
 interface ScenePanelProps {
   collapsed: boolean;
@@ -29,10 +40,21 @@ export function ScenePanel({ collapsed, onToggleCollapse }: ScenePanelProps): Re
   const deleteScene = useGraphStore(state => state.deleteScene);
   const reorderScenes = useGraphStore(state => state.reorderScenes);
   const isRunning = useGraphStore(state => state.isRunning);
+  const globalSettings = useGraphStore(state => state.globalSettings);
+  const setGlobalSettings = useGraphStore(state => state.setGlobalSettings);
   
   const scenesArray = Array.from(scenes.values());
   const [selectedSceneId, setSelectedSceneId] = useState<SceneId | null>(null);
   const [dragOverSceneId, setDragOverSceneId] = useState<SceneId | null>(null);
+  const [activeTab, setActiveTab] = useState<PanelTab>('scenes');
+  
+  // Panel width from global settings
+  const panelWidth = globalSettings.leftPanelWidth;
+  
+  const handleResize = useCallback((delta: number) => {
+    const newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, panelWidth + delta));
+    setGlobalSettings({ leftPanelWidth: newWidth });
+  }, [panelWidth, setGlobalSettings]);
   
   // Auto-select the editing scene if no scene is selected
   const effectiveSelectedId = selectedSceneId ?? editingSceneId;
@@ -43,6 +65,7 @@ export function ScenePanel({ collapsed, onToggleCollapse }: ScenePanelProps): Re
     // Automatically load the new scene to canvas for editing
     loadSceneToCanvas(newId);
   }, [createScene, loadSceneToCanvas]);
+
   
   const handleSceneClick = useCallback((sceneId: SceneId) => {
     setSelectedSceneId(sceneId);
@@ -97,76 +120,104 @@ export function ScenePanel({ collapsed, onToggleCollapse }: ScenePanelProps): Re
   }, [reorderScenes]);
   
   return (
-    <div className={`${styles.panel} ${collapsed ? styles.collapsed : ''}`}>
+    <div 
+      className={`${styles.panel} ${collapsed ? styles.collapsed : ''}`}
+      style={collapsed ? undefined : { width: panelWidth }}
+    >
+      {/* Resize handle on right edge */}
+      {!collapsed && <ResizeHandle direction="right" onResize={handleResize} />}
+      
       <button 
         className={styles.collapseToggle}
         onClick={onToggleCollapse}
-        title={collapsed ? "Expand Scenes Panel" : "Collapse Scenes Panel"}
+        title={collapsed ? "Expand Panel" : "Collapse Panel"}
       >
         {collapsed ? '▶' : '◀'}
       </button>
       
       {!collapsed && (
         <>
-          <div className={styles.header}>
-            <h3>Scenes</h3>
-            <div className={styles.headerActions}>
-              <button 
-                className={styles.iconButton} 
-                onClick={handleCreateScene}
-                title="New Scene"
-              >
-                +
-              </button>
-            </div>
-          </div>
-          
-          {/* Playback Mode Toggle */}
-          <div className={styles.modeToggle}>
+          {/* Tab Toggle */}
+          <div className={styles.tabHeader}>
             <button
-              className={`${styles.modeButton} ${playbackMode === 'jam' ? styles.activeMode : ''}`}
-              onClick={() => setPlaybackMode('jam')}
-              title="Jam Mode - Infinite looping with scene queuing"
+              className={`${styles.tabButton} ${activeTab === 'scenes' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('scenes')}
             >
-              🎵 Jam
+              🎬 Scenes
             </button>
             <button
-              className={`${styles.modeButton} ${playbackMode === 'arrangement' ? styles.activeMode : ''}`}
-              onClick={() => setPlaybackMode('arrangement')}
-              title="Composition Mode - Play through timeline"
+              className={`${styles.tabButton} ${activeTab === 'projects' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('projects')}
             >
-              📋 Compose
+              📁 Projects
             </button>
           </div>
-          
-          <div className={styles.sceneList}>
-            {scenesArray.length === 0 ? (
-              <div className={styles.emptyState}>
-                No scenes yet. Click + to create one.
+
+          {activeTab === 'projects' ? (
+            <ProjectsPanel />
+          ) : (
+            <>
+              <div className={styles.header}>
+                <h3>Scenes</h3>
+                <div className={styles.headerActions}>
+                  <button 
+                    className={styles.iconButton} 
+                    onClick={handleCreateScene}
+                    title="New Scene"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
-            ) : (
-              scenesArray.map((scene) => (
-                <SceneListItem
-                  key={scene.id}
-                  scene={scene}
-                  isEditing={scene.id === editingSceneId}
-                  isActive={scene.id === activeSceneId}
-                  isSelected={scene.id === effectiveSelectedId}
-                  isQueued={scene.id === scenePlayback.queuedSceneId}
-                  isRunning={isRunning}
-                  isDragOver={scene.id === dragOverSceneId}
-                  canDelete={scenes.size > 1}
-                  onClick={() => handleSceneClick(scene.id)}
-                  onDoubleClick={() => handleSceneDoubleClick(scene.id)}
-                  onQueue={() => handleQueueScene(scene.id)}
-                  onDelete={() => handleDeleteScene(scene.id)}
-                  onDragOver={(e) => handleDragOver(e, scene.id)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, scene.id)}
-                />
-              ))
-            )}
-          </div>
+              
+              {/* Playback Mode Toggle */}
+              <div className={styles.modeToggle}>
+                <button
+                  className={`${styles.modeButton} ${playbackMode === 'jam' ? styles.activeMode : ''}`}
+                  onClick={() => setPlaybackMode('jam')}
+                  title="Jam Mode - Infinite looping with scene queuing"
+                >
+                  🎵 Jam
+                </button>
+                <button
+                  className={`${styles.modeButton} ${playbackMode === 'arrangement' ? styles.activeMode : ''}`}
+                  onClick={() => setPlaybackMode('arrangement')}
+                  title="Composition Mode - Play through timeline"
+                >
+                  📋 Compose
+                </button>
+              </div>
+              
+              <div className={styles.sceneList}>
+                {scenesArray.length === 0 ? (
+                  <div className={styles.emptyState}>
+                    No scenes yet. Click + to create one.
+                  </div>
+                ) : (
+                  scenesArray.map((scene) => (
+                    <SceneListItem
+                      key={scene.id}
+                      scene={scene}
+                      isEditing={scene.id === editingSceneId}
+                      isActive={scene.id === activeSceneId}
+                      isSelected={scene.id === effectiveSelectedId}
+                      isQueued={scene.id === scenePlayback.queuedSceneId}
+                      isRunning={isRunning}
+                      isDragOver={scene.id === dragOverSceneId}
+                      canDelete={scenes.size > 1}
+                      onClick={() => handleSceneClick(scene.id)}
+                      onDoubleClick={() => handleSceneDoubleClick(scene.id)}
+                      onQueue={() => handleQueueScene(scene.id)}
+                      onDelete={() => handleDeleteScene(scene.id)}
+                      onDragOver={(e) => handleDragOver(e, scene.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, scene.id)}
+                    />
+                  ))
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

@@ -1,11 +1,15 @@
 // Phonon v2 - Toolbar Component (Compact)
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useGraphStore } from '@core/store';
 import { NodeMenu } from './NodeMenu';
 import { ExampleMenu } from './ExampleMenu';
 import { FileDropdown } from './FileDropdown';
+import { UserMenu, AuthModal } from './AuthModal';
+import { DocsModal } from './DocsModal';
 import { isTauri } from '../io/filesystem';
+import type { LayoutAlgorithm } from '@core/layout';
 import styles from './Toolbar.module.css';
 
 // ============================================================================
@@ -21,6 +25,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
   const project = useGraphStore(state => state.project);
   const selection = useGraphStore(state => state.selection);
   const clipboard = useGraphStore(state => state.clipboard);
+  const nodes = useGraphStore(state => state.nodes);
   
   const deleteNode = useGraphStore(state => state.deleteNode);
   const deleteEdge = useGraphStore(state => state.deleteEdge);
@@ -29,6 +34,11 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
   const copySelectedNodes = useGraphStore(state => state.copySelectedNodes);
   const pasteNodes = useGraphStore(state => state.pasteNodes);
 
+  // Auth modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showDocsModal, setShowDocsModal] = useState(false);
+  const [showLayoutMenu, setShowLayoutMenu] = useState(false);
+
   // Check if there's anything selected
   const hasSelection = selection.selectedNodeIds.length > 0 || 
     selection.selectedEdgeId !== null || 
@@ -36,6 +46,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
     selection.selectedRegionId !== null;
   
   const hasClipboard = clipboard !== null && clipboard.nodes.length > 0;
+  const hasNodes = nodes.size > 0;
 
   const handleDelete = useCallback(() => {
     // Delete selected nodes
@@ -65,6 +76,35 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
   const handlePaste = useCallback(() => {
     pasteNodes();
   }, [pasteNodes]);
+
+  const handleAutoLayout = useCallback((algorithm: LayoutAlgorithm) => {
+    useGraphStore.getState().autoLayout(algorithm);
+    setShowLayoutMenu(false);
+  }, []);
+
+  // Close layout menu when clicking outside and track button position
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const layoutButtonRef = useRef<HTMLButtonElement>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  
+  useEffect(() => {
+    if (!showLayoutMenu) return;
+    
+    // Calculate position from button
+    if (layoutButtonRef.current) {
+      const rect = layoutButtonRef.current.getBoundingClientRect();
+      setMenuPosition({ top: rect.bottom + 4, left: rect.left });
+    }
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      if (layoutRef.current && !layoutRef.current.contains(e.target as Node)) {
+        setShowLayoutMenu(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showLayoutMenu]);
   
   return (
     <div className={styles['toolbar']}>
@@ -109,6 +149,40 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
 
       <div className={styles['separator']} />
 
+      {/* Auto-layout button with dropdown */}
+      <div className={styles['layoutContainer']}>
+        <button 
+          ref={layoutButtonRef}
+          className={styles['actionButton']} 
+          onClick={() => setShowLayoutMenu(!showLayoutMenu)} 
+          title="Auto Layout"
+          disabled={!hasNodes}
+          style={{ opacity: !hasNodes ? 0.4 : 1 }}
+        >
+          <span className={styles['icon']}>📐</span>
+        </button>
+        {showLayoutMenu && hasNodes && createPortal(
+          <div 
+            ref={layoutRef}
+            className={styles['layoutMenu']}
+            style={{ position: 'fixed', top: menuPosition.top, left: menuPosition.left }}
+          >
+            <button onClick={() => handleAutoLayout('hierarchical')}>
+              Hierarchical (L→R)
+            </button>
+            <button onClick={() => handleAutoLayout('force')}>
+              Force Directed
+            </button>
+            <button onClick={() => handleAutoLayout('circular')}>
+              Circular
+            </button>
+          </div>,
+          document.body
+        )}
+      </div>
+
+      <div className={styles['separator']} />
+
       {/* Node selection menu (collapsible) */}
       <NodeMenu />
       
@@ -116,6 +190,17 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
       
       {/* Examples menu (collapsible) */}
       <ExampleMenu />
+
+      <div className={styles['separator']} />
+
+      {/* Help/Docs button */}
+      <button 
+        className={styles['actionButton']} 
+        onClick={() => setShowDocsModal(true)} 
+        title="Documentation"
+      >
+        <span className={styles['icon']}>📚</span>
+      </button>
 
       {isTauri() && project.isProjectMode && project.path && (
         <>
@@ -125,6 +210,18 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
           </span>
         </>
       )}
+      
+      {/* Spacer to push user menu to the right */}
+      <div style={{ flex: 1 }} />
+      
+      {/* User menu */}
+      <UserMenu onSignInClick={() => setShowAuthModal(true)} />
+      
+      {/* Auth modal */}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      
+      {/* Docs modal */}
+      <DocsModal isOpen={showDocsModal} onClose={() => setShowDocsModal(false)} />
     </div>
   );
 }

@@ -6,15 +6,14 @@
   background: #1a1a1a;
   border-left: 1px solid #333;
   height: 100%;
-  width: 280px;
-  min-width: 250px;
-  max-width: 300px;
+  min-width: 200px;
+  max-width: 500px;
   position: relative;
-  transition: width 0.3s ease, min-width 0.3s ease, max-width 0.3s ease;
+  transition: width 0.15s ease;
 }
 
 .panel.collapsed {
-  width: 32px;
+  width: 32px !important;
   min-width: 32px;
   max-width: 32px;
 }

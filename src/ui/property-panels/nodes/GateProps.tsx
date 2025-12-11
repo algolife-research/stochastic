@@ -27,11 +27,11 @@ export function GateProps({ props, onChange }: PropsEditorProps<GatePropsType>):
       {mode === 'probability' && (
         <PropertyRow label="Probability">
           <SliderInput
-            value={props.prob}
+            value={props.probability}
             min={0}
             max={1}
             step={0.01}
-            onChange={v => onChange('prob', v)}
+            onChange={v => onChange('probability', v)}
           />
         </PropertyRow>
       )}

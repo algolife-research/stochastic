@@ -6,6 +6,7 @@ import { startTick, stopTick, resetTick } from '@core/tick';
 import { CanvasRenderer } from '@canvas/renderer';
 import { CanvasInputHandler } from '@canvas/input';
 import { audioEngine } from '@audio/engine';
+import { useAuthStore } from '@auth/store';
 import { Toolbar } from './Toolbar';
 import { TransportBar } from './TransportBar';
 import { StatusBar } from './StatusBar';
@@ -94,6 +95,9 @@ export function App(): React.ReactElement {
     // Start tick system
     startTick();
     
+    // Initialize auth
+    useAuthStore.getState().initialize();
+    
     // Initialize default scene if none exist
     const initDefaultScene = () => {
       const store = useGraphStore.getState();
@@ -153,8 +157,22 @@ export function App(): React.ReactElement {
     }
   }, [isRunning, isAudioReady]);
   
+  // Get UI scale from global settings
+  const uiScale = useGraphStore(state => state.globalSettings.uiScale);
+  
+  // Calculate the transform scale
+  const scaleValue = uiScale / 100;
+  
   return (
-    <div className={styles['app']}>
+    <div 
+      className={styles['app']}
+      style={{
+        transform: `scale(${scaleValue})`,
+        transformOrigin: 'top left',
+        width: `${100 / scaleValue}%`,
+        height: `${100 / scaleValue}%`,
+      }}
+    >
       {/* Project Startup Modal (Tauri only) */}
       <ProjectStartupModal />
 

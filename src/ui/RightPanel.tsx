@@ -1,14 +1,23 @@
 // Phonon - Right Panel Component
 // Unified panel with toggle between Editor (Properties), Visualisation, Scene, and AI modes
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import type { GraphNode, Annotation, Region, GraphEdge } from '@core/types';
+import { useGraphStore } from '@core/store';
 import { PropertyPanel } from './property-panels';
 import { EdgePanel } from './EdgePanel';
 import { VizPanelContent } from './VizPanel';
 import { ScenePropertiesPanel } from './ScenePropertiesPanel';
 import { AIPanel } from './AIPanel';
+import { ResizeHandle } from './ResizeHandle';
 import styles from './RightPanel.module.css';
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const MIN_PANEL_WIDTH = 200;
+const MAX_PANEL_WIDTH = 500;
 
 // ============================================================================
 // RIGHT PANEL
@@ -35,8 +44,24 @@ export function RightPanel({
 }: RightPanelProps): React.ReactElement {
   const [panelMode, setPanelMode] = useState<PanelMode>('editor');
   
+  const globalSettings = useGraphStore(state => state.globalSettings);
+  const setGlobalSettings = useGraphStore(state => state.setGlobalSettings);
+  
+  const panelWidth = globalSettings.rightPanelWidth;
+  
+  const handleResize = useCallback((delta: number) => {
+    const newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, panelWidth + delta));
+    setGlobalSettings({ rightPanelWidth: newWidth });
+  }, [panelWidth, setGlobalSettings]);
+  
   return (
-    <div className={`${styles.panel} ${collapsed ? styles.collapsed : ''}`}>
+    <div 
+      className={`${styles.panel} ${collapsed ? styles.collapsed : ''}`}
+      style={collapsed ? undefined : { width: panelWidth }}
+    >
+      {/* Resize handle on left edge */}
+      {!collapsed && <ResizeHandle direction="left" onResize={handleResize} />}
+      
       {/* Collapse toggle button */}
       <button 
         className={styles.collapseToggle}

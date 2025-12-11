@@ -23,6 +23,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
   const [scaleName, setScaleName] = useState(musicalContext.scaleName);
   const [gravity, setGravity] = useState(globalSettings.gravityConstant);
   const [defaultEdgeBehaviour, setDefaultEdgeBehaviour] = useState(globalSettings.defaultEdgeBehaviour);
+  const [uiScale, setUiScale] = useState(globalSettings.uiScale);
   const [projectName, setProjectName] = useState(projectMeta.name);
   const [projectAuthor, setProjectAuthor] = useState(projectMeta.author);
   
@@ -32,6 +33,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
       setScaleName(musicalContext.scaleName);
       setGravity(globalSettings.gravityConstant);
       setDefaultEdgeBehaviour(globalSettings.defaultEdgeBehaviour);
+      setUiScale(globalSettings.uiScale);
       setProjectName(projectMeta.name);
       setProjectAuthor(projectMeta.author);
     }
@@ -45,7 +47,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
     }
     
     // Update universal constants
-    setGlobalSettings({ gravityConstant: gravity, defaultEdgeBehaviour });
+    setGlobalSettings({ gravityConstant: gravity, defaultEdgeBehaviour, uiScale });
     
     // Update project meta
     setProjectMeta({
@@ -64,6 +66,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
     setScaleName(musicalContext.scaleName);
     setGravity(globalSettings.gravityConstant);
     setDefaultEdgeBehaviour(globalSettings.defaultEdgeBehaviour);
+    setUiScale(globalSettings.uiScale);
     setProjectName(projectMeta.name);
     setProjectAuthor(projectMeta.author);
     onClose();
@@ -169,6 +172,30 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
             
             <div className={styles.info}>
               <p>Affects packet speed when Gain nodes have mass &gt; 1.</p>
+            </div>
+          </section>
+          
+          {/* UI Settings */}
+          <section className={styles.section}>
+            <h3>Interface</h3>
+            
+            <div className={styles.row}>
+              <label>UI Scale</label>
+              <div className={styles.sliderRow}>
+                <input
+                  type="range"
+                  value={uiScale}
+                  onChange={e => setUiScale(parseInt(e.target.value))}
+                  min={50}
+                  max={150}
+                  step={5}
+                />
+                <span className={styles.sliderValue}>{uiScale}%</span>
+              </div>
+            </div>
+            
+            <div className={styles.info}>
+              <p>Scale the entire UI. Useful for high-DPI displays or accessibility.</p>
             </div>
           </section>
         </div>

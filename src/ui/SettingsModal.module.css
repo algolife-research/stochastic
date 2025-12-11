@@ -169,3 +169,45 @@
 .saveBtn:hover {
   background: #0095dd;
 }
+
+/* Slider row for UI scale */
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.sliderRow input[type="range"] {
+  flex: 1;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.sliderRow input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #00aaff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.sliderRow input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #00aaff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+}
+
+.sliderValue {
+  color: #fff;
+  font-size: 14px;
+  min-width: 45px;
+  text-align: right;
+}

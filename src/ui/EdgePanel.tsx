@@ -98,20 +98,42 @@ export function EdgePanel({ edge, embedded }: EdgePanelProps): React.ReactElemen
               onChange={e => handleTargetParamChange(e.target.value || null)}
             >
               <option value="">Audio (default)</option>
-              <optgroup label="Common">
-                <option value="cutoff">Filter Cutoff</option>
-                <option value="gain">Gain</option>
+              <optgroup label="Speaker">
+                <option value="volume">Volume</option>
                 <option value="pan">Pan</option>
                 <option value="reverb">Reverb</option>
               </optgroup>
-              <optgroup label="Envelope">
+              <optgroup label="Filter">
+                <option value="cutoff">Cutoff</option>
+                <option value="mod">Mod Amount</option>
+              </optgroup>
+              <optgroup label="Gate">
+                <option value="probability">Probability</option>
+                <option value="harmonicThreshold">Harmonic Threshold</option>
+                <option value="energyThreshold">Energy Threshold</option>
+                <option value="densityThreshold">Density Threshold</option>
+              </optgroup>
+              <optgroup label="Gain">
+                <option value="value">Value</option>
+              </optgroup>
+              <optgroup label="Delay">
+                <option value="delayTime">Delay Time</option>
+              </optgroup>
+              <optgroup label="Modulator">
+                <option value="rate">Rate</option>
+                <option value="depth">Depth</option>
+              </optgroup>
+              <optgroup label="Oscillator">
+                <option value="mix">Mix</option>
                 <option value="attack">Attack</option>
                 <option value="decay">Decay</option>
               </optgroup>
-              <optgroup label="Oscillator">
-                <option value="pitch">Pitch</option>
-                <option value="rate">Rate</option>
-                <option value="depth">Depth</option>
+              <optgroup label="Source">
+                <option value="interval">Interval</option>
+                <option value="intensity">Intensity</option>
+              </optgroup>
+              <optgroup label="Quantizer">
+                <option value="strength">Strength</option>
               </optgroup>
             </select>
           </div>

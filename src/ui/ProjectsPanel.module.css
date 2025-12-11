@@ -1,0 +1,360 @@
+/* Projects Panel Styles */
+
+.projectsPanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.currentProject {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color, #3e3e4e);
+  background: var(--bg-secondary, #1e1e2e);
+}
+
+.projectName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+}
+
+.projectNameText {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.projectIcon {
+  font-size: 16px;
+}
+
+.cloudBadge {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.renameButton {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.5;
+  transition: all 0.2s;
+}
+
+.renameButton:hover {
+  opacity: 1;
+  background: var(--bg-tertiary, #2a2a3a);
+}
+
+.renameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.renameInput {
+  flex: 1;
+  padding: 6px 10px;
+  background: var(--bg-tertiary, #2a2a3a);
+  border: 1px solid var(--accent-color, #6c5ce7);
+  border-radius: 4px;
+  color: var(--text-primary, #fff);
+  font-size: 13px;
+}
+
+.renameInput:focus {
+  outline: none;
+  border-color: var(--accent-hover, #5a4ad1);
+}
+
+.renameAction {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.renameAction:hover {
+  background: var(--bg-tertiary, #2a2a3a);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border-color, #3e3e4e);
+}
+
+.actionButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: var(--bg-tertiary, #2a2a3a);
+  border: 1px solid var(--border-color, #3e3e4e);
+  border-radius: 6px;
+  color: var(--text-primary, #fff);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionButton:hover {
+  background: var(--bg-primary, #1a1a2e);
+  border-color: var(--accent-color, #6c5ce7);
+}
+
+.cloudSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #aaa);
+  background: var(--bg-primary, #1a1a2e);
+}
+
+.refreshButton {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background: var(--bg-tertiary, #2a2a3a);
+}
+
+.refreshButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.authPrompt {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.authPrompt p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #888);
+}
+
+.loading {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-secondary, #888);
+  font-size: 13px;
+}
+
+.saveCloudButton {
+  margin: 12px;
+  padding: 10px 16px;
+  background: var(--accent-color, #6c5ce7);
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.saveCloudButton:hover:not(:disabled) {
+  background: var(--accent-hover, #5a4ad1);
+}
+
+.saveCloudButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.saveCloudButton.success {
+  background: #27ae60;
+}
+
+.saveCloudButton.error {
+  background: #e74c3c;
+}
+
+.errorMessage {
+  margin: 0 12px 12px;
+  padding: 8px 12px;
+  background: rgba(231, 76, 60, 0.1);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: 6px;
+  color: #e74c3c;
+  font-size: 12px;
+}
+
+.projectList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+}
+
+.emptyState {
+  padding: 24px 16px;
+  text-align: center;
+  color: var(--text-tertiary, #666);
+  font-size: 13px;
+}
+
+.projectItem {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-tertiary, #2a2a3a);
+  border: 1px solid var(--border-color, #3e3e4e);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.projectItem:hover {
+  border-color: var(--accent-color, #6c5ce7);
+}
+
+.projectItem.active {
+  border-color: var(--accent-color, #6c5ce7);
+  background: rgba(108, 92, 231, 0.1);
+}
+
+.projectInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.projectItemName {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.projectDate {
+  display: block;
+  font-size: 11px;
+  color: var(--text-tertiary, #666);
+  margin-top: 2px;
+}
+
+.deleteButton {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  opacity: 0.5;
+  transition: all 0.2s;
+}
+
+.deleteButton:hover {
+  opacity: 1;
+  background: rgba(231, 76, 60, 0.2);
+}
+
+.projectItemRename {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.projectActions {
+  display: flex;
+  gap: 2px;
+}
+
+.actionIconButton {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  opacity: 0.5;
+  transition: all 0.2s;
+}
+
+.actionIconButton:hover {
+  opacity: 1;
+  background: var(--bg-tertiary, #2a2a3a);
+}
+
+.projectId {
+  display: block;
+  font-size: 10px;
+  color: var(--text-tertiary, #555);
+  font-family: monospace;
+  margin-top: 2px;
+}
+
+/* Usage Indicator */
+.usageIndicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 0 12px;
+  background: var(--bg-tertiary, #2a2a3a);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.tierBadge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.tierBadge[data-tier="free"] {
+  background: rgba(149, 165, 166, 0.2);
+  color: #95a5a6;
+}
+
+.tierBadge[data-tier="pro"] {
+  background: rgba(108, 92, 231, 0.2);
+  color: #6c5ce7;
+}
+
+.tierBadge[data-tier="vip"] {
+  background: rgba(241, 196, 15, 0.2);
+  color: #f1c40f;
+}
+
+.usageText {
+  color: var(--text-secondary, #888);
+}

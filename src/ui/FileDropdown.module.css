@@ -67,3 +67,167 @@
   font-size: 11px;
   color: #666;
 }
+
+.menuItem.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menuItem.disabled:hover {
+  background: transparent;
+  color: #ccc;
+}
+
+/* Modal styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  background: #1e1e2e;
+  border-radius: 12px;
+  width: 450px;
+  max-width: 90vw;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid #3e3e4e;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #3e3e4e;
+}
+
+.modalHeader h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #fff;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.closeButton:hover {
+  color: #fff;
+}
+
+.modalContent {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.loading {
+  text-align: center;
+  color: #888;
+  padding: 32px;
+}
+
+.emptyState {
+  text-align: center;
+  color: #888;
+  padding: 32px;
+}
+
+.emptyState p {
+  margin: 0 0 8px 0;
+}
+
+.hint {
+  font-size: 12px;
+  color: #666;
+}
+
+.projectList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.projectItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #2a2a3a;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.projectItem:hover {
+  background: #3a3a4a;
+  border-color: #6c5ce7;
+}
+
+.projectItem.active {
+  border-color: #6c5ce7;
+  background: rgba(108, 92, 231, 0.1);
+}
+
+.projectInfo {
+  flex: 1;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.projectName {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.projectDate {
+  font-size: 12px;
+  color: #888;
+}
+
+.deleteButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.5;
+  transition: opacity 0.2s;
+}
+
+.deleteButton:hover {
+  opacity: 1;
+}
+
+/* Cloud hint for non-authenticated users */
+.cloudHint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+  color: #888;
+  background: rgba(108, 92, 231, 0.1);
+  border-radius: 4px;
+  margin: 4px 0;
+}

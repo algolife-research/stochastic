@@ -8,13 +8,12 @@
   min-height: 32px;
   display: flex;
   flex-direction: column;
-  height: 200px;
-  transition: height 0.3s ease;
+  transition: height 0.15s ease;
   overflow: hidden;
 }
 
 .timeline.collapsed {
-  height: 32px;
+  height: 32px !important;
 }
 
 .collapseToggle {
@@ -466,4 +465,18 @@
   text-align: center;
   color: var(--text-secondary, #888);
   font-size: 11px;
+}
+
+/* Empty state hint */
+.emptyHint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-muted, #666);
+  font-size: 12px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  pointer-events: none;
 }
