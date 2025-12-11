@@ -8,6 +8,13 @@ import {
   NODE_RADIUS, GRID_SIZE, NODE_COLORS, NODE_ICONS, 
   midiToNoteName 
 } from '@core/constants';
+import {
+  isValidNumber,
+  sanitizeNumber,
+  validateViewport,
+  validateHexColor,
+  safeCanvasOp,
+} from './validator';
 
 // ============================================================================
 // BEZIER CURVE UTILITIES
@@ -30,15 +37,22 @@ interface BezierControlPoints {
  * Formula: B(t) = (1-t)³P0 + 3(1-t)²tP1 + 3(1-t)t²P2 + t³P3
  */
 function getBezierPoint(t: number, p0: Point, p1: Point, p2: Point, p3: Point): Point {
-  const mt = 1 - t;
+  // Clamp t to valid range and handle invalid values
+  const safeT = isValidNumber(t) ? Math.max(0, Math.min(1, t)) : 0;
+  
+  const mt = 1 - safeT;
   const mt2 = mt * mt;
   const mt3 = mt2 * mt;
-  const t2 = t * t;
-  const t3 = t2 * t;
+  const t2 = safeT * safeT;
+  const t3 = t2 * safeT;
   
+  const x = mt3 * p0.x + 3 * mt2 * safeT * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x;
+  const y = mt3 * p0.y + 3 * mt2 * safeT * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y;
+  
+  // Return safe values if calculation produces invalid results
   return {
-    x: mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x,
-    y: mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y
+    x: isValidNumber(x) ? x : p0.x,
+    y: isValidNumber(y) ? y : p0.y
   };
 }
 
@@ -60,11 +74,26 @@ function getBezierTangent(t: number, p0: Point, p1: Point, p2: Point, p3: Point)
 
 /**
  * Calculate control points for a smooth S-curve between two nodes
+ * Returns safe fallback points if input is invalid
  */
 function calculateBezierControlPoints(from: Point, to: Point): BezierControlPoints {
+  // Validate input points
+  if (!isValidNumber(from.x) || !isValidNumber(from.y) || 
+      !isValidNumber(to.x) || !isValidNumber(to.y)) {
+    // Return degenerate line if points are invalid
+    const safeFrom = { x: 0, y: 0 };
+    const safeTo = { x: 0, y: 0 };
+    return { p0: safeFrom, p1: safeFrom, p2: safeTo, p3: safeTo };
+  }
+  
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  // Handle zero distance case
+  if (!isValidNumber(distance) || distance === 0) {
+    return { p0: from, p1: from, p2: to, p3: to };
+  }
   
   // Curvature factor - more curve for longer distances
   const curvature = Math.min(0.4, Math.max(0.2, distance / 400));
@@ -182,7 +211,9 @@ export class CanvasRenderer {
   render(_deltaTime: number): void {
     const store = getGraphStore();
     const { ctx, canvas } = this;
-    const { viewport } = store;
+    
+    // Validate viewport before rendering
+    const viewport = validateViewport(store.viewport);
     
     // Clear canvas
     ctx.fillStyle = '#0a0a0a';
@@ -349,8 +380,8 @@ export class CanvasRenderer {
     const { selection, masterSpeed, scenePlayback } = store;
     const time = performance.now() / 1000;
     
-    // Update flow animation based on BPM
-    const bpm = scenePlayback.effectiveBpm ?? masterSpeed ?? 120;
+    // Update flow animation based on BPM (with validation)
+    const bpm = sanitizeNumber(scenePlayback.effectiveBpm ?? masterSpeed, 120);
     const beatsPerSecond = bpm / 60;
     this.flowAnimationOffset = (time * beatsPerSecond * 20) % 40; // 20 pixels per beat
     
@@ -360,7 +391,11 @@ export class CanvasRenderer {
     store.edges.forEach((edge: GraphEdge) => {
       const fromNode = store.getNode(edge.from);
       const toNode = store.getNode(edge.to);
+      
+      // Validate nodes before drawing edge
       if (!fromNode || !toNode) return;
+      if (!isValidNumber(fromNode.x) || !isValidNumber(fromNode.y)) return;
+      if (!isValidNumber(toNode.x) || !isValidNumber(toNode.y)) return;
       
       const isSelected = selection.selectedEdgeId === edge.id;
       const isCV = edge.targetParam != null;
@@ -583,11 +618,16 @@ export class CanvasRenderer {
    * Adjust color opacity by parsing and modifying
    */
   private adjustColorOpacity(hexColor: string, opacity: number): string {
-    // Convert hex to rgba
-    const r = parseInt(hexColor.slice(1, 3), 16);
-    const g = parseInt(hexColor.slice(3, 5), 16);
-    const b = parseInt(hexColor.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    // Validate hex color
+    const validColor = validateHexColor(hexColor, '#666666');
+    
+    // Convert hex to rgba with safe parsing
+    const r = safeCanvasOp(() => parseInt(validColor.slice(1, 3), 16), 102, 'Failed to parse red channel');
+    const g = safeCanvasOp(() => parseInt(validColor.slice(3, 5), 16), 102, 'Failed to parse green channel');
+    const b = safeCanvasOp(() => parseInt(validColor.slice(5, 7), 16), 102, 'Failed to parse blue channel');
+    const validOpacity = sanitizeNumber(opacity, 1);
+    
+    return `rgba(${r}, ${g}, ${b}, ${validOpacity})`;
   }
 
   /**
@@ -636,12 +676,22 @@ export class CanvasRenderer {
     const TRAIL_T_LENGTH = 0.15; // Trail length as fraction of curve
     
     store.packets.forEach((packet: Packet) => {
+      // Validate packet t value
+      if (!isValidNumber(packet.t)) {
+        console.warn(`Packet ${packet.id} has invalid t: ${packet.t}`);
+        return;
+      }
+      
       const edge = store.getEdge(packet.edgeId);
       if (!edge) return;
       
       const fromNode = store.getNode(edge.from);
       const toNode = store.getNode(edge.to);
+      
+      // Validate nodes before drawing packet
       if (!fromNode || !toNode) return;
+      if (!isValidNumber(fromNode.x) || !isValidNumber(fromNode.y)) return;
+      if (!isValidNumber(toNode.x) || !isValidNumber(toNode.y)) return;
       
       // Calculate Bezier control points (same as edge drawing)
       const bezier = calculateBezierControlPoints(
@@ -735,14 +785,20 @@ export class CanvasRenderer {
     const { selection } = store;
     
     store.nodes.forEach((node: GraphNode) => {
+      // Validate node position before drawing
+      if (!isValidNumber(node.x) || !isValidNumber(node.y)) {
+        console.warn(`Skipping node ${node.id} with invalid position`);
+        return;
+      }
+      
       const isSelected = selection.selectedNodeIds.includes(node.id);
       const isHovered = selection.hoveredNodeId === node.id;
       
-      // Flash effect (read-only - decay is handled by tick system)
-      const flashIntensity = node.flash;
+      // Flash effect (read-only - decay is handled by tick system) - with validation
+      const flashIntensity = sanitizeNumber(node.flash, 0);
       
-      // Node color
-      const color = NODE_COLORS[node.type] ?? '#666666';
+      // Node color with validation
+      const color = validateHexColor(NODE_COLORS[node.type], '#666666');
       
       // Flash glow
       if (flashIntensity > 0) {
@@ -761,7 +817,7 @@ export class CanvasRenderer {
       ctx.fillStyle = '#1e1e1e';
       ctx.beginPath();
       ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fill();;
       
       // Colored outline
       ctx.strokeStyle = color;
@@ -989,8 +1045,8 @@ export class CanvasRenderer {
         break;
       }
       case 'gate': {
-        const props = node.props as { prob: number };
-        ctx.fillText(`${Math.round(props.prob * 100)}%`, node.x, node.y + NODE_RADIUS + 12);
+        const props = node.props as { probability: number };
+        ctx.fillText(`${Math.round(props.probability * 100)}%`, node.x, node.y + NODE_RADIUS + 12);
         break;
       }
       case 'gain': {

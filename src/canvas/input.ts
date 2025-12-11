@@ -106,9 +106,16 @@ export class CanvasInputHandler {
     const store = getGraphStore();
     const { viewport } = store;
     
+    // Validate inputs to prevent NaN propagation
+    const safeScreenX = Number.isFinite(screenX) ? screenX : 0;
+    const safeScreenY = Number.isFinite(screenY) ? screenY : 0;
+    const safePanX = Number.isFinite(viewport.panOffset.x) ? viewport.panOffset.x : 0;
+    const safePanY = Number.isFinite(viewport.panOffset.y) ? viewport.panOffset.y : 0;
+    const safeZoom = Number.isFinite(viewport.zoomLevel) && viewport.zoomLevel > 0 ? viewport.zoomLevel : 1;
+    
     return {
-      x: (screenX - viewport.panOffset.x) / viewport.zoomLevel,
-      y: (screenY - viewport.panOffset.y) / viewport.zoomLevel,
+      x: (safeScreenX - safePanX) / safeZoom,
+      y: (safeScreenY - safePanY) / safeZoom,
     };
   }
   
@@ -116,12 +123,22 @@ export class CanvasInputHandler {
    * Find node at world position
    */
   findNodeAt(worldX: number, worldY: number): NodeId | null {
+    // Validate world coordinates
+    if (!Number.isFinite(worldX) || !Number.isFinite(worldY)) {
+      return null;
+    }
+    
     const store = getGraphStore();
     let foundNodeId: NodeId | null = null;
     
     // Iterate in reverse to find topmost node first
     const nodes = Array.from(store.nodes.values()).reverse();
     for (const node of nodes) {
+      // Skip nodes with invalid positions
+      if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) {
+        continue;
+      }
+      
       // Special hit detection for tunnel nodes (capsule shape)
       if (node.type === 'tunnel') {
         const props = node.props as TunnelProps;
@@ -174,6 +191,11 @@ export class CanvasInputHandler {
    * Find edge at world position
    */
   findEdgeAt(worldX: number, worldY: number): EdgeId | null {
+    // Validate world coordinates
+    if (!Number.isFinite(worldX) || !Number.isFinite(worldY)) {
+      return null;
+    }
+    
     const store = getGraphStore();
     let foundEdgeId: EdgeId | null = null;
     
@@ -181,8 +203,13 @@ export class CanvasInputHandler {
       const fromNode = store.nodes.get(edge.from);
       const toNode = store.nodes.get(edge.to);
       if (fromNode && toNode) {
+        // Validate node positions
+        if (!Number.isFinite(fromNode.x) || !Number.isFinite(fromNode.y) ||
+            !Number.isFinite(toNode.x) || !Number.isFinite(toNode.y)) {
+          return;
+        }
         const d = distToSegment(worldX, worldY, fromNode.x, fromNode.y, toNode.x, toNode.y);
-        if (d < 10) {
+        if (Number.isFinite(d) && d < 10) {
           foundEdgeId = id;
         }
       }
