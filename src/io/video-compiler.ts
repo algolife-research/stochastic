@@ -379,7 +379,7 @@ function processVideoArrival(
     
     case 'gate': {
       const props = node.props as PropsForNodeType<'gate'>;
-      const probability = props.prob ?? 1.0;
+      const probability = props.probability ?? 1.0;
       // Use deterministic random for reproducibility
       if (seededRandom(currentTime * 1000 + packet.id.charCodeAt(0)) < probability) {
         forwardPacket(node.id, payload, edges, simPackets, currentTime);

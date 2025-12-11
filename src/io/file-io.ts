@@ -14,7 +14,10 @@ import type {
   ArrangementChannel,
   ScaleName,
   AnnotationId,
-  RegionId
+  RegionId,
+  VizMode,
+  VizConfig,
+  VizTransition
 } from '@core/types';
 
 // ============================================================================
@@ -222,7 +225,7 @@ export function deserializeGraph(data: SerializedGraph): {
       type: n.type as GraphNode['type'],
       x: n.x,
       y: n.y,
-      props: n.props as Record<string, unknown>,
+      props: n.props as unknown as GraphNode['props'],
     })),
     edges: data.graph.edges.map(e => ({
       id: e.id as EdgeId,
@@ -379,7 +382,7 @@ export function deserializeScene(data: SerializedScene): Scene {
       type: n.type as GraphNode['type'],
       x: n.x,
       y: n.y,
-      props: n.props as Record<string, unknown>,
+      props: n.props as unknown as GraphNode['props'],
       timer: 0,
       lastTrigger: 0,
       flash: 0,

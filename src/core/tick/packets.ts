@@ -211,8 +211,8 @@ export function updatePackets(deltaTime: number): void {
     
     // Handle special node types
     if (node.type === 'gate') {
-      const props = node.props as { prob: number };
-      if (Math.random() > props.prob) {
+      const props = node.props as { probability: number };
+      if (Math.random() > props.probability) {
         // Gate blocked - don't propagate
         return;
       }
