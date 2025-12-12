@@ -27,6 +27,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
   const [success, setSuccess] = useState<string | null>(null);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const { signIn, signUp, resendVerificationEmail, isLoading, error, clearError } = useAuth();
 
@@ -54,8 +55,22 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
   if (!isOpen) return null;
 
   if (!isSupabaseConfigured()) {
+    const handleSetupOverlayMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains(styles.overlay)) {
+        const handleMouseUp = (upEvent: MouseEvent) => {
+          const upTarget = upEvent.target as HTMLElement;
+          if (upTarget.classList.contains(styles.overlay)) {
+            onClose();
+          }
+          document.removeEventListener('mouseup', handleMouseUp);
+        };
+        document.addEventListener('mouseup', handleMouseUp);
+      }
+    };
+
     return (
-      <div className={styles.overlay} onClick={onClose}>
+      <div className={styles.overlay} onMouseDown={handleSetupOverlayMouseDown}>
         <div className={styles.modalWrapper} onClick={e => e.stopPropagation()}>
           <div className={styles.modal}>
             <div className={styles.header}>
@@ -144,8 +159,21 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
 
   const displayError = localError || error;
 
+  // Handle click outside - only close if both mousedown and mouseup happen on overlay
+  const handleOverlayMouseDown = (e: React.MouseEvent) => {
+    if (e.target === overlayRef.current) {
+      const handleMouseUp = (upEvent: MouseEvent) => {
+        if (upEvent.target === overlayRef.current) {
+          onClose();
+        }
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+  };
+
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={styles.overlay} ref={overlayRef} onMouseDown={handleOverlayMouseDown}>
       <div className={styles.modalWrapper} onClick={e => e.stopPropagation()}>
         <div className={styles.modal}>
           <button className={styles.closeButton} onClick={onClose}>×</button>
