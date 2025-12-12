@@ -27,6 +27,12 @@ export interface AIAgentConfig {
   temperature: number;
 }
 
+/** Two-tier AI configuration for planning + execution */
+export interface AITieredConfig {
+  planning: AIAgentConfig;   // Smart model for planning
+  execution: AIAgentConfig;  // Fast/cheap model for execution
+}
+
 /** Default configurations for each provider */
 export const DEFAULT_CONFIGS: Record<AIProvider, Partial<AIAgentConfig>> = {
   openai: {
@@ -67,6 +73,49 @@ export const DEFAULT_CONFIGS: Record<AIProvider, Partial<AIAgentConfig>> = {
     baseUrl: 'http://localhost:1234/v1',
     maxTokens: 4096,
     temperature: 0.7,
+  },
+};
+
+/** Execution-optimized configs (cheaper, faster models) */
+export const EXECUTION_CONFIGS: Record<AIProvider, Partial<AIAgentConfig>> = {
+  openai: {
+    model: 'gpt-4o-mini',
+    maxTokens: 1000,
+    temperature: 0.3,  // More precise for execution
+  },
+  anthropic: {
+    model: 'claude-haiku-4-20250514',
+    maxTokens: 1000,
+    temperature: 0.3,
+  },
+  gemini: {
+    model: 'gemini-2.5-flash-preview-05-20',
+    maxTokens: 1000,
+    temperature: 0.3,
+  },
+  openrouter: {
+    model: 'openai/gpt-4o-mini',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    maxTokens: 1000,
+    temperature: 0.3,
+  },
+  'openrouter-free': {
+    model: 'mistralai/devstral-2512:free',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    maxTokens: 1000,
+    temperature: 0.3,
+  },
+  ollama: {
+    model: 'llama3.2',
+    baseUrl: 'http://localhost:11434/api',
+    maxTokens: 1000,
+    temperature: 0.3,
+  },
+  lmstudio: {
+    model: 'local-model',
+    baseUrl: 'http://localhost:1234/v1',
+    maxTokens: 1000,
+    temperature: 0.3,
   },
 };
 

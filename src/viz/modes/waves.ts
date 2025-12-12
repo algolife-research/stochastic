@@ -1,4 +1,4 @@
-// Phonon Viz - Waves Mode
+// Stochastic Viz - Waves Mode
 // Interference patterns and oscillating waves
 
 import type { VizMusicalData, WavesVizConfig, VizConfigBase, VizConfig } from '@core/types';

@@ -1,4 +1,4 @@
-// Phonon v2 - Auto Layout Algorithm
+// Stochastic v2 - Auto Layout Algorithm
 // Force-directed and hierarchical layout for graph nodes
 
 import type { GraphNode, GraphEdge, NodeId } from './types';

@@ -1,4 +1,4 @@
-// Phonon v2 - Constants
+// Stochastic v2 - Constants
 // All configuration values and lookup tables
 
 import type { 

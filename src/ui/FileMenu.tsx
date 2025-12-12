@@ -1,4 +1,4 @@
-// Phonon v2 - File Menu Component (Save/Load/New)
+// Stochastic v2 - File Menu Component (Save/Load/New)
 
 import React, { useRef, useEffect } from 'react';
 import { useGraphStore } from '@core/store';

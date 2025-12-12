@@ -1,4 +1,4 @@
-// Phonon Viz - Kaleidoscope Mode
+// Stochastic Viz - Kaleidoscope Mode
 // Symmetric reflections and rotations
 
 import type { VizMusicalData, KaleidoscopeVizConfig, VizConfigBase, VizConfig } from '@core/types';

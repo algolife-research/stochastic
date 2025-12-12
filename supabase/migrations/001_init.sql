@@ -1,4 +1,4 @@
--- Supabase Database Migrations for AIGA/Phonon
+-- Supabase Database Migrations for Stochastic
 -- Run these in your Supabase SQL Editor
 
 -- ============================================================================

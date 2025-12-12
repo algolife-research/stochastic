@@ -1,4 +1,4 @@
-// Phonon v2 - Core Module Exports
+// Stochastic v2 - Core Module Exports
 
 export * from './types';
 export * from './constants';

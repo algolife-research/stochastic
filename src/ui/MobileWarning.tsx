@@ -60,7 +60,7 @@ export function MobileWarning(): React.ReactElement | null {
         <div className={styles.icon}>📱</div>
         <h2 className={styles.title}>Desktop Experience Recommended</h2>
         <p className={styles.message}>
-          Phonon is optimized for desktop computers with keyboard and mouse input.
+          Stochastic is optimized for desktop computers with keyboard and mouse input.
           Some features may not work properly on mobile devices or tablets.
         </p>
         

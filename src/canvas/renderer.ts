@@ -1,4 +1,4 @@
-// Phonon v2 - Canvas Renderer
+// Stochastic v2 - Canvas Renderer
 // High-performance HTML5 Canvas rendering at 60fps
 // Updated: 2025-12-09 with Bezier curve edges and flowing animation
 

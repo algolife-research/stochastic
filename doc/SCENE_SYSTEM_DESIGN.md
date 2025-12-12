@@ -1,14 +1,14 @@
-# Phonon: Scene System Design
+# Stochastic: Scene System Design
 
 > **Implementation Status: COMPLETE (v3.0)**
 > 
-> This document describes the Scene System that has been fully implemented in Phonon.
+> This document describes the Scene System that has been fully implemented in Stochastic.
 > Core features including scene management, arrangement mode, jam mode, transport controls,
 > and export support are all functional.
 
 ## Executive Summary
 
-This document describes the comprehensive **Scene System** that transforms Phonon from a single-graph musical instrument into a **multi-scene composition environment**, enabling the creation of complex pieces with distinct sections (intro, verse, chorus, bridge, outro, etc.).
+This document describes the comprehensive **Scene System** that transforms Stochastic from a single-graph musical instrument into a **multi-scene composition environment**, enabling the creation of complex pieces with distinct sections (intro, verse, chorus, bridge, outro, etc.).
 
 ---
 
@@ -59,7 +59,7 @@ A **Composition** is an **ordered arrangement of Scenes**, where each scene cont
 
 ## 2. Playback Modes
 
-Phonon supports **two distinct playback modes** to accommodate both live performance and composed pieces:
+Stochastic supports **two distinct playback modes** to accommodate both live performance and composed pieces:
 
 ### 2.1 Arrangement Mode (Finite)
 
@@ -516,7 +516,7 @@ Multiple scenes can play simultaneously on different channels:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ [File] [Edit] [View] [Scenes]           ♫ Phonon              [─] [□] [×]  │
+│ [File] [Edit] [View] [Scenes]           ♫ Stochastic              [─] [□] [×]  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ ┌─────────────────────────────────────────────────────────┬───────────────┐ │
 │ │                                                         │ Scene Panel   │ │
@@ -1028,7 +1028,7 @@ Arrangement:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Phonon - My Song.phonon                                      [─] [□] [×]   │
+│ Stochastic - My Song.Stochastic                                      [─] [□] [×]   │
 ├───────┬─────────────────────────────────────────────────────────────────────┤
 │ FILE  │ EDIT │ VIEW │ SCENES │ HELP                                         │
 ├───────┴─────────────────────────────────────────────────────────────────────┤

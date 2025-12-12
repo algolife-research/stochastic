@@ -451,16 +451,44 @@ export function validateOperations(
         
       case 'modify_edge':
       case 'delete_edge': {
-        // Can use edgeId directly or from/to lookup
-        const hasValidRef = op.edgeId 
-          ? existingEdgeIds.has(op.edgeId)
-          : (op.from && op.to); // Will be resolved at apply time
-        
-        if (!hasValidRef) {
+        // Validate syntax - actual edge existence will be checked during apply
+        if (op.edgeId) {
+          // Direct edgeId reference - just check if it's provided
+          if (!existingEdgeIds.has(op.edgeId)) {
+            // Add as warning, not error - will be checked during apply
+            warnings.push({
+              operation: op,
+              message: `Edge ID may not exist: ${op.edgeId}`,
+              code: 'EDGE_NOT_FOUND',
+            });
+          }
+        } else if (op.from && op.to) {
+          // from/to lookup - validate nodes exist
+          const fromResolved = findMatchingNodeId(op.from as string, existingNodeIds) || 
+                               (tempIds.has(op.from as string) ? op.from : null);
+          const toResolved = findMatchingNodeId(op.to as string, existingNodeIds) || 
+                             (tempIds.has(op.to as string) ? op.to : null);
+          
+          if (!fromResolved) {
+            errors.push({
+              operation: op,
+              message: `Source node not found: ${op.from}`,
+              code: 'SOURCE_NODE_NOT_FOUND',
+            });
+          }
+          if (!toResolved) {
+            errors.push({
+              operation: op,
+              message: `Target node not found: ${op.to}`,
+              code: 'TARGET_NODE_NOT_FOUND',
+            });
+          }
+          // Note: Edge existence between nodes will be checked during apply
+        } else {
           errors.push({
             operation: op,
-            message: `Edge not found: ${op.edgeId || `${op.from} -> ${op.to}`}`,
-            code: 'EDGE_NOT_FOUND',
+            message: 'modify_edge/delete_edge requires either edgeId or from+to',
+            code: 'INVALID_OPERATION',
           });
         }
         break;

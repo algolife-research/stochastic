@@ -1,5 +1,5 @@
-// Phonon Viz - Main Entry Point
-// Visual Art Generator for Phonon
+// Stochastic Viz - Main Entry Point
+// Visual Art Generator for Stochastic
 
 export { vizState, VizStateManager } from './state';
 export { VizRenderer } from './renderer';

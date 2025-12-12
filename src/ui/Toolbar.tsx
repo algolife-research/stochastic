@@ -1,4 +1,4 @@
-// Phonon v2 - Toolbar Component (Compact)
+// Stochastic v2 - Toolbar Component (Compact)
 
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';

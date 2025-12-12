@@ -1,10 +1,10 @@
-# Phonon Musical Model
+# Stochastic Musical Model
 
-This document describes the formal musical model underlying Phonon's graph-based audio synthesis system.
+This document describes the formal musical model underlying Stochastic's graph-based audio synthesis system.
 
 ## Overview
 
-Phonon implements a **dataflow model** for sound synthesis where discrete **packets** carry musical information through a directed graph of **nodes** connected by **edges**. This model bridges the gap between traditional music notation (discrete events) and modular synthesis (continuous signal flow).
+Stochastic implements a **dataflow model** for sound synthesis where discrete **packets** carry musical information through a directed graph of **nodes** connected by **edges**. This model bridges the gap between traditional music notation (discrete events) and modular synthesis (continuous signal flow).
 
 ## Core Abstractions
 
@@ -163,7 +163,7 @@ Processing is synchronous — packets emerge transformed without edge delays.
 
 ## Sound Synthesis
 
-Phonon uses **additive/subtractive synthesis** via Web Audio API.
+Stochastic uses **additive/subtractive synthesis** via Web Audio API.
 
 ### Signal Chain
 
@@ -329,7 +329,7 @@ GraphState = {
 
 ## Scene System
 
-Phonon supports multi-section compositions through the Scene System.
+Stochastic supports multi-section compositions through the Scene System.
 
 ### Scene Structure
 

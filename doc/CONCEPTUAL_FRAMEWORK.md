@@ -1,8 +1,8 @@
-# Phonon: Conceptual & Theoretical Framework
+# Stochastic: Conceptual & Theoretical Framework
 
 ## 1. Core Philosophy: Music as Graph Physics
 
-Phonon represents a paradigm shift from linear, timeline-based music creation (DAWs, Piano Rolls) to a **spatial, discrete-event simulation**.
+Stochastic represents a paradigm shift from linear, timeline-based music creation (DAWs, Piano Rolls) to a **spatial, discrete-event simulation**.
 
 In this framework, music is not "played back" from a recording; it is **simulated** in real-time. The composition is a living system defined by topology (connections) and physics (rules of travel), rather than a fixed sequence of events.
 
@@ -10,14 +10,14 @@ In this framework, music is not "played back" from a recording; it is **simulate
 
 $$ Rhythm = \frac{Distance}{Velocity} $$
 
-In Phonon, **Space is Time**.
+In Stochastic, **Space is Time**.
 - An **Edge** is not just a connection; it is a duration.
 - A **Packet** traveling along an edge represents a rhythmic interval.
 - Changing the visual layout of the graph inherently changes the musical rhythm.
 
 ### 1.2 Gravity Physics
 
-Phonon introduces **node mass** as a musical parameter:
+Stochastic introduces **node mass** as a musical parameter:
 
 $$ EffectiveSpeed = BaseSpeed \times (1 - GravityConstant \times Mass) $$
 
@@ -107,7 +107,7 @@ As packets travel through modifier nodes, their DNA is altered:
 
 ### 4.2 Timing Modes
 
-Phonon supports two edge timing modes:
+Stochastic supports two edge timing modes:
 
 | Mode | Behavior |
 |------|----------|

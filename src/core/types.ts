@@ -1,4 +1,4 @@
-// Phonon v2 - Core Type Definitions
+// Stochastic v2 - Core Type Definitions
 // Strict TypeScript types for the graph engine
 
 // ============================================================================

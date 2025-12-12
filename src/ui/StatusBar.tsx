@@ -1,4 +1,4 @@
-// Phonon v2 - Status Bar Component
+// Stochastic v2 - Status Bar Component
 
 import React from 'react';
 import { useGraphStore } from '@core/store';
@@ -72,7 +72,7 @@ export function StatusBar({ isAudioReady }: StatusBarProps): React.ReactElement 
       
       {/* Version */}
       <div className={styles.section}>
-        <span className={styles.version}>Phonon v2.0</span>
+        <span className={styles.version}>Stochastic v0.5.0</span>
       </div>
     </div>
   );

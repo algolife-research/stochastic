@@ -1,4 +1,4 @@
-// Phonon - Visualization Canvas Component
+// Stochastic - Visualization Canvas Component
 // Renders visualizations when in viz mode
 
 import React, { useEffect, useRef, useCallback } from 'react';

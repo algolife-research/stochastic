@@ -1,4 +1,4 @@
-// Phonon v2 - Video Compiler
+// Stochastic v2 - Video Compiler
 // Simulates the graph to generate frame-by-frame visualization data
 // Mirrors the audio compiler approach but outputs visual data instead
 

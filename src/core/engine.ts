@@ -1,4 +1,4 @@
-// Phonon v2 - Packet Processing Engine
+// Stochastic v2 - Packet Processing Engine
 // Handles packet movement, node processing, and audio triggers
 
 import { getGraphStore } from './store';

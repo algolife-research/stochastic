@@ -1,6 +1,6 @@
-# Phonon Architecture
+# Stochastic Architecture
 
-Phonon is a desktop application built using web technologies and the Tauri framework. It combines a React-based UI with a high-performance audio engine and a Rust-based backend for system integration.
+Stochastic is a desktop application built using web technologies and the Tauri framework. It combines a React-based UI with a high-performance audio engine and a Rust-based backend for system integration.
 
 ## Documentation
 
@@ -22,7 +22,7 @@ Phonon is a desktop application built using web technologies and the Tauri frame
 │  │  React UI   │  │   Zustand   │  │     Audio Engine        │  │
 │  │             │◄─┤    Store    │──┤  (AudioWorklet Thread)  │  │
 │  │  - Canvas   │  │             │  │                         │  │
-│  │  - Panels   │  │  - Nodes    │  │  - PhononSynthProcessor │  │
+│  │  - Panels   │  │  - Nodes    │  │  - StochasticSynthProcessor │  │
 │  │  - Scenes   │  │  - Edges    │  │  - Multi-Osc Synthesis  │  │
 │  │  - Dialogs  │  │  - Packets  │  │  - Effects Chain        │  │
 │  └─────────────┘  │  - Scenes   │  └─────────────────────────┘  │

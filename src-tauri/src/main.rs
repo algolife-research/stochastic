@@ -1,4 +1,4 @@
-// Phonon v2 - Tauri Main Entry Point
+// Stochastic - Tauri Main Entry Point
 
 #![cfg_attr(
     all(not(debug_assertions), target_os = "windows"),

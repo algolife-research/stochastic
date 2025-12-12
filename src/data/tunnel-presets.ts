@@ -1,4 +1,4 @@
-// Phonon v2 - Tunnel Presets Library
+// Stochastic v2 - Tunnel Presets Library
 // Pre-configured instrument and effect tunnels for quick composition
 
 import type { SubNode } from '@core/types';

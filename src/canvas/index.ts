@@ -1,4 +1,4 @@
-// Phonon v2 - Canvas Module Exports
+// Stochastic v2 - Canvas Module Exports
 
 export { CanvasRenderer } from './renderer';
 export { CanvasInputHandler } from './input';

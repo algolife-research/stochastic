@@ -1,4 +1,4 @@
-// Phonon Viz - Particles Mode
+// Stochastic Viz - Particles Mode
 // Particle explosions and flows from active nodes
 
 import type { VizMusicalData, ParticlesVizConfig, VizConfigBase, VizConfig } from '@core/types';

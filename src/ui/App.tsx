@@ -1,4 +1,4 @@
-// Phonon v3 - Main Application Component
+// Stochastic v3 - Main Application Component
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useGraphStore } from '@core/store';
@@ -196,7 +196,7 @@ export function App(): React.ReactElement {
         
         {/* Canvas container */}
         <div ref={containerRef} className={styles['canvasContainer']}>
-          <canvas ref={canvasRef} className={`${styles['canvas']} phonon-canvas`} />
+          <canvas ref={canvasRef} className={`${styles['canvas']} stochastic-canvas`} />
           
           {/* Visualization canvas overlay (shown in viz mode) */}
           <VizCanvas />

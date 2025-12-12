@@ -1,4 +1,4 @@
-// Phonon v3 - Game Tick System
+// Stochastic v3 - Game Tick System
 // Handles source timers, packet movement, scene playback, and game loop
 
 import { getGraphStore } from '../store';

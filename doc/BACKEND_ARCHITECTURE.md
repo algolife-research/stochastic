@@ -1,6 +1,6 @@
-# Phonon Backend Architecture
+# Stochastic Backend Architecture
 
-This document covers the Tauri/Rust backend and file I/O systems of Phonon.
+This document covers the Tauri/Rust backend and file I/O systems of Stochastic.
 
 ## Directory Structure
 
@@ -18,7 +18,7 @@ src-tauri/
 
 ## 1. Tauri Integration
 
-Phonon uses [Tauri](https://tauri.app/) as its desktop runtime, providing native capabilities while keeping the core application in TypeScript/React.
+Stochastic uses [Tauri](https://tauri.app/) as its desktop runtime, providing native capabilities while keeping the core application in TypeScript/React.
 
 ### Why Tauri?
 
@@ -49,7 +49,7 @@ import { appDataDir, join } from '@tauri-apps/api/path';
 
 Location: `src-tauri/src/main.rs`
 
-The Rust backend is minimal - Phonon primarily uses Tauri's built-in APIs rather than custom Rust commands.
+The Rust backend is minimal - Stochastic primarily uses Tauri's built-in APIs rather than custom Rust commands.
 
 ### Entry Point
 
@@ -99,7 +99,7 @@ const isTauri = typeof window !== 'undefined' && '__TAURI__' in window;
 
 ### Project Mode
 
-When running in Tauri, Phonon supports "Project Mode" where compositions are stored in a dedicated folder:
+When running in Tauri, Stochastic supports "Project Mode" where compositions are stored in a dedicated folder:
 
 ```
 MyProject/
@@ -224,11 +224,11 @@ Key settings:
       "path": { "all": true }
     },
     "bundle": {
-      "identifier": "com.phonon.app",
+      "identifier": "com.Stochastic.app",
       "icon": ["icons/icon.png"]
     },
     "windows": [{
-      "title": "Phonon",
+      "title": "Stochastic",
       "width": 1400,
       "height": 900,
       "resizable": true

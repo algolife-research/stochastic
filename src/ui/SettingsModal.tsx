@@ -1,4 +1,4 @@
-// Phonon v2 - Global Settings Modal
+// Stochastic v2 - Global Settings Modal
 
 import React, { useState, useEffect } from 'react';
 import { useGraphStore } from '@core/store';

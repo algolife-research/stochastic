@@ -1,4 +1,4 @@
-// Phonon v2 - Edge Property Panel Component
+// Stochastic v2 - Edge Property Panel Component
 
 import React, { useCallback } from 'react';
 import { useGraphStore } from '@core/store';

@@ -27,6 +27,7 @@ import {
 
 export class AIAgent {
   private config: AIAgentConfig | null = null;
+  private tieredConfig: { planning: AIAgentConfig; execution: AIAgentConfig } | null = null;
   private conversationHistory: ChatMessage[] = [];
   private abortController: AbortController | null = null;
   private currentPlan: CompositionPlan | null = null;
@@ -34,10 +35,19 @@ export class AIAgent {
   private maxNodesPerPhase: number = 30;  // Increased from 20
   
   /**
-   * Configure the AI agent
+   * Configure the AI agent (single model)
    */
   configure(config: AIAgentConfig): void {
     this.config = config;
+    this.tieredConfig = null;
+  }
+  
+  /**
+   * Configure with tiered models (planning + execution)
+   */
+  configureTiered(planning: AIAgentConfig, execution: AIAgentConfig): void {
+    this.tieredConfig = { planning, execution };
+    this.config = planning;  // Fallback for non-planning operations
   }
   
   /**
@@ -65,6 +75,13 @@ export class AIAgent {
    * Generate canvas operations from a prompt
    */
   async generate(prompt: string): Promise<GenerationResponse> {
+    return this.generateWithRetry(prompt, 3);
+  }
+  
+  /**
+   * Generate with automatic retry on validation errors
+   */
+  private async generateWithRetry(prompt: string, maxRetries: number = 3, useExecutionModel: boolean = false): Promise<GenerationResponse> {
     if (!this.config) {
       return {
         content: '',
@@ -73,42 +90,111 @@ export class AIAgent {
       };
     }
     
-    // Build context
-    const context = buildCanvasContext();
-    const constraints = getDefaultConstraints(this.maxNodesPerPhase);
+    let lastError: string | null = null;
+    let lastOperations: CanvasOperation[] = [];
     
-    // Build full prompt
-    const fullPrompt = buildPrompt(prompt, context, constraints);
-    
-    // Add user message to history
-    this.addToHistory({
-      role: 'user',
-      content: prompt,
-    });
-    
-    try {
-      // Call AI provider
-      const response = await this.callProvider(fullPrompt);
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      // Build context
+      const context = buildCanvasContext();
+      const constraints = getDefaultConstraints(this.maxNodesPerPhase);
       
-      // Parse response
-      const parsed = parseAIResponse(response);
+      // Build prompt with error feedback if this is a retry
+      let fullPrompt: string;
+      if (attempt === 0) {
+        fullPrompt = buildPrompt(prompt, context, constraints);
+        this.addToHistory({
+          role: 'user',
+          content: prompt,
+        });
+      } else {
+        // Add error feedback for retry
+        const retryPrompt = `Your previous attempt had validation errors:
+
+${lastError}
+
+Previous operations:
+${JSON.stringify(lastOperations, null, 2)}
+
+Please fix these errors and generate valid operations. Focus on:
+- Using correct node IDs from the canvas state
+- Ensuring all referenced nodes exist
+- Following the operation format precisely
+- Respecting the constraints (max nodes, edges, etc.)
+
+Original request: ${prompt}`;
+        
+        fullPrompt = buildPrompt(retryPrompt, context, constraints);
+        this.addToHistory({
+          role: 'user',
+          content: retryPrompt,
+        });
+      }
       
-      // Add assistant response to history
-      this.addToHistory({
-        role: 'assistant',
-        content: parsed.content,
-        operations: parsed.operations,
-      });
-      
-      return parsed;
-    } catch (e) {
-      const error = e instanceof Error ? e.message : 'Unknown error';
-      return {
-        content: '',
-        operations: [],
-        error,
-      };
+      try {
+        // Call AI provider (use execution model if specified)
+        const response = useExecutionModel 
+          ? await this.callProviderForExecution(fullPrompt)
+          : await this.callProvider(fullPrompt);
+        
+        // Parse response
+        const parsed = parseAIResponse(response);
+        
+        // Add assistant response to history
+        this.addToHistory({
+          role: 'assistant',
+          content: parsed.content,
+          operations: parsed.operations,
+        });
+        
+        // Validate operations
+        if (parsed.operations.length > 0) {
+          const validation = this.validate(parsed.operations);
+          
+          if (!validation.valid) {
+            // Store error for next retry
+            lastError = validation.errors.join('\n');
+            lastOperations = parsed.operations;
+            
+            // If this is the last attempt, return with error
+            if (attempt === maxRetries - 1) {
+              return {
+                ...parsed,
+                error: `Validation failed after ${maxRetries} attempts: ${lastError}`,
+              };
+            }
+            
+            // Otherwise, retry with error feedback
+            console.log(`[AI Agent] Validation failed on attempt ${attempt + 1}/${maxRetries}, retrying...`);
+            continue;
+          }
+        }
+        
+        // Success!
+        return parsed;
+      } catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        
+        // If this is the last attempt, return error
+        if (attempt === maxRetries - 1) {
+          return {
+            content: '',
+            operations: [],
+            error,
+          };
+        }
+        
+        // Otherwise retry
+        lastError = error;
+        console.log(`[AI Agent] Error on attempt ${attempt + 1}/${maxRetries}: ${error}, retrying...`);
+      }
     }
+    
+    // Should never reach here, but just in case
+    return {
+      content: '',
+      operations: [],
+      error: lastError || 'Generation failed',
+    };
   }
   
   /**
@@ -158,16 +244,7 @@ export class AIAgent {
       return { response };
     }
     
-    const validation = this.validate(response.operations);
-    if (!validation.valid) {
-      return {
-        response: {
-          ...response,
-          error: `Validation failed: ${validation.errors.join(', ')}`,
-        },
-      };
-    }
-    
+    // Response is already validated by generateWithRetry
     const result = this.apply(response.operations);
     return { response, result };
   }
@@ -186,6 +263,19 @@ export class AIAgent {
     
     // Check if this needs multi-phase planning
     if (needsPlanning(prompt, context)) {
+      // Use planning model for creating the plan
+      const planningConfig = this.tieredConfig?.planning || this.config;
+      if (!planningConfig) {
+        return {
+          response: {
+            content: '',
+            operations: [],
+            error: 'AI Agent not configured',
+          },
+          needsPhases: false,
+        };
+      }
+      
       const plan = createPlan(prompt, context, this.maxNodesPerPhase);
       this.currentPlan = plan;
       this.completedPhases = [];
@@ -232,39 +322,21 @@ export class AIAgent {
       };
     }
     
-    // Execute phase with its specific prompt and constraints
-    const context = buildCanvasContext();
-    const fullPrompt = buildPrompt(phase.prompt, context, phase.constraints);
+    // Execute phase with retry logic (use execution model)
+    const parsed = await this.generateWithRetry(phase.prompt, 3, true);
     
-    this.addToHistory({
-      role: 'user',
-      content: phase.prompt,
-    });
+    // Check for errors
+    if (parsed.error) {
+      return {
+        phase,
+        response: parsed,
+        complete: false,
+      };
+    }
     
     try {
-      const aiResponse = await this.callProvider(fullPrompt);
-      const parsed = parseAIResponse(aiResponse);
-      
-      this.addToHistory({
-        role: 'assistant',
-        content: parsed.content,
-        operations: parsed.operations,
-      });
-      
-      // Validate and apply
+      // Apply operations (already validated by generateWithRetry)
       if (parsed.operations.length > 0) {
-        const validation = this.validate(parsed.operations);
-        if (!validation.valid) {
-          return {
-            phase,
-            response: {
-              ...parsed,
-              error: `Validation failed: ${validation.errors.join(', ')}`,
-            },
-            complete: false,
-          };
-        }
-        
         const result = this.apply(parsed.operations);
         
         // Mark phase as complete
@@ -450,6 +522,24 @@ export class AIAgent {
     }
   }
   
+  /**
+   * Call provider using execution config (for phase execution)
+   */
+  private async callProviderForExecution(prompt: string): Promise<string> {
+    const executionConfig = this.tieredConfig?.execution || this.config;
+    if (!executionConfig) throw new Error('Not configured');
+    
+    // Temporarily swap config for this call
+    const originalConfig = this.config;
+    this.config = executionConfig;
+    
+    try {
+      return await this.callProvider(prompt);
+    } finally {
+      this.config = originalConfig;
+    }
+  }
+  
   private async callOpenAI(prompt: string): Promise<string> {
     if (!this.config) throw new Error('Not configured');
     
@@ -580,7 +670,7 @@ export class AIAgent {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.config.apiKey}`,
         'HTTP-Referer': window.location.origin,
-        'X-Title': 'AIGA Canvas Generator',
+        'X-Title': 'Stochastic Canvas Generator',
       },
       body: JSON.stringify({
         model: this.config.model,

@@ -1,4 +1,4 @@
-// Phonon Viz - Color Palettes
+// Stochastic Viz - Color Palettes
 // Built-in color palettes for visualization modes
 
 import type { ColorPalette } from '@core/types';

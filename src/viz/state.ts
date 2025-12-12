@@ -1,4 +1,4 @@
-// Phonon Viz - State Manager
+// Stochastic Viz - State Manager
 // Manages visualization state and mode switching
 
 import type { VizMode, VizConfig, VizDisplayState } from '@core/types';

@@ -1,4 +1,4 @@
-// Phonon v2 - Audio Worklet Processor
+// Stochastic v2 - Audio Worklet Processor
 // Runs on the audio thread for sample-accurate scheduling
 // Updated: 2025-12-11 with filter types, unison, proper noise
 /// <reference path="../vite-env.d.ts" />

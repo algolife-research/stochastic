@@ -9,7 +9,7 @@ import type {
   ChatMessage, 
   CanvasOperation,
 } from './types';
-import { DEFAULT_CONFIGS } from './types';
+import { DEFAULT_CONFIGS, EXECUTION_CONFIGS } from './types';
 import { aiAgent } from './agent';
 import { applyOperations } from './operations';
 import { useAuthStore } from '@auth/store';
@@ -21,20 +21,33 @@ import type { CompositionPlan, CompositionPhase } from './planner';
 
 // Read config from environment (set in .env file)
 const ENV_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY as string | undefined;
-const ENV_MODEL = import.meta.env.VITE_AI_MODEL as string | undefined;
+const ENV_PLANNING_MODEL = import.meta.env.VITE_AI_PLANNING_MODEL as string | undefined;
+const ENV_EXECUTION_MODEL = import.meta.env.VITE_AI_EXECUTION_MODEL as string | undefined;
 
 // Check if AI is pre-configured via environment
-function getEnvConfig(): AIAgentConfig | null {
+function getEnvConfig(): { planning: AIAgentConfig; execution: AIAgentConfig } | null {
   if (!ENV_API_KEY) return null;
   
-  const defaults = DEFAULT_CONFIGS['openrouter'];
+  const planningDefaults = DEFAULT_CONFIGS['openrouter'];
+  const executionDefaults = EXECUTION_CONFIGS['openrouter'];
+  
   return {
-    provider: 'openrouter',
-    apiKey: ENV_API_KEY,
-    model: ENV_MODEL || defaults.model || 'anthropic/claude-sonnet-4',
-    maxTokens: defaults.maxTokens || 4096,
-    temperature: defaults.temperature || 0.7,
-    baseUrl: defaults.baseUrl,
+    planning: {
+      provider: 'openrouter',
+      apiKey: ENV_API_KEY,
+      model: ENV_PLANNING_MODEL || planningDefaults.model || 'anthropic/claude-sonnet-4',
+      maxTokens: planningDefaults.maxTokens || 4096,
+      temperature: planningDefaults.temperature || 0.7,
+      baseUrl: planningDefaults.baseUrl,
+    },
+    execution: {
+      provider: 'openrouter',
+      apiKey: ENV_API_KEY,
+      model: ENV_EXECUTION_MODEL || executionDefaults.model || 'openai/gpt-4o-mini',
+      maxTokens: executionDefaults.maxTokens || 1000,
+      temperature: executionDefaults.temperature || 0.3,
+      baseUrl: executionDefaults.baseUrl,
+    },
   };
 }
 
@@ -88,7 +101,7 @@ interface AIStoreState extends AIAgentState {
 // ============================================================================
 
 // Try to initialize from environment
-const envConfig = getEnvConfig();
+const envTieredConfig = getEnvConfig();
 
 const initialState: AIAgentState & {
   currentPlan: CompositionPlan | null;
@@ -98,8 +111,8 @@ const initialState: AIAgentState & {
   isPlanExecuting: boolean;
   maxNodesPerPhase: number;
 } = {
-  config: envConfig,
-  isConfigured: !!envConfig,
+  config: envTieredConfig?.planning || null,
+  isConfigured: envTieredConfig !== null,
   messages: [],
   isGenerating: false,
   streamingText: '',
@@ -116,8 +129,8 @@ const initialState: AIAgentState & {
 };
 
 // If we have env config, configure the agent immediately
-if (envConfig) {
-  aiAgent.configure(envConfig);
+if (envTieredConfig) {
+  aiAgent.configureTiered(envTieredConfig.planning, envTieredConfig.execution);
 }
 
 // ============================================================================
@@ -139,16 +152,33 @@ export const useAIStore = create<AIStoreState>()(
     },
     
     setApiKey: (apiKey: string) => {
-      const defaults = DEFAULT_CONFIGS['openrouter'];
-      const config: AIAgentConfig = {
+      const planningDefaults = DEFAULT_CONFIGS['openrouter'];
+      const executionDefaults = EXECUTION_CONFIGS['openrouter'];
+      
+      const planningConfig: AIAgentConfig = {
         provider: 'openrouter',
         apiKey,
-        model: ENV_MODEL || defaults.model || 'anthropic/claude-sonnet-4',
-        maxTokens: defaults.maxTokens || 4096,
-        temperature: defaults.temperature || 0.7,
-        baseUrl: defaults.baseUrl,
+        model: planningDefaults.model || 'anthropic/claude-sonnet-4',
+        maxTokens: planningDefaults.maxTokens || 4096,
+        temperature: planningDefaults.temperature || 0.7,
+        baseUrl: planningDefaults.baseUrl,
       };
-      get().setConfig(config);
+      
+      const executionConfig: AIAgentConfig = {
+        provider: 'openrouter',
+        apiKey,
+        model: executionDefaults.model || 'openai/gpt-4o-mini',
+        maxTokens: executionDefaults.maxTokens || 1000,
+        temperature: executionDefaults.temperature || 0.3,
+        baseUrl: executionDefaults.baseUrl,
+      };
+      
+      aiAgent.configureTiered(planningConfig, executionConfig);
+      set({
+        config: planningConfig,
+        isConfigured: true,
+        lastError: null,
+      });
     },
     
     setProvider: (provider: string, apiKey: string) => {

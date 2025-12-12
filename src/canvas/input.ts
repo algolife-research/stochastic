@@ -1,4 +1,4 @@
-// Phonon v2 - Canvas Input Handler
+// Stochastic v2 - Canvas Input Handler
 // Mouse and keyboard input handling for the canvas
 
 import { getGraphStore } from '@core/store';
@@ -751,7 +751,7 @@ export class CanvasInputHandler {
         store.setLinkingFrom(null);
         store.setContextMenuPos(snapToGrid(world.x), snapToGrid(world.y));
         // Trigger context menu display (will be handled by ContextMenu component)
-        const event = new CustomEvent('phonon-show-add-menu', {
+        const event = new CustomEvent('stochastic-show-add-menu', {
           detail: { x: e.clientX, y: e.clientY }
         });
         window.dispatchEvent(event);

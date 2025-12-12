@@ -1,4 +1,4 @@
-// Phonon v2 - Type Guards and Typed Factories
+// Stochastic v2 - Type Guards and Typed Factories
 // Utilities for safe type handling without `as any` or `as never` casts
 
 import type { 

@@ -1,4 +1,4 @@
-// Phonon v2 - Vite Type Declarations
+// Stochastic - Vite Type Declarations
 /// <reference types="vite/client" />
 
 declare module '*.module.css' {

@@ -1,4 +1,4 @@
-// Phonon v2 - Audio Engine
+// Stochastic v2 - Audio Engine
 // Main thread audio management and scheduling
 
 import type { AudioPayload, MidiNote, Frequency } from '@core/types';

@@ -1,4 +1,4 @@
-// Phonon v3 - Transport Bar Component
+// Stochastic v3 - Transport Bar Component
 
 import React from 'react';
 import { useGraphStore, selectScenePlayback, selectPlaybackMode } from '@core/store';

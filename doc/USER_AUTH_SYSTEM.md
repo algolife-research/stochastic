@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the specifications for implementing user authentication and management for AIGA, enabling future monetized features like AI generation capabilities that require credit/token management and license validation.
+This document outlines the specifications for implementing user authentication and management for Stochastic, enabling future monetized features like AI generation capabilities that require credit/token management and license validation.
 
 ---
 
@@ -12,7 +12,7 @@ This document outlines the specifications for implementing user authentication a
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   AIGA Client   │────▶│   Auth Service   │────▶│    Database     │
+│   Stochastic Client   │────▶│   Auth Service   │────▶│    Database     │
 │  (Tauri/Web)    │     │   (Backend API)  │     │  (PostgreSQL)   │
 └─────────────────┘     └──────────────────┘     └─────────────────┘
          │                       │
@@ -58,9 +58,9 @@ This document outlines the specifications for implementing user authentication a
 ### 2.3 Auth Flow (Desktop App)
 
 ```
-1. User clicks "Sign In" in AIGA
+1. User clicks "Sign In" in Stochastic
 2. System browser opens auth page (OAuth or email form)
-3. After auth, redirect to custom protocol: aiga://auth/callback?token=xxx
+3. After auth, redirect to custom protocol: Stochastic://auth/callback?token=xxx
 4. Tauri handles deep link, stores tokens securely
 5. App validates token with backend, fetches user profile
 ```

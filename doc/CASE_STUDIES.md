@@ -1,14 +1,14 @@
-# Phonon: Algorithmic Music Case Studies
+# Stochastic: Algorithmic Music Case Studies
 
-This document serves as both a historical overview of generative music and a practical guide to implementing these concepts within the Phonon framework. By leveraging Phonon's graph-based topology and physics-based timing, we can recreate seminal techniques from music history and explore new frontiers in visual music.
+This document serves as both a historical overview of generative music and a practical guide to implementing these concepts within the Stochastic framework. By leveraging Stochastic's graph-based topology and physics-based timing, we can recreate seminal techniques from music history and explore new frontiers in visual music.
 
 ---
 
 ## 1. The Dice Games (18th Century)
 **Historical Context:** Long before computers, composers like **W.A. Mozart** created "Musikalisches Wrfelspiel" (Musical Dice Games). These systems allowed anyone to compose a minuet by rolling dice to select pre-written measures of music. This was an early form of **aleatoric music**music determined by chance.
 
-### Implementation in Phonon
-In Phonon, we replace dice with **Splitters** and **Gates**.
+### Implementation in Stochastic
+In Stochastic, we replace dice with **Splitters** and **Gates**.
 
 **The "Mozart" Patch:**
 1.  **The Trigger:** A `Source` node provides the pulse (the "roll").
@@ -24,8 +24,8 @@ In Phonon, we replace dice with **Splitters** and **Gates**.
 ## 2. Stochastic Clouds (1950s)
 **Historical Context:** **Iannis Xenakis** pioneered "Stochastic Music," using mathematical laws of probability (like gas kinetics) to control masses of sound. Instead of writing individual notes, he sculpted "clouds" of sound density and texture, most famously in works like *Pithoprakta*.
 
-### Implementation in Phonon
-Phonon's particle system is naturally suited for this. We use **Topology** to create statistical density.
+### Implementation in Stochastic
+Stochastic's particle system is naturally suited for this. We use **Topology** to create statistical density.
 
 **The "Xenakis" Cloud:**
 1.  **The Engine:** A `Source` node set to a very fast interval (e.g., 50ms) creates a stream of "particles."
@@ -42,8 +42,8 @@ Phonon's particle system is naturally suited for this. We use **Topology** to cr
 ## 3. Process Music & Phasing (1960s)
 **Historical Context:** **Steve Reich** developed "Process Music," where audible processes determine the structure. In *Piano Phase*, two identical patterns play at slightly different speeds, slowly drifting out of phase to create complex, shifting rhythmic interplay.
 
-### Implementation in Phonon
-In Phonon, **Distance = Time**. This allows for organic, non-grid-based phasing that is difficult to achieve in standard DAWs.
+### Implementation in Stochastic
+In Stochastic, **Distance = Time**. This allows for organic, non-grid-based phasing that is difficult to achieve in standard DAWs.
 
 **The "Reich" Phase:**
 1.  **The Loop:** Create a circular graph (Source -> Node A -> Node B -> Source). This creates a repeating loop.
@@ -58,7 +58,7 @@ In Phonon, **Distance = Time**. This allows for organic, non-grid-based phasing 
 ## 4. Generative Ambient (1970s)
 **Historical Context:** **Brian Eno** coined "Ambient Music" and popularized generative systems that could run indefinitely. In *Music for Airports*, tape loops of different lengths overlapped to create a constantly evolving, non-repeating composition.
 
-### Implementation in Phonon
+### Implementation in Stochastic
 We use **Feedback Loops** and **Delay Lines** to create self-regulating systems.
 
 **The "Eno" Bloom:**
@@ -76,7 +76,7 @@ We use **Feedback Loops** and **Delay Lines** to create self-regulating systems.
 ## 5. Algorithmic IDM (1990s - Present)
 **Historical Context:** Artists like **Autechre** and **Aphex Twin** use complex logic systems (Max/MSP) to create intricate, glitchy, and highly modulated electronic music. The focus is on parameter modulation and conditional logic.
 
-### Implementation in Phonon
+### Implementation in Stochastic
 We use **Control Voltage (CV)** logic, where packets don't just make soundthey control other nodes.
 
 **The "Glitch" Machine:**
@@ -90,9 +90,9 @@ We use **Control Voltage (CV)** logic, where packets don't just make soundthey c
 ---
 
 ## 6. Visual Music & Synesthesia (The Future)
-**Historical Context:** From **Oskar Fischinger's** optical poems to modern VJ culture, the link between sound and image has always been sought. Phonon bridges this by making the *score itself* the visual art.
+**Historical Context:** From **Oskar Fischinger's** optical poems to modern VJ culture, the link between sound and image has always been sought. Stochastic bridges this by making the *score itself* the visual art.
 
-### Implementation in Phonon
+### Implementation in Stochastic
 The **Visualization Modes** are not just post-processing; they are representations of the underlying data flow.
 
 **The Synesthetic Score:**

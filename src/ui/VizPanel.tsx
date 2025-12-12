@@ -1,4 +1,4 @@
-// Phonon - Viz Panel Component
+// Stochastic - Viz Panel Component
 // UI for configuring visualization modes per scene
 
 import React, { useCallback } from 'react';

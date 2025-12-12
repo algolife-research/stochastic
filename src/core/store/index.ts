@@ -1,4 +1,4 @@
-// Phonon v2 - Graph Store (Zustand + Immer)
+// Stochastic v2 - Graph Store (Zustand + Immer)
 // High-performance mutable graph state with immutable React bindings
 // 
 // This modular store is split into focused action modules for maintainability.

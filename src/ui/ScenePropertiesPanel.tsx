@@ -1,4 +1,4 @@
-// Phonon v3 - Scene Properties Panel Component
+// Stochastic v3 - Scene Properties Panel Component
 // Extracted from ScenePanel to be used in RightPanel
 
 import React, { useCallback } from 'react';

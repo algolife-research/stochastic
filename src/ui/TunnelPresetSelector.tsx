@@ -1,4 +1,4 @@
-// Phonon v2 - Tunnel Preset Selector Component
+// Stochastic v2 - Tunnel Preset Selector Component
 // Allows users to select and apply pre-configured tunnel presets
 
 import React, { useState, useRef, useEffect } from 'react';

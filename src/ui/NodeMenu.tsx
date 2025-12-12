@@ -1,4 +1,4 @@
-// Phonon v2 - Collapsible Node Menu Component
+// Stochastic v2 - Collapsible Node Menu Component
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';

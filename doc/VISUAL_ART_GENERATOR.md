@@ -1,13 +1,13 @@
-# Phonon: Visual Art Generator Specification
+# Stochastic: Visual Art Generator Specification
 
 > **Implementation Status: PLANNED**
 > 
-> This document describes the Visual Art Generator system that will transform Phonon
+> This document describes the Visual Art Generator system that will transform Stochastic
 > into an audiovisual generative instrument with video export capabilities.
 
 ## Executive Summary
 
-The Visual Art Generator extends Phonon beyond audio synthesis into the realm of **generative visual art**. By mapping musical properties (packets, nodes, edges, frequencies, timing) to visual parameters, users can create synchronized audiovisual compositions. The system supports multiple visualization modes, real-time performance, and video export.
+The Visual Art Generator extends Stochastic beyond audio synthesis into the realm of **generative visual art**. By mapping musical properties (packets, nodes, edges, frequencies, timing) to visual parameters, users can create synchronized audiovisual compositions. The system supports multiple visualization modes, real-time performance, and video export.
 
 ---
 
@@ -15,7 +15,7 @@ The Visual Art Generator extends Phonon beyond audio synthesis into the realm of
 
 ### 1.1 Editor vs Visualization Modes
 
-Phonon operates in two distinct display modes:
+Stochastic operates in two distinct display modes:
 
 | Mode | Description |
 |------|-------------|

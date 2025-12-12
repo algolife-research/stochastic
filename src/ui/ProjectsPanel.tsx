@@ -1,4 +1,4 @@
-// Phonon - Projects Panel Component
+// Stochastic - Projects Panel Component
 // Cloud and local project management
 
 import React, { useState, useEffect, useCallback } from 'react';

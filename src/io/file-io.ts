@@ -1,4 +1,4 @@
-// Phonon v2/v3 - File I/O for Save/Load
+// Stochastic v2/v3 - File I/O for Save/Load
 
 import type { 
   GraphNode,

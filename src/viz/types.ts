@@ -1,4 +1,4 @@
-// Phonon Viz - Type Definitions
+// Stochastic Viz - Type Definitions
 // Re-exports core viz types and adds viz-specific internal types
 
 export type {

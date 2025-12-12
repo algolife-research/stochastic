@@ -1,4 +1,4 @@
-// Phonon v3 - Scene Panel Component
+// Stochastic v3 - Scene Panel Component
 
 import React, { useCallback, useState } from 'react';
 import { useGraphStore, selectScenes, selectEditingSceneId, selectScenePlayback, selectActiveSceneId, selectPlaybackMode } from '@core/store';

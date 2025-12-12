@@ -1,4 +1,4 @@
-// Phonon Viz - Spectral Mode
+// Stochastic Viz - Spectral Mode
 // Real-time frequency spectrum visualization
 
 import type { VizMusicalData, SpectralVizConfig, VizConfigBase, VizConfig } from '@core/types';

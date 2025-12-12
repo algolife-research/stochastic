@@ -1,4 +1,4 @@
-// Phonon Viz - Abstract Mode
+// Stochastic Viz - Abstract Mode
 // Organic flowing shapes that respond to packet movement
 
 import type { VizMusicalData, AbstractVizConfig, VizConfigBase, VizConfig } from '@core/types';

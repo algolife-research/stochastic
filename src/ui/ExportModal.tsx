@@ -1,4 +1,4 @@
-// Phonon v2 - Export Modal (Audio/MIDI/Video)
+// Stochastic v2 - Export Modal (Audio/MIDI/Video)
 
 import React, { useState, useMemo } from 'react';
 import { useGraphStore } from '@core/store';

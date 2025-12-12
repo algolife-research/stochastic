@@ -24,6 +24,7 @@ export interface ApplyResult {
   appliedCount: number;
   failedCount: number;
   errors: OperationError[];
+  warnings: string[];  // Non-fatal issues (e.g., edge not found)
   nodeIdMap: Map<string, NodeId>;  // tempId -> real NodeId
 }
 
@@ -45,6 +46,7 @@ export function applyOperations(operations: CanvasOperation[]): ApplyResult {
     appliedCount: 0,
     failedCount: 0,
     errors: [],
+    warnings: [],
     nodeIdMap: new Map(),
   };
   
@@ -233,7 +235,11 @@ function applyModifyEdge(
 ): void {
   const edgeId = resolveEdgeId(op, result.nodeIdMap, store);
   if (!edgeId) {
-    throw new Error(`Edge not found: ${op.edgeId || `${op.from} -> ${op.to}`}`);
+    // Skip instead of throwing - log as warning
+    const msg = `Skipping modify_edge: edge not found ${op.edgeId || `${op.from} -> ${op.to}`}`;
+    console.warn(`[AI Operations] ${msg}`);
+    result.warnings.push(msg);
+    return;
   }
   
   // Build updates object
@@ -253,7 +259,11 @@ function applyDeleteEdge(
 ): void {
   const edgeId = resolveEdgeId(op, result.nodeIdMap, store);
   if (!edgeId) {
-    throw new Error(`Edge not found: ${op.edgeId || `${op.from} -> ${op.to}`}`);
+    // Skip instead of throwing - log as warning
+    const msg = `Skipping delete_edge: edge not found ${op.edgeId || `${op.from} -> ${op.to}`}`;
+    console.warn(`[AI Operations] ${msg}`);
+    result.warnings.push(msg);
+    return;
   }
   
   store.deleteEdge(edgeId);

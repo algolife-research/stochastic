@@ -1,6 +1,6 @@
-# Phonon Frontend Architecture
+# Stochastic Frontend Architecture
 
-This document covers the TypeScript/React frontend of Phonon, including UI components, state management, audio synthesis, and the graph engine.
+This document covers the TypeScript/React frontend of Stochastic, including UI components, state management, audio synthesis, and the graph engine.
 
 ## Directory Structure
 
@@ -252,7 +252,7 @@ The audio system uses Web Audio API with an AudioWorklet for sample-accurate syn
 | File | Purpose |
 |------|---------|
 | `engine.ts` | Main thread: AudioContext setup, reverb, message passing to worklet |
-| `worklet.ts` | Audio thread: `PhononSynthProcessor` with multi-voice polyphony |
+| `worklet.ts` | Audio thread: `StochasticSynthProcessor` with multi-voice polyphony |
 
 ### Synthesis Features
 

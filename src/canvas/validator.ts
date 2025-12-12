@@ -1,4 +1,4 @@
-// Phonon v2 - Canvas Data Validator
+// Stochastic v2 - Canvas Data Validator
 // Validates graph data before rendering to prevent canvas errors
 
 import type { GraphNode, GraphEdge, Packet, ViewportState } from '@core/types';

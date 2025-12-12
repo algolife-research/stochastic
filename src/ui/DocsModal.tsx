@@ -1,4 +1,4 @@
-// Phonon - Documentation Modal Component
+// Stochastic - Documentation Modal Component
 // Quick reference docs accessible from toolbar
 
 import React, { useState } from 'react';
@@ -348,7 +348,7 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps): React.ReactEleme
         </div>
         
         <div className={styles.footer}>
-          <a href="https://github.com/your-repo/phonon" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
+          <a href="https://github.com/your-repo/stochastic" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
             📖 Full Documentation
           </a>
         </div>

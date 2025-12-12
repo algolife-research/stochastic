@@ -1,8 +1,8 @@
-﻿# Phonon AI Composition Generation Guide
+# Stochastic AI Composition Generation Guide
 
-This document provides complete specifications for AI systems to generate valid Phonon compositions programmatically.
+This document provides complete specifications for AI systems to generate valid Stochastic compositions programmatically.
 
-> **âš ï¸ STRICT GENERATION RULES âš ï¸**
+> **⚠️ STRICT GENERATION RULES ⚠️**
 >
 > 1.  **Structure:** Output must be wrapped in `{ "meta": {...}, "global": {...}, "scenes": [...], "arrangement": [...] }`.
 > 2.  **Timing:** **ALWAYS** use `timingMode: "fixed"` for edges with a valid `durationBeats` (e.g., 0.25, 0.5, 1.0). Do not rely on physical distance.
@@ -26,7 +26,7 @@ This document provides complete specifications for AI systems to generate valid 
 
 ## File Format
 
-Phonon compositions are stored as `.phono` files containing JSON. **Version 3.0** uses a scene-based structure:
+Stochastic compositions are stored as `.phono` files containing JSON. **Version 3.0** uses a scene-based structure:
 
 > **CRITICAL:** The JSON must use the following nested structure with scenes. Do not place nodes/edges at the root level.
 >
@@ -676,71 +676,71 @@ Connect LFOs to modulate node parameters:
 
 ### Pattern 1: Basic Sound Chain
 ```
-Source â†’ Oscillator â†’ Speaker
+Source → Oscillator → Speaker
 ```
 Minimal setup for a single voice.
 
 ### Pattern 2: Melodic Chain
 ```
-Source â†’ Oscillator â†’ Speaker â†’ Pitch â†’ Speaker â†’ Pitch â†’ Speaker
+Source → Oscillator → Speaker → Pitch → Speaker → Pitch → Speaker
 ```
 Packets pass through multiple speakers, creating melodic sequences.
 
 ### Pattern 3: Chord Voicing
 ```
-                  â”Œâ†’ Pitch(+0) â†’ Speaker
-Source â†’ Splitter â”œâ†’ Pitch(+4) â†’ Speaker  
-                  â””â†’ Pitch(+7) â†’ Speaker
+                  ┌→ Pitch(+0) → Speaker
+Source → Splitter ├→ Pitch(+4) → Speaker  
+                  └→ Pitch(+7) → Speaker
 ```
 Split into parallel paths for chords.
 
 ### Pattern 4: Canon/Delay
 ```
-            â”Œâ†’ Speaker (immediate)
-Source â†’ Osc â”œâ†’ Delay(2) â†’ Speaker
-            â””â†’ Delay(4) â†’ Speaker
+            ┌→ Speaker (immediate)
+Source → Osc ├→ Delay(2) → Speaker
+            └→ Delay(4) → Speaker
 ```
 Same material at different times.
 
 ### Pattern 5: Generative with Gates
 ```
-Source(random) â†’ Gate(0.6) â†’ Quantizer â†’ Oscillator â†’ Speaker
+Source(random) → Gate(0.6) → Quantizer → Oscillator → Speaker
 ```
 Random notes filtered by probability, quantized to scale.
 
 ### Pattern 6: CV Modulation
 ```
-Source â†’ Oscillator â†’ Filter â†’ Speaker
-                        â†‘
+Source → Oscillator → Filter → Speaker
+                        ↑
                        LFO -----(targetParam: cutoff)
 ```
 LFO continuously modulates filter cutoff.
 
 ### Pattern 7: Layered Sound (Tunnel)
 ```
-Source â†’ Tunnel[Oscillator(ratio:1), Oscillator(ratio:2), Filter] â†’ Speaker
+Source → Tunnel[Oscillator(ratio:1), Oscillator(ratio:2), Filter] → Speaker
 ```
 Complex timbre with harmonics in single visual node.
 
 ### Pattern 8: Arpeggio with Fixed Timing
 ```
-              â”Œâ”€(0.0 beats)â†’ Speaker (root)
-Source â†’ Osc â”œâ”€(0.5 beats)â†’ Pitch(+4) â†’ Speaker (3rd)
-              â”œâ”€(1.0 beats)â†’ Pitch(+7) â†’ Speaker (5th)
-              â””â”€(1.5 beats)â†’ Pitch(+12) â†’ Speaker (octave)
+              ┌─(0.0 beats)→ Speaker (root)
+Source → Osc ├─(0.5 beats)→ Pitch(+4) → Speaker (3rd)
+              ├─(1.0 beats)→ Pitch(+7) → Speaker (5th)
+              └─(1.5 beats)→ Pitch(+12) → Speaker (octave)
 ```
 Precise timing creates arpeggiated chord.
 
 ### Pattern 9: Evolutionary Sound
 ```
-Source â†’ Mutator(drift) â†’ Quantizer â†’ Oscillator â†’ Speaker
+Source → Mutator(drift) → Quantizer → Oscillator → Speaker
 ```
 Packets evolve over time while staying in scale.
 
 ### Pattern 10: Genetic Recombination
 ```
-Source A â†’ Crossover â†’ Oscillator â†’ Speaker
-Source B â”€â”€â”€â”˜
+Source A → Crossover → Oscillator → Speaker
+Source B ───┘
 ```
 Two sources combine to create hybrid packets.
 
@@ -1155,7 +1155,7 @@ Two sources combine to create hybrid packets.
 - [ ] Every edge `from` and `to` references valid node IDs within the scene
 - [ ] At least one source node exists per scene
 - [ ] At least one speaker node exists per scene
-- [ ] Audio paths connect source â†’ (processing) â†’ speaker
+- [ ] Audio paths connect source → (processing) → speaker
 - [ ] CV edges have valid `targetParam` for target node type
 - [ ] All edges use `timingMode: "fixed"` with `durationBeats`
 - [ ] All node IDs are unique within each scene
@@ -1174,7 +1174,7 @@ Two sources combine to create hybrid packets.
 
 ## Scene System
 
-Phonon v3 supports multi-scene compositions for creating songs with distinct sections (verse, chorus, bridge, etc.).
+Stochastic v3 supports multi-scene compositions for creating songs with distinct sections (verse, chorus, bridge, etc.).
 
 ### Scene Data Structure
 

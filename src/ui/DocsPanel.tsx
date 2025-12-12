@@ -1,4 +1,4 @@
-// Phonon - Documentation Panel Component
+// Stochastic - Documentation Panel Component
 // Quick reference docs accessible from the right panel
 
 import React, { useState } from 'react';
@@ -335,7 +335,7 @@ export function DocsPanel(): React.ReactElement {
       </div>
       
       <div className={styles.footer}>
-        <a href="https://github.com/your-repo/phonon" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
+        <a href="https://github.com/your-repo/stochastic" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
           📖 Full Documentation
         </a>
       </div>

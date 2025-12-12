@@ -1,4 +1,4 @@
-// Phonon v2 - Offline Viz Frame Renderer
+// Stochastic v2 - Offline Viz Frame Renderer
 // Renders visualization frames for video export without animation loop
 
 import type { 

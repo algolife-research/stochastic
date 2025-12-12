@@ -1,4 +1,4 @@
-// Phonon v2 - Video Encoder
+// Stochastic v2 - Video Encoder
 // Encodes visualization frames to video using WebCodecs API
 // Supports H.264 (via WebCodecs) with audio muxing
 

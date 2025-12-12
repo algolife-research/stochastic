@@ -1,4 +1,4 @@
-// Phonon v2 - Resizable Panel Handle Component
+// Stochastic v2 - Resizable Panel Handle Component
 
 import React, { useCallback, useRef, useEffect } from 'react';
 import styles from './ResizeHandle.module.css';

@@ -1,4 +1,4 @@
-// Phonon Viz - Geometric Mode
+// Stochastic Viz - Geometric Mode
 // Crystalline patterns with rotational symmetry
 
 import type { VizMusicalData, GeometricVizConfig, VizConfigBase, VizConfig } from '@core/types';

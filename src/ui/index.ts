@@ -1,4 +1,4 @@
-// Phonon v2 - UI Module Exports
+// Stochastic v2 - UI Module Exports
 
 export { App } from './App';
 export { Toolbar } from './Toolbar';

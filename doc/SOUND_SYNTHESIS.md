@@ -1,10 +1,10 @@
-# Phonon Sound Synthesis Architecture
+# Stochastic Sound Synthesis Architecture
 
 ## Current Synthesis Capabilities
 
 ### Synthesis Type: **Additive/Subtractive Hybrid**
 
-Phonon uses a **multi-layer additive synthesis** foundation with **subtractive filtering**. It is **NOT FM synthesis** in the traditional sense.
+Stochastic uses a **multi-layer additive synthesis** foundation with **subtractive filtering**. It is **NOT FM synthesis** in the traditional sense.
 
 ### How It Works
 
@@ -243,7 +243,7 @@ Current pink/brown noise are placeholders.
 
 ## Comparison with Other Synths
 
-| Feature | Phonon | Vital | Serum | Dexed (FM) |
+| Feature | Stochastic | Vital | Serum | Dexed (FM) |
 |---------|--------|-------|-------|------------|
 | Additive | ✅ Multi-layer | ✅ | ✅ | ❌ |
 | Subtractive | ✅ Basic | ✅ Advanced | ✅ Advanced | ❌ |
@@ -253,13 +253,13 @@ Current pink/brown noise are placeholders.
 | Physical | ❌ | ❌ | ❌ | ❌ |
 | Graph-based | ✅ | ❌ | ❌ | ❌ |
 
-**Phonon's unique advantage:** Graph-based generative sequencing + synthesis in one tool.
+**Stochastic's unique advantage:** Graph-based generative sequencing + synthesis in one tool.
 
 ---
 
 ## Conclusion
 
-Phonon is currently an **additive-subtractive hybrid synthesizer** with:
+Stochastic is currently an **additive-subtractive hybrid synthesizer** with:
 - ✅ Multi-layer oscillators
 - ✅ AHDR envelopes
 - ✅ Biquad lowpass filter
@@ -272,7 +272,7 @@ Phonon is currently an **additive-subtractive hybrid synthesizer** with:
 3. **Better filters** - Low effort, high impact
 4. **Effects** - Essential for polished sounds
 
-The graph-based architecture makes Phonon uniquely suited for generative and experimental music—focus synthesis development on features that complement this strength.
+The graph-based architecture makes Stochastic uniquely suited for generative and experimental music—focus synthesis development on features that complement this strength.
 
 ---
 
@@ -280,7 +280,7 @@ The graph-based architecture makes Phonon uniquely suited for generative and exp
 
 ### Data Model Integration Strategy
 
-All synthesis features follow Phonon's existing patterns:
+All synthesis features follow Stochastic's existing patterns:
 1. **Nodes** process/transform `AudioPayload` as packets traverse the graph
 2. **AudioPayload** carries all sound data to the `speaker` node
 3. **AudioWorklet** renders the final sound from payload data
@@ -431,7 +431,7 @@ if (layer.mode === 'ring') {
 
 ```typescript
 // src/audio/worklet.ts
-class PhononSynthProcessor {
+class StochasticSynthProcessor {
   // Add state for filtered noise
   private pinkNoiseState = [0, 0, 0, 0, 0, 0, 0];
   private brownNoiseState = 0;

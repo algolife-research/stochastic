@@ -1,4 +1,4 @@
-// Phonon v2 - MIDI Encoding
+// Stochastic v2 - MIDI Encoding
 
 export interface MIDIEvent {
   time: number;

@@ -1,4 +1,4 @@
-// Phonon v3 - Property Panel Component (Modular)
+// Stochastic v3 - Property Panel Component (Modular)
 
 import React from 'react';
 import type { GraphNode, Annotation, Region } from '@core/types';

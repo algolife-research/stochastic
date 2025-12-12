@@ -1,4 +1,4 @@
-// Phonon Viz - Data Extractor
+// Stochastic Viz - Data Extractor
 // Extracts musical data from the graph engine for visualization
 
 import { getGraphStore } from '@core/store';

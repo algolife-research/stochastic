@@ -6,8 +6,8 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "Phonon",
-    "version": "2.0.0"
+    "productName": "Stochastic",
+    "version": "0.5.0"
   },
   "tauri": {
     "allowlist": {
@@ -45,8 +45,8 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.phonon.app",
-      "longDescription": "Phonon - Algorithmic Interactive Graph Audio - A visual programming environment for creating generative music",
+      "identifier": "com.stochastic.app",
+      "longDescription": "Stochastic - The Generative Music Engine - A visual programming environment for creating generative music",
       "macOS": {
         "entitlements": null,
         "exceptionDomain": "",
@@ -74,7 +74,7 @@
         "fullscreen": false,
         "height": 800,
         "resizable": true,
-        "title": "Phonon - Algorithmic Interactive Graph Audio",
+        "title": "Stochastic - Algorithmic Interactive Graph Audio",
         "width": 1280,
         "minWidth": 800,
         "minHeight": 600,

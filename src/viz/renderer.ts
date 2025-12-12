@@ -1,4 +1,4 @@
-// Phonon Viz - Base Renderer
+// Stochastic Viz - Base Renderer
 // Abstract base class for all visualization modes
 
 import type { VizMusicalData, VizConfig, VizConfigBase, ColorPalette } from '@core/types';

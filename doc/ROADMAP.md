@@ -1,6 +1,6 @@
-# Phonon: Roadmap & Future Improvements
+# Stochastic: Roadmap & Future Improvements
 
-This document outlines the development trajectory for Phonon, moving from its current stable desktop release to a fully realized "Quantum Music Engine."
+This document outlines the development trajectory for Stochastic, moving from its current stable desktop release to a fully realized "Quantum Music Engine."
 
 ## Phase 1: Foundation (Completed ✓)
 **Goal:** A stable, testable, and usable graph-based audio application.
@@ -99,7 +99,7 @@ This document outlines the development trajectory for Phonon, moving from its cu
 - [ ] **Markers/Cue Points:** Annotation markers in arrangement
 
 ## Phase 5: Visual Art Generator (Planned)
-**Goal:** Transform Phonon into a generative audiovisual instrument with video export.
+**Goal:** Transform Stochastic into a generative audiovisual instrument with video export.
 
 ### 5.1 Visualization Mode System
 - [ ] **Viz Mode Property:** Per-scene visualization mode setting
@@ -150,7 +150,7 @@ This document outlines the development trajectory for Phonon, moving from its cu
 ### 6.1 Interoperability
 - [x] **MIDI Out:** Speakers can send MIDI Note On/Off
 - [ ] **VST/AU Plugin:** Wrap the engine to run inside a DAW
-- [ ] **OSC Support:** Control Phonon from external applications
+- [ ] **OSC Support:** Control Stochastic from external applications
 
 ### 6.2 3D / VR Interface
 - [ ] Move from 2D Canvas to 3D Space (Three.js)

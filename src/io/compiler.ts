@@ -1,4 +1,4 @@
-// Phonon v2 - Graph Compiler for Offline Audio Rendering
+// Stochastic v2 - Graph Compiler for Offline Audio Rendering
 // Simulates the graph to collect audio events for export
 
 import type { 

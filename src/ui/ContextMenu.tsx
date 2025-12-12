@@ -1,4 +1,4 @@
-// Phonon v2 - Context Menu Component
+// Stochastic v2 - Context Menu Component
 
 import React, { useEffect, useRef, useState } from 'react';
 import { getGraphStore } from '@core/store';
@@ -103,7 +103,7 @@ export function ContextMenu(): React.ReactElement | null {
       
       const store = getGraphStore();
       const canvas = e.target as HTMLCanvasElement;
-      if (!canvas.classList.contains('phonon-canvas')) return;
+      if (!canvas.classList.contains('stochastic-canvas')) return;
       
       const rect = canvas.getBoundingClientRect();
       const screenX = e.clientX - rect.left;
@@ -203,12 +203,12 @@ export function ContextMenu(): React.ReactElement | null {
     
     document.addEventListener('contextmenu', handleContextMenu);
     document.addEventListener('click', handleClick);
-    window.addEventListener('phonon-show-add-menu', handleAddMenu);
+    window.addEventListener('stochastic-show-add-menu', handleAddMenu);
     
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('click', handleClick);
-      window.removeEventListener('phonon-show-add-menu', handleAddMenu);
+      window.removeEventListener('stochastic-show-add-menu', handleAddMenu);
     };
   }, []);
   
@@ -225,7 +225,7 @@ export function ContextMenu(): React.ReactElement | null {
       worldY = state.worldY;
     } else {
       // Convert menu position to world coordinates
-      const canvas = document.querySelector('.phonon-canvas') as HTMLCanvasElement;
+      const canvas = document.querySelector('.stochastic-canvas') as HTMLCanvasElement;
       if (!canvas) return;
       
       const { viewport } = store;
@@ -266,7 +266,7 @@ export function ContextMenu(): React.ReactElement | null {
       worldY = state.worldY;
     } else {
       // Convert menu position to world coordinates
-      const canvas = document.querySelector('.phonon-canvas') as HTMLCanvasElement;
+      const canvas = document.querySelector('.stochastic-canvas') as HTMLCanvasElement;
       if (!canvas) return;
       
       const { viewport } = store;

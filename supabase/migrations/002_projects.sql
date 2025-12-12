@@ -1,4 +1,4 @@
--- Projects Table Migration for AIGA/Phonon
+-- Projects Table Migration for Stochastic
 -- Run this in your Supabase SQL Editor AFTER 001_init.sql
 
 -- ============================================================================

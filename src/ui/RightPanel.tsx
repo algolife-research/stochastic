@@ -1,4 +1,4 @@
-// Phonon - Right Panel Component
+// Stochastic - Right Panel Component
 // Unified panel with toggle between Editor (Properties), Visualisation, Scene, and AI modes
 
 import React, { useState, useCallback } from 'react';

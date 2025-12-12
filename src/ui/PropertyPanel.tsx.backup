@@ -1,4 +1,4 @@
-// Phonon v2 - Property Panel Component
+// Stochastic v2 - Property Panel Component
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useGraphStore } from '@core/store';

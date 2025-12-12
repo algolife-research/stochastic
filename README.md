@@ -1,8 +1,8 @@
-# Phonon
+# Stochastic
 
-**Phonon** (formerly AIGA) is an Algorithmic Interactive Graph Audio application. It is a node-based generative music environment where you compose music by building geometric graphs.
+**Stochastic** is an Algorithmic Interactive Graph Audio application. It is a node-based generative music environment where you compose music by building geometric graphs.
 
-In Phonon, **Space is Time**. The distance between nodes determines the rhythm, and the topology of the graph determines the melody and texture.
+In Stochastic, **Space is Time**. The distance between nodes determines the rhythm, and the topology of the graph determines the melody and texture.
 
 ## Features
 
@@ -14,7 +14,7 @@ In Phonon, **Space is Time**. The distance between nodes determines the rhythm, 
 
 ## Development
 
-Phonon is built with **Tauri**, **React**, and **TypeScript**.
+Stochastic is built with **Tauri**, **React**, and **TypeScript**.
 
 ### Prerequisites
 

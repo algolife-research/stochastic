@@ -1,4 +1,4 @@
-// Phonon v2 - Main Entry Point
+// Stochastic v2 - Main Entry Point
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';

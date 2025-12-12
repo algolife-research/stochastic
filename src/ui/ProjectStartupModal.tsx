@@ -189,7 +189,7 @@ export function ProjectStartupModal(): React.ReactElement | null {
     <div className={styles.overlay}>
       <div className={styles.modal}>
         <div className={styles.header}>
-          <div className={styles.title}>Welcome to Phonon</div>
+          <div className={styles.title}>Welcome to Stochastic</div>
           <div className={styles.subtitle}>Select how you want to start your session</div>
         </div>
 

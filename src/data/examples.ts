@@ -1,4 +1,4 @@
-// Phonon v2 - Example Compositions
+// Stochastic v2 - Example Compositions
 
 import type { NodeType, ScaleName, NodeId } from '@core/types';
 import { getGraphStore } from '@core/store';
@@ -52,10 +52,10 @@ export interface Example {
 // ============================================================================
 
 export const EXAMPLES: Record<string, Example> = {
-  // Complete Tutorial - Learn Phonon step by step
+  // Complete Tutorial - Learn Stochastic step by step
   tutorial: {
-    name: "Tutorial: Learn Phonon",
-    description: "A complete interactive tutorial with 10 scenes teaching you Phonon from basics to advanced concepts. Use the Scene Panel to navigate between lessons.",
+    name: "Tutorial: Learn Stochastic",
+    description: "A complete interactive tutorial with 10 scenes teaching you Stochastic from basics to advanced concepts. Use the Scene Panel to navigate between lessons.",
     bpm: 100,
     scenes: [
       // Scene 1: First Sound
