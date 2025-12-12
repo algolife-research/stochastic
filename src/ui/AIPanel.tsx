@@ -46,6 +46,7 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
     executeNextPhase,
     executeAllPhases,
     cancelPlan,
+    clearPlan,
   } = useAIPanel();
   
   const { user, isLoading: isAuthLoading } = useAuthStore(state => ({ 
