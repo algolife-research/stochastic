@@ -26,6 +26,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
   const [localError, setLocalError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
 
   const { signIn, signUp, signInWithOAuth, resendVerificationEmail, isLoading, error, clearError } = useAuth();
 

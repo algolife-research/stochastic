@@ -11,6 +11,8 @@ In Stochastic, **Space is Time**. The distance between nodes determines the rhyt
 - **Project Management:** Save and load your compositions as local projects.
 - **Export:** Render your generative sessions to high-quality WAV files.
 - **Tunnels:** Encapsulate complex logic into reusable sub-graphs.
+- **User Authentication:** Secure sign-up and sign-in with email verification via Supabase.
+- **AI Features:** AI-powered music generation and assistance (requires credits).
 
 ## Development
 
@@ -46,3 +48,6 @@ Stochastic is built with **Tauri**, **React**, and **TypeScript**.
 - [Musical Model](doc/MUSICAL_MODEL.md)
 - [Architecture](doc/ARCHITECTURE.md)
 - [Roadmap](doc/ROADMAP.md)
+- [User Authentication System](doc/USER_AUTH_SYSTEM.md)
+- [Email Verification Setup](doc/EMAIL_VERIFICATION_SETUP.md)
+- [Email Verification Implementation](doc/EMAIL_VERIFICATION_IMPLEMENTATION.md)

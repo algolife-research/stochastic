@@ -137,7 +137,7 @@ export const useAuthStore = create<AuthStore>()(
         }
 
         // Check if email confirmation is required
-        const needsEmailConfirmation = data.user && !data.session;
+        const needsEmailConfirmation = !!(data.user && !data.session);
 
         if (data.user) {
           set({
