@@ -190,9 +190,14 @@ function resolveEdgeId(
     if (store.edges.has(op.edgeId)) {
       return op.edgeId;
     }
-    // Try partial ID match
+    // Try partial ID match (same logic as node resolution)
+    const normalizedRef = op.edgeId.toLowerCase().trim();
     for (const [edgeId] of store.edges) {
-      if (edgeId.startsWith(op.edgeId) || op.edgeId.startsWith(edgeId.slice(0, 8))) {
+      const normalizedEdgeId = edgeId.toLowerCase();
+      if (normalizedEdgeId.startsWith(normalizedRef)) {
+        return edgeId;
+      }
+      if (normalizedRef.length >= 6 && normalizedEdgeId.includes(normalizedRef)) {
         return edgeId;
       }
     }
@@ -280,9 +285,22 @@ function resolveNodeId(ref: string | NodeId, nodeIdMap: Map<string, NodeId>): No
     return ref as NodeId;
   }
   
-  // Try to find by partial ID match (AI might truncate IDs)
+  // Try to find by partial ID match (AI uses 8-character truncated IDs)
+  const normalizedRef = (ref as string).trim().toLowerCase();
   for (const [nodeId] of store.nodes) {
-    if (nodeId.startsWith(ref) || ref.startsWith(nodeId.slice(0, 8))) {
+    const normalizedNodeId = nodeId.toLowerCase();
+    // Check if full ID starts with the reference (most common case - 8 char truncated ID)
+    if (normalizedNodeId.startsWith(normalizedRef)) {
+      return nodeId;
+    }
+    // Check if reference is contained in the full ID
+    if (normalizedRef.length >= 6 && normalizedNodeId.includes(normalizedRef)) {
+      return nodeId;
+    }
+    // Handle IDs without dashes
+    const nodeIdNoDashes = normalizedNodeId.replace(/-/g, '');
+    const refNoDashes = normalizedRef.replace(/-/g, '');
+    if (nodeIdNoDashes.startsWith(refNoDashes) && refNoDashes.length >= 6) {
       return nodeId;
     }
   }

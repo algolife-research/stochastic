@@ -12,6 +12,14 @@ import { buildCanvasContext, getDefaultConstraints } from './context-builder';
 import { getSystemPrompt, buildPrompt } from './prompts';
 import { parseAIResponse, validateOperations, summarizeOperations } from './parser';
 import { applyOperations, previewOperations, type ApplyResult, type PreviewChange } from './operations';
+import { 
+  needsPlanning, 
+  createPlan, 
+  getNextPhase, 
+  isPlanComplete,
+  type CompositionPlan,
+  type CompositionPhase 
+} from './planner';
 
 // ============================================================================
 // AI AGENT CLASS
@@ -21,6 +29,9 @@ export class AIAgent {
   private config: AIAgentConfig | null = null;
   private conversationHistory: ChatMessage[] = [];
   private abortController: AbortController | null = null;
+  private currentPlan: CompositionPlan | null = null;
+  private completedPhases: number[] = [];
+  private maxNodesPerPhase: number = 30;  // Increased from 20
   
   /**
    * Configure the AI agent
@@ -64,7 +75,7 @@ export class AIAgent {
     
     // Build context
     const context = buildCanvasContext();
-    const constraints = getDefaultConstraints();
+    const constraints = getDefaultConstraints(this.maxNodesPerPhase);
     
     // Build full prompt
     const fullPrompt = buildPrompt(prompt, context, constraints);
@@ -159,6 +170,212 @@ export class AIAgent {
     
     const result = this.apply(response.operations);
     return { response, result };
+  }
+  
+  /**
+   * Generate with automatic planning for complex compositions
+   * Returns a plan if complexity is detected, otherwise generates immediately
+   */
+  async generateWithPlanning(prompt: string): Promise<{
+    plan?: CompositionPlan;
+    response?: GenerationResponse;
+    result?: ApplyResult;
+    needsPhases: boolean;
+  }> {
+    const context = buildCanvasContext();
+    
+    // Check if this needs multi-phase planning
+    if (needsPlanning(prompt, context)) {
+      const plan = createPlan(prompt, context, this.maxNodesPerPhase);
+      this.currentPlan = plan;
+      this.completedPhases = [];
+      
+      return {
+        plan,
+        needsPhases: true,
+      };
+    }
+    
+    // Simple generation
+    const { response, result } = await this.generateAndApply(prompt);
+    return { response, result, needsPhases: false };
+  }
+  
+  /**
+   * Execute the next phase of the current plan
+   */
+  async executeNextPhase(): Promise<{
+    phase?: CompositionPhase;
+    response?: GenerationResponse;
+    result?: ApplyResult;
+    complete: boolean;
+    error?: string;
+  }> {
+    if (!this.currentPlan) {
+      return {
+        complete: false,
+        error: 'No plan in progress',
+      };
+    }
+    
+    // Check if plan is complete
+    if (isPlanComplete(this.currentPlan, this.completedPhases)) {
+      return { complete: true };
+    }
+    
+    // Get next phase
+    const phase = getNextPhase(this.currentPlan, this.completedPhases);
+    if (!phase) {
+      return {
+        complete: false,
+        error: 'No executable phase found (dependencies not met)',
+      };
+    }
+    
+    // Execute phase with its specific prompt and constraints
+    const context = buildCanvasContext();
+    const fullPrompt = buildPrompt(phase.prompt, context, phase.constraints);
+    
+    this.addToHistory({
+      role: 'user',
+      content: phase.prompt,
+    });
+    
+    try {
+      const aiResponse = await this.callProvider(fullPrompt);
+      const parsed = parseAIResponse(aiResponse);
+      
+      this.addToHistory({
+        role: 'assistant',
+        content: parsed.content,
+        operations: parsed.operations,
+      });
+      
+      // Validate and apply
+      if (parsed.operations.length > 0) {
+        const validation = this.validate(parsed.operations);
+        if (!validation.valid) {
+          return {
+            phase,
+            response: {
+              ...parsed,
+              error: `Validation failed: ${validation.errors.join(', ')}`,
+            },
+            complete: false,
+          };
+        }
+        
+        const result = this.apply(parsed.operations);
+        
+        // Mark phase as complete
+        this.completedPhases.push(phase.id);
+        
+        return {
+          phase,
+          response: parsed,
+          result,
+          complete: isPlanComplete(this.currentPlan, this.completedPhases),
+        };
+      }
+      
+      return {
+        phase,
+        response: parsed,
+        complete: false,
+      };
+    } catch (e) {
+      const error = e instanceof Error ? e.message : 'Unknown error';
+      return {
+        phase,
+        response: {
+          content: '',
+          operations: [],
+          error,
+        },
+        complete: false,
+      };
+    }
+  }
+  
+  /**
+   * Execute all phases of the current plan automatically
+   */
+  async executeAllPhases(
+    onPhaseComplete?: (phase: CompositionPhase, result?: ApplyResult) => void
+  ): Promise<{
+    completedPhases: number;
+    totalPhases: number;
+    errors: string[];
+  }> {
+    if (!this.currentPlan) {
+      return {
+        completedPhases: 0,
+        totalPhases: 0,
+        errors: ['No plan in progress'],
+      };
+    }
+    
+    const errors: string[] = [];
+    const totalPhases = this.currentPlan.phases.length;
+    let attempts = 0;
+    const maxAttempts = totalPhases * 2; // Prevent infinite loops
+    
+    while (!isPlanComplete(this.currentPlan, this.completedPhases) && attempts < maxAttempts) {
+      attempts++;
+      
+      const phaseResult = await this.executeNextPhase();
+      
+      if (phaseResult.error) {
+        errors.push(phaseResult.error);
+        break;
+      }
+      
+      if (phaseResult.phase && onPhaseComplete) {
+        onPhaseComplete(phaseResult.phase, phaseResult.result);
+      }
+      
+      if (phaseResult.response?.error) {
+        errors.push(`Phase ${phaseResult.phase?.name}: ${phaseResult.response.error}`);
+      }
+    }
+    
+    return {
+      completedPhases: this.completedPhases.length,
+      totalPhases,
+      errors,
+    };
+  }
+  
+  /**
+   * Get current plan status
+   */
+  getPlanStatus(): {
+    plan: CompositionPlan | null;
+    completedPhases: number[];
+    progress: number;
+  } | null {
+    if (!this.currentPlan) return null;
+    
+    return {
+      plan: this.currentPlan,
+      completedPhases: [...this.completedPhases],
+      progress: this.completedPhases.length / this.currentPlan.phases.length,
+    };
+  }
+  
+  /**
+   * Clear current plan
+   */
+  clearPlan(): void {
+    this.currentPlan = null;
+    this.completedPhases = [];
+  }
+  
+  /**
+   * Set maximum nodes per phase for planning
+   */
+  setMaxNodesPerPhase(max: number): void {
+    this.maxNodesPerPhase = Math.max(10, Math.min(max, 50));
   }
   
   /**

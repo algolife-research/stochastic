@@ -73,3 +73,21 @@ export {
   type OperationError,
   type PreviewChange,
 } from './operations';
+
+// Planning (NEW)
+export type { CompositionPlan, CompositionPhase } from './planner';
+export {
+  needsPlanning,
+  createPlan,
+  getNextPhase,
+  isPlanComplete,
+} from './planner';
+
+// Templates (NEW)
+export type { CompositionTemplate, TemplateOptions } from './templates';
+export {
+  COMPOSITION_TEMPLATES,
+  findTemplates,
+  getTemplate,
+  suggestTemplate,
+} from './templates';

@@ -364,6 +364,8 @@ export interface ValidationResult {
   valid: boolean;
   errors: ValidationError[];
   warnings: ValidationWarning[];
+  /** Map of partial/truncated IDs to their full resolved IDs */
+  idResolutionMap?: Map<string, string>;
 }
 
 export interface ValidationError {

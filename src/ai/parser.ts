@@ -325,6 +325,43 @@ function parseAutoLayoutOperation(op: Record<string, unknown>): AutoLayoutOperat
 // ============================================================================
 
 /**
+ * Find a node ID that matches the given ID (supports partial matching)
+ */
+function findMatchingNodeId(targetId: string, existingNodeIds: Set<string>): string | null {
+  // Exact match first
+  if (existingNodeIds.has(targetId)) {
+    return targetId;
+  }
+  
+  // Normalize target ID (remove any whitespace, lowercase for comparison)
+  const normalizedTarget = targetId.trim().toLowerCase();
+  
+  // Try partial match (AI sometimes truncates UUIDs to 8 chars)
+  for (const existingId of existingNodeIds) {
+    const normalizedExisting = existingId.toLowerCase();
+    
+    // Check if existing ID starts with the target (most common case)
+    if (normalizedExisting.startsWith(normalizedTarget)) {
+      return existingId;
+    }
+    
+    // Check if target contains enough of the existing ID (at least 6 chars)
+    if (normalizedTarget.length >= 6 && normalizedExisting.includes(normalizedTarget)) {
+      return existingId;
+    }
+    
+    // Check if existing ID starts with target (without dashes)
+    const existingNoDashes = normalizedExisting.replace(/-/g, '');
+    const targetNoDashes = normalizedTarget.replace(/-/g, '');
+    if (existingNoDashes.startsWith(targetNoDashes) && targetNoDashes.length >= 6) {
+      return existingId;
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Validate a set of operations before applying
  */
 export function validateOperations(
@@ -338,6 +375,9 @@ export function validateOperations(
   // Track temp IDs for edge resolution
   const tempIds = new Set<string>();
   const newNodeIds = new Set<string>();
+  
+  // Map of partial IDs to full IDs (for resolution)
+  const idResolutionMap = new Map<string, string>();
   
   for (const op of operations) {
     switch (op.type) {
@@ -356,19 +396,34 @@ export function validateOperations(
         break;
         
       case 'modify_node':
-      case 'delete_node':
-        if (!existingNodeIds.has(op.nodeId as string) && !tempIds.has(op.nodeId as string)) {
+      case 'delete_node': {
+        const resolvedId = findMatchingNodeId(op.nodeId as string, existingNodeIds);
+        if (!resolvedId && !tempIds.has(op.nodeId as string)) {
           errors.push({
             operation: op,
             message: `Node not found: ${op.nodeId}`,
             code: 'NODE_NOT_FOUND',
           });
+        } else if (resolvedId && resolvedId !== op.nodeId) {
+          // Store the resolution for later use
+          idResolutionMap.set(op.nodeId as string, resolvedId);
         }
         break;
+      }
         
       case 'add_edge': {
-        const fromExists = existingNodeIds.has(op.from as string) || tempIds.has(op.from as string);
-        const toExists = existingNodeIds.has(op.to as string) || tempIds.has(op.to as string);
+        const fromResolved = findMatchingNodeId(op.from as string, existingNodeIds);
+        const toResolved = findMatchingNodeId(op.to as string, existingNodeIds);
+        
+        const fromExists = fromResolved !== null || tempIds.has(op.from as string);
+        const toExists = toResolved !== null || tempIds.has(op.to as string);
+        
+        if (fromResolved && fromResolved !== op.from) {
+          idResolutionMap.set(op.from as string, fromResolved);
+        }
+        if (toResolved && toResolved !== op.to) {
+          idResolutionMap.set(op.to as string, toResolved);
+        }
         
         if (!fromExists) {
           errors.push({
@@ -439,6 +494,7 @@ export function validateOperations(
     valid: errors.length === 0,
     errors,
     warnings,
+    idResolutionMap: idResolutionMap.size > 0 ? idResolutionMap : undefined,
   };
 }
 

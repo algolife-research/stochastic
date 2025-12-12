@@ -166,14 +166,14 @@ function serializeNodeProps(type: NodeType, props: Record<string, unknown>): str
 /**
  * Get default generation constraints based on canvas state
  */
-export function getDefaultConstraints(): GenerationConstraints {
+export function getDefaultConstraints(maxNodes: number = 30): GenerationConstraints {
   const context = buildCanvasContext();
   
   // Calculate bounding box of existing nodes
   if (context.nodes.length === 0) {
     return {
-      maxNodes: 20,
-      maxEdges: 30,
+      maxNodes: maxNodes,
+      maxEdges: Math.floor(maxNodes * 1.5),
       preferredArea: { x: 0, y: 0, width: 800, height: 600 },
     };
   }
@@ -186,8 +186,8 @@ export function getDefaultConstraints(): GenerationConstraints {
   
   // Suggest area to the right or below existing nodes
   return {
-    maxNodes: 20,
-    maxEdges: 30,
+    maxNodes: maxNodes,
+    maxEdges: Math.floor(maxNodes * 1.5),
     preferredArea: {
       x: maxX + 100,
       y: minY,

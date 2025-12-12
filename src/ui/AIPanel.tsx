@@ -7,7 +7,9 @@ import { summarizeOperations } from '@ai/parser';
 import { getContextSuggestions } from '@ai/prompts';
 import { buildCanvasContext } from '@ai/context-builder';
 import { createSimplePatch, applyOperations } from '@ai/operations';
+import { COMPOSITION_TEMPLATES } from '@ai/templates';
 import type { ChatMessage, AIProvider, CanvasOperation } from '@ai/types';
+import type { CompositionPlan } from '@ai/planner';
 import { PROVIDER_INFO } from '@ai/types';
 import styles from './AIPanel.module.css';
 
@@ -28,14 +30,28 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
     previewOperations,
     lastError,
     sendMessage,
+    sendMessageWithPlanning,
     applyPreview,
     clearPreview,
     clearMessages,
     setProvider,
+    // Planning
+    currentPlan,
+    planProgress,
+    currentPhase,
+    isPlanExecuting,
+    maxNodesPerPhase,
+    setMaxNodesPerPhase,
+    executeNextPhase,
+    executeAllPhases,
+    cancelPlan,
+    clearPlan,
   } = useAIPanel();
   
   const [input, setInput] = useState('');
   const [showSettings, setShowSettings] = useState(!isConfigured);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [usePlanning, setUsePlanning] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Scroll to bottom on new messages
@@ -46,7 +62,12 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
   // Handle send
   const handleSend = () => {
     if (!input.trim() || isGenerating) return;
-    sendMessage(input.trim());
+    // Use planning-aware send for potentially complex prompts
+    if (usePlanning) {
+      sendMessageWithPlanning(input.trim());
+    } else {
+      sendMessage(input.trim());
+    }
     setInput('');
   };
   
@@ -55,6 +76,20 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+  
+  // Handle template selection
+  const handleTemplateSelect = (templateName: string) => {
+    const template = COMPOSITION_TEMPLATES.find(t => t.name === templateName);
+    if (template) {
+      const context = buildCanvasContext();
+      const startX = context.nodes.length > 0 
+        ? Math.max(...context.nodes.map((n: { x: number }) => n.x)) + 200 
+        : 200;
+      const operations = template.generateOperations({ startX, startY: 200 });
+      applyOperations(operations);
+      setShowTemplates(false);
     }
   };
   
@@ -131,8 +166,32 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
         />
       )}
       
-      {/* Input */}
-      <div className={styles.inputArea}>
+      {/* Plan Execution Bar */}
+      {currentPlan && (
+        <PlanBar
+          plan={currentPlan}
+          progress={planProgress}
+          currentPhase={currentPhase}
+          isExecuting={isPlanExecuting || isGenerating}
+          onExecuteNext={executeNextPhase}
+          onExecuteAll={executeAllPhases}
+          onCancel={cancelPlan}
+          onClear={clearPlan}
+        />
+      )}
+      
+      {/* Input Container (for absolute positioning of templates) */}
+      <div className={styles.inputContainer}>
+        {/* Templates Panel */}
+        {showTemplates && (
+          <TemplatesPanel
+            onSelect={handleTemplateSelect}
+            onClose={() => setShowTemplates(false)}
+          />
+        )}
+        
+        {/* Input */}
+        <div className={styles.inputArea}>
         <textarea
           className={styles.input}
           value={input}
@@ -142,17 +201,40 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
           disabled={!isConfigured || isGenerating}
           rows={2}
         />
-        <button 
-          className={styles.sendButton}
-          onClick={handleSend}
-          disabled={!isConfigured || isGenerating || !input.trim()}
-        >
-          {isGenerating ? '⏳' : '➤'}
-        </button>
+        <div className={styles.inputActions}>
+          <button
+            className={`${styles.iconButton} ${usePlanning ? styles.active : ''}`}
+            onClick={() => setUsePlanning(!usePlanning)}
+            title={usePlanning ? "Planning enabled (for complex compositions)" : "Planning disabled"}
+          >
+            📋
+          </button>
+          <button
+            className={styles.iconButton}
+            onClick={() => setShowTemplates(!showTemplates)}
+            title="Templates"
+          >
+            📦
+          </button>
+          <button 
+            className={styles.sendButton}
+            onClick={handleSend}
+            disabled={!isConfigured || isGenerating || !input.trim()}
+          >
+            {isGenerating ? '⏳' : '➤'}
+          </button>
+        </div>
+      </div>
       </div>
       
       {/* Quick Actions */}
       <QuickActions />
+      
+      {/* Advanced Settings */}
+      <AdvancedSettings 
+        maxNodesPerPhase={maxNodesPerPhase}
+        onChangeMaxNodes={setMaxNodesPerPhase}
+      />
     </div>
   );
 }
@@ -334,6 +416,175 @@ function QuickActions(): React.ReactElement {
       <button onClick={() => handleQuickPatch('lead')} title="Create lead patch">🎹</button>
       <button onClick={() => handleQuickPatch('pad')} title="Create pad patch">🌊</button>
       <button onClick={() => handleQuickPatch('arp')} title="Create arpeggiator">🎼</button>
+    </div>
+  );
+}
+
+// ============================================================================
+// PLAN EXECUTION BAR
+// ============================================================================
+
+interface PlanBarProps {
+  plan: CompositionPlan;
+  progress: number;
+  currentPhase: { id: number; name: string } | null;
+  isExecuting: boolean;
+  onExecuteNext: () => void;
+  onExecuteAll: () => void;
+  onCancel: () => void;
+  onClear: () => void;
+}
+
+function PlanBar({ 
+  plan, 
+  progress, 
+  currentPhase, 
+  isExecuting, 
+  onExecuteNext, 
+  onExecuteAll, 
+  onCancel, 
+  onClear 
+}: PlanBarProps): React.ReactElement {
+  const isComplete = progress >= 1;
+  
+  return (
+    <div className={styles.planBar}>
+      <div className={styles.planHeader}>
+        <span className={styles.planTitle}>
+          📋 {plan.description}
+        </span>
+        <span className={styles.planComplexity}>
+          {plan.complexity}
+        </span>
+      </div>
+      
+      <div className={styles.planProgress}>
+        <div 
+          className={styles.planProgressFill} 
+          style={{ width: `${progress * 100}%` }}
+        />
+        <span className={styles.planProgressText}>
+          {currentPhase 
+            ? `Phase ${currentPhase.id}: ${currentPhase.name}` 
+            : isComplete 
+              ? 'Complete!' 
+              : `${Math.round(progress * 100)}%`
+          }
+        </span>
+      </div>
+      
+      <div className={styles.planActions}>
+        {!isComplete && !isExecuting && (
+          <>
+            <button 
+              onClick={onExecuteNext} 
+              className={styles.secondaryButton}
+              title="Execute next phase"
+            >
+              Step
+            </button>
+            <button 
+              onClick={onExecuteAll} 
+              className={styles.primaryButton}
+              title="Execute all remaining phases"
+            >
+              Execute All
+            </button>
+          </>
+        )}
+        {isExecuting && (
+          <button onClick={onCancel} className={styles.cancelButton}>
+            Cancel
+          </button>
+        )}
+        {isComplete && (
+          <button onClick={onClear} className={styles.secondaryButton}>
+            Clear Plan
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// TEMPLATES PANEL
+// ============================================================================
+
+interface TemplatesPanelProps {
+  onSelect: (templateName: string) => void;
+  onClose: () => void;
+}
+
+function TemplatesPanel({ onSelect, onClose }: TemplatesPanelProps): React.ReactElement {
+  return (
+    <div className={styles.templatesPanel}>
+      <div className={styles.templatesPanelHeader}>
+        <span>📦 Templates</span>
+        <button onClick={onClose} className={styles.iconButton}>✕</button>
+      </div>
+      <div className={styles.templatesList}>
+        {COMPOSITION_TEMPLATES.map(template => (
+          <button
+            key={template.name}
+            className={styles.templateItem}
+            onClick={() => onSelect(template.name)}
+          >
+            <span className={styles.templateName}>{template.name}</span>
+            <span className={styles.templateDesc}>{template.description}</span>
+            <span className={styles.templateMeta}>
+              ~{template.estimatedNodes} nodes • {template.complexity}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ADVANCED SETTINGS
+// ============================================================================
+
+interface AdvancedSettingsProps {
+  maxNodesPerPhase: number;
+  onChangeMaxNodes: (value: number) => void;
+}
+
+function AdvancedSettings({ maxNodesPerPhase, onChangeMaxNodes }: AdvancedSettingsProps): React.ReactElement {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  if (!isOpen) {
+    return (
+      <button 
+        className={styles.advancedToggle}
+        onClick={() => setIsOpen(true)}
+      >
+        Advanced ▾
+      </button>
+    );
+  }
+  
+  return (
+    <div className={styles.advancedSettings}>
+      <div className={styles.advancedHeader}>
+        <span>Advanced Settings</span>
+        <button onClick={() => setIsOpen(false)} className={styles.iconButton}>▴</button>
+      </div>
+      <label className={styles.advancedLabel}>
+        Max nodes per phase: {maxNodesPerPhase}
+        <input
+          type="range"
+          min={10}
+          max={50}
+          value={maxNodesPerPhase}
+          onChange={e => onChangeMaxNodes(parseInt(e.target.value))}
+          className={styles.slider}
+        />
+      </label>
+      <p className={styles.advancedHint}>
+        Higher values allow larger compositions but may hit API limits.
+      </p>
     </div>
   );
 }
