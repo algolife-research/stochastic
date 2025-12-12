@@ -57,10 +57,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
   if (!isSupabaseConfigured()) {
     const handleSetupOverlayMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement;
-      if (target.classList.contains(styles.overlay)) {
+      if (target.classList.contains(styles.overlay!)) {
         const handleMouseUp = (upEvent: MouseEvent) => {
           const upTarget = upEvent.target as HTMLElement;
-          if (upTarget.classList.contains(styles.overlay)) {
+          if (upTarget.classList.contains(styles.overlay!)) {
             onClose();
           }
           document.removeEventListener('mouseup', handleMouseUp);

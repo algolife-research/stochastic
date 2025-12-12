@@ -113,7 +113,7 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
     <div className={`${styles.panel} ${embedded ? styles.embedded : ''}`}>
       {/* Header */}
       <div className={styles.header}>
-        <span className={styles.title}>🤖 AI Assistant</span>
+        <span className={styles.title}>🤖 Iannis</span>
         <div className={styles.headerActions}>
           <button 
             className={styles.iconButton}
@@ -137,7 +137,7 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
         ) : !user ? (
           <div className={styles.welcome}>
             <h3>🔒 Login Required</h3>
-            <p>Please log in to use the AI Assistant.</p>
+            <p>Please log in to use Iannis.</p>
           </div>
         ) : messages.length === 0 ? (
           <WelcomeMessage suggestions={suggestions} onSelect={setInput} />
@@ -206,7 +206,7 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={!user ? "Please log in to use AI Assistant..." : (isConfigured ? "Describe what you want to create..." : "Configure AI first...")}
+          placeholder={!user ? "Please log in to use Iannis..." : (isConfigured ? "Describe what you want to create..." : "Configure AI first...")}
           disabled={!user || !isConfigured || isGenerating}
           rows={2}
         />

@@ -126,7 +126,7 @@ export function RightPanel({
           // Visualisation mode - show viz panel content
           <VizPanelContent />
         ) : panelMode === 'ai' ? (
-          // AI mode - show AI assistant panel
+          // AI mode - show Iannis panel
           <AIPanel embedded />
         ) : (
           // Scene mode - show scene properties panel

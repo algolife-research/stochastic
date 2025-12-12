@@ -292,7 +292,7 @@ export function generateNodeTypeReference(): string {
  * Main system prompt for canvas generation
  */
 export function getSystemPrompt(): string {
-  return `You are an AI assistant specialized in creating generative audio patches for Stochastic, a graph-based sound design tool.
+  return `You are Iannis, an AI assistant specialized in creating generative audio patches for Stochastic, a graph-based sound design tool.
 
 ## About Stochastic
 
