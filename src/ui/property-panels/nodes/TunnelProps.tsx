@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import type { SubNode } from '@core/types';
 import { TunnelPresetSelector } from '../../TunnelPresetSelector';
 import type { TunnelPreset } from '@data/tunnel-presets';
-import { PropertyRow, NumberInput, Select } from '../shared';
+import { PropertyRow } from '../shared';
 import type { PropsEditorProps, TunnelPropsType } from '../types';
 import styles from '../../PropertyPanel.module.css';
 
@@ -64,7 +64,7 @@ export function TunnelProps({ props, onChange }: PropsEditorProps<TunnelPropsTyp
   /**
    * Render the appropriate property panel for a subnode
    */
-  const renderSubNodeProps = (subNode: SubNode, index: number) => {
+  const renderSubNodeProps = (subNode: SubNode, index: number): React.ReactElement => {
     const subNodeProps = subNode.props as Record<string, unknown>;
     
     // Create a proxy onChange that updates the specific subnode

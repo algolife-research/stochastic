@@ -1,5 +1,5 @@
 // Shared Property Panel Types
-import type { ScaleName } from '@core/types';
+import type { ScaleName, NodeType } from '@core/types';
 
 // ============================================================================
 // PROPERTY TYPE DEFINITIONS
@@ -43,7 +43,7 @@ export type DelayPropsType = { delayTime: number };
 export type GainPropsType = { value: number; mass: number };
 export type TeleporterPropsType = { channel: string; isEntry: boolean };
 export type ModulatorPropsType = { rate: number; depth: number; delay: number };
-export type SubNodeType = { type: string; props: Record<string, unknown> };
+export type SubNodeType = { type: Exclude<NodeType, 'tunnel'>; props: Record<string, unknown> };
 export type TunnelPropsType = { tunnelName: string; subNodes: SubNodeType[] };
 export type QuantizerPropsType = {
   strength: number;
