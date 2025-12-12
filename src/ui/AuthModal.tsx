@@ -25,8 +25,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
   const [confirmPassword, setConfirmPassword] = useState('');
   const [localError, setLocalError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
 
-  const { signIn, signUp, signInWithOAuth, isLoading, error, clearError } = useAuth();
+  const { signIn, signUp, signInWithOAuth, resendVerificationEmail, isLoading, error, clearError } = useAuth();
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -36,6 +37,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
       setConfirmPassword('');
       setLocalError(null);
       setSuccess(null);
+      setPendingVerificationEmail(null);
       clearError();
     }
   }, [isOpen, clearError]);
@@ -43,6 +45,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
   // Update mode when initialMode changes
   useEffect(() => {
     setMode(initialMode);
+    setLocalError(null);
+    setSuccess(null);
+    setPendingVerificationEmail(null);
   }, [initialMode]);
 
   if (!isOpen) return null;
@@ -93,8 +98,21 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
       const result = await signUp(email, password);
       if (result.error) {
         setLocalError(result.error);
+        setPendingVerificationEmail(null);
+      } else if (result.needsEmailConfirmation) {
+        setPendingVerificationEmail(result.email || email);
+        setSuccess(
+          `✉️ Verification email sent to ${result.email}! Please check your inbox and click the confirmation link to activate your account.`
+        );
+        // Clear form
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
       } else {
-        setSuccess('Account created! Check your email to verify your account.');
+        setPendingVerificationEmail(null);
+        setSuccess('Account created successfully! You can now sign in.');
+        // Auto-close after a short delay if no verification needed
+        setTimeout(() => onClose(), 1500);
       }
     } else {
       const result = await signIn(email, password);
@@ -113,6 +131,23 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
       setLocalError(result.error);
     }
     // OAuth redirects, so no need to close modal
+  };
+
+  const handleResendVerification = async () => {
+    if (!pendingVerificationEmail) return;
+    
+    setIsResending(true);
+    setLocalError(null);
+    
+    const result = await resendVerificationEmail(pendingVerificationEmail);
+    
+    if (result.error) {
+      setLocalError(result.error);
+    } else {
+      setSuccess(`✉️ Verification email resent to ${pendingVerificationEmail}!`);
+    }
+    
+    setIsResending(false);
   };
 
   const displayError = localError || error;
@@ -150,7 +185,21 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
           </div>
 
           {displayError && <div className={styles.error}>{displayError}</div>}
-          {success && <div className={styles.success}>{success}</div>}
+          {success && (
+            <div className={styles.success}>
+              {success}
+              {pendingVerificationEmail && (
+                <button
+                  className={styles.resendButton}
+                  onClick={handleResendVerification}
+                  disabled={isResending}
+                  type="button"
+                >
+                  {isResending ? 'Sending...' : 'Resend verification email'}
+                </button>
+              )}
+            </div>
+          )}
 
           <form className={styles.form} onSubmit={handleSubmit}>
             <div className={styles.inputGroup}>
@@ -231,7 +280,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ onSignInClick }: UserMenuProps): React.ReactElement {
-  const { user, profile, credits, signOut, updateProfile, isAuthenticated, isLoading } = useAuth();
+  const { user, profile, credits, signOut, updateProfile, isAuthenticated, isLoading, isInitialized } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [editingName, setEditingName] = useState('');
@@ -261,7 +310,8 @@ export function UserMenu({ onSignInClick }: UserMenuProps): React.ReactElement {
     }
   }, [isOpen]);
 
-  if (isLoading) {
+  // Only show loading if not yet initialized
+  if (!isInitialized && isLoading) {
     return (
       <div className={styles.userButton} style={{ opacity: 0.5 }}>
         Loading...

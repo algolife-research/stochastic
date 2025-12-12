@@ -36,6 +36,7 @@ export {
   buildCanvasContext, 
   buildRegionContext,
   serializeContext,
+  invalidateContextCache,
   getDefaultConstraints,
   findOpenArea,
   calculateChainPositions,

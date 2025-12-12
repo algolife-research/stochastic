@@ -78,6 +78,8 @@ export const useAuthStore = create<AuthStore>()(
 
         // Listen for auth changes
         supabase!.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+          console.log('Auth state changed:', event, session?.user?.email);
+          
           set({
             user: session?.user ?? null,
             session,
@@ -95,6 +97,9 @@ export const useAuthStore = create<AuthStore>()(
               license: null,
               credits: null,
             });
+          } else if (event === 'USER_UPDATED' && session) {
+            // Handle email verification confirmation
+            console.log('User updated, email confirmed:', session.user.email_confirmed_at);
           }
         });
       } catch (error) {
@@ -118,6 +123,12 @@ export const useAuthStore = create<AuthStore>()(
         const { data, error } = await supabase!.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}`,
+            data: {
+              email_verified: false,
+            },
+          },
         });
 
         if (error) {
@@ -125,9 +136,10 @@ export const useAuthStore = create<AuthStore>()(
           return { error: error.message };
         }
 
+        // Check if email confirmation is required
+        const needsEmailConfirmation = data.user && !data.session;
+
         if (data.user) {
-          // Create initial profile, credits, and license via Supabase functions
-          // (handled by database triggers or edge functions)
           set({
             user: data.user,
             session: data.session,
@@ -135,7 +147,10 @@ export const useAuthStore = create<AuthStore>()(
           });
         }
 
-        return {};
+        return { 
+          needsEmailConfirmation,
+          email: data.user?.email,
+        };
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Signup failed';
         set({ isLoading: false, error: message });
@@ -221,6 +236,31 @@ export const useAuthStore = create<AuthStore>()(
       } catch (error) {
         console.error('Sign out error:', error);
         set({ isLoading: false });
+      }
+    },
+
+    resendVerificationEmail: async (email: string) => {
+      if (!isSupabaseConfigured()) {
+        return { error: 'Supabase not configured' };
+      }
+
+      try {
+        const { error } = await supabase!.auth.resend({
+          type: 'signup',
+          email,
+          options: {
+            emailRedirectTo: `${window.location.origin}`,
+          },
+        });
+
+        if (error) {
+          return { error: error.message };
+        }
+
+        return { success: true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to resend verification email';
+        return { error: message };
       }
     },
 
@@ -555,6 +595,7 @@ export function useAuth() {
   const session = useAuthStore(selectSession);
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const isLoading = useAuthStore(selectIsLoading);
+  const isInitialized = useAuthStore((state) => state.isInitialized);
   const profile = useAuthStore(selectProfile);
   const credits = useAuthStore(selectCredits);
   const license = useAuthStore(selectLicense);
@@ -569,12 +610,14 @@ export function useAuth() {
   const hasEnoughCredits = useAuthStore((state) => state.hasEnoughCredits);
   const clearError = useAuthStore((state) => state.clearError);
   const updateProfile = useAuthStore((state) => state.updateProfile);
+  const resendVerificationEmail = useAuthStore((state) => state.resendVerificationEmail);
 
   return {
     user,
     session,
     isAuthenticated,
     isLoading,
+    isInitialized,
     profile,
     credits,
     license,
@@ -588,6 +631,7 @@ export function useAuth() {
     hasEnoughCredits,
     clearError,
     updateProfile,
+    resendVerificationEmail,
   };
 }
 

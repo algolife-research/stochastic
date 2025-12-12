@@ -1,9 +1,10 @@
 // AI Panel - Chat Interface for AI Canvas Generation
 // React component for interacting with the AI agent
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAIPanel } from '@ai/store';
 import { useAuthStore } from '@auth/store';
+import { useGraphStore } from '@core/store';
 import { summarizeOperations } from '@ai/parser';
 import { getContextSuggestions } from '@ai/prompts';
 import { buildCanvasContext } from '@ai/context-builder';
@@ -60,6 +61,10 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
   const [usePlanning, setUsePlanning] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // Track canvas state for memoization
+  const nodeCount = useGraphStore(state => state.nodes.size);
+  const edgeCount = useGraphStore(state => state.edges.size);
+  
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -100,8 +105,11 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
     }
   };
   
-  // Get suggestions based on current context
-  const suggestions = getContextSuggestions(buildCanvasContext());
+  // Get suggestions based on current context (memoized to avoid expensive buildCanvasContext on every render)
+  const suggestions = useMemo(() => {
+    const context = buildCanvasContext();
+    return getContextSuggestions(context);
+  }, [nodeCount, edgeCount]);
   
   return (
     <div className={`${styles.panel} ${embedded ? styles.embedded : ''}`}>

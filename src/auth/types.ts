@@ -169,10 +169,11 @@ export interface AuthState {
 export interface AuthActions {
   // Session
   initialize: () => Promise<void>;
-  signUp: (email: string, password: string) => Promise<{ error?: string }>;
+  signUp: (email: string, password: string) => Promise<{ error?: string; needsEmailConfirmation?: boolean; email?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signInWithOAuth: (provider: 'google' | 'github' | 'discord') => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
+  resendVerificationEmail: (email: string) => Promise<{ error?: string; success?: boolean }>;
   
   // Profile
   fetchProfile: () => Promise<void>;

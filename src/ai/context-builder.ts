@@ -6,14 +6,29 @@ import type { CanvasContext, NodeContext, EdgeContext, GenerationConstraints } f
 import type { NodeType } from '@core/types';
 
 // ============================================================================
-// CONTEXT BUILDER
+// CONTEXT BUILDER WITH CACHING
 // ============================================================================
 
+// Cache for canvas context to avoid redundant serialization
+let cachedContext: CanvasContext | null = null;
+let cachedNodeCount = -1;
+let cachedEdgeCount = -1;
+
 /**
- * Build canvas context from current store state
+ * Build canvas context from current store state (with caching)
  */
 export function buildCanvasContext(): CanvasContext {
   const state = useGraphStore.getState();
+  
+  // Check cache - only rebuild if node/edge count changed
+  const currentNodeCount = state.nodes.size;
+  const currentEdgeCount = state.edges.size;
+  
+  if (cachedContext && 
+      cachedNodeCount === currentNodeCount && 
+      cachedEdgeCount === currentEdgeCount) {
+    return cachedContext;
+  }
   
   // Convert nodes to simplified context
   const nodes: NodeContext[] = Array.from(state.nodes.values()).map(node => ({
@@ -41,7 +56,21 @@ export function buildCanvasContext(): CanvasContext {
     bpm: state.masterSpeed,
   };
   
-  return { nodes, edges, musicalContext };
+  // Cache the result
+  cachedContext = { nodes, edges, musicalContext };
+  cachedNodeCount = currentNodeCount;
+  cachedEdgeCount = currentEdgeCount;
+  
+  return cachedContext;
+}
+
+/**
+ * Invalidate the context cache (call when canvas state changes significantly)
+ */
+export function invalidateContextCache(): void {
+  cachedContext = null;
+  cachedNodeCount = -1;
+  cachedEdgeCount = -1;
 }
 
 /**
@@ -92,29 +121,39 @@ export function serializeContext(context: CanvasContext): string {
   lines.push(`  BPM: ${context.musicalContext.bpm}`);
   lines.push('');
   
-  // Nodes
+  // Nodes (limit output for large canvases to avoid blocking)
   lines.push(`Nodes (${context.nodes.length}):`);
   if (context.nodes.length === 0) {
     lines.push('  (empty canvas)');
   } else {
-    for (const node of context.nodes) {
+    const MAX_NODES_TO_SHOW = 50;
+    const nodesToShow = context.nodes.slice(0, MAX_NODES_TO_SHOW);
+    for (const node of nodesToShow) {
       const propsStr = serializeNodeProps(node.type, node.props);
       lines.push(`  [${node.id.slice(0, 8)}] ${node.type} at (${node.x}, ${node.y})${propsStr ? ` - ${propsStr}` : ''}`);
+    }
+    if (context.nodes.length > MAX_NODES_TO_SHOW) {
+      lines.push(`  ... and ${context.nodes.length - MAX_NODES_TO_SHOW} more nodes`);
     }
   }
   lines.push('');
   
-  // Edges
+  // Edges (limit output for large canvases to avoid blocking)
   lines.push(`Connections (${context.edges.length}):`);
   if (context.edges.length === 0) {
     lines.push('  (no connections)');
   } else {
-    for (const edge of context.edges) {
+    const MAX_EDGES_TO_SHOW = 50;
+    const edgesToShow = context.edges.slice(0, MAX_EDGES_TO_SHOW);
+    for (const edge of edgesToShow) {
       const fromNode = context.nodes.find(n => n.id === edge.from);
       const toNode = context.nodes.find(n => n.id === edge.to);
       const fromType = fromNode?.type || 'unknown';
       const toType = toNode?.type || 'unknown';
       lines.push(`  ${fromType}[${edge.from.slice(0, 8)}] → ${toType}[${edge.to.slice(0, 8)}]`);
+    }
+    if (context.edges.length > MAX_EDGES_TO_SHOW) {
+      lines.push(`  ... and ${context.edges.length - MAX_EDGES_TO_SHOW} more connections`);
     }
   }
   

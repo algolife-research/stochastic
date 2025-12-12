@@ -42,6 +42,7 @@ if (isSupabaseConfigured()) {
       persistSession: true,
       detectSessionInUrl: true,
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      flowType: 'pkce', // Use PKCE flow for better security
     },
   });
 } else {
