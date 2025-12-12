@@ -539,6 +539,13 @@ export const useAIStore = create<AIStoreState>()(
           } else if (result.response.operations.length > 0) {
             get().setPreviewOperations(result.response.operations);
           }
+        } else {
+          // Fallback - no valid response received
+          get().addMessage({
+            role: 'assistant',
+            content: 'Sorry, I couldn\'t generate a response. Please try again.',
+          });
+          set({ lastError: 'No response received from AI' });
         }
       } catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';

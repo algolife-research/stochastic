@@ -22,6 +22,7 @@ export function isSupabaseConfigured(): boolean {
 export function getSupabaseConfig() {
   return {
     url: SUPABASE_URL,
+    projectRef: SUPABASE_URL ? new URL(SUPABASE_URL).hostname.split('.')[0] : '',
     hasUrl: Boolean(SUPABASE_URL),
     hasKey: Boolean(SUPABASE_ANON_KEY),
     isConfigured: isSupabaseConfigured(),

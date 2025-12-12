@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from './supabase';
+import { supabase, isSupabaseConfigured, getSupabaseConfig } from './supabase';
 import type {
   AuthStore,
   AuthState,
@@ -30,6 +30,9 @@ const initialState: AuthState = {
   error: null,
 };
 
+// Track if initialize has been called to prevent race conditions
+let initializePromise: Promise<void> | null = null;
+
 // ============================================================================
 // STORE CREATION
 // ============================================================================
@@ -43,73 +46,69 @@ export const useAuthStore = create<AuthStore>()(
     // ========================================================================
 
     initialize: async () => {
-      if (!isSupabaseConfigured()) {
-        set({ isLoading: false, isInitialized: true });
+      // Prevent multiple simultaneous calls
+      if (initializePromise) {
+        return initializePromise;
+      }
+      
+      if (get().isInitialized) {
         return;
       }
-
-      try {
-        // Get initial session
-        const { data: { session }, error } = await supabase!.auth.getSession();
-        
-        if (error) {
-          console.error('Auth initialization error:', error);
-          set({ error: error.message, isLoading: false, isInitialized: true });
+      
+      initializePromise = (async () => {
+        if (!isSupabaseConfigured()) {
+          set({ isLoading: false, isInitialized: true });
           return;
         }
 
-        if (session) {
-          set({
-            user: session.user,
-            session,
-            isLoading: false,
-            isInitialized: true,
-          });
-          
-          // Fetch additional user data
-          await Promise.all([
-            get().fetchProfile(),
-            get().fetchCredits(),
-            get().fetchLicense(),
-          ]);
-        } else {
-          set({ isLoading: false, isInitialized: true });
-        }
-
-        // Listen for auth changes
+        // Set up auth state listener for future changes
         supabase!.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-          console.log('Auth state changed:', event, session?.user?.email);
+          console.log('[Auth] Auth state changed:', event, 'hasSession:', !!session);
           
           set({
             user: session?.user ?? null,
             session,
           });
 
-          if (event === 'SIGNED_IN' && session) {
-            await Promise.all([
+          // INITIAL_SESSION fires on page load when restoring from localStorage
+          if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+            Promise.all([
               get().fetchProfile(),
               get().fetchCredits(),
               get().fetchLicense(),
-            ]);
+            ]).catch(e => console.error('Failed to fetch user data:', e));
           } else if (event === 'SIGNED_OUT') {
-            set({
-              profile: null,
-              license: null,
-              credits: null,
-            });
-          } else if (event === 'USER_UPDATED' && session) {
-            // Handle email verification confirmation
-            console.log('User updated, email confirmed:', session.user.email_confirmed_at);
+            set({ profile: null, license: null, credits: null });
           }
         });
-      } catch (error) {
-        console.error('Auth initialization failed:', error);
-        set({
-          error: error instanceof Error ? error.message : 'Initialization failed',
-          isLoading: false,
-          isInitialized: true,
-        });
-      }
+
+        // Get initial session
+        try {
+          const { data, error } = await supabase!.auth.getSession();
+          
+          if (error) {
+            console.error('[Auth] getSession error:', error);
+          }
+          
+          if (data.session) {
+            set({
+              user: data.session.user,
+              session: data.session,
+              isLoading: false,
+              isInitialized: true,
+            });
+            
+            // Profile/credits/license will be fetched by onAuthStateChange INITIAL_SESSION handler
+          } else {
+            set({ isLoading: false, isInitialized: true });
+          }
+        } catch (error) {
+          console.error('[Auth] getSession error:', error);
+          set({ isLoading: false, isInitialized: true });
+        }
+      })();
+      
+      return initializePromise;
     },
 
     signUp: async (email: string, password: string) => {
@@ -242,22 +241,34 @@ export const useAuthStore = create<AuthStore>()(
     signOut: async () => {
       if (!isSupabaseConfigured()) return;
 
-      set({ isLoading: true });
-
+      console.log('[Auth] Signing out...');
+      
+      // Clear local state immediately (don't wait for network)
+      set({
+        user: null,
+        session: null,
+        profile: null,
+        license: null,
+        credits: null,
+        isLoading: false,
+      });
+      
+      // Clear localStorage directly
       try {
-        await supabase!.auth.signOut();
-        set({
-          user: null,
-          session: null,
-          profile: null,
-          license: null,
-          credits: null,
-          isLoading: false,
-        });
-      } catch (error) {
-        console.error('Sign out error:', error);
-        set({ isLoading: false });
+        const { projectRef } = getSupabaseConfig();
+        const storageKey = `sb-${projectRef}-auth-token`;
+        localStorage.removeItem(storageKey);
+        console.log('[Auth] Cleared localStorage session');
+      } catch (e) {
+        console.warn('[Auth] Failed to clear localStorage:', e);
       }
+
+      // Call Supabase signOut in background (don't block on it)
+      supabase!.auth.signOut().then(() => {
+        console.log('[Auth] Supabase signOut completed');
+      }).catch((error) => {
+        console.warn('[Auth] Supabase signOut error (ignored):', error);
+      });
     },
 
     resendVerificationEmail: async (email: string) => {

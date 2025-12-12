@@ -50,9 +50,10 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
     clearPlan,
   } = useAIPanel();
   
-  const { user, isLoading: isAuthLoading } = useAuthStore(state => ({ 
+  const { user, isLoading: isAuthLoading, isInitialized: isAuthInitialized } = useAuthStore(state => ({ 
     user: state.user, 
-    isLoading: state.isLoading 
+    isLoading: state.isLoading,
+    isInitialized: state.isInitialized 
   }));
   
   const [input, setInput] = useState('');
@@ -147,7 +148,7 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
       
       {/* Messages */}
       <div className={styles.messages}>
-        {isAuthLoading ? (
+        {!isAuthInitialized && isAuthLoading ? (
           <div className={styles.loading}>
             <span className={styles.loadingDot}>●</span>
             <span className={styles.loadingDot}>●</span>
