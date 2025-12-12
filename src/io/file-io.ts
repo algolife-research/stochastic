@@ -267,7 +267,7 @@ export async function saveGraphToFile(
   
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename.endsWith('.phono') ? filename : `${filename}.phono`;
+  a.download = filename.endsWith('.sto') ? filename : `${filename}.sto`;
   a.click();
   
   URL.revokeObjectURL(url);
@@ -597,7 +597,7 @@ export async function saveCompositionToFile(
   
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename.endsWith('.phono') ? filename : `${filename}.phono`;
+  a.download = filename.endsWith('.sto') ? filename : `${filename}.sto`;
   a.click();
   
   URL.revokeObjectURL(url);

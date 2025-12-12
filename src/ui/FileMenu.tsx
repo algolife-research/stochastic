@@ -76,7 +76,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
         const data = JSON.parse(content);
         loadCompositionData(data);
         setCurrentComposition(filename);
-        setProjectMeta({ name: filename.replace('.phono', '') });
+        setProjectMeta({ name: filename.replace('.sto', '') });
       } catch (err) {
         console.error('Failed to parse composition:', err);
       }
@@ -219,17 +219,17 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
     
     if (project.path && isTauri()) {
       // Save to project folder using V3 format
-      const phonoFilename = filename.endsWith('.phono') ? filename : `${filename}.phono`;
+      const stoFilename = filename.endsWith('.sto') ? filename : `${filename}.sto`;
       const data = serializeComposition(scenes, arrangement, arrangementChannels, musicalContext, globalSettings, projectMeta, masterSpeed);
       
-      const success = await fs.writeComposition(project.path, phonoFilename, JSON.stringify(data, null, 2));
+      const success = await fs.writeComposition(project.path, stoFilename, JSON.stringify(data, null, 2));
       if (success) {
         markClean();
-        setCurrentComposition(phonoFilename);
+        setCurrentComposition(stoFilename);
         // Refresh list
         const files = await fs.listCompositions(project.path);
         setCompositions(files);
-        console.log('Composition saved to project:', phonoFilename);
+        console.log('Composition saved to project:', stoFilename);
       } else {
         alert('Failed to save to project folder');
       }
@@ -323,7 +323,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
             >
               <option value="" disabled>Select Composition...</option>
               {project.compositions.map(file => (
-                <option key={file} value={file}>{file.replace('.phono', '')}</option>
+                <option key={file} value={file}>{file.replace('.sto', '')}</option>
               ))}
             </select>
           )}
@@ -355,7 +355,7 @@ export function FileMenu({ onShowSettings, onShowExport }: FileMenuProps): React
       <input
         ref={fileInputRef}
         type="file"
-        accept=".phono,.json"
+        accept=".sto,.json"
         style={{ display: 'none' }}
         onChange={handleFileSelected}
       />

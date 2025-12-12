@@ -26,7 +26,7 @@ This document provides complete specifications for AI systems to generate valid 
 
 ## File Format
 
-Stochastic compositions are stored as `.phono` files containing JSON. **Version 3.0** uses a scene-based structure:
+Stochastic compositions are stored as `.sto` files containing JSON. **Version 3.0** uses a scene-based structure:
 
 > **CRITICAL:** The JSON must use the following nested structure with scenes. Do not place nodes/edges at the root level.
 >

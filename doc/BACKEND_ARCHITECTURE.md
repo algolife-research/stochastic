@@ -104,8 +104,8 @@ When running in Tauri, Stochastic supports "Project Mode" where compositions are
 ```
 MyProject/
 ├── project.json        # Project metadata
-├── Main.phono          # Composition files
-├── Variation A.phono
+├── Main.sto          # Composition files
+├── Variation A.sto
 └── assets/             # Future: audio samples
 ```
 

@@ -176,7 +176,7 @@ export function ProjectsPanel(): React.ReactElement {
   const handleLocalLoad = useCallback(async () => {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
-    fileInput.accept = '.phono,.json';
+    fileInput.accept = '.sto,.json';
     fileInput.onchange = async (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
@@ -207,7 +207,7 @@ export function ProjectsPanel(): React.ReactElement {
         }
 
         setGlobalSettings(data.globalSettings);
-        setProjectMeta({ ...data.projectMeta, name: file.name.replace(/\.(phono|json)$/, '') });
+        setProjectMeta({ ...data.projectMeta, name: file.name.replace(/\.(sto|json)$/, '') });
         setCurrentProjectId(null);
         markClean();
       } catch {

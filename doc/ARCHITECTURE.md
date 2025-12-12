@@ -71,7 +71,7 @@ Multi-oscillator polyphonic synthesizer with AHD envelopes, filters, and convolu
 → See [Frontend Architecture - Audio Engine](./FRONTEND_ARCHITECTURE.md#6-audio-engine)
 
 ### File I/O
-`.phono` JSON format for compositions. Supports project mode for multi-file workflows. Legacy format migration.
+`.sto` JSON format for compositions. Supports project mode for multi-file workflows. Legacy format migration.
 
 → See [Backend Architecture - File I/O](./BACKEND_ARCHITECTURE.md#4-file-io)
 
@@ -126,7 +126,7 @@ Load → Tauri readTextFile → deserializeComposition() → populate store
 
 ## File Format (V3)
 
-Compositions are stored as `.phono` files (JSON):
+Compositions are stored as `.sto` files (JSON):
 
 ```json
 {

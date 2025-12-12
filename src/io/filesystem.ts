@@ -41,7 +41,7 @@ export const fs = {
     try {
       const entries = await readDir(dirPath);
       return entries
-        .filter(entry => !entry.children && entry.name?.endsWith('.phono'))
+        .filter(entry => !entry.children && entry.name?.endsWith('.sto'))
         .map(entry => entry.name || '')
         .filter(name => name !== '');
     } catch (err) {

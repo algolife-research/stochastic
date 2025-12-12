@@ -27,7 +27,7 @@ export function NewCompositionDialog({ visible, onClose, onCreate, existingFiles
       return;
     }
     
-    const filename = cleanName.endsWith('.phono') ? cleanName : `${cleanName}.phono`;
+    const filename = cleanName.endsWith('.sto') ? cleanName : `${cleanName}.sto`;
     if (existingFiles.includes(filename)) {
       setError('File already exists');
       return;
@@ -88,7 +88,7 @@ export function LoadCompositionDialog({ visible, onClose, onLoad, files, current
                 className={`${styles.listItem} ${file === currentFile ? styles.active : ''}`}
                 onClick={() => onLoad(file)}
               >
-                {file.replace('.phono', '')}
+                {file.replace('.sto', '')}
               </button>
             ))
           )}

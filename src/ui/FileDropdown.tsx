@@ -131,16 +131,16 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
     
     if (project.isProjectMode && project.path && isTauri()) {
       // Save to project folder
-      const phonoFilename = filename.endsWith('.phono') ? filename : `${filename}.phono`;
+      const stoFilename = filename.endsWith('.sto') ? filename : `${filename}.sto`;
       const data = serializeComposition(freshScenes, freshArrangement, freshChannels, freshMusicalContext, freshGlobalSettings, freshProjectMeta, freshMasterSpeed);
       
-      const success = await fs.writeComposition(project.path, phonoFilename, JSON.stringify(data, null, 2));
+      const success = await fs.writeComposition(project.path, stoFilename, JSON.stringify(data, null, 2));
       if (success) {
         markClean();
-        setCurrentComposition(phonoFilename);
+        setCurrentComposition(stoFilename);
         const files = await fs.listCompositions(project.path);
         setCompositions(files);
-        console.log('Saved to project:', phonoFilename);
+        console.log('Saved to project:', stoFilename);
       } else {
         alert('Failed to save to project folder');
       }
@@ -275,12 +275,12 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
   };
 
   const handleCreateNew = async (name: string) => {
-    const filename = name.endsWith('.phono') ? name : `${name}.phono`;
+    const filename = name.endsWith('.sto') ? name : `${name}.sto`;
     
     // Clear graph
     clear();
     setProjectMeta({
-      name: name.replace('.phono', ''),
+      name: name.replace('.sto', ''),
       author: '',
       created: Date.now(),
       modified: Date.now(),
@@ -326,7 +326,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
         const data = JSON.parse(content);
         loadCompositionData(data);
         setCurrentComposition(filename);
-        setProjectMeta({ name: filename.replace('.phono', '') });
+        setProjectMeta({ name: filename.replace('.sto', '') });
       } catch (err) {
         console.error('Failed to parse composition:', err);
       }
@@ -391,7 +391,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
         type="file"
         ref={fileInputRef}
         style={{ display: 'none' }}
-        accept=".phono,.json"
+        accept=".sto,.json"
         onChange={handleFileSelected}
       />
 

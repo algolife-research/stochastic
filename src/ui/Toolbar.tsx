@@ -206,7 +206,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
         <>
           <div className={styles['separator']} />
           <span style={{ color: '#888', fontSize: '12px' }}>
-            📁 {project.name} / {project.currentComposition?.replace('.phono', '') || 'No file'}
+            📁 {project.name} / {project.currentComposition?.replace('.sto', '') || 'No file'}
           </span>
         </>
       )}

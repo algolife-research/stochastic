@@ -371,6 +371,6 @@ saveCurrentScene() saves canvas to editing scene
 serializeComposition() converts scenes/arrangement to JSON
     │
     ▼
-If Project Mode: Write to {projectPath}/{name}.phono
+If Project Mode: Write to {projectPath}/{name}.sto
 Else: Browser download
 ```
