@@ -1,168 +1,206 @@
-# Stochastic: Roadmap & Future Improvements
+# Stochastic: Development Roadmap
 
-This document outlines the development trajectory for Stochastic, moving from its current stable desktop release to a fully realized "Quantum Music Engine."
+Stochastic is evolving from a creative tool for exploration into a professional instrument for composition, performance, and integration. This roadmap reflects our core priorities for 2025.
 
-## Phase 1: Foundation (Completed ✓)
-**Goal:** A stable, testable, and usable graph-based audio application.
-- [x] **Core Graph Engine:** Nodes, Edges, Packets.
-- [x] **Basic Nodes:** Source, Speaker, Pitch, Polariser.
-- [x] **Advanced Nodes:** Splitter, Gate, Tunnel (Sub-graphs).
-- [x] **Audio Engine:** Web Audio API integration (Oscillators, Gain, Pan).
-- [x] **Desktop Integration:** Tauri-based application with native file system access.
-- [x] **Project Management:** Save/Load compositions to disk, Project Mode.
-- [x] **Export:** Render compositions to WAV audio files.
-- [x] **Testing:** Comprehensive Unit and E2E test suite.
+## Current Status
+**Foundation Complete:** Core engine, scene system, basic nodes, audio/video export all working.
 
-## Phase 2: Scene System (Completed ✓)
-**Goal:** Multi-section compositions with arrangement and live performance modes.
+**Focus Areas for Next 6 Months:**
+1. **Project Management UX** - Professional workflow, session management
+2. **Public Projects** - Community library and project discovery
+3. **Examples & Onboarding** - Curated learning paths and interactive tutorials
+4. **Visualization Modes** - Clean, improve, and expand visual feedback
+5. **MIDI/VST for Professionals** - DAW integration and hardware control
 
-### 2.1 Core Scene Features
-- [x] **Scene Data Model:** Scenes store graph snapshots (nodes, edges, annotations, regions)
-- [x] **Scene Panel UI:** List view, create/duplicate/delete, properties editor
-- [x] **Scene Properties:** Name, color, duration (beats), loop count
-- [x] **Local Overrides:** Per-scene BPM, root note, and scale settings
-- [x] **Auto-save:** Canvas auto-saves to scene when switching
+---
 
-### 2.2 Playback Modes
-- [x] **Arrangement Mode:** Scenes play in defined order with enforced durations
-- [x] **Jam Mode:** Scenes play indefinitely until user triggers change
-- [x] **Mode Toggle:** Transport bar switch between modes
+## Priority 1: Project Management UX (Q1 2025)
+**Goal:** Professional-grade project workflows for serious musicians and developers.
 
-### 2.3 Transport Controls
-- [x] **Play/Pause/Stop:** Full transport with pause (preserves state) and stop (resets)
-- [x] **Scene Triggering:** Click to load, double-click for immediate switch
-- [x] **Scene Queuing:** Queue next scene in Jam mode
-- [x] **Scene Trigger Node:** In-graph node to trigger scene jumps or queued transitions
+### 1.1 Project Organization
+- [ ] **Project Templates:** Start from templates (empty, minimal, example-based)
+- [ ] **Project Settings:** Global metadata (title, artist, BPM, time signature)
+- [ ] **Project Browser:** File picker with recent projects, starred/favorites
+- [ ] **Project Backups:** Auto-versioning with ability to restore old versions
+- [ ] **Session Management:** Persist UI state (zoom, pan, panel layout) per project
 
-### 2.4 Arrangement
-- [x] **Arrangement Timeline:** Visual timeline showing scene sequence
-- [x] **Timeline Scrubbing:** Drag playhead to seek in arrangement
-- [x] **Linear Rendering:** Timeline width proportional to beat duration
-- [x] **Add to Arrangement:** Add scenes with automatic position calculation
-- [x] **Slot Management:** Reorder, remove arrangement slots
-- [x] **Multi-Channel Support:** Multiple tracks playing simultaneously
-- [x] **Channel Controls:** Per-track mute, solo, volume
+### 1.2 Scene Management Improvements
+- [ ] **Scene Presets:** Save/load scene templates with common graphs
+- [ ] **Scene Locking:** Protect critical scenes from accidental edits
 
-### 2.5 Export
-- [x] **Arrangement Export:** Export entire arrangement to WAV/MIDI
-- [x] **Duration Calculation:** Auto-calculate total duration from scenes
-- [x] **Export Mode Toggle:** Choose between canvas or arrangement export
-- [x] **Multi-Channel Export:** All channels play during export
+### 1.3 Workflow Enhancements
+- [ ] **Undo/Redo System:** Full history stack with visual timeline
+- [ ] **Auto-Save:** Configurable auto-save interval with visual indicator
+- [ ] **Save As:** Create project variants (live version, demo mix, etc.)
+- [ ] **Diff Viewer:** Compare versions and see what changed
+- [ ] **Quick Copy/Paste:** Copy nodes between scenes efficiently
 
-## Phase 2.5: UX & Stability (Missing Essentials)
-**Goal:** Essential features for a safe and forgiving creative workflow.
+### 1.4 Performance & Stability
+- [ ] **Master Limiter:** Safety limiter to prevent clipping on master output
+- [ ] **Compressor Node:** Dynamics control for feedback loops and swells
+- [ ] **Crash Recovery:** Auto-recovery of unsaved work
+- [ ] **Large Project Support:** Optimize for graphs with 100+ nodes
 
-- [ ] **Undo/Redo System:** Robust history stack for graph operations (Global or Per-Scene).
-- [ ] **Master Limiter:** Safety limiter on the master output to prevent clipping/volume spikes.
-- [ ] **Compressor Node:** Dynamics control for taming feedback loops and generative swells.
-- [ ] **Minimap:** Navigation aid for large, complex node graphs.
-- [ ] **Clipboard:** Copy/Paste nodes between different scenes.
+---
 
-## Phase 3: The Living Graph (Current Focus)
-**Goal:** Introduce biological/evolutionary metaphors and deeper modulation.
+## Priority 2: Public Projects & Community (Q1-Q2 2025)
+**Goal:** Build a library of community compositions and learning resources.
 
-### 3.1 Mutators & LFOs
-- [x] **LFO Node:** Continuous modulation of node properties
-- [x] **Markov Chains:** Weighted probability routing in Splitter nodes
-- [ ] **Macro Controls:** Global "Performance Knobs" that map to multiple parameters across the graph.
-- [ ] **Randomizer Node:** Random property mutations on packets
-- [ ] **Mutator Node (Genetic Drift):** Incremental (Drift) or drastic (Radiation) changes to packet properties.
-- [ ] **Crossover Node (Sexual Reproduction):** Merges two packets, inheriting properties from both parents.
-- [ ] **Fitness Gate (Natural Selection):** Filters packets based on harmonic, energy, or density criteria.
+See detailed implementation plan: [PUBLIC_PROJECTS_STRATEGY.md](PUBLIC_PROJECTS_STRATEGY.md)
 
-### 3.2 Visual Feedback Polish
-- [ ] **Particle Trails:** Visual history of where packets have been
-- [x] **Pulse Animation:** Nodes flash visually when processing a packet
-- [x] **Wire Animation:** Edges animate as packets travel
+### 2.1 Community Features (MVP)
+- [ ] **Browse Projects:** Search/filter community projects by category, tags, difficulty
+- [ ] **Publish to Community:** Export project as public with metadata
+- [ ] **Load Public Project:** Import community projects directly into workspace
+- [ ] **Like/Rating System:** Users can like and provide feedback
+- [ ] **Fork/Remix:** Create derivations of existing projects with attribution
 
-### 3.3 Audio Polish
-- [x] **AHD Envelopes:** Attack-Hold-Decay control on Polariser and Speaker
-- [x] **Global Reverb:** Master reverb send with convolution
-- [ ] **Per-Scene Transitions:** Crossfade/fade audio during scene changes
+### 2.2 Curation & Discovery
+- [ ] **Featured Projects:** Homepage carousel of hand-picked works
+- [ ] **Trending Section:** Algorithmically selected popular/recent projects
+- [ ] **Curated Collections:** Staff-created playlists (e.g., "Ambient Explorations")
+- [ ] **Creator Profiles:** User pages showing all published projects
+- [ ] **Project Statistics:** View count, like count, remix count
 
-## Phase 4: Advanced Scene Features (Planned)
-**Goal:** Professional-grade scene orchestration.
+### 2.3 Moderation & Safety
+- [ ] **Content Policy:** Clear guidelines for publishable content
+- [ ] **Report System:** Flag inappropriate or problematic projects
+- [ ] **Moderation Queue:** Admin dashboard to review reports
+- [ ] **Verified Badge:** Mark high-quality or official projects
 
-### 4.1 Transitions
-- [x] **Crossfade Transitions:** Smooth audio blend between scenes (via Scene Trigger)
-- [ ] **BPM Ramping:** Gradual tempo changes during transitions
-- [ ] **Transition Curves:** Configurable fade curves
+### 2.4 Integration
+- [ ] **Seed with Examples:** Import curated examples as public projects
+- [ ] **Share Links:** Generate shareable URLs to load projects
+- [ ] **Embed Button:** Share Stochastic projects on blogs/websites
 
-### 4.2 Live Performance
-- [ ] **MIDI Triggering:** Trigger scenes via MIDI notes
-- [ ] **Keyboard Shortcuts:** Number keys for scene selection
-- [ ] **Phrase Quantization:** Queue triggers to next bar/phrase
+---
 
-### 4.3 Advanced Arrangement
-- [ ] **Drag-and-Drop:** Reorder scenes in timeline
-- [ ] **Per-Slot Overrides:** Instance-specific BPM and loop count
-- [ ] **Markers/Cue Points:** Annotation markers in arrangement
+## Priority 3: Examples & Onboarding (Q1-Q2 2025)
+**Goal:** Curated learning path from beginner to advanced, with interactive guidance.
 
-## Phase 5: Visual Art Generator (Planned)
-**Goal:** Transform Stochastic into a generative audiovisual instrument with video export.
+### 3.1 Examples Cleanup & Curation
+- [ ] **Reduce from 50 to 15 Curated Examples** (IN PROGRESS)
+  - Tutorial (10 scenes: first sound, pitch, filters, etc.)
+  - Oscillator modes, Filter types, Noise types (educational)
+  - Key demos: Mozart dice, Techno, Ambient drone, Gamelan, Canon in D
+  - Advanced: LFO, Quantizer, Tunnels, Teleporter, Euclidean rhythms, Genetic evolution
+- [ ] **Fix & Polish:** Review audio quality, fix bugs, add annotations
+- [ ] **Tag System:** Mark examples by category (tutorial, ambient, rhythmic, etc.)
+- [ ] **Difficulty Levels:** Label as beginner/intermediate/advanced
 
-### 5.1 Visualization Mode System
-- [ ] **Viz Mode Property:** Per-scene visualization mode setting
-- [ ] **Mode Switching:** Toggle between Editor mode (default) and Visualization modes
-- [ ] **Multiple Viz Modes:** Abstract, Geometric, Particle, Wave, Spectral, etc.
-- [ ] **Mode Preview:** Quick preview of visualization without leaving editor
+### 3.2 Interactive Onboarding
+- [ ] **First-Time User Flow:** 30-second interactive walkthrough
+  - What is Stochastic?
+  - Create first sound (source → speaker)
+  - Explore modifier (pitch, gain)
+  - Save project
+- [ ] **Interactive Lessons:** Step-by-step tutorials with guided canvas
+  - Lesson 1: Basic Synthesis
+  - Lesson 2: Composition & Arrangement
+  - Lesson 3: Advanced Techniques
+- [ ] **Tip System:** Context-sensitive hints in UI ("Did you know?", "Try this")
+- [ ] **Sandbox Mode:** Safe environment to explore without breaking things
 
-### 5.2 Core Visualization Engine
-- [ ] **Viz Renderer:** Separate WebGL/Canvas renderer for generative art
-- [ ] **Data Binding:** Map musical properties to visual parameters
-- [ ] **Packet Visualization:** Transform packet flow into visual elements
-- [ ] **Node Influence:** Nodes affect surrounding visual space
-- [ ] **Edge Dynamics:** Edges as visual connectors/flow lines
+### 3.3 Video Content
+- [ ] **Getting Started Video:** 5-10 min overview
+- [ ] **Technique Videos:** Feature-specific tutorials (scenes, tunnels, quantizers)
+- [ ] **Showcase Videos:** Examples of finished compositions
+- [ ] **YouTube Integration:** Embed videos in help system
 
-### 5.3 Musical Data → Visual Mapping
-- [ ] **Frequency → Color:** Map pitch/frequency to color palettes
-- [ ] **Intensity → Size/Brightness:** Velocity/gain affects visual magnitude
-- [ ] **Position → Spatial:** Node positions influence visual composition
-- [ ] **Timing → Motion:** Beat/rhythm drives animation timing
-- [ ] **Wave Type → Texture:** Different wave shapes create different textures
-- [ ] **Envelope → Opacity/Scale:** AHD curves control visual element lifecycle
+### 3.4 Documentation
+- [ ] **Interactive Docs:** In-app help system with examples
+- [ ] **Glossary:** Define musical and technical terms
+- [ ] **API Docs:** For developers extending Stochastic
+- [ ] **FAQ:** Common issues and solutions
 
-### 5.4 Generative Art Modes
-- [ ] **Abstract Flow:** Organic shapes following packet paths
-- [ ] **Geometric Patterns:** Crystalline structures based on graph topology
-- [ ] **Particle Systems:** Explosions of particles at speaker nodes
-- [ ] **Wave Interference:** Rippling patterns from overlapping frequencies
-- [ ] **Spectral Visualizer:** Real-time frequency spectrum display
-- [ ] **Kaleidoscope:** Symmetric reflections of graph activity
+---
 
-### 5.5 Video Export
-- [ ] **Frame Capture:** Render visualization frames in sync with audio
-- [ ] **Video Encoding:** Export to MP4/WebM with audio track
-- [ ] **Resolution Options:** 720p, 1080p, 4K export targets
-- [ ] **Frame Rate:** 30fps, 60fps options
-- [ ] **Arrangement Export:** Full arrangement rendered as video
+## Priority 4: Visualization Modes (Q2-Q3 2025)
+**Goal:** Rich visual feedback that brings compositions to life.
 
-### 5.6 Advanced Visual Features
-- [ ] **Visual Presets:** Save and load visualization configurations
-- [ ] **Per-Scene Viz Settings:** Different visual styles per scene
-- [ ] **Transitions:** Visual transitions between scenes (matching audio)
-- [ ] **Custom Shaders:** User-defined GLSL shaders for advanced effects
-- [ ] **Real-time Performance:** Optimized rendering for live performance
+### 4.1 Visualization System Architecture
+- [ ] **Viz Mode Framework:** Plugin architecture for different visualizers
+- [ ] **Scene Viz Settings:** Per-scene visualization mode selection
+- [ ] **Real-time Switching:** Toggle between editor and viz modes instantly
+- [ ] **Performance Optimization:** WebGL rendering for smooth 60fps
 
-## Phase 6: The Ecosystem (Long-Term)
-**Goal:** Professional features and community.
+### 4.2 Core Visualization Modes
+- [ ] **Flow Visualization:** Packet paths as animated trails
+- [ ] **Frequency Spectrum:** Real-time FFT display of audio output
+- [ ] **Waveform Analyzer:** Shows the generated waveform in real-time
+- [ ] **Node Activity Heat Map:** Intensity indicates node activity
+- [ ] **Particle System:** Sparks/particles at key nodes and events
 
-### 6.1 Interoperability
-- [x] **MIDI Out:** Speakers can send MIDI Note On/Off
-- [ ] **VST/AU Plugin:** Wrap the engine to run inside a DAW
-- [ ] **OSC Support:** Control Stochastic from external applications
+### 4.3 Advanced Visualizations
+- [ ] **Geometric Patterns:** Graph topology rendered as evolving geometry
+- [ ] **Color Mapping:** Pitch → hue, Intensity → brightness, Pan → position
+- [ ] **Kaleidoscope:** Symmetric reflections of graph/audio data
+- [ ] **Wave Interference:** Rippling patterns from frequency interactions
+- [ ] **3D Node Space:** Experimental 3D graph visualization
 
-### 6.2 3D / VR Interface
-- [ ] Move from 2D Canvas to 3D Space (Three.js)
-- [ ] VR composition environment
+### 4.4 Customization & Export
+- [ ] **Viz Presets:** Save/load visualization configurations
+- [ ] **Custom Palettes:** User-defined color schemes
+- [ ] **Video Capture:** Record visualization as video with audio
+- [ ] **Video Export:** Render full arrangement as synchronized video
+- [ ] **Resolution/Quality:** 720p, 1080p, 4K options
 
-### 6.3 Collaboration
-- [ ] **Cloud Sync:** Save compositions to cloud
-- [ ] **Sharing:** Publish and discover community compositions
-- [ ] **Real-time Collaboration:** Multi-user editing
+---
 
-## Future Concepts & Experimental Ideas
-**Goal:** Radical ideas inspired by biological systems.
+## Priority 5: MIDI & VST for Professionals (Q2-Q3 2025)
+**Goal:** Professional integration with DAWs and hardware controllers.
 
-- [ ] **Viral Packets (Horizontal Gene Transfer):** Packets that modify the properties of the Nodes they pass through (e.g., a "Minor Key Virus").
-- [ ] **Breeder Interface (Artificial Selection):** UI for evolving scenes by generating variations and selecting survivors to breed the next generation.
+### 5.1 MIDI Control & Sync
+- [ ] **MIDI Note Input:** Trigger notes via external keyboard/controller
+- [ ] **MIDI CC Mapping:** Map hardware knobs to Stochastic parameters
+- [ ] **MIDI Clock Sync:** Sync playback tempo with DAW or external sequencer
+- [ ] **MIDI Learn:** Easy parameter assignment via hardware
+- [ ] **Multi-Port Support:** Connect multiple MIDI devices simultaneously
+
+### 5.2 DAW Integration
+- [ ] **VST3 Plugin:** Run Stochastic as synth inside Ableton, Logic, Reaper, etc.
+- [ ] **AU Plugin:** Apple Audio Unit format for Mac compatibility
+- [ ] **Preset Management:** Save/load plugin states as presets
+- [ ] **Automation:** Host can automate Stochastic parameters
+- [ ] **MIDI In:** Receive note/CC data from host DAW
+
+### 5.3 Hardware Control
+- [ ] **Mixer Integration:** System audio routing to other apps
+- [ ] **External MIDI Clock:** Receive tempo from external hardware
+- [ ] **Controller Presets:** Pre-mapped layouts for popular controllers
+- [ ] **Surface Feedback:** MIDI feedback (LED lights) for controller sync
+
+### 5.4 Audio I/O Improvements
+- [ ] **Multi-Output:** Separate channels for individual tracks/stems
+- [ ] **Audio Input:** Optional audio input node for live input processing
+- [ ] **Routing Matrix:** Advanced audio send/return architecture
+- [ ] **Headroom Management:** Ensure adequate headroom for mixing
+
+### 5.5 Professional Monitoring
+- [ ] **Master Metering:** RMS, peak, loudness (LUFS) display
+- [ ] **Per-Channel Metering:** Meter each scene/track independently
+- [ ] **Spectrum Analyzer:** Frequency balance across range
+- [ ] **Loudness Normalization:** Standards-compliant loudness metering
+
+---
+
+## Future Priorities (Q4 2025+)
+
+### Advanced Features
+- [ ] **Macro Controls:** Global performance knobs mapping to multiple parameters
+- [ ] **Randomizer Node:** Controlled randomization with seed support
+- [ ] **Crossover Node:** Genetic "crossover" merging two packets
+- [ ] **Fitness Gate Improvements:** More sophisticated harmonic analysis
+- [ ] **Transition Curves:** Configurable fade curves during scene changes
+- [ ] **BPM Ramping:** Tempo changes during transitions
+- [ ] **Phrase Quantization:** Queue triggers to next bar/beat
+
+### Experimental & Long-Term
+- [ ] **3D Visualization:** Move to 3D space with Three.js
+- [ ] **VR Interface:** Immersive composition in VR
+- [ ] **Real-time Collaboration:** Multi-user editing sessions
+- [ ] **Cloud Sync:** Seamless project syncing across devices
+- [ ] **Custom Shaders:** User-defined GLSL for advanced effects
+- [ ] **OSC Support:** Open Sound Control for external applications
+- [ ] **Breeder Interface:** Artificial selection UI for evolving variations
+- [ ] **Viral Packets:** Horizontal gene transfer between nodes
