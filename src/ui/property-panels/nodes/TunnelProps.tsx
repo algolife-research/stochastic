@@ -3,9 +3,18 @@ import React, { useState } from 'react';
 import type { SubNode } from '@core/types';
 import { TunnelPresetSelector } from '../../TunnelPresetSelector';
 import type { TunnelPreset } from '@data/tunnel-presets';
-import { PropertyRow } from '../shared';
+import { PropertyRow, NumberInput, Select } from '../shared';
 import type { PropsEditorProps, TunnelPropsType } from '../types';
 import styles from '../../PropertyPanel.module.css';
+
+// Import all node-specific prop editors
+import { OscillatorProps } from './OscillatorProps';
+import { FilterProps } from './FilterProps';
+import { ModulatorProps } from './ModulatorProps';
+import { PitchProps } from './PitchProps';
+import { GainProps } from './GainProps';
+import { GateProps } from './GateProps';
+import { DelayProps } from './DelayProps';
 
 export function TunnelProps({ props, onChange }: PropsEditorProps<TunnelPropsType>): React.ReactElement {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
@@ -50,6 +59,113 @@ export function TunnelProps({ props, onChange }: PropsEditorProps<TunnelPropsTyp
     onChange('tunnelName', preset.name);
     // Cast subNodes to mutable array for the onChange handler
     onChange('subNodes', [...preset.subNodes] as SubNode[]);
+  };
+  
+  /**
+   * Render the appropriate property panel for a subnode
+   */
+  const renderSubNodeProps = (subNode: SubNode, index: number) => {
+    const subNodeProps = subNode.props as Record<string, unknown>;
+    
+    // Create a proxy onChange that updates the specific subnode
+    const subNodeOnChange = (key: string, value: unknown) => {
+      handleSubNodePropChange(index, key, value);
+    };
+    
+    // Render node-specific property panel based on type
+    switch (subNode.type) {
+      case 'oscillator':
+        return (
+          <OscillatorProps
+            props={subNodeProps as never}
+            onChange={subNodeOnChange as never}
+          />
+        );
+      
+      case 'filter':
+        return (
+          <FilterProps
+            props={subNodeProps as never}
+            onChange={subNodeOnChange as never}
+          />
+        );
+      
+      case 'modulator':
+        return (
+          <ModulatorProps
+            props={subNodeProps as never}
+            onChange={subNodeOnChange as never}
+          />
+        );
+      
+      case 'pitch':
+        return (
+          <PitchProps
+            props={subNodeProps as never}
+            onChange={subNodeOnChange as never}
+          />
+        );
+      
+      case 'gain':
+        return (
+          <GainProps
+            props={subNodeProps as never}
+            onChange={subNodeOnChange as never}
+          />
+        );
+      
+      case 'gate':
+        return (
+          <GateProps
+            props={subNodeProps as never}
+            onChange={subNodeOnChange as never}
+          />
+        );
+      
+      case 'delay':
+        return (
+          <DelayProps
+            props={subNodeProps as never}
+            onChange={subNodeOnChange as never}
+          />
+        );
+      
+      // Fallback for unknown types - simple key-value editor
+      default:
+        return (
+          <>
+            {Object.entries(subNodeProps).map(([key, value]) => (
+              <div key={key} className={styles.subNodePropRow}>
+                <label className={styles.subNodePropLabel}>{key}</label>
+                {typeof value === 'number' ? (
+                  <input
+                    type="number"
+                    className={styles.numberInput}
+                    value={value}
+                    step={value < 1 ? 0.01 : 1}
+                    onChange={e => handleSubNodePropChange(index, key, parseFloat(e.target.value))}
+                  />
+                ) : typeof value === 'boolean' ? (
+                  <input
+                    type="checkbox"
+                    checked={value}
+                    onChange={e => handleSubNodePropChange(index, key, e.target.checked)}
+                  />
+                ) : typeof value === 'string' ? (
+                  <input
+                    type="text"
+                    className={styles.textInput}
+                    value={value}
+                    onChange={e => handleSubNodePropChange(index, key, e.target.value)}
+                  />
+                ) : (
+                  <span>{JSON.stringify(value)}</span>
+                )}
+              </div>
+            ))}
+          </>
+        );
+    }
   };
   
   return (
@@ -104,35 +220,9 @@ export function TunnelProps({ props, onChange }: PropsEditorProps<TunnelPropsTyp
             
             {expandedIndex === index && (
               <div className={styles.subNodeProps}>
-                {Object.entries(subNode.props || {}).map(([key, value]) => (
-                  <div key={key} className={styles.subNodePropRow}>
-                    <label className={styles.subNodePropLabel}>{key}</label>
-                    {typeof value === 'number' ? (
-                      <input
-                        type="number"
-                        className={styles.numberInput}
-                        value={value}
-                        step={value < 1 ? 0.01 : 1}
-                        onChange={e => handleSubNodePropChange(index, key, parseFloat(e.target.value))}
-                      />
-                    ) : typeof value === 'boolean' ? (
-                      <input
-                        type="checkbox"
-                        checked={value}
-                        onChange={e => handleSubNodePropChange(index, key, e.target.checked)}
-                      />
-                    ) : typeof value === 'string' ? (
-                      <input
-                        type="text"
-                        className={styles.textInput}
-                        value={value}
-                        onChange={e => handleSubNodePropChange(index, key, e.target.value)}
-                      />
-                    ) : (
-                      <span>{JSON.stringify(value)}</span>
-                    )}
-                  </div>
-                ))}
+                {/* Render auto-generated property panel based on subnode type */}
+                {renderSubNodeProps(subNode, index)}
+                
                 <button 
                   className={styles.removeSubNodeBtn}
                   onClick={() => handleRemoveSubNode(index)}
