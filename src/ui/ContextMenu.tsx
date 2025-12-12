@@ -25,6 +25,12 @@ interface ContextMenuState {
   worldY?: number | undefined;
 }
 
+interface EdgeInsertInfo {
+  edgeId: string;
+  fromNodeId: NodeId;
+  toNodeId: NodeId;
+}
+
 // ============================================================================
 // NODE TYPE CATEGORIES
 // ============================================================================
@@ -93,8 +99,10 @@ export function ContextMenu(): React.ReactElement | null {
   });
   const [showAddSubmenu, setShowAddSubmenu] = useState(false);
   const [showPresetSubmenu, setShowPresetSubmenu] = useState(false);
+  const [showInsertNodeSubmenu, setShowInsertNodeSubmenu] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activePresetCategory, setActivePresetCategory] = useState<TunnelPresetCategory | null>(null);
+  const [edgeInsertInfo, setEdgeInsertInfo] = useState<EdgeInsertInfo | null>(null);
   
   // Listen for context menu events
   useEffect(() => {
@@ -124,6 +132,7 @@ export function ContextMenu(): React.ReactElement | null {
       
       // Check if clicking on an edge
       let foundEdge: string | undefined;
+      let foundEdgeInfo: EdgeInsertInfo | null = null;
       if (!foundNode) {
         store.edges.forEach((edge, id) => {
           const fromNode = store.nodes.get(edge.from);
@@ -132,6 +141,11 @@ export function ContextMenu(): React.ReactElement | null {
             const dist = distToSegment(worldX, worldY, fromNode.x, fromNode.y, toNode.x, toNode.y);
             if (dist < 10) {
               foundEdge = id;
+              foundEdgeInfo = {
+                edgeId: id,
+                fromNodeId: edge.from,
+                toNodeId: edge.to,
+              };
             }
           }
         });
@@ -152,6 +166,7 @@ export function ContextMenu(): React.ReactElement | null {
         menuType = 'edge';
         targetId = foundEdge;
         store.selectEdge(foundEdge as never);
+        setEdgeInsertInfo(foundEdgeInfo);
       }
       
       // Position menu
@@ -165,6 +180,7 @@ export function ContextMenu(): React.ReactElement | null {
         worldY,
       });
       setShowAddSubmenu(false);
+      setShowInsertNodeSubmenu(false);
       setShowPresetSubmenu(false);
       setActivePresetCategory(null);
     };
@@ -199,8 +215,10 @@ export function ContextMenu(): React.ReactElement | null {
         setState(s => ({ ...s, visible: false }));
         setShowAddSubmenu(false);
         setShowPresetSubmenu(false);
+        setShowInsertNodeSubmenu(false);
         setActiveCategory(null);
         setActivePresetCategory(null);
+        setEdgeInsertInfo(null);
       }
     };
     
@@ -335,6 +353,62 @@ export function ContextMenu(): React.ReactElement | null {
     setState(s => ({ ...s, visible: false }));
   };
   
+  const handleInsertNodeInEdge = (type: NodeType) => {
+    const store = getGraphStore();
+    if (!edgeInsertInfo) return;
+    
+    const { edgeId, fromNodeId, toNodeId } = edgeInsertInfo;
+    const edge = store.edges.get(edgeId as never);
+    if (!edge) return;
+    
+    // Get the original edge's properties to preserve timing settings
+    const originalEdge = edge;
+    
+    // Calculate position for new node (use the click position from worldX/worldY)
+    let newX: number;
+    let newY: number;
+    
+    if (state.worldX !== undefined && state.worldY !== undefined) {
+      // Use the click position
+      newX = state.worldX;
+      newY = state.worldY;
+    } else {
+      // Fallback: midpoint between source and target
+      const fromNode = store.nodes.get(fromNodeId);
+      const toNode = store.nodes.get(toNodeId);
+      if (!fromNode || !toNode) return;
+      newX = (fromNode.x + toNode.x) / 2;
+      newY = (fromNode.y + toNode.y) / 2;
+    }
+    
+    // Create the new node
+    const newNodeId = store.addNode(type, newX, newY);
+    
+    // Delete the original edge
+    store.deleteEdge(edgeId as never);
+    
+    // Create edge from original source to new node (preserving timing settings)
+    store.addEdge(fromNodeId, newNodeId, {
+      timingMode: originalEdge.timingMode,
+      durationBeats: originalEdge.durationBeats,
+    });
+    
+    // Create edge from new node to original target (preserving timing settings)
+    store.addEdge(newNodeId, toNodeId, {
+      timingMode: originalEdge.timingMode,
+      durationBeats: originalEdge.durationBeats,
+      targetParam: originalEdge.targetParam,
+    });
+    
+    // Select the new node
+    store.selectNode(newNodeId);
+    
+    setState(s => ({ ...s, visible: false }));
+    setShowInsertNodeSubmenu(false);
+    setActiveCategory(null);
+    setEdgeInsertInfo(null);
+  };
+  
   const handleGroupIntoTunnel = () => {
     const store = getGraphStore();
     // If right-clicking on a node that's not already selected, select it first
@@ -455,6 +529,40 @@ export function ContextMenu(): React.ReactElement | null {
       
       {state.type === 'edge' && (
         <>
+          <div 
+            className={styles.menuItem}
+            onMouseEnter={() => { setShowInsertNodeSubmenu(true); }}
+            onMouseLeave={() => { setShowInsertNodeSubmenu(false); setActiveCategory(null); }}
+          >
+            ➕ Insert Node ▸
+            {showInsertNodeSubmenu && (
+              <div className={styles.submenu}>
+                {NODE_CATEGORIES.map((category) => (
+                  <div 
+                    key={category.name}
+                    className={styles.menuItem}
+                    onMouseEnter={() => setActiveCategory(category.name)}
+                  >
+                    {category.name} ▸
+                    {activeCategory === category.name && (
+                      <div className={styles.submenu}>
+                        {category.nodes.map(({ type, label, icon }) => (
+                          <div 
+                            key={type}
+                            className={styles.menuItem}
+                            onClick={() => handleInsertNodeInEdge(type)}
+                          >
+                            <span className={styles.icon}>{icon}</span> {label}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className={styles.divider} />
           <div className={styles.menuItem + ' ' + styles.danger} onClick={handleDelete}>
             🗑️ Delete Edge
           </div>
