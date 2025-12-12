@@ -229,6 +229,53 @@ export interface AutoLayoutOperation {
   algorithm?: 'hierarchical' | 'force' | 'circular';
 }
 
+/** Create new scene operation */
+export interface CreateSceneOperation {
+  type: 'create_scene';
+  name?: string;
+  copyCurrentCanvas?: boolean;  // If true, copy current canvas to new scene
+}
+
+/** Modify existing scene operation */
+export interface ModifySceneOperation {
+  type: 'modify_scene';
+  sceneId?: string;  // Scene ID or name
+  name?: string;
+  durationBeats?: number;
+  loopCount?: number;
+  localBpm?: number | null;
+  localRoot?: number | null;
+  localScale?: ScaleName | null;
+  color?: string;
+}
+
+/** Switch to different scene operation */
+export interface SwitchSceneOperation {
+  type: 'switch_scene';
+  sceneId?: string;  // Scene ID or name
+  sceneName?: string;
+}
+
+/** Save current canvas to scene operation */
+export interface SaveToSceneOperation {
+  type: 'save_to_scene';
+  sceneId?: string;  // Scene ID or name
+}
+
+/** Delete scene operation */
+export interface DeleteSceneOperation {
+  type: 'delete_scene';
+  sceneId?: string;  // Scene ID or name
+}
+
+/** Add scene to arrangement operation */
+export interface AddToArrangementOperation {
+  type: 'add_to_arrangement';
+  sceneId?: string;  // Scene ID or name
+  startBeat?: number;
+  channel?: number;
+}
+
 /** Union type for all canvas operations */
 export type CanvasOperation = 
   | AddNodeOperation
@@ -237,7 +284,13 @@ export type CanvasOperation =
   | AddEdgeOperation
   | ModifyEdgeOperation
   | DeleteEdgeOperation
-  | AutoLayoutOperation;
+  | AutoLayoutOperation
+  | CreateSceneOperation
+  | ModifySceneOperation
+  | SwitchSceneOperation
+  | SaveToSceneOperation
+  | DeleteSceneOperation
+  | AddToArrangementOperation;
 
 /** Union type for all node props */
 export type NodePropsUnion = 

@@ -109,10 +109,30 @@ export function buildRegionContext(
  */
 export function serializeContext(context: CanvasContext): string {
   const lines: string[] = [];
+  const state = useGraphStore.getState();
   
   // Header
   lines.push('=== CURRENT CANVAS STATE ===');
   lines.push('');
+  
+  // Scene information
+  if (state.scenes.size > 0) {
+    lines.push(`Scenes (${state.scenes.size}):`);
+    const sceneArray = Array.from(state.scenes.values());
+    for (const scene of sceneArray) {
+      const isCurrent = scene.id === state.editingSceneId;
+      const marker = isCurrent ? '▶ ' : '  ';
+      lines.push(`${marker}[${scene.id.slice(0, 8)}] "${scene.name}" - ${scene.nodes.length} nodes, ${scene.durationBeats} beats`);
+    }
+    lines.push('');
+    if (state.editingSceneId) {
+      const currentScene = state.scenes.get(state.editingSceneId);
+      if (currentScene) {
+        lines.push(`Currently editing: "${currentScene.name}"`);
+        lines.push('');
+      }
+    }
+  }
   
   // Musical context
   lines.push(`Musical Context:`);

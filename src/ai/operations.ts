@@ -12,6 +12,12 @@ import type {
   ModifyEdgeOperation,
   DeleteEdgeOperation,
   AutoLayoutOperation,
+  CreateSceneOperation,
+  ModifySceneOperation,
+  SwitchSceneOperation,
+  SaveToSceneOperation,
+  DeleteSceneOperation,
+  AddToArrangementOperation,
 } from './types';
 
 // ============================================================================
@@ -76,6 +82,24 @@ export function applyOperations(operations: CanvasOperation[]): ApplyResult {
           break;
         case 'auto_layout':
           applyAutoLayout(operation, store);
+          break;
+        case 'create_scene':
+          applyCreateScene(operation, result, store);
+          break;
+        case 'modify_scene':
+          applyModifyScene(operation, result, store);
+          break;
+        case 'switch_scene':
+          applySwitchScene(operation, result, store);
+          break;
+        case 'save_to_scene':
+          applySaveToScene(operation, result, store);
+          break;
+        case 'delete_scene':
+          applyDeleteScene(operation, result, store);
+          break;
+        case 'add_to_arrangement':
+          applyAddToArrangement(operation, result, store);
           break;
       }
       result.appliedCount++;
@@ -402,10 +426,212 @@ export function previewOperations(operations: CanvasOperation[]): PreviewChange[
           details: `Delete edge`,
         });
         break;
+        
+      case 'create_scene':
+        changes.push({
+          type: 'add',
+          target: 'node',
+          details: `Create scene "${op.name || 'New Scene'}"${op.copyCurrentCanvas ? ' (with current canvas)' : ''}`,
+        });
+        break;
+        
+      case 'modify_scene': {
+        const sceneId = resolveSceneId(op.sceneId, store);
+        const scene = sceneId ? store.scenes.get(sceneId) : null;
+        changes.push({
+          type: 'modify',
+          target: 'node',
+          details: `Modify scene "${scene?.name || op.sceneId || 'unknown'}"`,
+        });
+        break;
+      }
+        
+      case 'switch_scene': {
+        const sceneId = resolveSceneId(op.sceneId || op.sceneName, store);
+        const scene = sceneId ? store.scenes.get(sceneId) : null;
+        changes.push({
+          type: 'modify',
+          target: 'node',
+          details: `Switch to scene "${scene?.name || op.sceneId || op.sceneName || 'unknown'}"`,
+        });
+        break;
+      }
+        
+      case 'save_to_scene': {
+        const sceneId = op.sceneId ? resolveSceneId(op.sceneId, store) : store.editingSceneId;
+        const scene = sceneId ? store.scenes.get(sceneId) : null;
+        changes.push({
+          type: 'modify',
+          target: 'node',
+          details: `Save canvas to scene "${scene?.name || 'current'}"`,
+        });
+        break;
+      }
+        
+      case 'delete_scene': {
+        const sceneId = resolveSceneId(op.sceneId, store);
+        const scene = sceneId ? store.scenes.get(sceneId) : null;
+        changes.push({
+          type: 'delete',
+          target: 'node',
+          details: `Delete scene "${scene?.name || op.sceneId || 'unknown'}"`,
+        });
+        break;
+      }
+        
+      case 'add_to_arrangement': {
+        const sceneId = op.sceneId ? resolveSceneId(op.sceneId, store) : store.editingSceneId;
+        const scene = sceneId ? store.scenes.get(sceneId) : null;
+        changes.push({
+          type: 'add',
+          target: 'node',
+          details: `Add scene "${scene?.name || 'current'}" to arrangement`,
+        });
+        break;
+      }
     }
   }
   
   return changes;
+}
+
+// ============================================================================
+// SCENE OPERATION HANDLERS
+// ============================================================================
+
+/**
+ * Resolve a scene ID or name to a SceneId
+ */
+function resolveSceneId(ref: string | undefined, store: StoreType): import('@core/types').SceneId | null {
+  if (!ref) return null;
+  
+  // Check if it's a direct SceneId that exists
+  const sceneId = ref as import('@core/types').SceneId;
+  if (store.scenes.has(sceneId)) {
+    return sceneId;
+  }
+  
+  // Try partial ID match
+  const normalizedRef = ref.toLowerCase().trim();
+  for (const [id] of store.scenes) {
+    const normalizedId = id.toLowerCase();
+    if (normalizedId.startsWith(normalizedRef)) {
+      return id;
+    }
+    if (normalizedRef.length >= 6 && normalizedId.includes(normalizedRef)) {
+      return id;
+    }
+  }
+  
+  // Try to find by scene name
+  for (const [id, scene] of store.scenes) {
+    if (scene.name.toLowerCase() === normalizedRef) {
+      return id;
+    }
+  }
+  
+  // Try partial name match
+  for (const [id, scene] of store.scenes) {
+    if (scene.name.toLowerCase().includes(normalizedRef)) {
+      return id;
+    }
+  }
+  
+  return null;
+}
+
+function applyCreateScene(
+  op: CreateSceneOperation,
+  result: ApplyResult,
+  store: StoreType
+): void {
+  if (op.copyCurrentCanvas) {
+    // Save current canvas to the new scene
+    const sceneId = store.createScene(op.name);
+    store.saveCurrentToScene(sceneId);
+  } else {
+    store.createScene(op.name);
+  }
+}
+
+function applyModifyScene(
+  op: ModifySceneOperation,
+  result: ApplyResult,
+  store: StoreType
+): void {
+  const sceneId = resolveSceneId(op.sceneId, store);
+  if (!sceneId) {
+    throw new Error(`Scene not found: ${op.sceneId || 'unknown'}`);
+  }
+  
+  const updates: Partial<import('@core/types').Scene> = {};
+  if (op.name !== undefined) updates.name = op.name;
+  if (op.durationBeats !== undefined) updates.durationBeats = op.durationBeats;
+  if (op.loopCount !== undefined) updates.loopCount = op.loopCount;
+  if (op.localBpm !== undefined) updates.localBpm = op.localBpm;
+  if (op.localRoot !== undefined) updates.localRoot = op.localRoot;
+  if (op.localScale !== undefined) updates.localScale = op.localScale;
+  if (op.color !== undefined) updates.color = op.color;
+  
+  store.updateScene(sceneId, updates);
+}
+
+function applySwitchScene(
+  op: SwitchSceneOperation,
+  result: ApplyResult,
+  store: StoreType
+): void {
+  const sceneId = resolveSceneId(op.sceneId || op.sceneName, store);
+  if (!sceneId) {
+    throw new Error(`Scene not found: ${op.sceneId || op.sceneName || 'unknown'}`);
+  }
+  
+  store.loadSceneToCanvas(sceneId);
+}
+
+function applySaveToScene(
+  op: SaveToSceneOperation,
+  result: ApplyResult,
+  store: StoreType
+): void {
+  const sceneId = op.sceneId 
+    ? resolveSceneId(op.sceneId, store)
+    : store.editingSceneId;
+    
+  if (!sceneId) {
+    throw new Error(`Scene not found: ${op.sceneId || 'current scene'}`);
+  }
+  
+  store.saveCurrentToScene(sceneId);
+}
+
+function applyDeleteScene(
+  op: DeleteSceneOperation,
+  result: ApplyResult,
+  store: StoreType
+): void {
+  const sceneId = resolveSceneId(op.sceneId, store);
+  if (!sceneId) {
+    throw new Error(`Scene not found: ${op.sceneId || 'unknown'}`);
+  }
+  
+  store.deleteScene(sceneId);
+}
+
+function applyAddToArrangement(
+  op: AddToArrangementOperation,
+  result: ApplyResult,
+  store: StoreType
+): void {
+  const sceneId = op.sceneId
+    ? resolveSceneId(op.sceneId, store)
+    : store.editingSceneId;
+    
+  if (!sceneId) {
+    throw new Error(`Scene not found: ${op.sceneId || 'current scene'}`);
+  }
+  
+  store.addToArrangement(sceneId, op.startBeat, op.channel);
 }
 
 // ============================================================================

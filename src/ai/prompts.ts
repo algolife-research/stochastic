@@ -350,6 +350,24 @@ Example response:
 - \`delete_edge\`: Remove an edge (use edgeId or from/to node references)
 - \`auto_layout\`: Automatically arrange all nodes. Algorithm options: "hierarchical" (left-to-right flow), "force" (physics simulation), "circular" (circle arrangement)
 
+### Scene Operations (for complex multi-part compositions)
+
+- \`create_scene\`: Create a new scene
+  - \`name\`: Scene name (optional)
+  - \`copyCurrentCanvas\`: If true, copy current canvas to new scene (optional, default: false)
+- \`modify_scene\`: Update scene properties
+  - \`sceneId\`: Scene ID or name to modify
+  - \`name\`, \`durationBeats\`, \`loopCount\`, \`localBpm\`, \`localRoot\`, \`localScale\`, \`color\`: Properties to update (all optional)
+- \`switch_scene\`: Switch to a different scene for editing
+  - \`sceneId\` or \`sceneName\`: Scene to switch to
+- \`save_to_scene\`: Save current canvas to a scene
+  - \`sceneId\`: Scene to save to (optional, defaults to current scene)
+- \`delete_scene\`: Delete a scene
+  - \`sceneId\`: Scene ID or name to delete
+- \`add_to_arrangement\`: Add scene to arrangement timeline
+  - \`sceneId\`: Scene to add (optional, defaults to current scene)
+  - \`startBeat\`, \`channel\`: Arrangement position (optional)
+
 **IMPORTANT**: When adding edges to EXISTING nodes on the canvas, use their actual node ID from the canvas state (shown in the context). Node IDs in the context are displayed as 8-character hex strings like [fa803fcc] - use this exact 8-character ID when referencing existing nodes. When connecting to NEW nodes you're creating, use the tempId you assigned.
 
 **TIP**: After creating multiple nodes, use \`auto_layout\` to automatically arrange them nicely.
@@ -385,6 +403,37 @@ When you see "PHASE X" in the user prompt:
 - **Evolving Pad**: source → oscillator → filter (with LFO on cutoff) → modulator → speaker
 - **Polymetric**: multiple sources with different intervals feeding into a mixer-like structure
 - **Layered Composition**: parallel signal chains that merge before the speaker
+
+## Multi-Scene Compositions
+
+For complex pieces with multiple sections (intro, verse, chorus, etc.), use scenes:
+
+1. **Create scenes for each section**:
+   \`\`\`json
+   { "type": "create_scene", "name": "Intro", "copyCurrentCanvas": false }
+   { "type": "create_scene", "name": "Verse", "copyCurrentCanvas": false }
+   { "type": "create_scene", "name": "Chorus", "copyCurrentCanvas": true }
+   \`\`\`
+
+2. **Switch between scenes to edit them**:
+   \`\`\`json
+   { "type": "switch_scene", "sceneName": "Intro" }
+   \`\`\`
+
+3. **Modify scene properties** (duration, BPM, etc.):
+   \`\`\`json
+   { "type": "modify_scene", "sceneName": "Chorus", "durationBeats": 32, "loopCount": 2 }
+   \`\`\`
+
+4. **Build different graphs in each scene** by switching and adding nodes
+
+5. **Add scenes to arrangement** for playback:
+   \`\`\`json
+   { "type": "add_to_arrangement", "sceneName": "Intro", "startBeat": 0 }
+   { "type": "add_to_arrangement", "sceneName": "Verse", "startBeat": 16 }
+   \`\`\`
+
+**When the user asks for complex compositions with multiple parts**, use this scene workflow instead of trying to build everything on one canvas.
 
 ## LFO/Modulation Wiring
 

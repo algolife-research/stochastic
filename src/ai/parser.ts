@@ -174,6 +174,48 @@ function parseOperations(rawOps: unknown[]): CanvasOperation[] {
         }
         break;
       }
+      case 'create_scene': {
+        const parsed = parseCreateSceneOperation(op);
+        if (parsed) {
+          operations.push(parsed);
+        }
+        break;
+      }
+      case 'modify_scene': {
+        const parsed = parseModifySceneOperation(op);
+        if (parsed) {
+          operations.push(parsed);
+        }
+        break;
+      }
+      case 'switch_scene': {
+        const parsed = parseSwitchSceneOperation(op);
+        if (parsed) {
+          operations.push(parsed);
+        }
+        break;
+      }
+      case 'save_to_scene': {
+        const parsed = parseSaveToSceneOperation(op);
+        if (parsed) {
+          operations.push(parsed);
+        }
+        break;
+      }
+      case 'delete_scene': {
+        const parsed = parseDeleteSceneOperation(op);
+        if (parsed) {
+          operations.push(parsed);
+        }
+        break;
+      }
+      case 'add_to_arrangement': {
+        const parsed = parseAddToArrangementOperation(op);
+        if (parsed) {
+          operations.push(parsed);
+        }
+        break;
+      }
     }
   }
   
@@ -293,6 +335,76 @@ function parseAutoLayoutOperation(op: Record<string, unknown>): AutoLayoutOperat
     algorithm: validAlgorithms.includes(algorithm || '') 
       ? algorithm as 'hierarchical' | 'force' | 'circular'
       : 'hierarchical',
+  };
+}
+
+function parseCreateSceneOperation(op: Record<string, unknown>): import('./types').CreateSceneOperation {
+  return {
+    type: 'create_scene',
+    name: typeof op.name === 'string' ? op.name : undefined,
+    copyCurrentCanvas: typeof op.copyCurrentCanvas === 'boolean' ? op.copyCurrentCanvas : false,
+  };
+}
+
+function parseModifySceneOperation(op: Record<string, unknown>): import('./types').ModifySceneOperation | null {
+  const sceneId = typeof op.sceneId === 'string' ? op.sceneId : undefined;
+  const name = typeof op.name === 'string' ? op.name : undefined;
+  
+  if (!sceneId && !name) return null;
+  
+  return {
+    type: 'modify_scene',
+    sceneId,
+    name: typeof op.name === 'string' ? op.name : undefined,
+    durationBeats: typeof op.durationBeats === 'number' ? op.durationBeats : undefined,
+    loopCount: typeof op.loopCount === 'number' ? op.loopCount : undefined,
+    localBpm: typeof op.localBpm === 'number' ? op.localBpm : 
+              op.localBpm === null ? null : undefined,
+    localRoot: typeof op.localRoot === 'number' ? op.localRoot : 
+               op.localRoot === null ? null : undefined,
+    localScale: typeof op.localScale === 'string' ? op.localScale as import('@core/types').ScaleName : 
+                op.localScale === null ? null : undefined,
+    color: typeof op.color === 'string' ? op.color : undefined,
+  };
+}
+
+function parseSwitchSceneOperation(op: Record<string, unknown>): import('./types').SwitchSceneOperation | null {
+  const sceneId = typeof op.sceneId === 'string' ? op.sceneId : undefined;
+  const sceneName = typeof op.sceneName === 'string' ? op.sceneName : undefined;
+  
+  if (!sceneId && !sceneName) return null;
+  
+  return {
+    type: 'switch_scene',
+    sceneId,
+    sceneName,
+  };
+}
+
+function parseSaveToSceneOperation(op: Record<string, unknown>): import('./types').SaveToSceneOperation {
+  return {
+    type: 'save_to_scene',
+    sceneId: typeof op.sceneId === 'string' ? op.sceneId : undefined,
+  };
+}
+
+function parseDeleteSceneOperation(op: Record<string, unknown>): import('./types').DeleteSceneOperation | null {
+  const sceneId = typeof op.sceneId === 'string' ? op.sceneId : undefined;
+  
+  if (!sceneId) return null;
+  
+  return {
+    type: 'delete_scene',
+    sceneId,
+  };
+}
+
+function parseAddToArrangementOperation(op: Record<string, unknown>): import('./types').AddToArrangementOperation {
+  return {
+    type: 'add_to_arrangement',
+    sceneId: typeof op.sceneId === 'string' ? op.sceneId : undefined,
+    startBeat: typeof op.startBeat === 'number' ? op.startBeat : undefined,
+    channel: typeof op.channel === 'number' ? op.channel : undefined,
   };
 }
 
@@ -517,6 +629,12 @@ export function summarizeOperations(operations: CanvasOperation[]): string {
     addEdge: 0,
     modifyEdge: 0,
     deleteEdge: 0,
+    createScene: 0,
+    modifyScene: 0,
+    switchScene: 0,
+    deleteScene: 0,
+    saveToScene: 0,
+    addToArrangement: 0,
   };
   
   for (const op of operations) {
@@ -527,6 +645,12 @@ export function summarizeOperations(operations: CanvasOperation[]): string {
       case 'add_edge': counts.addEdge++; break;
       case 'modify_edge': counts.modifyEdge++; break;
       case 'delete_edge': counts.deleteEdge++; break;
+      case 'create_scene': counts.createScene++; break;
+      case 'modify_scene': counts.modifyScene++; break;
+      case 'switch_scene': counts.switchScene++; break;
+      case 'delete_scene': counts.deleteScene++; break;
+      case 'save_to_scene': counts.saveToScene++; break;
+      case 'add_to_arrangement': counts.addToArrangement++; break;
     }
   }
   
@@ -537,6 +661,12 @@ export function summarizeOperations(operations: CanvasOperation[]): string {
   if (counts.addEdge) parts.push(`+${counts.addEdge} edges`);
   if (counts.modifyEdge) parts.push(`~${counts.modifyEdge} edges`);
   if (counts.deleteEdge) parts.push(`-${counts.deleteEdge} edges`);
+  if (counts.createScene) parts.push(`+${counts.createScene} scenes`);
+  if (counts.modifyScene) parts.push(`~${counts.modifyScene} scenes`);
+  if (counts.switchScene) parts.push(`→${counts.switchScene} scene switches`);
+  if (counts.deleteScene) parts.push(`-${counts.deleteScene} scenes`);
+  if (counts.saveToScene) parts.push(`💾${counts.saveToScene} scene saves`);
+  if (counts.addToArrangement) parts.push(`+${counts.addToArrangement} arrangement slots`);
   
   return parts.join(', ') || 'No changes';
 }
