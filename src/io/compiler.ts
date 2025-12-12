@@ -728,7 +728,6 @@ export function compileArrangement(
   for (const slot of arrangement) {
     const scene = scenes.get(slot.sceneId);
     if (!scene) {
-      console.warn(`Scene ${slot.sceneId} not found in scenes map`);
       continue;
     }
     

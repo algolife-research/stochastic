@@ -78,8 +78,6 @@ export const useAuthStore = create<AuthStore>()(
 
         // Listen for auth changes
         supabase!.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
-          console.log('Auth state changed:', event);
-          
           set({
             user: session?.user ?? null,
             session,
@@ -244,7 +242,6 @@ export const useAuthStore = create<AuthStore>()(
         if (error) {
           // If profile doesn't exist (PGRST116), create one
           if (error.code === 'PGRST116') {
-            console.log('Profile not found, creating one...');
             const { data: newProfile, error: createError } = await supabase!
               .from('profiles')
               .insert({

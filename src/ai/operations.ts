@@ -212,7 +212,6 @@ function resolveEdgeId(
     const toId = resolveNodeId(op.to, nodeIdMap);
     
     if (!fromId || !toId) {
-      console.warn(`[AI Operations] Could not resolve from/to nodes: ${op.from} -> ${op.to}`);
       return null;
     }
     
@@ -222,7 +221,6 @@ function resolveEdgeId(
         return edgeId;
       }
     }
-    console.warn(`[AI Operations] No edge found from ${fromId} to ${toId}`);
   }
   
   return null;
@@ -237,7 +235,6 @@ function applyModifyEdge(
   if (!edgeId) {
     // Skip instead of throwing - log as warning
     const msg = `Skipping modify_edge: edge not found ${op.edgeId || `${op.from} -> ${op.to}`}`;
-    console.warn(`[AI Operations] ${msg}`);
     result.warnings.push(msg);
     return;
   }
@@ -261,7 +258,6 @@ function applyDeleteEdge(
   if (!edgeId) {
     // Skip instead of throwing - log as warning
     const msg = `Skipping delete_edge: edge not found ${op.edgeId || `${op.from} -> ${op.to}`}`;
-    console.warn(`[AI Operations] ${msg}`);
     result.warnings.push(msg);
     return;
   }

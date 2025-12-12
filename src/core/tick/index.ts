@@ -42,7 +42,6 @@ export function tick(currentTime: number): void {
     
     // Debug: Check state consistency
     if (store.nodes.size === 0) {
-      console.warn('Tick: No nodes in store!');
       return;
     }
     

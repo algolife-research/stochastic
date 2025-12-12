@@ -48,7 +48,6 @@ export class AudioEngine {
     // Load AudioWorklet using Vite's ?url import
     try {
       await this.audioContext.audioWorklet.addModule(workletUrl);
-      console.log('AudioWorklet loaded successfully - with pan support');
     } catch (e) {
       console.error('Failed to load AudioWorklet:', e);
       // Continue without worklet - audio won't work but app won't crash

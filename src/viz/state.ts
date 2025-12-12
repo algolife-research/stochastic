@@ -63,7 +63,6 @@ class VizStateManager {
   /** Switch to a visualization mode */
   setMode(mode: VizMode, config?: VizConfig): void {
     if (!this.canvas) {
-      console.warn('VizStateManager: Canvas not initialized');
       return;
     }
     
@@ -89,7 +88,6 @@ class VizStateManager {
     // Create appropriate renderer
     const renderer = this.createRenderer(mode);
     if (!renderer) {
-      console.warn(`VizStateManager: Unknown mode "${mode}"`);
       return;
     }
     

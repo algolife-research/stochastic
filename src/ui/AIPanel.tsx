@@ -3,6 +3,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useAIPanel } from '@ai/store';
+import { useAuthStore } from '@auth/store';
 import { summarizeOperations } from '@ai/parser';
 import { getContextSuggestions } from '@ai/prompts';
 import { buildCanvasContext } from '@ai/context-builder';
@@ -45,8 +46,12 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
     executeNextPhase,
     executeAllPhases,
     cancelPlan,
-    clearPlan,
   } = useAIPanel();
+  
+  const { user, isLoading: isAuthLoading } = useAuthStore(state => ({ 
+    user: state.user, 
+    isLoading: state.isLoading 
+  }));
   
   const [input, setInput] = useState('');
   const [showSettings, setShowSettings] = useState(!isConfigured);
@@ -61,6 +66,7 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
   
   // Handle send
   const handleSend = () => {
+    if (!user) return;
     if (!input.trim() || isGenerating) return;
     // Use planning-aware send for potentially complex prompts
     if (usePlanning) {
@@ -106,6 +112,7 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
             className={styles.iconButton}
             onClick={() => setShowSettings(!showSettings)}
             title="Settings"
+            disabled={!user}
           >
             ⚙️
           </button>
@@ -113,6 +120,7 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
             className={styles.iconButton}
             onClick={clearMessages}
             title="Clear Chat"
+            disabled={!user}
           >
             🗑️
           </button>
@@ -130,7 +138,18 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
       
       {/* Messages */}
       <div className={styles.messages}>
-        {messages.length === 0 ? (
+        {isAuthLoading ? (
+          <div className={styles.loading}>
+            <span className={styles.loadingDot}>●</span>
+            <span className={styles.loadingDot}>●</span>
+            <span className={styles.loadingDot}>●</span>
+          </div>
+        ) : !user ? (
+          <div className={styles.welcome}>
+            <h3>🔒 Login Required</h3>
+            <p>Please log in to use the AI Assistant.</p>
+          </div>
+        ) : messages.length === 0 ? (
           <WelcomeMessage suggestions={suggestions} onSelect={setInput} />
         ) : (
           messages.map((msg: ChatMessage) => (
@@ -197,8 +216,8 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={isConfigured ? "Describe what you want to create..." : "Configure AI first..."}
-          disabled={!isConfigured || isGenerating}
+          placeholder={!user ? "Please log in to use AI Assistant..." : (isConfigured ? "Describe what you want to create..." : "Configure AI first...")}
+          disabled={!user || !isConfigured || isGenerating}
           rows={2}
         />
         <div className={styles.inputActions}>
@@ -206,6 +225,7 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
             className={`${styles.iconButton} ${usePlanning ? styles.active : ''}`}
             onClick={() => setUsePlanning(!usePlanning)}
             title={usePlanning ? "Planning enabled (for complex compositions)" : "Planning disabled"}
+            disabled={!user}
           >
             📋
           </button>
@@ -213,13 +233,14 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
             className={styles.iconButton}
             onClick={() => setShowTemplates(!showTemplates)}
             title="Templates"
+            disabled={!user}
           >
             📦
           </button>
           <button 
             className={styles.sendButton}
             onClick={handleSend}
-            disabled={!isConfigured || isGenerating || !input.trim()}
+            disabled={!user || !isConfigured || isGenerating || !input.trim()}
           >
             {isGenerating ? '⏳' : '➤'}
           </button>
@@ -396,7 +417,10 @@ function PreviewBar({ operations, onApply, onCancel }: PreviewBarProps): React.R
 }
 
 function QuickActions(): React.ReactElement {
+  const user = useAuthStore(state => state.user);
+  
   const handleQuickPatch = (type: 'bass' | 'lead' | 'pad' | 'arp') => {
+    if (!user) return;
     const context = buildCanvasContext();
     const startX = context.nodes.length > 0 
       ? Math.max(...context.nodes.map((n: { x: number }) => n.x)) + 200 
@@ -412,10 +436,10 @@ function QuickActions(): React.ReactElement {
   return (
     <div className={styles.quickActions}>
       <span className={styles.quickLabel}>Quick:</span>
-      <button onClick={() => handleQuickPatch('bass')} title="Create bass patch">🎸</button>
-      <button onClick={() => handleQuickPatch('lead')} title="Create lead patch">🎹</button>
-      <button onClick={() => handleQuickPatch('pad')} title="Create pad patch">🌊</button>
-      <button onClick={() => handleQuickPatch('arp')} title="Create arpeggiator">🎼</button>
+      <button onClick={() => handleQuickPatch('bass')} title="Create bass patch" disabled={!user}>🎸</button>
+      <button onClick={() => handleQuickPatch('lead')} title="Create lead patch" disabled={!user}>🎹</button>
+      <button onClick={() => handleQuickPatch('pad')} title="Create pad patch" disabled={!user}>🌊</button>
+      <button onClick={() => handleQuickPatch('arp')} title="Create arpeggiator" disabled={!user}>🎼</button>
     </div>
   );
 }

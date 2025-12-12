@@ -164,7 +164,6 @@ Original request: ${prompt}`;
             }
             
             // Otherwise, retry with error feedback
-            console.log(`[AI Agent] Validation failed on attempt ${attempt + 1}/${maxRetries}, retrying...`);
             continue;
           }
         }
@@ -185,7 +184,6 @@ Original request: ${prompt}`;
         
         // Otherwise retry
         lastError = error;
-        console.log(`[AI Agent] Error on attempt ${attempt + 1}/${maxRetries}: ${error}, retrying...`);
       }
     }
     

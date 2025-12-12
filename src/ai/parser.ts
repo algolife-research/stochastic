@@ -116,26 +116,19 @@ export function parseAIResponse(response: string): GenerationResponse {
 function parseOperations(rawOps: unknown[]): CanvasOperation[] {
   const operations: CanvasOperation[] = [];
   
-  console.log('[AI Parser] Parsing operations:', JSON.stringify(rawOps, null, 2));
-  
   for (const raw of rawOps) {
     if (!raw || typeof raw !== 'object') {
-      console.warn('[AI Parser] Skipping non-object operation:', raw);
       continue;
     }
     
     const op = raw as Record<string, unknown>;
     const type = op.type;
     
-    console.log('[AI Parser] Processing operation type:', type);
-    
     switch (type) {
       case 'add_node': {
         const parsed = parseAddNodeOperation(op);
         if (parsed) {
           operations.push(parsed);
-        } else {
-          console.warn('[AI Parser] add_node operation failed validation:', op);
         }
         break;
       }
@@ -143,8 +136,6 @@ function parseOperations(rawOps: unknown[]): CanvasOperation[] {
         const parsed = parseModifyNodeOperation(op);
         if (parsed) {
           operations.push(parsed);
-        } else {
-          console.warn('[AI Parser] modify_node operation failed validation:', op);
         }
         break;
       }
@@ -152,8 +143,6 @@ function parseOperations(rawOps: unknown[]): CanvasOperation[] {
         const parsed = parseDeleteNodeOperation(op);
         if (parsed) {
           operations.push(parsed);
-        } else {
-          console.warn('[AI Parser] delete_node operation failed validation:', op);
         }
         break;
       }
@@ -161,8 +150,6 @@ function parseOperations(rawOps: unknown[]): CanvasOperation[] {
         const parsed = parseAddEdgeOperation(op);
         if (parsed) {
           operations.push(parsed);
-        } else {
-          console.warn('[AI Parser] add_edge operation failed validation:', op);
         }
         break;
       }
@@ -170,8 +157,6 @@ function parseOperations(rawOps: unknown[]): CanvasOperation[] {
         const parsed = parseModifyEdgeOperation(op);
         if (parsed) {
           operations.push(parsed);
-        } else {
-          console.warn('[AI Parser] modify_edge operation failed validation:', op);
         }
         break;
       }
@@ -179,8 +164,6 @@ function parseOperations(rawOps: unknown[]): CanvasOperation[] {
         const parsed = parseDeleteEdgeOperation(op);
         if (parsed) {
           operations.push(parsed);
-        } else {
-          console.warn('[AI Parser] delete_edge operation failed validation:', op);
         }
         break;
       }
@@ -191,12 +174,8 @@ function parseOperations(rawOps: unknown[]): CanvasOperation[] {
         }
         break;
       }
-      default:
-        console.warn('[AI Parser] Unknown operation type:', type, 'Full operation:', op);
     }
   }
-  
-  console.log('[AI Parser] Successfully parsed operations:', operations.length, 'of', rawOps.length);
   
   return operations;
 }
@@ -208,7 +187,6 @@ function parseOperations(rawOps: unknown[]): CanvasOperation[] {
 function parseAddNodeOperation(op: Record<string, unknown>): AddNodeOperation | null {
   const nodeType = op.nodeType as string;
   if (!VALID_NODE_TYPES.includes(nodeType as NodeType)) {
-    console.warn(`Invalid node type: ${nodeType}`);
     return null;
   }
   
@@ -273,7 +251,6 @@ function parseModifyEdgeOperation(op: Record<string, unknown>): ModifyEdgeOperat
   
   // Must have either edgeId or both from/to
   if (!edgeId && (!from || !to)) {
-    console.warn('[AI Parser] modify_edge requires either edgeId or from+to');
     return null;
   }
   
@@ -296,7 +273,6 @@ function parseDeleteEdgeOperation(op: Record<string, unknown>): DeleteEdgeOperat
   
   // Must have either edgeId or both from/to
   if (!edgeId && (!from || !to)) {
-    console.warn('[AI Parser] delete_edge requires either edgeId or from+to');
     return null;
   }
   

@@ -678,7 +678,6 @@ export class CanvasRenderer {
     store.packets.forEach((packet: Packet) => {
       // Validate packet t value
       if (!isValidNumber(packet.t)) {
-        console.warn(`Packet ${packet.id} has invalid t: ${packet.t}`);
         return;
       }
       
@@ -787,7 +786,6 @@ export class CanvasRenderer {
     store.nodes.forEach((node: GraphNode) => {
       // Validate node position before drawing
       if (!isValidNumber(node.x) || !isValidNumber(node.y)) {
-        console.warn(`Skipping node ${node.id} with invalid position`);
         return;
       }
       

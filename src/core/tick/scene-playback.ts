@@ -95,7 +95,6 @@ function updateArrangementMode(deltaBeats: number): void {
   
   // Check if arrangement is complete
   if (maxEndBeat > 0 && currentBeat >= maxEndBeat) {
-    console.log('[Arrangement] Complete, stopping');
     store.togglePlayback();
     store.setScenePlayback({
       arrangementBeat: 0,

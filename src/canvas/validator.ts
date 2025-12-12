@@ -21,7 +21,6 @@ export function sanitizeNumber(value: unknown, fallback: number): number {
   if (isValidNumber(value)) {
     return value;
   }
-  console.warn(`Invalid number detected: ${value}, using fallback: ${fallback}`);
   return fallback;
 }
 
@@ -46,13 +45,11 @@ export interface ValidatedNode extends GraphNode {
  */
 export function validateNode(node: GraphNode): ValidatedNode | null {
   if (!node || !node.id) {
-    console.warn('Invalid node: missing id');
     return null;
   }
 
   // Validate position coordinates
   if (!isValidNumber(node.x) || !isValidNumber(node.y)) {
-    console.warn(`Node ${node.id} has invalid position: (${node.x}, ${node.y})`);
     return null;
   }
 
@@ -103,13 +100,11 @@ export function validateEdge(
   }
 
   if (!isNodeValid(fromNode) || !isNodeValid(toNode)) {
-    console.warn(`Edge ${edge.id} has invalid endpoint nodes`);
     return null;
   }
 
   // Validate durationBeats if present
   if (edge.durationBeats !== null && !isValidNumber(edge.durationBeats)) {
-    console.warn(`Edge ${edge.id} has invalid durationBeats: ${edge.durationBeats}`);
   }
 
   return { edge, fromNode, toNode };
@@ -133,13 +128,11 @@ export function validatePacket(
 
   // Validate t parameter (progress along edge)
   if (!isValidNumber(packet.t)) {
-    console.warn(`Packet ${packet.id} has invalid t: ${packet.t}`);
     return null;
   }
 
   // Clamp t to valid range
   if (packet.t < 0 || packet.t > 1) {
-    console.warn(`Packet ${packet.id} has out-of-range t: ${packet.t}`);
   }
 
   const edge = edges.get(packet.edgeId);
@@ -233,7 +226,6 @@ export function validateHexColor(color: string | undefined | null, fallback: str
     return color;
   }
   
-  console.warn(`Invalid hex color: ${color}, using fallback: ${fallback}`);
   return fallback;
 }
 
@@ -259,7 +251,6 @@ export function safeCanvasOp<T>(
   try {
     return operation();
   } catch (error) {
-    console.warn(errorMessage, error);
     return fallback;
   }
 }

@@ -3076,8 +3076,6 @@ export function loadExample(exampleKey: string): void {
   // Reset view
   store.setPan(0, 0);
   store.setZoom(1);
-  
-  console.log(`Loaded example: ${example.name}`);
 }
 
 /**
