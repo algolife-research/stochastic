@@ -18,6 +18,7 @@ import { ScenePanel } from './ScenePanel';
 import { ArrangementTimeline } from './ArrangementTimeline';
 import { VizCanvas } from './VizCanvas';
 import { RightPanel } from './RightPanel';
+import { MobileWarning } from './MobileWarning';
 import styles from './App.module.css';
 
 // ============================================================================
@@ -173,6 +174,9 @@ export function App(): React.ReactElement {
         height: `${100 / scaleValue}%`,
       }}
     >
+      {/* Mobile Warning */}
+      <MobileWarning />
+      
       {/* Project Startup Modal (Tauri only) */}
       <ProjectStartupModal />
 
