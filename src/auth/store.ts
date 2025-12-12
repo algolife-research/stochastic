@@ -210,34 +210,6 @@ export const useAuthStore = create<AuthStore>()(
       }
     },
 
-    signInWithOAuth: async (provider: 'google' | 'github' | 'discord') => {
-      if (!isSupabaseConfigured()) {
-        return { error: 'Supabase not configured' };
-      }
-
-      set({ isLoading: true, error: null });
-
-      try {
-        const { error } = await supabase!.auth.signInWithOAuth({
-          provider,
-          options: {
-            redirectTo: window.location.origin,
-          },
-        });
-
-        if (error) {
-          set({ isLoading: false, error: error.message });
-          return { error: error.message };
-        }
-
-        return {};
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'OAuth sign in failed';
-        set({ isLoading: false, error: message });
-        return { error: message };
-      }
-    },
-
     signOut: async () => {
       if (!isSupabaseConfigured()) return;
 
@@ -636,7 +608,6 @@ export function useAuth() {
   const initialize = useAuthStore((state) => state.initialize);
   const signUp = useAuthStore((state) => state.signUp);
   const signIn = useAuthStore((state) => state.signIn);
-  const signInWithOAuth = useAuthStore((state) => state.signInWithOAuth);
   const signOut = useAuthStore((state) => state.signOut);
   const useCredits = useAuthStore((state) => state.useCredits);
   const hasEnoughCredits = useAuthStore((state) => state.hasEnoughCredits);
@@ -657,7 +628,6 @@ export function useAuth() {
     initialize,
     signUp,
     signIn,
-    signInWithOAuth,
     signOut,
     useCredits,
     hasEnoughCredits,

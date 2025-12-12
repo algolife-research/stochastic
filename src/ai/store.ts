@@ -67,7 +67,6 @@ interface AIStoreState extends AIAgentState {
   // Actions
   setConfig: (config: AIAgentConfig) => void;
   setApiKey: (apiKey: string) => void;
-  setProvider: (provider: string, apiKey: string) => void;
   clearConfig: () => void;
   
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
@@ -179,19 +178,6 @@ export const useAIStore = create<AIStoreState>()(
         isConfigured: true,
         lastError: null,
       });
-    },
-    
-    setProvider: (provider: string, apiKey: string) => {
-      const defaults = DEFAULT_CONFIGS[provider as keyof typeof DEFAULT_CONFIGS] || DEFAULT_CONFIGS['openrouter'];
-      const config: AIAgentConfig = {
-        provider: provider as AIAgentConfig['provider'],
-        apiKey,
-        model: defaults.model || 'anthropic/claude-sonnet-4',
-        maxTokens: defaults.maxTokens || 4096,
-        temperature: defaults.temperature || 0.7,
-        baseUrl: defaults.baseUrl,
-      };
-      get().setConfig(config);
     },
     
     clearConfig: () => {
@@ -606,8 +592,6 @@ export function useAIPanel() {
   const applyPreview = useAIStore(state => state.applyPreview);
   const clearPreview = useAIStore(state => state.clearPreview);
   const clearMessages = useAIStore(state => state.clearMessages);
-  const setApiKey = useAIStore(state => state.setApiKey);
-  const setProvider = useAIStore(state => state.setProvider);
   const cancelGeneration = useAIStore(state => state.cancelGeneration);
   
   // Planning actions
@@ -630,8 +614,6 @@ export function useAIPanel() {
     applyPreview,
     clearPreview,
     clearMessages,
-    setApiKey,
-    setProvider,
     cancelGeneration,
     // Planning
     currentPlan,

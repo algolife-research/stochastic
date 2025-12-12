@@ -8,11 +8,10 @@ import { useGraphStore } from '@core/store';
 import { summarizeOperations } from '@ai/parser';
 import { getContextSuggestions } from '@ai/prompts';
 import { buildCanvasContext } from '@ai/context-builder';
-import { createSimplePatch, applyOperations } from '@ai/operations';
+import { applyOperations, createSimplePatch } from '@ai/operations';
 import { COMPOSITION_TEMPLATES } from '@ai/templates';
-import type { ChatMessage, AIProvider, CanvasOperation } from '@ai/types';
+import type { ChatMessage, CanvasOperation } from '@ai/types';
 import type { CompositionPlan } from '@ai/planner';
-import { PROVIDER_INFO } from '@ai/types';
 import styles from './AIPanel.module.css';
 
 // ============================================================================
@@ -36,7 +35,6 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
     applyPreview,
     clearPreview,
     clearMessages,
-    setProvider,
     // Planning
     currentPlan,
     planProgress,
@@ -57,7 +55,6 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
   }));
   
   const [input, setInput] = useState('');
-  const [showSettings, setShowSettings] = useState(!isConfigured);
   const [showTemplates, setShowTemplates] = useState(false);
   const [usePlanning, setUsePlanning] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -120,14 +117,6 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
         <div className={styles.headerActions}>
           <button 
             className={styles.iconButton}
-            onClick={() => setShowSettings(!showSettings)}
-            title="Settings"
-            disabled={!user}
-          >
-            ⚙️
-          </button>
-          <button 
-            className={styles.iconButton}
             onClick={clearMessages}
             title="Clear Chat"
             disabled={!user}
@@ -136,15 +125,6 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
           </button>
         </div>
       </div>
-      
-      {/* Settings Panel */}
-      {showSettings && (
-        <SettingsPanel 
-          onClose={() => setShowSettings(false)}
-          setProvider={setProvider}
-          isConfigured={isConfigured}
-        />
-      )}
       
       {/* Messages */}
       <div className={styles.messages}>
@@ -273,84 +253,6 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
 // ============================================================================
 // SUB-COMPONENTS
 // ============================================================================
-
-interface SettingsPanelProps {
-  onClose: () => void;
-  setProvider: (provider: AIProvider, apiKey: string) => void;
-  isConfigured: boolean;
-}
-
-function SettingsPanel({ onClose, setProvider, isConfigured }: SettingsPanelProps): React.ReactElement {
-  const [provider, setProviderState] = useState<AIProvider>('openrouter');
-  const [apiKey, setApiKey] = useState('');
-  
-  const providerInfo = PROVIDER_INFO[provider];
-  
-  const handleSave = () => {
-    // Local providers don't need API key
-    if (!providerInfo.requiresKey || apiKey.trim()) {
-      setProvider(provider, apiKey.trim());
-      onClose();
-    }
-  };
-  
-  return (
-    <div className={styles.settings}>
-      <h4>AI Configuration</h4>
-      
-      <label className={styles.label}>
-        Provider
-        <select 
-          value={provider} 
-          onChange={e => setProviderState(e.target.value as AIProvider)}
-          className={styles.select}
-        >
-          <optgroup label="⭐ Free (API Key Required)">
-            <option value="openrouter-free">OpenRouter Free (Devstral)</option>
-            <option value="gemini">Google Gemini 2.5 Pro</option>
-          </optgroup>
-          <optgroup label="☁️ Paid (API Key Required)">
-            <option value="openrouter">OpenRouter (Claude, GPT-4, etc.)</option>
-            <option value="anthropic">Anthropic (Claude)</option>
-            <option value="openai">OpenAI (GPT-4)</option>
-          </optgroup>
-          <optgroup label="💻 Local (No API Key)">
-            <option value="ollama">Ollama</option>
-            <option value="lmstudio">LM Studio</option>
-          </optgroup>
-        </select>
-      </label>
-      
-      {providerInfo.requiresKey && (
-        <label className={styles.label}>
-          API Key
-          <input
-            type="password"
-            value={apiKey}
-            onChange={e => setApiKey(e.target.value)}
-            placeholder="Enter API key..."
-            className={styles.apiKeyInput}
-          />
-        </label>
-      )}
-      
-      <div className={styles.settingsActions}>
-        <button onClick={onClose} className={styles.secondaryButton}>Cancel</button>
-        <button 
-          onClick={handleSave} 
-          className={styles.primaryButton}
-          disabled={providerInfo.requiresKey && !apiKey.trim()}
-        >
-          {isConfigured ? 'Update' : 'Save'}
-        </button>
-      </div>
-      
-      <p className={styles.hint}>
-        {providerInfo.hint}
-      </p>
-    </div>
-  );
-}
 
 interface WelcomeMessageProps {
   suggestions: string[];

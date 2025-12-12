@@ -28,7 +28,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
 
-  const { signIn, signUp, signInWithOAuth, resendVerificationEmail, isLoading, error, clearError } = useAuth();
+  const { signIn, signUp, resendVerificationEmail, isLoading, error, clearError } = useAuth();
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -123,15 +123,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
         onClose();
       }
     }
-  };
-
-  const handleOAuth = async (provider: 'google' | 'github' | 'discord') => {
-    setLocalError(null);
-    const result = await signInWithOAuth(provider);
-    if (result.error) {
-      setLocalError(result.error);
-    }
-    // OAuth redirects, so no need to close modal
   };
 
   const handleResendVerification = async () => {
@@ -253,19 +244,6 @@ export function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModal
                 : 'Create Account'}
             </button>
           </form>
-
-          <div className={styles.divider}>or continue with</div>
-
-          <div className={styles.oauthButtons}>
-            <button className={styles.oauthButton} onClick={() => handleOAuth('github')}>
-              <span className={styles.oauthIcon}>🐙</span>
-              GitHub
-            </button>
-            <button className={styles.oauthButton} onClick={() => handleOAuth('google')}>
-              <span className={styles.oauthIcon}>🔍</span>
-              Google
-            </button>
-          </div>
         </div>
       </div>
     </div>
