@@ -40,6 +40,9 @@ export function App(): React.ReactElement {
   const [rightPanelCollapsed, setRightPanelCollapsed] = useState(false);
   const [bottomPanelCollapsed, setBottomPanelCollapsed] = useState(false);
   
+  // Right panel mode state
+  const [rightPanelMode, setRightPanelMode] = useState<'editor' | 'visualisation' | 'scene' | 'ai'>('editor');
+  
   const isRunning = useGraphStore(state => state.isRunning);
   const selection = useGraphStore(state => state.selection);
   const nodes = useGraphStore(state => state.nodes);
@@ -61,6 +64,14 @@ export function App(): React.ReactElement {
   
   const selectedRegionId = selection.selectedRegionId;
   const selectedRegion = selectedRegionId ? regions.get(selectedRegionId) : null;
+  
+  // Auto-switch right panel to editor mode when node/edge is selected
+  useEffect(() => {
+    if (selectedNodeId || selectedEdgeId) {
+      setRightPanelMode('editor');
+      setRightPanelCollapsed(false);
+    }
+  }, [selectedNodeId, selectedEdgeId]);
   
   /**
    * Initialize canvas and audio
@@ -192,6 +203,10 @@ export function App(): React.ReactElement {
         <ScenePanel 
           collapsed={leftPanelCollapsed}
           onToggleCollapse={() => setLeftPanelCollapsed(!leftPanelCollapsed)}
+          onSceneSelected={() => {
+            setRightPanelMode('scene');
+            setRightPanelCollapsed(false);
+          }}
         />
         
         {/* Canvas container */}
@@ -217,6 +232,8 @@ export function App(): React.ReactElement {
           selectedRegion={selectedRegion ?? undefined}
           collapsed={rightPanelCollapsed}
           onToggleCollapse={() => setRightPanelCollapsed(!rightPanelCollapsed)}
+          panelMode={rightPanelMode}
+          onPanelModeChange={setRightPanelMode}
         />
       </div>
       

@@ -76,7 +76,7 @@ export class CanvasInputHandler {
   destroy(): void {
     this.canvas.removeEventListener('mousedown', this.handleMouseDown);
     this.canvas.removeEventListener('mousemove', this.handleMouseMove);
-    this.canvas.removeEventListener('mouseup', this.handleMouseUp);
+    window.removeEventListener('mouseup', this.handleMouseUp);
     this.canvas.removeEventListener('dblclick', this.handleDoubleClick);
     this.canvas.removeEventListener('wheel', this.handleWheel);
     this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
@@ -90,7 +90,7 @@ export class CanvasInputHandler {
   private setupEventListeners(): void {
     this.canvas.addEventListener('mousedown', this.handleMouseDown);
     this.canvas.addEventListener('mousemove', this.handleMouseMove);
-    this.canvas.addEventListener('mouseup', this.handleMouseUp);
+    window.addEventListener('mouseup', this.handleMouseUp);
     this.canvas.addEventListener('dblclick', this.handleDoubleClick);
     this.canvas.addEventListener('wheel', this.handleWheel, { passive: false });
     this.canvas.addEventListener('dblclick', this.handleDoubleClick);
@@ -733,9 +733,10 @@ export class CanvasInputHandler {
    */
   private handleMouseUp = (e: MouseEvent): void => {
     const store = getGraphStore();
+    const rect = this.canvas.getBoundingClientRect();
     const world = this.screenToWorld(
-      e.clientX - this.canvas.getBoundingClientRect().left,
-      e.clientY - this.canvas.getBoundingClientRect().top
+      e.clientX - rect.left,
+      e.clientY - rect.top
     );
     
     // Complete linking

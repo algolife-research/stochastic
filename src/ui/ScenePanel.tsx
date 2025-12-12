@@ -23,9 +23,10 @@ type PanelTab = 'scenes' | 'projects';
 interface ScenePanelProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
+  onSceneSelected?: () => void;
 }
 
-export function ScenePanel({ collapsed, onToggleCollapse }: ScenePanelProps): React.ReactElement {
+export function ScenePanel({ collapsed, onToggleCollapse, onSceneSelected }: ScenePanelProps): React.ReactElement {
   const scenes = useGraphStore(selectScenes);
   const editingSceneId = useGraphStore(selectEditingSceneId);
   const activeSceneId = useGraphStore(selectActiveSceneId);
@@ -72,7 +73,8 @@ export function ScenePanel({ collapsed, onToggleCollapse }: ScenePanelProps): Re
     if (!isRunning) {
       loadSceneToCanvas(sceneId);
     }
-  }, [loadSceneToCanvas, isRunning]);
+    onSceneSelected?.();
+  }, [loadSceneToCanvas, isRunning, onSceneSelected]);
   
   const handleSceneDoubleClick = useCallback((sceneId: SceneId) => {
     if (isRunning) {

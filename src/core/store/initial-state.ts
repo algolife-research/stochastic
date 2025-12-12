@@ -33,7 +33,7 @@ export const initialState: GraphState = {
     uiScale: 100,
     leftPanelWidth: 280,
     rightPanelWidth: 280,
-    bottomPanelHeight: 200,
+    bottomPanelHeight: 120,
   },
   
   projectMeta: {

@@ -144,7 +144,10 @@ export function ContextMenu(): React.ReactElement | null {
       if (foundNode) {
         menuType = 'node';
         targetId = foundNode;
-        store.selectNode(foundNode);
+        // Only select if not already in selection (preserve multi-selection)
+        if (!store.selection.selectedNodeIds.includes(foundNode)) {
+          store.selectNode(foundNode);
+        }
       } else if (foundEdge) {
         menuType = 'edge';
         targetId = foundEdge;

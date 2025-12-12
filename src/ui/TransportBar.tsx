@@ -91,23 +91,22 @@ export function TransportBar(): React.ReactElement {
       <div className={styles.bpmControl}>
         <label className={styles.bpmLabel}>BPM</label>
         <input
-          type="number"
-          className={styles.bpmInput}
-          value={scenePlayback.currentSceneId !== null ? scenePlayback.effectiveBpm : masterSpeed}
-          min={20}
-          max={300}
-          step={1}
-          onChange={e => setMasterSpeed(parseInt(e.target.value) || 120)}
-          disabled={scenePlayback.currentSceneId !== null && playbackMode === 'jam'}
-          title={scenePlayback.currentSceneId !== null ? 'BPM controlled by scene' : 'Set global BPM'}
-        />
-        <input
           type="range"
           className={styles.bpmSlider}
           value={scenePlayback.currentSceneId !== null ? scenePlayback.effectiveBpm : masterSpeed}
           min={20}
           max={300}
           onChange={e => setMasterSpeed(parseInt(e.target.value))}
+          disabled={scenePlayback.currentSceneId !== null && playbackMode === 'jam'}
+          title={scenePlayback.currentSceneId !== null ? 'BPM controlled by scene' : 'Set global BPM'}
+        />
+        <input
+          type="number"
+          className={styles.valueInput}
+          value={scenePlayback.currentSceneId !== null ? scenePlayback.effectiveBpm : masterSpeed}
+          min={20}
+          max={300}
+          onChange={e => setMasterSpeed(parseInt(e.target.value) || 120)}
           disabled={scenePlayback.currentSceneId !== null && playbackMode === 'jam'}
         />
       </div>
@@ -128,7 +127,19 @@ export function TransportBar(): React.ReactElement {
           onChange={e => setMasterVolume(parseFloat(e.target.value))}
           title={`Master Volume: ${Math.round(masterVolume * 100)}%`}
         />
-        <span className={styles.volumeValue}>{Math.round(masterVolume * 100)}%</span>
+        <input
+          type="number"
+          className={styles.valueInput}
+          value={Math.round(masterVolume * 100)}
+          min={0}
+          max={100}
+          onChange={e => {
+            const val = parseInt(e.target.value);
+            if (!isNaN(val)) {
+              setMasterVolume(Math.min(100, Math.max(0, val)) / 100);
+            }
+          }}
+        />
       </div>
       
       {/* Spacer */}

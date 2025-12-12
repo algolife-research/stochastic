@@ -129,30 +129,8 @@
   letter-spacing: 0.5px;
 }
 
-.bpmInput {
-  width: 60px;
-  padding: 6px 8px;
-  background: #252525;
-  border: 1px solid #333;
-  border-radius: 4px;
-  color: #e0e0e0;
-  font-size: 14px;
-  font-family: monospace;
-  text-align: center;
-  outline: none;
-}
-
-.bpmInput:focus {
-  border-color: #4caf50;
-}
-
-.bpmInput:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .bpmSlider {
-  width: 120px;
+  width: 80px;
   height: 4px;
   -webkit-appearance: none;
   background: #333;
@@ -164,9 +142,18 @@
   -webkit-appearance: none;
   width: 12px;
   height: 12px;
-  background: #4caf50;
+  background: #4a9eff;
   border-radius: 50%;
   cursor: pointer;
+}
+
+.bpmSlider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #4a9eff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
 }
 
 .bpmSlider:disabled {
@@ -175,6 +162,37 @@
 
 .bpmSlider:disabled::-webkit-slider-thumb {
   cursor: not-allowed;
+}
+
+.valueInput {
+  width: 32px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  color: #888;
+  font-size: 11px;
+  font-family: inherit;
+  text-align: right;
+  outline: none;
+  padding: 0;
+  cursor: text;
+  -moz-appearance: textfield;
+  transition: all 0.15s ease;
+}
+
+.valueInput::-webkit-outer-spin-button,
+.valueInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.valueInput:focus {
+  color: #e0e0e0;
+  border-bottom-color: #4a9eff;
+}
+
+.valueInput:hover {
+  color: #e0e0e0;
 }
 
 /* Volume Control */
@@ -216,13 +234,6 @@
   border-radius: 50%;
   cursor: pointer;
   border: none;
-}
-
-.volumeValue {
-  font-size: 11px;
-  color: #888;
-  min-width: 32px;
-  text-align: right;
 }
 
 /* Queued scene indicator */

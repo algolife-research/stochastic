@@ -32,6 +32,8 @@ interface RightPanelProps {
   selectedRegion?: Region;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  panelMode?: PanelMode;
+  onPanelModeChange?: (mode: PanelMode) => void;
 }
 
 export function RightPanel({ 
@@ -40,9 +42,13 @@ export function RightPanel({
   selectedAnnotation, 
   selectedRegion,
   collapsed,
-  onToggleCollapse
+  onToggleCollapse,
+  panelMode: externalPanelMode,
+  onPanelModeChange
 }: RightPanelProps): React.ReactElement {
-  const [panelMode, setPanelMode] = useState<PanelMode>('editor');
+  const [internalPanelMode, setInternalPanelMode] = useState<PanelMode>('editor');
+  const panelMode = externalPanelMode ?? internalPanelMode;
+  const setPanelMode = onPanelModeChange ?? setInternalPanelMode;
   
   const globalSettings = useGraphStore(state => state.globalSettings);
   const setGlobalSettings = useGraphStore(state => state.setGlobalSettings);
