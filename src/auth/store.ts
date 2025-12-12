@@ -133,7 +133,21 @@ export const useAuthStore = create<AuthStore>()(
 
         if (error) {
           set({ isLoading: false, error: error.message });
+          // Check for email already exists error
+          const errorLower = error.message.toLowerCase();
+          if (errorLower.includes('already registered') || 
+              errorLower.includes('already exists') ||
+              errorLower.includes('user already exists')) {
+            return { error: 'This email is already registered. Please sign in instead.' };
+          }
           return { error: error.message };
+        }
+
+        // Supabase returns a user even if they already exist (for security)
+        // Check if this is actually a new user by looking at identities
+        if (data.user && data.user.identities && data.user.identities.length === 0) {
+          set({ isLoading: false });
+          return { error: 'This email is already registered. Please sign in instead.' };
         }
 
         // Check if email confirmation is required
@@ -173,6 +187,13 @@ export const useAuthStore = create<AuthStore>()(
 
         if (error) {
           set({ isLoading: false, error: error.message });
+          // Check for common "user not found" error messages
+          const errorLower = error.message.toLowerCase();
+          if (errorLower.includes('invalid login credentials') || 
+              errorLower.includes('user not found') ||
+              errorLower.includes('no user found')) {
+            return { error: 'Invalid email or password. If you don\'t have an account, please sign up first.' };
+          }
           return { error: error.message };
         }
 
