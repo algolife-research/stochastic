@@ -17,8 +17,6 @@ export function StatusBar({ isAudioReady }: StatusBarProps): React.ReactElement 
   const edges = useGraphStore(state => state.edges);
   const packets = useGraphStore(state => state.packets);
   const viewport = useGraphStore(state => state.viewport);
-  const isDirty = useGraphStore(state => state.isDirty);
-  const projectMeta = useGraphStore(state => state.projectMeta);
   
   return (
     <div className={styles.statusBar}>

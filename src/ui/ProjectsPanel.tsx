@@ -7,7 +7,7 @@ import { TIER_PROJECT_LIMITS } from '@auth/types';
 import { useGraphStore } from '@core/store';
 import { isCloudStorageAvailable, saveProjectToCloud, loadProjectFromCloud, listCloudProjects, deleteCloudProject } from '../io/cloud-storage';
 import type { CloudProjectSummary } from '../io/cloud-storage';
-import { deserializeComposition, detectFileVersion, migrateV2ToV3, serializeComposition } from '../io/file-io';
+import { deserializeComposition, detectFileVersion, migrateV2ToV3 } from '../io/file-io';
 import type { SerializedGraph, SerializedComposition } from '../io/file-io';
 import { SCALES } from '@core/constants';
 import type { ScaleName } from '@core/types';
@@ -18,18 +18,10 @@ export function ProjectsPanel(): React.ReactElement {
   const [cloudProjects, setCloudProjects] = useState<CloudProjectSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savingState, setSavingState] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null);
   const [renameTempName, setRenameTempName] = useState('');
 
   // Store access
-  const scenes = useGraphStore(state => state.scenes);
-  const arrangement = useGraphStore(state => state.arrangement);
-  const arrangementChannels = useGraphStore(state => state.arrangementChannels);
-  const masterSpeed = useGraphStore(state => state.masterSpeed);
-  const musicalContext = useGraphStore(state => state.musicalContext);
-  const globalSettings = useGraphStore(state => state.globalSettings);
-  const projectMeta = useGraphStore(state => state.projectMeta);
   const loadComposition = useGraphStore(state => state.loadComposition);
   const setMusicalContext = useGraphStore(state => state.setMusicalContext);
   const setGlobalSettings = useGraphStore(state => state.setGlobalSettings);
@@ -37,7 +29,6 @@ export function ProjectsPanel(): React.ReactElement {
   const markClean = useGraphStore(state => state.markClean);
   const cloudProjectId = useGraphStore(state => state.cloudProjectId);
   const setCloudProjectId = useGraphStore(state => state.setCloudProjectId);
-  const saveCurrentScene = useGraphStore(state => state.saveCurrentScene);
   const isDirty = useGraphStore(state => state.isDirty);
 
   const fetchProjects = useCallback(async () => {
@@ -73,54 +64,6 @@ export function ProjectsPanel(): React.ReactElement {
     window.addEventListener('stochastic-cloud-projects-changed', handleCloudProjectsChanged);
     return () => window.removeEventListener('stochastic-cloud-projects-changed', handleCloudProjectsChanged);
   }, [isAuthenticated, fetchProjects]);
-
-  const handleSaveToCloud = useCallback(async () => {
-    if (!isCloudStorageAvailable()) return;
-
-    // Check project limit for free users (only when creating new project)
-    if (!cloudProjectId) {
-      const userTier = license?.tier || 'free';
-      const projectLimit = TIER_PROJECT_LIMITS[userTier];
-      if (projectLimit !== null && cloudProjects.length >= projectLimit) {
-        setError(`Free tier is limited to ${projectLimit} projects. Upgrade to Pro or VIP for unlimited projects.`);
-        return;
-      }
-    }
-
-    setSavingState('saving');
-    
-    // Save current canvas state to editing scene first
-    saveCurrentScene();
-    
-    // Get FRESH state from store after saving (avoid stale closure)
-    const store = useGraphStore.getState();
-    const compositionData = serializeComposition(
-      store.scenes,
-      store.arrangement,
-      store.arrangementChannels,
-      store.musicalContext,
-      store.globalSettings,
-      store.projectMeta,
-      store.masterSpeed
-    );
-
-    const result = await saveProjectToCloud(compositionData, {
-      id: store.cloudProjectId || undefined,
-      name: store.projectMeta.name || 'Untitled',
-    });
-
-    if (result.success && result.projectId) {
-      setCloudProjectId(result.projectId);
-      markClean();
-      setSavingState('success');
-      fetchProjects(); // Refresh list
-      setTimeout(() => setSavingState('idle'), 2000);
-    } else {
-      setSavingState('error');
-      setError(result.error || 'Save failed');
-      setTimeout(() => setSavingState('idle'), 3000);
-    }
-  }, [setCloudProjectId, markClean, fetchProjects, license, cloudProjects.length, saveCurrentScene]);
 
   const handleLoadProject = useCallback(async (projectId: string) => {
     // Check for unsaved changes

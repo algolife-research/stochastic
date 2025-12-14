@@ -32,12 +32,6 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
   const nodes = useGraphStore(state => state.nodes);
   const projectMeta = useGraphStore(state => state.projectMeta);
   const isDirty = useGraphStore(state => state.isDirty);
-  const scenes = useGraphStore(state => state.scenes);
-  const arrangement = useGraphStore(state => state.arrangement);
-  const arrangementChannels = useGraphStore(state => state.arrangementChannels);
-  const masterSpeed = useGraphStore(state => state.masterSpeed);
-  const musicalContext = useGraphStore(state => state.musicalContext);
-  const globalSettings = useGraphStore(state => state.globalSettings);
   const markClean = useGraphStore(state => state.markClean);
   const cloudProjectId = useGraphStore(state => state.cloudProjectId);
   const setCloudProjectId = useGraphStore(state => state.setCloudProjectId);

@@ -4,7 +4,7 @@ import { useGraphStore } from '@core/store';
 import { loadCompositionFromFile, detectFileVersion, migrateV2ToV3, deserializeComposition, saveCompositionToFile, serializeComposition } from '../io/file-io';
 import type { SerializedGraph, SerializedComposition } from '../io/file-io';
 import { fs, isTauri } from '../io/filesystem';
-import { isCloudStorageAvailable, saveProjectToCloud, loadProjectFromCloud, listCloudProjects, deleteCloudProject } from '../io/cloud-storage';
+import { isCloudStorageAvailable, loadProjectFromCloud, listCloudProjects, deleteCloudProject } from '../io/cloud-storage';
 import type { CloudProjectSummary } from '../io/cloud-storage';
 import { useAuth } from '@auth/store';
 import { SCALES } from '@core/constants';
@@ -23,7 +23,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
   const [showLoadDialog, setShowLoadDialog] = useState(false);
   const [showCloudDialog, setShowCloudDialog] = useState(false);
   const [cloudProjects, setCloudProjects] = useState<CloudProjectSummary[]>([]);
-  const [cloudLoading, setCloudLoading] = useState(false);
+  const [cloudLoading] = useState(false);
   const [currentCloudProjectId, setCurrentCloudProjectId] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -175,78 +175,6 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
   // =========================================================================
   // CLOUD SAVE/LOAD
   // =========================================================================
-
-  const handleSaveToCloud = async () => {
-    setIsOpen(false);
-    
-    if (!isCloudStorageAvailable()) {
-      alert('Please sign in to save to cloud');
-      return;
-    }
-    
-    // Save current canvas state
-    saveCurrentScene();
-    
-    // Get FRESH state from store after saving (avoid stale closure)
-    const store = useGraphStore.getState();
-    const freshScenes = store.scenes;
-    const freshArrangement = store.arrangement;
-    const freshChannels = store.arrangementChannels;
-    const freshMusicalContext = store.musicalContext;
-    const freshGlobalSettings = store.globalSettings;
-    const freshProjectMeta = store.projectMeta;
-    const freshMasterSpeed = store.masterSpeed;
-    
-    const data = serializeComposition(
-      freshScenes, 
-      freshArrangement, 
-      freshChannels, 
-      freshMusicalContext, 
-      freshGlobalSettings, 
-      freshProjectMeta, 
-      freshMasterSpeed
-    );
-    
-    const result = await saveProjectToCloud(data, {
-      id: currentCloudProjectId ?? undefined,
-      name: projectMeta.name,
-    });
-    
-    if (result.success) {
-      setCurrentCloudProjectId(result.projectId ?? null);
-      markClean();
-      // Refresh cloud projects list
-      const listResult = await listCloudProjects();
-      if (listResult.success && listResult.projects) {
-        setCloudProjects(listResult.projects);
-      }
-      // Notify other components to refresh cloud projects list
-      window.dispatchEvent(new CustomEvent('stochastic-cloud-projects-changed'));
-      alert('Project saved to cloud!');
-    } else {
-      alert(`Failed to save: ${result.error}`);
-    }
-  };
-
-  const handleOpenCloudDialog = async () => {
-    setIsOpen(false);
-    
-    if (!isCloudStorageAvailable()) {
-      alert('Please sign in to access cloud projects');
-      return;
-    }
-    
-    setCloudLoading(true);
-    setShowCloudDialog(true);
-    
-    const result = await listCloudProjects();
-    if (result.success && result.projects) {
-      setCloudProjects(result.projects);
-    } else {
-      console.error('Failed to load cloud projects:', result.error);
-    }
-    setCloudLoading(false);
-  };
 
   const handleLoadFromCloud = async (projectId: string) => {
     const result = await loadProjectFromCloud(projectId);
