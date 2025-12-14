@@ -8,7 +8,8 @@ import type {
   ModulatorProps, TunnelProps, TeleporterProps,
   QuantizerProps, LfoProps, SplitterProps, MidiOutProps, MidiCcProps, SceneTriggerProps,
   MutatorProps, CrossoverProps,
-  NodeType, Scene, SceneId, SceneTransition, SceneTriggerConfig, ScenePlaybackState, ArrangementSlot
+  NodeType, Scene, SceneId, SceneTransition, SceneTriggerConfig, ScenePlaybackState, ArrangementSlot,
+  GraphNode
 } from './types';
 
 // ============================================================================
@@ -165,7 +166,7 @@ export const DEFAULT_SOURCE_PROPS: SourceProps = {
   midiNote: 60 as MidiNote,
   noteIndex: -1,
   autoTrigger: true,
-  intensity: 0.5,
+  intensity: 1,
 };
 
 export const DEFAULT_SPEAKER_PROPS: SpeakerProps = {
@@ -434,6 +435,23 @@ export function dist(x1: number, y1: number, x2: number, y2: number): number {
   const dx = x2 - x1;
   const dy = y2 - y1;
   return Math.sqrt(dx * dx + dy * dy);
+}
+
+/**
+ * Get the effective radius for a node (accounts for tunnel width)
+ * Used for edge handle positioning and hit detection
+ */
+export function getNodeEffectiveRadius(node: GraphNode): number {
+  if (node.type === 'tunnel') {
+    const props = node.props as TunnelProps;
+    const subNodes = props.subNodes || [];
+    const subNodeCount = subNodes.length;
+    const minWidth = 60;
+    const subNodeSpacing = 18;
+    const capsuleWidth = Math.max(minWidth, subNodeCount * subNodeSpacing + 30);
+    return capsuleWidth / 2;
+  }
+  return NODE_RADIUS;
 }
 
 // ============================================================================

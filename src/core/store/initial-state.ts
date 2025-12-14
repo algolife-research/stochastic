@@ -17,7 +17,7 @@ export const initialState: GraphState = {
   isRunning: false,
   isMuted: false,
   masterSpeed: DEFAULT_SPEED,
-  masterVolume: 0.5,
+  masterVolume: 0.9,
   
   musicalContext: {
     root: 0,

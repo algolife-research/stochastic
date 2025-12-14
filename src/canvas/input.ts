@@ -2,11 +2,12 @@
 // Mouse and keyboard input handling for the canvas
 
 import { getGraphStore } from '@core/store';
-import type { NodeId, NodeType, Tool, EdgeId, AnnotationId, RegionId, TunnelProps } from '@core/types';
+import type { NodeId, NodeType, Tool, EdgeId, AnnotationId, RegionId, TunnelProps, GraphNode } from '@core/types';
 import { 
   NODE_RADIUS, MIN_ZOOM, MAX_ZOOM, dist, HANDLE_OFFSET_X, HANDLE_RADIUS,
   SNAP_STEP, GRID_SIZE, GRID_ATTRACT_STRENGTH, EDGE_ATTRACT_STRENGTH,
-  EDGE_SNAP_INTERVAL, ATTRACT_RADIUS, REGION_HANDLE_SIZE, MIN_REGION_SIZE
+  EDGE_SNAP_INTERVAL, ATTRACT_RADIUS, REGION_HANDLE_SIZE, MIN_REGION_SIZE,
+  getNodeEffectiveRadius
 } from '@core/constants';
 
 // ============================================================================
@@ -36,6 +37,72 @@ function distToSegment(px: number, py: number, x1: number, y1: number, x2: numbe
   const dy = py - yy;
   
   return Math.sqrt(dx * dx + dy * dy);
+}
+
+/**
+ * Calculate a point on a cubic Bezier curve at parameter t (0-1)
+ */
+function getBezierPoint(t: number, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): { x: number; y: number } {
+  const mt = 1 - t;
+  const mt2 = mt * mt;
+  const mt3 = mt2 * mt;
+  const t2 = t * t;
+  const t3 = t2 * t;
+  
+  return {
+    x: mt3 * x0 + 3 * mt2 * t * x1 + 3 * mt * t2 * x2 + t3 * x3,
+    y: mt3 * y0 + 3 * mt2 * t * y1 + 3 * mt * t2 * y2 + t3 * y3
+  };
+}
+
+/**
+ * Calculate control points for a Bezier curve between two nodes
+ * Must match the renderer's calculateBezierControlPoints function
+ */
+function calculateBezierControlPoints(fromX: number, fromY: number, toX: number, toY: number): { x1: number; y1: number; x2: number; y2: number } {
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  if (distance === 0) {
+    return { x1: fromX, y1: fromY, x2: toX, y2: toY };
+  }
+  
+  // Must match renderer's curvature calculation
+  const curvature = Math.min(0.4, Math.max(0.2, distance / 400));
+  const offset = distance * curvature;
+  
+  const isHorizontal = Math.abs(dx) > Math.abs(dy);
+  
+  if (isHorizontal) {
+    return { x1: fromX + offset, y1: fromY, x2: toX - offset, y2: toY };
+  } else {
+    return { x1: fromX, y1: fromY + offset * Math.sign(dy), x2: toX, y2: toY - offset * Math.sign(dy) };
+  }
+}
+
+/**
+ * Calculate distance from point to cubic Bezier curve
+ * Samples the curve and finds minimum distance
+ */
+function distToBezier(px: number, py: number, fromX: number, fromY: number, toX: number, toY: number): number {
+  const cp = calculateBezierControlPoints(fromX, fromY, toX, toY);
+  
+  let minDist = Infinity;
+  const samples = 20; // Number of points to sample along the curve
+  
+  for (let i = 0; i <= samples; i++) {
+    const t = i / samples;
+    const pt = getBezierPoint(t, fromX, fromY, cp.x1, cp.y1, cp.x2, cp.y2, toX, toY);
+    const dx = px - pt.x;
+    const dy = py - pt.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d < minDist) {
+      minDist = d;
+    }
+  }
+  
+  return minDist;
 }
 
 /**
@@ -208,8 +275,9 @@ export class CanvasInputHandler {
             !Number.isFinite(toNode.x) || !Number.isFinite(toNode.y)) {
           return;
         }
-        const d = distToSegment(worldX, worldY, fromNode.x, fromNode.y, toNode.x, toNode.y);
-        if (Number.isFinite(d) && d < 10) {
+        // Use Bezier distance calculation to match rendered curve
+        const d = distToBezier(worldX, worldY, fromNode.x, fromNode.y, toNode.x, toNode.y);
+        if (Number.isFinite(d) && d < 15) {
           foundEdgeId = id;
         }
       }
@@ -291,13 +359,14 @@ export class CanvasInputHandler {
     const store = getGraphStore();
     
     // Find nearest node within handle range
-    let nearestNode: { id: NodeId; x: number; y: number } | null = null;
+    let nearestNode: { id: NodeId; node: GraphNode } | null = null;
     let nearestDist = Infinity;
     
     store.nodes.forEach((node, id) => {
+      const effectiveRadius = getNodeEffectiveRadius(node);
       const d = dist(worldX, worldY, node.x, node.y);
-      if (d < NODE_RADIUS + 30 && d < nearestDist) {
-        nearestNode = { id, x: node.x, y: node.y };
+      if (d < effectiveRadius + 30 && d < nearestDist) {
+        nearestNode = { id, node };
         nearestDist = d;
       }
     });
@@ -305,14 +374,17 @@ export class CanvasInputHandler {
     if (!nearestNode) return null;
     
     // TypeScript needs help here due to forEach callback narrowing
-    const foundNode = nearestNode as { id: NodeId; x: number; y: number };
+    const foundNode = nearestNode as { id: NodeId; node: GraphNode };
     
     // Calculate handle position (follows mouse angle around node)
-    const dx = worldX - foundNode.x;
-    const dy = worldY - foundNode.y;
+    // Use node's effective radius to position handle at edge of node
+    const nodeRadius = getNodeEffectiveRadius(foundNode.node);
+    const handleOffset = nodeRadius + 10; // 10px past the node edge
+    const dx = worldX - foundNode.node.x;
+    const dy = worldY - foundNode.node.y;
     const angle = Math.atan2(dy, dx);
-    const handleX = foundNode.x + Math.cos(angle) * HANDLE_OFFSET_X;
-    const handleY = foundNode.y + Math.sin(angle) * HANDLE_OFFSET_X;
+    const handleX = foundNode.node.x + Math.cos(angle) * handleOffset;
+    const handleY = foundNode.node.y + Math.sin(angle) * handleOffset;
     
     // Check if mouse is near handle
     const handleDist = dist(worldX, worldY, handleX, handleY);

@@ -128,7 +128,7 @@ interface Voice {
 
 class PhononSynthProcessor extends AudioWorkletProcessor {
   private voices: Map<string, Voice> = new Map();
-  private masterGain: number = 0.5;
+  private masterGain: number = 0.9;
   private sampleRate: number;
   
   // Pink noise state (Paul Kellet's refined method)

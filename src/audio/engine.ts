@@ -71,7 +71,7 @@ export class AudioEngine {
     
     // Create master gain
     this.masterGain = this.audioContext.createGain();
-    this.masterGain.gain.value = 0.5;
+    this.masterGain.gain.value = 0.9;
     
     // Create simple reverb (convolution)
     this.reverbNode = this.audioContext.createConvolver();

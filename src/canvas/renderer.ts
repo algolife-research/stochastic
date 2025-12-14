@@ -6,7 +6,7 @@ import { getGraphStore } from '@core/store';
 import type { GraphNode, GraphEdge, Packet, TunnelProps } from '@core/types';
 import { 
   NODE_RADIUS, GRID_SIZE, NODE_COLORS, NODE_ICONS, 
-  midiToNoteName 
+  midiToNoteName, getNodeEffectiveRadius
 } from '@core/constants';
 import {
   isValidNumber,
@@ -1104,10 +1104,11 @@ export class CanvasRenderer {
     const node = store.getNode(hoveredNodeId);
     if (!node) return;
     
-    // Calculate handle position (to the right of node)
-    const HANDLE_OFFSET_X = 35;
+    // Calculate handle position (to the right of node, accounting for node width)
+    const nodeRadius = getNodeEffectiveRadius(node);
+    const HANDLE_OFFSET = nodeRadius + 10; // 10px past the node edge
     const HANDLE_RADIUS = 8;
-    const handleX = node.x + HANDLE_OFFSET_X;
+    const handleX = node.x + HANDLE_OFFSET;
     const handleY = node.y;
     
     // Draw handle circle

@@ -19,7 +19,7 @@ interface ContextMenuState {
   visible: boolean;
   x: number;
   y: number;
-  type: 'canvas' | 'node' | 'edge' | 'addFromEdge';
+  type: 'canvas' | 'node' | 'edge' | 'addFromEdge' | 'annotation';
   targetId?: NodeId | string | undefined;
   worldX?: number | undefined;
   worldY?: number | undefined;
@@ -130,16 +130,30 @@ export function ContextMenu(): React.ReactElement | null {
         }
       });
       
+      // Check if clicking on an annotation
+      let foundAnnotation: string | undefined;
+      if (!foundNode) {
+        store.annotations.forEach((ann, id) => {
+          // Simple bounding box check for annotation (assuming ~100x30 size)
+          const annWidth = Math.max(100, ann.text.length * 8);
+          const annHeight = 30;
+          if (worldX >= ann.x && worldX <= ann.x + annWidth &&
+              worldY >= ann.y && worldY <= ann.y + annHeight) {
+            foundAnnotation = id;
+          }
+        });
+      }
+      
       // Check if clicking on an edge
       let foundEdge: string | undefined;
       let foundEdgeInfo: EdgeInsertInfo | null = null;
-      if (!foundNode) {
+      if (!foundNode && !foundAnnotation) {
         store.edges.forEach((edge, id) => {
           const fromNode = store.nodes.get(edge.from);
           const toNode = store.nodes.get(edge.to);
           if (fromNode && toNode) {
             const dist = distToSegment(worldX, worldY, fromNode.x, fromNode.y, toNode.x, toNode.y);
-            if (dist < 10) {
+            if (dist < 15) {
               foundEdge = id;
               foundEdgeInfo = {
                 edgeId: id,
@@ -152,7 +166,7 @@ export function ContextMenu(): React.ReactElement | null {
       }
       
       // Determine menu type
-      let menuType: 'canvas' | 'node' | 'edge' = 'canvas';
+      let menuType: 'canvas' | 'node' | 'edge' | 'annotation' = 'canvas';
       let targetId: NodeId | string | undefined;
       
       if (foundNode) {
@@ -162,6 +176,10 @@ export function ContextMenu(): React.ReactElement | null {
         if (!store.selection.selectedNodeIds.includes(foundNode)) {
           store.selectNode(foundNode);
         }
+      } else if (foundAnnotation) {
+        menuType = 'annotation';
+        targetId = foundAnnotation;
+        store.selectAnnotation(foundAnnotation as never);
       } else if (foundEdge) {
         menuType = 'edge';
         targetId = foundEdge;
@@ -632,6 +650,31 @@ export function ContextMenu(): React.ReactElement | null {
         </>
       )}
       
+      {state.type === 'annotation' && (
+        <>
+          <div className={styles.menuItem} onClick={() => {
+            // Dispatch edit event for the annotation
+            const store = getGraphStore();
+            const ann = store.annotations.get(state.targetId as never);
+            if (ann) {
+              const ev = new CustomEvent('stochastic-edit-annotation', { detail: { id: state.targetId } });
+              window.dispatchEvent(ev);
+            }
+            setState(s => ({ ...s, visible: false }));
+          }}>
+            ✏️ Edit
+          </div>
+          <div className={styles.divider} />
+          <div className={styles.menuItem + ' ' + styles.danger} onClick={() => {
+            const store = getGraphStore();
+            store.deleteAnnotation(state.targetId as never);
+            setState(s => ({ ...s, visible: false }));
+          }}>
+            🗑️ Delete
+          </div>
+        </>
+      )}
+      
       {state.type === 'addFromEdge' && (
         <>
           <div className={styles.menuItem} style={{ fontWeight: 600, color: '#888' }}>
@@ -705,36 +748,61 @@ export function ContextMenu(): React.ReactElement | null {
   );
 }
 
-// Helper function
-function distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
-  const A = px - x1;
-  const B = py - y1;
-  const C = x2 - x1;
-  const D = y2 - y1;
+// Helper function - calculate a point on a cubic Bezier curve
+function getBezierPoint(t: number, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): { x: number; y: number } {
+  const mt = 1 - t;
+  const mt2 = mt * mt;
+  const mt3 = mt2 * mt;
+  const t2 = t * t;
+  const t3 = t2 * t;
   
-  const dot = A * C + B * D;
-  const lenSq = C * C + D * D;
-  let param = -1;
+  return {
+    x: mt3 * x0 + 3 * mt2 * t * x1 + 3 * mt * t2 * x2 + t3 * x3,
+    y: mt3 * y0 + 3 * mt2 * t * y1 + 3 * mt * t2 * y2 + t3 * y3
+  };
+}
+
+// Calculate control points for a Bezier curve - must match renderer
+function calculateBezierControlPoints(fromX: number, fromY: number, toX: number, toY: number): { x1: number; y1: number; x2: number; y2: number } {
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
   
-  if (lenSq !== 0) param = dot / lenSq;
-  
-  let xx, yy;
-  
-  if (param < 0) {
-    xx = x1;
-    yy = y1;
-  } else if (param > 1) {
-    xx = x2;
-    yy = y2;
-  } else {
-    xx = x1 + param * C;
-    yy = y1 + param * D;
+  if (distance === 0) {
+    return { x1: fromX, y1: fromY, x2: toX, y2: toY };
   }
   
-  const dx = px - xx;
-  const dy = py - yy;
+  const curvature = Math.min(0.4, Math.max(0.2, distance / 400));
+  const offset = distance * curvature;
   
-  return Math.sqrt(dx * dx + dy * dy);
+  const isHorizontal = Math.abs(dx) > Math.abs(dy);
+  
+  if (isHorizontal) {
+    return { x1: fromX + offset, y1: fromY, x2: toX - offset, y2: toY };
+  } else {
+    return { x1: fromX, y1: fromY + offset * Math.sign(dy), x2: toX, y2: toY - offset * Math.sign(dy) };
+  }
+}
+
+// Calculate distance from point to Bezier curve
+function distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
+  const cp = calculateBezierControlPoints(x1, y1, x2, y2);
+  
+  let minDist = Infinity;
+  const samples = 20;
+  
+  for (let i = 0; i <= samples; i++) {
+    const t = i / samples;
+    const pt = getBezierPoint(t, x1, y1, cp.x1, cp.y1, cp.x2, cp.y2, x2, y2);
+    const dx = px - pt.x;
+    const dy = py - pt.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (d < minDist) {
+      minDist = d;
+    }
+  }
+  
+  return minDist;
 }
 
 export default ContextMenu;

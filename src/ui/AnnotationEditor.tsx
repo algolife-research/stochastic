@@ -4,7 +4,6 @@ import type { AnnotationId } from '@core/types';
 import styles from './AnnotationEditor.module.css';
 
 export function AnnotationEditor(): React.ReactElement | null {
-  const selectedAnnotationId = useGraphStore(state => state.selection.selectedAnnotationId);
   const annotations = useGraphStore(state => state.annotations);
   const updateAnnotation = useGraphStore(state => state.updateAnnotation);
   const viewport = useGraphStore(state => state.viewport);
@@ -15,12 +14,14 @@ export function AnnotationEditor(): React.ReactElement | null {
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // When selection changes, start editing that annotation
+  // Listen for stochastic-edit-annotation event (from double-click or right-click Edit)
   useEffect(() => {
-    if (selectedAnnotationId) {
-      const ann = annotations.get(selectedAnnotationId);
+    const handleEditAnnotation = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id: AnnotationId }>;
+      const annId = customEvent.detail.id;
+      const ann = annotations.get(annId);
       if (ann) {
-        setEditingId(selectedAnnotationId);
+        setEditingId(annId);
         setEditingText(ann.text);
         // Store position at edit start
         setPosition({ x: ann.x, y: ann.y });
@@ -33,8 +34,13 @@ export function AnnotationEditor(): React.ReactElement | null {
           }
         }, 0);
       }
-    }
-  }, [selectedAnnotationId, annotations]);
+    };
+
+    window.addEventListener('stochastic-edit-annotation', handleEditAnnotation);
+    return () => {
+      window.removeEventListener('stochastic-edit-annotation', handleEditAnnotation);
+    };
+  }, [annotations]);
 
   const handleBlur = useCallback(() => {
     if (editingId) {
