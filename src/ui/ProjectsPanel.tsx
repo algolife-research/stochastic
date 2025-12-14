@@ -7,7 +7,7 @@ import { TIER_PROJECT_LIMITS } from '@auth/types';
 import { useGraphStore } from '@core/store';
 import { isCloudStorageAvailable, saveProjectToCloud, loadProjectFromCloud, listCloudProjects, deleteCloudProject } from '../io/cloud-storage';
 import type { CloudProjectSummary } from '../io/cloud-storage';
-import { deserializeComposition, detectFileVersion, migrateV2ToV3, serializeComposition, saveCompositionToFile } from '../io/file-io';
+import { deserializeComposition, detectFileVersion, migrateV2ToV3, serializeComposition } from '../io/file-io';
 import type { SerializedGraph, SerializedComposition } from '../io/file-io';
 import { SCALES } from '@core/constants';
 import type { ScaleName } from '@core/types';
@@ -18,7 +18,6 @@ export function ProjectsPanel(): React.ReactElement {
   const [cloudProjects, setCloudProjects] = useState<CloudProjectSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [editingName, setEditingName] = useState(false);
   const [tempName, setTempName] = useState('');
@@ -38,6 +37,9 @@ export function ProjectsPanel(): React.ReactElement {
   const setGlobalSettings = useGraphStore(state => state.setGlobalSettings);
   const setProjectMeta = useGraphStore(state => state.setProjectMeta);
   const markClean = useGraphStore(state => state.markClean);
+  const cloudProjectId = useGraphStore(state => state.cloudProjectId);
+  const setCloudProjectId = useGraphStore(state => state.setCloudProjectId);
+  const saveCurrentScene = useGraphStore(state => state.saveCurrentScene);
 
   // Fetch cloud projects on mount and when auth changes
   useEffect(() => {
@@ -66,7 +68,7 @@ export function ProjectsPanel(): React.ReactElement {
     if (!isCloudStorageAvailable()) return;
 
     // Check project limit for free users (only when creating new project)
-    if (!currentProjectId) {
+    if (!cloudProjectId) {
       const userTier = license?.tier || 'free';
       const projectLimit = TIER_PROJECT_LIMITS[userTier];
       if (projectLimit !== null && cloudProjects.length >= projectLimit) {
@@ -76,23 +78,29 @@ export function ProjectsPanel(): React.ReactElement {
     }
 
     setSavingState('saving');
+    
+    // Save current canvas state to editing scene first
+    saveCurrentScene();
+    
+    // Get FRESH state from store after saving (avoid stale closure)
+    const store = useGraphStore.getState();
     const compositionData = serializeComposition(
-      scenes,
-      arrangement,
-      arrangementChannels,
-      musicalContext,
-      globalSettings,
-      projectMeta,
-      masterSpeed
+      store.scenes,
+      store.arrangement,
+      store.arrangementChannels,
+      store.musicalContext,
+      store.globalSettings,
+      store.projectMeta,
+      store.masterSpeed
     );
 
     const result = await saveProjectToCloud(compositionData, {
-      id: currentProjectId || undefined,
-      name: projectMeta.name || 'Untitled',
+      id: store.cloudProjectId || undefined,
+      name: store.projectMeta.name || 'Untitled',
     });
 
     if (result.success && result.projectId) {
-      setCurrentProjectId(result.projectId);
+      setCloudProjectId(result.projectId);
       markClean();
       setSavingState('success');
       fetchProjects(); // Refresh list
@@ -102,7 +110,7 @@ export function ProjectsPanel(): React.ReactElement {
       setError(result.error || 'Save failed');
       setTimeout(() => setSavingState('idle'), 3000);
     }
-  }, [scenes, arrangement, arrangementChannels, masterSpeed, musicalContext, globalSettings, projectMeta, currentProjectId, markClean, fetchProjects, license, cloudProjects.length]);
+  }, [setCloudProjectId, markClean, fetchProjects, license, cloudProjects.length, saveCurrentScene]);
 
   const handleLoadProject = useCallback(async (projectId: string) => {
     setIsLoading(true);
@@ -135,7 +143,7 @@ export function ProjectsPanel(): React.ReactElement {
 
         setGlobalSettings(data.globalSettings);
         setProjectMeta(data.projectMeta);
-        setCurrentProjectId(projectId);
+        setCloudProjectId(projectId);
         markClean();
       } catch (e) {
         setError('Failed to parse project data');
@@ -158,64 +166,7 @@ export function ProjectsPanel(): React.ReactElement {
     } else {
       setError(result.error || 'Delete failed');
     }
-  }, [currentProjectId, fetchProjects]);
-
-  const handleLocalSave = useCallback(async () => {
-    await saveCompositionToFile(
-      projectMeta.name || 'composition',
-      scenes,
-      arrangement,
-      arrangementChannels,
-      musicalContext,
-      globalSettings,
-      projectMeta,
-      masterSpeed
-    );
-  }, [scenes, arrangement, arrangementChannels, masterSpeed, musicalContext, globalSettings, projectMeta]);
-
-  const handleLocalLoad = useCallback(async () => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.sto,.json';
-    fileInput.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      try {
-        const text = await file.text();
-        const rawData = JSON.parse(text);
-        const version = detectFileVersion(rawData);
-        
-        let data;
-        if (version === '2.0') {
-          const v3Data = migrateV2ToV3(rawData as SerializedGraph);
-          data = deserializeComposition(v3Data);
-        } else {
-          data = deserializeComposition(rawData as SerializedComposition);
-        }
-
-        loadComposition(data.scenes, data.arrangement, data.channels, data.masterBpm);
-
-        const scaleName = data.musicalContext.scaleName as ScaleName;
-        const scale = SCALES[scaleName];
-        if (scale) {
-          setMusicalContext({
-            root: data.musicalContext.root,
-            scaleName,
-            scale,
-          });
-        }
-
-        setGlobalSettings(data.globalSettings);
-        setProjectMeta({ ...data.projectMeta, name: file.name.replace(/\.(sto|json)$/, '') });
-        setCurrentProjectId(null);
-        markClean();
-      } catch {
-        setError('Failed to load file');
-      }
-    };
-    fileInput.click();
-  }, [loadComposition, setMusicalContext, setGlobalSettings, setProjectMeta, markClean]);
+  }, [cloudProjectId, fetchProjects]);
 
   // Start editing the current project name
   const handleStartRename = useCallback(() => {
@@ -228,12 +179,12 @@ export function ProjectsPanel(): React.ReactElement {
     if (tempName.trim()) {
       setProjectMeta({ ...projectMeta, name: tempName.trim() });
       // If it's a cloud project, save the update
-      if (currentProjectId) {
+      if (cloudProjectId) {
         await handleSaveToCloud();
       }
     }
     setEditingName(false);
-  }, [tempName, projectMeta, currentProjectId, setProjectMeta, handleSaveToCloud]);
+  }, [tempName, projectMeta, cloudProjectId, setProjectMeta, handleSaveToCloud]);
 
   // Cancel editing
   const handleCancelRename = useCallback(() => {
@@ -308,22 +259,12 @@ export function ProjectsPanel(): React.ReactElement {
           <div className={styles.projectName}>
             <span className={styles.projectIcon}>📁</span>
             <span className={styles.projectNameText}>{projectMeta.name || 'Untitled'}</span>
-            {currentProjectId && <span className={styles.cloudBadge}>☁️</span>}
+            {cloudProjectId && <span className={styles.cloudBadge}>☁️</span>}
             <button className={styles.renameButton} onClick={handleStartRename} title="Rename project">
               ✏️
             </button>
           </div>
         )}
-      </div>
-
-      {/* Action Buttons */}
-      <div className={styles.actions}>
-        <button className={styles.actionButton} onClick={handleLocalLoad}>
-          <span>📂</span> Open Local
-        </button>
-        <button className={styles.actionButton} onClick={handleLocalSave}>
-          <span>💾</span> Save Local
-        </button>
       </div>
 
       {/* Cloud Section */}
@@ -345,18 +286,6 @@ export function ProjectsPanel(): React.ReactElement {
           <div className={styles.loading}>Loading...</div>
         ) : (
           <>
-            {/* Save to Cloud Button */}
-            <button 
-              className={`${styles.saveCloudButton} ${savingState === 'success' ? styles.success : ''} ${savingState === 'error' ? styles.error : ''}`}
-              onClick={handleSaveToCloud}
-              disabled={savingState === 'saving'}
-            >
-              {savingState === 'saving' ? '⏳ Saving...' : 
-               savingState === 'success' ? '✓ Saved!' :
-               savingState === 'error' ? '✗ Error' :
-               currentProjectId ? '☁️ Update Cloud' : '☁️ Save to Cloud'}
-            </button>
-
             {/* Project Usage Indicator */}
             {(() => {
               const userTier = license?.tier || 'free';
@@ -391,7 +320,7 @@ export function ProjectsPanel(): React.ReactElement {
                 cloudProjects.map(proj => (
                   <div 
                     key={proj.id} 
-                    className={`${styles.projectItem} ${proj.id === currentProjectId ? styles.active : ''}`}
+                    className={`${styles.projectItem} ${proj.id === cloudProjectId ? styles.active : ''}`}
                   >
                     {renamingProjectId === proj.id ? (
                       <div className={styles.projectItemRename}>

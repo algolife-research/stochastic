@@ -76,6 +76,8 @@ export const initialState: GraphState = {
   
   isDirty: false,
   
+  cloudProjectId: null,
+  
   selection: {
     selectedNodeIds: [],
     selectedEdgeId: null,

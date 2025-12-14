@@ -3,6 +3,7 @@
 import React, { useCallback, useState } from 'react';
 import { useGraphStore, selectScenes, selectEditingSceneId, selectScenePlayback, selectActiveSceneId, selectPlaybackMode } from '@core/store';
 import type { Scene, SceneId } from '@core/types';
+import { useAuth } from '@auth/store';
 import { ProjectsPanel } from './ProjectsPanel';
 import { ResizeHandle } from './ResizeHandle';
 import styles from './ScenePanel.module.css';
@@ -27,6 +28,7 @@ interface ScenePanelProps {
 }
 
 export function ScenePanel({ collapsed, onToggleCollapse, onSceneSelected }: ScenePanelProps): React.ReactElement {
+  const { isAuthenticated } = useAuth();
   const scenes = useGraphStore(selectScenes);
   const editingSceneId = useGraphStore(selectEditingSceneId);
   const activeSceneId = useGraphStore(selectActiveSceneId);
@@ -139,7 +141,7 @@ export function ScenePanel({ collapsed, onToggleCollapse, onSceneSelected }: Sce
       
       {!collapsed && (
         <>
-          {/* Tab Toggle */}
+          {/* Tab Toggle - Show Projects tab only if authenticated */}
           <div className={styles.tabHeader}>
             <button
               className={`${styles.tabButton} ${activeTab === 'scenes' ? styles.activeTab : ''}`}
@@ -147,15 +149,17 @@ export function ScenePanel({ collapsed, onToggleCollapse, onSceneSelected }: Sce
             >
               🎬 Scenes
             </button>
-            <button
-              className={`${styles.tabButton} ${activeTab === 'projects' ? styles.activeTab : ''}`}
-              onClick={() => setActiveTab('projects')}
-            >
-              📁 Projects
-            </button>
+            {isAuthenticated && (
+              <button
+                className={`${styles.tabButton} ${activeTab === 'projects' ? styles.activeTab : ''}`}
+                onClick={() => setActiveTab('projects')}
+              >
+                📁 Projects
+              </button>
+            )}
           </div>
 
-          {activeTab === 'projects' ? (
+          {activeTab === 'projects' && isAuthenticated ? (
             <ProjectsPanel />
           ) : (
             <>

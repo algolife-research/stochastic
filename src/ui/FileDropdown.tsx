@@ -44,6 +44,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
   const saveCurrentScene = useGraphStore(state => state.saveCurrentScene);
   const clear = useGraphStore(state => state.clear);
   const markClean = useGraphStore(state => state.markClean);
+  const setCloudProjectId = useGraphStore(state => state.setCloudProjectId);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -268,6 +269,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
           modified: Date.now(),
         });
         setCurrentComposition(null);
+        setCloudProjectId(null); // Clear cloud project ID so save creates new project
         markClean();
       }
     }
@@ -367,6 +369,7 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
           modified: Date.now(),
         });
         
+        setCloudProjectId(null); // Clear cloud project ID when loading local file
         markClean();
       } catch (err) {
         console.error('Load failed:', err);
@@ -426,31 +429,6 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
           
           <button className={styles.menuItem} onClick={() => { handleExportComposition(); setIsOpen(false); }}>
             <span>💾</span> Save Local <span className={styles.shortcut}>Ctrl+S</span>
-          </button>
-          
-          <div className={styles.separator} />
-          
-          {/* Cloud Storage Options */}
-          {!isAuthenticated && (
-            <div className={styles.cloudHint}>
-              <span>🔑</span> Sign in for cloud features
-            </div>
-          )}
-          
-          <button 
-            className={`${styles.menuItem} ${!isAuthenticated ? styles.disabled : ''}`} 
-            onClick={isAuthenticated ? handleSaveToCloud : undefined}
-            title={isAuthenticated ? 'Save to cloud' : 'Sign in to save to cloud'}
-          >
-            <span>☁️</span> Save to Cloud {currentCloudProjectId && '✓'}
-          </button>
-          
-          <button 
-            className={`${styles.menuItem} ${!isAuthenticated ? styles.disabled : ''}`} 
-            onClick={isAuthenticated ? handleOpenCloudDialog : undefined}
-            title={isAuthenticated ? 'Load from cloud' : 'Sign in to access cloud projects'}
-          >
-            <span>☁️</span> Load from Cloud...
           </button>
           
           <div className={styles.separator} />

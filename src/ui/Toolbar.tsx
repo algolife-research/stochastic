@@ -3,6 +3,9 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useGraphStore } from '@core/store';
+import { useAuth } from '@auth/store';
+import { isCloudStorageAvailable, saveProjectToCloud } from '../io/cloud-storage';
+import { serializeComposition } from '../io/file-io';
 import { NodeMenu } from './NodeMenu';
 import { ExampleMenu } from './ExampleMenu';
 import { FileDropdown } from './FileDropdown';
@@ -22,10 +25,23 @@ interface ToolbarProps {
 }
 
 export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.ReactElement {
+  const { isAuthenticated } = useAuth();
   const project = useGraphStore(state => state.project);
   const selection = useGraphStore(state => state.selection);
   const clipboard = useGraphStore(state => state.clipboard);
   const nodes = useGraphStore(state => state.nodes);
+  const projectMeta = useGraphStore(state => state.projectMeta);
+  const isDirty = useGraphStore(state => state.isDirty);
+  const scenes = useGraphStore(state => state.scenes);
+  const arrangement = useGraphStore(state => state.arrangement);
+  const arrangementChannels = useGraphStore(state => state.arrangementChannels);
+  const masterSpeed = useGraphStore(state => state.masterSpeed);
+  const musicalContext = useGraphStore(state => state.musicalContext);
+  const globalSettings = useGraphStore(state => state.globalSettings);
+  const markClean = useGraphStore(state => state.markClean);
+  const cloudProjectId = useGraphStore(state => state.cloudProjectId);
+  const setCloudProjectId = useGraphStore(state => state.setCloudProjectId);
+  const saveCurrentScene = useGraphStore(state => state.saveCurrentScene);
   
   const deleteNode = useGraphStore(state => state.deleteNode);
   const deleteEdge = useGraphStore(state => state.deleteEdge);
@@ -38,6 +54,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showDocsModal, setShowDocsModal] = useState(false);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
+  const [savingToCloud, setSavingToCloud] = useState(false);
 
   // Check if there's anything selected
   const hasSelection = selection.selectedNodeIds.length > 0 || 
@@ -82,6 +99,44 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
     setShowLayoutMenu(false);
   }, []);
 
+  const handleSaveToCloud = useCallback(async () => {
+    if (!isAuthenticated || !isCloudStorageAvailable()) return;
+    
+    setSavingToCloud(true);
+    try {
+      // Save current canvas state to editing scene first
+      saveCurrentScene();
+      
+      // Get FRESH state from store after saving (avoid stale closure)
+      const store = useGraphStore.getState();
+      const compositionData = serializeComposition(
+        store.scenes,
+        store.arrangement,
+        store.arrangementChannels,
+        store.musicalContext,
+        store.globalSettings,
+        store.projectMeta,
+        store.masterSpeed
+      );
+      
+      const result = await saveProjectToCloud(compositionData, {
+        id: store.cloudProjectId || undefined,
+        name: store.projectMeta.name || 'Untitled',
+      });
+      
+      if (result.success) {
+        if (result.projectId) {
+          setCloudProjectId(result.projectId);
+        }
+        markClean();
+      }
+    } catch (error) {
+      console.error('Failed to save to cloud:', error);
+    } finally {
+      setSavingToCloud(false);
+    }
+  }, [isAuthenticated, setCloudProjectId, markClean, saveCurrentScene]);
+
   // Close layout menu when clicking outside and track button position
   const layoutRef = useRef<HTMLDivElement>(null);
   const layoutButtonRef = useRef<HTMLButtonElement>(null);
@@ -109,6 +164,42 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
   return (
     <div className={styles['toolbar']}>
       <FileDropdown onShowSettings={onShowSettings} onShowExport={onShowExport} />
+      
+      {/* Project name with dirty indicator and cloud save */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '6px',
+        padding: '0 12px',
+        color: '#aaa',
+        fontSize: '13px',
+        fontWeight: 500
+      }}>
+        <span style={{ color: '#ddd' }}>{projectMeta.name}</span>
+        {isDirty && <span style={{ color: '#f59e0b', fontSize: '16px' }}>●</span>}
+        {isAuthenticated && isCloudStorageAvailable() && (
+          <button
+            onClick={handleSaveToCloud}
+            disabled={savingToCloud}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: savingToCloud ? 'wait' : 'pointer',
+              padding: '2px 4px',
+              fontSize: '14px',
+              opacity: savingToCloud ? 0.5 : 0.7,
+              transition: 'opacity 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+            onMouseLeave={e => e.currentTarget.style.opacity = savingToCloud ? '0.5' : '0.7'}
+            title={savingToCloud ? 'Saving to cloud...' : 'Save to cloud'}
+          >
+            💾
+          </button>
+        )}
+      </div>
+      
+      <div className={styles['separator']} />
 
       <button className={styles['actionButton']} onClick={onShowSettings} title="Settings">
         <span className={styles['icon']}>⚙️</span>

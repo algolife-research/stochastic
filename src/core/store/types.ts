@@ -60,6 +60,9 @@ export interface GraphState {
   
   isDirty: boolean;
   
+  // Cloud project tracking
+  cloudProjectId: string | null;
+  
   // Selection
   selection: SelectionState;
   currentTool: Tool;

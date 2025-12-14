@@ -88,4 +88,10 @@ export const createProjectActions = (
       state.isDirty = false;
     });
   },
+  
+  setCloudProjectId: (id: string | null): void => {
+    set(state => {
+      state.cloudProjectId = id;
+    });
+  },
 });

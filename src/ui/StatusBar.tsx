@@ -22,17 +22,6 @@ export function StatusBar({ isAudioReady }: StatusBarProps): React.ReactElement 
   
   return (
     <div className={styles.statusBar}>
-      {/* Project name */}
-      <div className={styles.section}>
-        <span className={styles.projectName}>
-          {projectMeta.name}
-          {isDirty && <span className={styles.dirty}>●</span>}
-        </span>
-      </div>
-      
-      {/* Separator */}
-      <div className={styles.separator} />
-      
       {/* Graph stats */}
       <div className={styles.section}>
         <span className={styles.stat}>
