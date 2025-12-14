@@ -1,0 +1,17 @@
+.editorContainer {
+  pointer-events: auto;
+}
+
+.textarea {
+  min-width: 120px;
+  max-width: 420px;
+  min-height: 28px;
+  padding: 6px 8px;
+  background: rgba(0,0,0,0.8);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  font-family: Inter, sans-serif;
+  font-size: 14px;
+  resize: both;
+}

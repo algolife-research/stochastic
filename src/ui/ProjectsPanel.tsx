@@ -41,13 +41,6 @@ export function ProjectsPanel(): React.ReactElement {
   const setCloudProjectId = useGraphStore(state => state.setCloudProjectId);
   const saveCurrentScene = useGraphStore(state => state.saveCurrentScene);
 
-  // Fetch cloud projects on mount and when auth changes
-  useEffect(() => {
-    if (isAuthenticated && isCloudStorageAvailable()) {
-      fetchProjects();
-    }
-  }, [isAuthenticated]);
-
   const fetchProjects = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -63,6 +56,24 @@ export function ProjectsPanel(): React.ReactElement {
     }
     setIsLoading(false);
   }, []);
+
+  // Fetch cloud projects on mount and when auth changes
+  useEffect(() => {
+    if (isAuthenticated && isCloudStorageAvailable()) {
+      fetchProjects();
+    }
+  }, [isAuthenticated, fetchProjects]);
+
+  // Listen for cloud projects changed event (from other components saving)
+  useEffect(() => {
+    const handleCloudProjectsChanged = () => {
+      if (isAuthenticated && isCloudStorageAvailable()) {
+        fetchProjects();
+      }
+    };
+    window.addEventListener('stochastic-cloud-projects-changed', handleCloudProjectsChanged);
+    return () => window.removeEventListener('stochastic-cloud-projects-changed', handleCloudProjectsChanged);
+  }, [isAuthenticated, fetchProjects]);
 
   const handleSaveToCloud = useCallback(async () => {
     if (!isCloudStorageAvailable()) return;

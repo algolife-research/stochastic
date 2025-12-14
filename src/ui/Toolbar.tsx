@@ -129,6 +129,8 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
           setCloudProjectId(result.projectId);
         }
         markClean();
+        // Notify other components to refresh cloud projects list
+        window.dispatchEvent(new CustomEvent('stochastic-cloud-projects-changed'));
       }
     } catch (error) {
       console.error('Failed to save to cloud:', error);

@@ -62,6 +62,20 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Listen for cloud projects changed event (from other components saving)
+  useEffect(() => {
+    const handleCloudProjectsChanged = async () => {
+      if (isAuthenticated && isCloudStorageAvailable()) {
+        const result = await listCloudProjects();
+        if (result.success && result.projects) {
+          setCloudProjects(result.projects);
+        }
+      }
+    };
+    window.addEventListener('stochastic-cloud-projects-changed', handleCloudProjectsChanged);
+    return () => window.removeEventListener('stochastic-cloud-projects-changed', handleCloudProjectsChanged);
+  }, [isAuthenticated]);
+
   // Update dropdown position
   useEffect(() => {
     if (isOpen && buttonRef.current) {
@@ -201,6 +215,13 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
     if (result.success) {
       setCurrentCloudProjectId(result.projectId ?? null);
       markClean();
+      // Refresh cloud projects list
+      const listResult = await listCloudProjects();
+      if (listResult.success && listResult.projects) {
+        setCloudProjects(listResult.projects);
+      }
+      // Notify other components to refresh cloud projects list
+      window.dispatchEvent(new CustomEvent('stochastic-cloud-projects-changed'));
       alert('Project saved to cloud!');
     } else {
       alert(`Failed to save: ${result.error}`);
@@ -420,21 +441,21 @@ export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps
           style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
         >
           <button className={styles.menuItem} onClick={handleNew}>
-            <span>📄</span> New <span className={styles.shortcut}>Ctrl+N</span>
+            <span>📄</span> New Composition <span className={styles.shortcut}></span>
           </button>
 
           <button className={styles.menuItem} onClick={handleLoad}>
-            <span>📂</span> Load... <span className={styles.shortcut}>Ctrl+O</span>
+            <span>📂</span> Import Composition <span className={styles.shortcut}></span>
           </button>
           
           <button className={styles.menuItem} onClick={() => { handleExportComposition(); setIsOpen(false); }}>
-            <span>💾</span> Save Local <span className={styles.shortcut}>Ctrl+S</span>
+            <span>💾</span> Export Composition <span className={styles.shortcut}></span>
           </button>
           
           <div className={styles.separator} />
           
           <button className={styles.menuItem} onClick={() => { onShowExport(); setIsOpen(false); }}>
-            <span>📤</span> Export Audio/MIDI
+            <span>📤</span> Export Audio
           </button>
         </div>,
         document.body

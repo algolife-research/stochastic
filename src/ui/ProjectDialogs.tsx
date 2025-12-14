@@ -41,7 +41,7 @@ export function NewCompositionDialog({ visible, onClose, onCreate, existingFiles
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
-        <div className={styles.title}>New Composition</div>
+        <div className={styles.title}>Create New Composition</div>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <input
@@ -77,7 +77,7 @@ export function LoadCompositionDialog({ visible, onClose, onLoad, files, current
   return (
     <div className={styles.overlay}>
       <div className={styles.modal}>
-        <div className={styles.title}>Load Composition</div>
+        <div className={styles.title}>Import Composition</div>
         <div className={styles.list}>
           {files.length === 0 ? (
             <div style={{ padding: '16px', color: '#888', textAlign: 'center' }}>No compositions found</div>

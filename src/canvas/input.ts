@@ -840,11 +840,12 @@ export class CanvasInputHandler {
     if (annotationId) {
       const ann = store.getAnnotation(annotationId);
       if (ann) {
-        const newText = prompt('Edit text:', ann.text);
-        if (newText !== null) {
-          store.updateAnnotation(annotationId, { text: newText });
-          store.selectAnnotation(annotationId);
-        }
+        // Dispatch event for UI to show inline editor
+        const rect = this.canvas.getBoundingClientRect();
+        const screenX = (ann.x * store.viewport.zoomLevel) + store.viewport.panOffset.x + rect.left;
+        const screenY = (ann.y * store.viewport.zoomLevel) + store.viewport.panOffset.y + rect.top;
+        const ev = new CustomEvent('stochastic-edit-annotation', { detail: { id: annotationId, screenX, screenY } });
+        window.dispatchEvent(ev);
       }
       return;
     }
@@ -858,20 +859,24 @@ export class CanvasInputHandler {
     if (regionId) {
       const region = store.getRegion(regionId);
       if (region) {
-        const newName = prompt('Edit region name:', region.name);
-        if (newName !== null) {
-          store.updateRegion(regionId, { name: newName });
-          store.selectRegion(regionId);
-        }
+        const rect = this.canvas.getBoundingClientRect();
+        const screenX = (region.x * store.viewport.zoomLevel) + store.viewport.panOffset.x + rect.left;
+        const screenY = (region.y * store.viewport.zoomLevel) + store.viewport.panOffset.y + rect.top;
+        const ev = new CustomEvent('stochastic-edit-region', { detail: { id: regionId, screenX, screenY } });
+        window.dispatchEvent(ev);
       }
       return;
     }
     
-    // Double-click on empty canvas - create new annotation
-    const text = prompt('Enter annotation text:');
-    if (text) {
-      const annId = store.addAnnotation(snapToGrid(world.x), snapToGrid(world.y), text);
+    // Double-click on empty canvas - create new annotation and open editor
+    const annId = store.addAnnotation(snapToGrid(world.x), snapToGrid(world.y), 'Annotation');
+    if (annId) {
       store.selectAnnotation(annId);
+      const rect = this.canvas.getBoundingClientRect();
+      const screenX = (world.x * store.viewport.zoomLevel) + store.viewport.panOffset.x + rect.left;
+      const screenY = (world.y * store.viewport.zoomLevel) + store.viewport.panOffset.y + rect.top;
+      const ev = new CustomEvent('stochastic-edit-annotation', { detail: { id: annId, screenX, screenY } });
+      window.dispatchEvent(ev);
     }
   };
   

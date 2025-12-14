@@ -1146,6 +1146,7 @@ export class CanvasRenderer {
       // Set font
       ctx.font = `${ann.fontSize}px Inter, sans-serif`;
       ctx.textBaseline = 'top';
+      ctx.textAlign = 'left';
       
       // Measure text for background
       const metrics = ctx.measureText(ann.text);

@@ -321,6 +321,63 @@ export function ContextMenu(): React.ReactElement | null {
     setShowPresetSubmenu(false);
     setActivePresetCategory(null);
   };
+
+  const handleAddAnnotation = () => {
+    const store = getGraphStore();
+
+    let worldX: number;
+    let worldY: number;
+
+    if (state.worldX !== undefined && state.worldY !== undefined) {
+      worldX = state.worldX;
+      worldY = state.worldY;
+    } else {
+      const canvas = document.querySelector('.stochastic-canvas') as HTMLCanvasElement;
+      if (!canvas) return;
+      const { viewport } = store;
+      const rect = canvas.getBoundingClientRect();
+      const screenX = state.x - rect.left;
+      const screenY = state.y - rect.top;
+      worldX = (screenX - viewport.panOffset.x) / viewport.zoomLevel;
+      worldY = (screenY - viewport.panOffset.y) / viewport.zoomLevel;
+    }
+
+    const id = store.addAnnotation(worldX, worldY, 'Annotation');
+    store.selectAnnotation(id);
+
+    setState(s => ({ ...s, visible: false }));
+  };
+
+  const handleAddRegion = () => {
+    const store = getGraphStore();
+
+    let worldX: number;
+    let worldY: number;
+
+    if (state.worldX !== undefined && state.worldY !== undefined) {
+      worldX = state.worldX;
+      worldY = state.worldY;
+    } else {
+      const canvas = document.querySelector('.stochastic-canvas') as HTMLCanvasElement;
+      if (!canvas) return;
+      const { viewport } = store;
+      const rect = canvas.getBoundingClientRect();
+      const screenX = state.x - rect.left;
+      const screenY = state.y - rect.top;
+      worldX = (screenX - viewport.panOffset.x) / viewport.zoomLevel;
+      worldY = (screenY - viewport.panOffset.y) / viewport.zoomLevel;
+    }
+
+    const defaultWidth = 240;
+    const defaultHeight = 160;
+    const x = worldX - defaultWidth / 2;
+    const y = worldY - defaultHeight / 2;
+
+    const id = store.addRegion(x, y, defaultWidth, defaultHeight, 'Region');
+    if (id) store.selectRegion(id);
+
+    setState(s => ({ ...s, visible: false }));
+  };
   
   const handleLink = () => {
     const store = getGraphStore();
@@ -468,6 +525,12 @@ export function ContextMenu(): React.ReactElement | null {
                 ))}
               </div>
             )}
+          </div>
+          <div className={styles.menuItem} onClick={handleAddAnnotation}>
+            📝 Add Annotation
+          </div>
+          <div className={styles.menuItem} onClick={handleAddRegion}>
+            ▭ Add Region
           </div>
           <div 
             className={styles.menuItem}

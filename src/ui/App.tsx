@@ -11,6 +11,7 @@ import { Toolbar } from './Toolbar';
 import { TransportBar } from './TransportBar';
 import { StatusBar } from './StatusBar';
 import { ContextMenu } from './ContextMenu';
+import { AnnotationEditor } from './AnnotationEditor';
 import { ProjectStartupModal } from './ProjectStartupModal';
 import { SettingsModal } from './SettingsModal';
 import { ExportModal } from './ExportModal';
@@ -222,6 +223,9 @@ export function App(): React.ReactElement {
               Click anywhere to enable audio
             </div>
           )}
+          
+          {/* Inline annotation editor overlay */}
+          <AnnotationEditor />
         </div>
         
         {/* Right panel - unified with Editor/Visualisation toggle */}
