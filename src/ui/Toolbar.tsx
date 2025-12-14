@@ -42,6 +42,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
   const cloudProjectId = useGraphStore(state => state.cloudProjectId);
   const setCloudProjectId = useGraphStore(state => state.setCloudProjectId);
   const saveCurrentScene = useGraphStore(state => state.saveCurrentScene);
+  const setProjectMeta = useGraphStore(state => state.setProjectMeta);
   
   const deleteNode = useGraphStore(state => state.deleteNode);
   const deleteEdge = useGraphStore(state => state.deleteEdge);
@@ -55,6 +56,9 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
   const [showDocsModal, setShowDocsModal] = useState(false);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
   const [savingToCloud, setSavingToCloud] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [tempName, setTempName] = useState('');
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   // Check if there's anything selected
   const hasSelection = selection.selectedNodeIds.length > 0 || 
@@ -139,6 +143,33 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
     }
   }, [isAuthenticated, setCloudProjectId, markClean, saveCurrentScene]);
 
+  // Handle inline rename
+  const handleStartRename = useCallback(() => {
+    setTempName(projectMeta.name || 'Untitled');
+    setEditingName(true);
+    setTimeout(() => nameInputRef.current?.select(), 0);
+  }, [projectMeta.name]);
+
+  const handleSaveRename = useCallback(async () => {
+    const newName = tempName.trim() || 'Untitled';
+    if (newName !== projectMeta.name) {
+      setProjectMeta({ ...projectMeta, name: newName, modified: Date.now() });
+      // If it's a cloud project, trigger save
+      if (cloudProjectId && isAuthenticated && isCloudStorageAvailable()) {
+        // Delay to let state update
+        setTimeout(() => {
+          handleSaveToCloud();
+        }, 50);
+      }
+    }
+    setEditingName(false);
+  }, [tempName, projectMeta, cloudProjectId, isAuthenticated, setProjectMeta, handleSaveToCloud]);
+
+  const handleCancelRename = useCallback(() => {
+    setEditingName(false);
+    setTempName('');
+  }, []);
+
   // Close layout menu when clicking outside and track button position
   const layoutRef = useRef<HTMLDivElement>(null);
   const layoutButtonRef = useRef<HTMLButtonElement>(null);
@@ -167,7 +198,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
     <div className={styles['toolbar']}>
       <FileDropdown onShowSettings={onShowSettings} onShowExport={onShowExport} />
       
-      {/* Project name with dirty indicator and cloud save */}
+      {/* Project name with dirty indicator, cloud status, and inline editing */}
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
@@ -177,8 +208,53 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
         fontSize: '13px',
         fontWeight: 500
       }}>
-        <span style={{ color: '#ddd' }}>{projectMeta.name}</span>
-        {isDirty && <span style={{ color: '#f59e0b', fontSize: '16px' }}>●</span>}
+        {editingName ? (
+          <input
+            ref={nameInputRef}
+            type="text"
+            value={tempName}
+            onChange={e => setTempName(e.target.value)}
+            onBlur={handleSaveRename}
+            onKeyDown={e => {
+              if (e.key === 'Enter') handleSaveRename();
+              if (e.key === 'Escape') handleCancelRename();
+            }}
+            style={{
+              background: '#333',
+              border: '1px solid #555',
+              borderRadius: '4px',
+              color: '#fff',
+              fontSize: '13px',
+              fontWeight: 500,
+              padding: '2px 6px',
+              width: '150px',
+              outline: 'none',
+            }}
+            autoFocus
+          />
+        ) : (
+          <span 
+            onClick={handleStartRename}
+            style={{ 
+              color: '#ddd', 
+              cursor: 'pointer',
+              padding: '2px 4px',
+              borderRadius: '3px',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            title="Click to rename"
+          >
+            {projectMeta.name || 'Untitled'}
+          </span>
+        )}
+        {cloudProjectId ? (
+          <span style={{ fontSize: '12px', opacity: 0.7 }} title="Saved to cloud">☁️</span>
+        ) : (
+          <span style={{ fontSize: '10px', color: '#888', fontStyle: 'italic' }} title="Local project (not saved to cloud)">local</span>
+        )}
+        {isDirty && <span style={{ color: '#f59e0b', fontSize: '16px' }} title="Unsaved changes">●</span>}
         {isAuthenticated && isCloudStorageAvailable() && (
           <button
             onClick={handleSaveToCloud}

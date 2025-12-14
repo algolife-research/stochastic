@@ -19,8 +19,6 @@ export function ProjectsPanel(): React.ReactElement {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savingState, setSavingState] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
-  const [editingName, setEditingName] = useState(false);
-  const [tempName, setTempName] = useState('');
   const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null);
   const [renameTempName, setRenameTempName] = useState('');
 
@@ -40,6 +38,7 @@ export function ProjectsPanel(): React.ReactElement {
   const cloudProjectId = useGraphStore(state => state.cloudProjectId);
   const setCloudProjectId = useGraphStore(state => state.setCloudProjectId);
   const saveCurrentScene = useGraphStore(state => state.saveCurrentScene);
+  const isDirty = useGraphStore(state => state.isDirty);
 
   const fetchProjects = useCallback(async () => {
     setIsLoading(true);
@@ -124,6 +123,15 @@ export function ProjectsPanel(): React.ReactElement {
   }, [setCloudProjectId, markClean, fetchProjects, license, cloudProjects.length, saveCurrentScene]);
 
   const handleLoadProject = useCallback(async (projectId: string) => {
+    // Check for unsaved changes
+    if (isDirty) {
+      const confirmed = confirm(
+        'You have unsaved changes. Opening a new project will discard them.\n\n' +
+        'Click OK to continue, or Cancel to go back and save your work.'
+      );
+      if (!confirmed) return;
+    }
+    
     setIsLoading(true);
     setError(null);
     
@@ -163,45 +171,21 @@ export function ProjectsPanel(): React.ReactElement {
       setError(result.error || 'Load failed');
     }
     setIsLoading(false);
-  }, [loadComposition, setMusicalContext, setGlobalSettings, setProjectMeta, markClean]);
+  }, [isDirty, loadComposition, setMusicalContext, setGlobalSettings, setProjectMeta, setCloudProjectId, markClean]);
 
   const handleDeleteProject = useCallback(async (projectId: string) => {
     if (!confirm('Delete this project? This cannot be undone.')) return;
 
     const result = await deleteCloudProject(projectId);
     if (result.success) {
-      if (currentProjectId === projectId) {
-        setCurrentProjectId(null);
+      if (cloudProjectId === projectId) {
+        setCloudProjectId(null);
       }
       fetchProjects();
     } else {
       setError(result.error || 'Delete failed');
     }
-  }, [cloudProjectId, fetchProjects]);
-
-  // Start editing the current project name
-  const handleStartRename = useCallback(() => {
-    setEditingName(true);
-    setTempName(projectMeta.name || 'Untitled');
-  }, [projectMeta.name]);
-
-  // Save the current project name
-  const handleSaveRename = useCallback(async () => {
-    if (tempName.trim()) {
-      setProjectMeta({ ...projectMeta, name: tempName.trim() });
-      // If it's a cloud project, save the update
-      if (cloudProjectId) {
-        await handleSaveToCloud();
-      }
-    }
-    setEditingName(false);
-  }, [tempName, projectMeta, cloudProjectId, setProjectMeta, handleSaveToCloud]);
-
-  // Cancel editing
-  const handleCancelRename = useCallback(() => {
-    setEditingName(false);
-    setTempName('');
-  }, []);
+  }, [cloudProjectId, setCloudProjectId, fetchProjects]);
 
   // Start renaming a cloud project in the list
   const handleStartCloudRename = useCallback((proj: CloudProjectSummary) => {
@@ -248,36 +232,6 @@ export function ProjectsPanel(): React.ReactElement {
 
   return (
     <div className={styles.projectsPanel}>
-      {/* Current Project Info */}
-      <div className={styles.currentProject}>
-        {editingName ? (
-          <div className={styles.renameRow}>
-            <input
-              type="text"
-              value={tempName}
-              onChange={e => setTempName(e.target.value)}
-              className={styles.renameInput}
-              autoFocus
-              onKeyDown={e => {
-                if (e.key === 'Enter') handleSaveRename();
-                if (e.key === 'Escape') handleCancelRename();
-              }}
-            />
-            <button className={styles.renameAction} onClick={handleSaveRename} title="Save">✓</button>
-            <button className={styles.renameAction} onClick={handleCancelRename} title="Cancel">✕</button>
-          </div>
-        ) : (
-          <div className={styles.projectName}>
-            <span className={styles.projectIcon}>📁</span>
-            <span className={styles.projectNameText}>{projectMeta.name || 'Untitled'}</span>
-            {cloudProjectId && <span className={styles.cloudBadge}>☁️</span>}
-            <button className={styles.renameButton} onClick={handleStartRename} title="Rename project">
-              ✏️
-            </button>
-          </div>
-        )}
-      </div>
-
       {/* Cloud Section */}
       <div className={styles.cloudSection}>
         <div className={styles.sectionHeader}>

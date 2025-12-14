@@ -179,6 +179,7 @@ export interface GraphActions {
   setCurrentComposition: (filename: string | null) => void;
   setProjectMode: (isProjectMode: boolean) => void;
   setShowProjectStartup: (show: boolean) => void;
+  setCloudProjectId: (id: string | null) => void;
   markDirty: () => void;
   markClean: () => void;
   

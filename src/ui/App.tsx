@@ -13,6 +13,7 @@ import { StatusBar } from './StatusBar';
 import { ContextMenu } from './ContextMenu';
 import { AnnotationEditor } from './AnnotationEditor';
 import { ProjectStartupModal } from './ProjectStartupModal';
+import { WelcomeModal } from './WelcomeModal';
 import { SettingsModal } from './SettingsModal';
 import { ExportModal } from './ExportModal';
 import { ScenePanel } from './ScenePanel';
@@ -191,6 +192,9 @@ export function App(): React.ReactElement {
       
       {/* Project Startup Modal (Tauri only) */}
       <ProjectStartupModal />
+      
+      {/* Welcome Modal (Web only) */}
+      <WelcomeModal />
 
       {/* Toolbar with File Menu */}
       <Toolbar 
