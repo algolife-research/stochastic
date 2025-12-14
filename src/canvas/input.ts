@@ -997,6 +997,11 @@ export class CanvasInputHandler {
       
       case 'KeyC':
         if (e.ctrlKey || e.metaKey) {
+          // Allow native text copy if text is selected
+          const textSelection = window.getSelection();
+          if (textSelection && textSelection.toString().length > 0) {
+            return; // Let browser handle text copy
+          }
           e.preventDefault();
           // Copy selected nodes to clipboard
           if (store.selection.selectedNodeIds.length > 0) {
