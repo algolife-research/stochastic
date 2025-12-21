@@ -5,6 +5,7 @@ import { useGraphStore } from '@core/store';
 import { startTick, stopTick, resetTick } from '@core/tick';
 import { CanvasRenderer } from '@canvas/renderer';
 import { CanvasInputHandler } from '@canvas/input';
+import { logSafariDebugInfo, testCanvasRendering } from '@canvas/safari-debug';
 import { audioEngine } from '@audio/engine';
 import { useAuthStore } from '@auth/store';
 import { Toolbar } from './Toolbar';
@@ -81,6 +82,9 @@ export function App(): React.ReactElement {
   useEffect(() => {
     if (!canvasRef.current || !containerRef.current) return;
     
+    // Debug: Log Safari-specific info
+    logSafariDebugInfo(canvasRef.current);
+    
     // Initialize renderer
     const renderer = new CanvasRenderer(canvasRef.current);
     rendererRef.current = renderer;
@@ -102,6 +106,13 @@ export function App(): React.ReactElement {
     // Initial resize
     const rect = containerRef.current.getBoundingClientRect();
     renderer.resize(rect.width, rect.height);
+    
+    // Debug: Test canvas rendering after resize
+    setTimeout(() => {
+      if (canvasRef.current) {
+        testCanvasRendering(canvasRef.current);
+      }
+    }, 100);
     
     // Start render loop
     renderer.start();

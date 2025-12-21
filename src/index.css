@@ -55,8 +55,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /* Disable pull-to-refresh on mobile */
   overscroll-behavior: none;
-  /* Prevent iOS Safari bounce */
-  position: fixed;
+  /* Use relative positioning for better Safari compatibility */
+  position: relative;
   /* Disable double-tap zoom */
   touch-action: manipulation;
 }
@@ -66,6 +66,11 @@ canvas {
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
+  /* Force hardware acceleration on Safari */
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  /* Prevent Safari from adding border/outline */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Touch device optimizations */

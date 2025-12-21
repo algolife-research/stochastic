@@ -187,12 +187,35 @@ export class CanvasRenderer {
    * Handle canvas resize
    */
   resize(width: number, height: number): void {
-    const dpr = window.devicePixelRatio || 1;
-    this.canvas.width = width * dpr;
-    this.canvas.height = height * dpr;
-    this.canvas.style.width = `${width}px`;
-    this.canvas.style.height = `${height}px`;
+    // Safari on iOS can have issues with devicePixelRatio
+    // Clamp to reasonable values and handle edge cases
+    let dpr = window.devicePixelRatio || 1;
+    
+    // Safari on iPad can report unusual DPR values
+    // Clamp between 1 and 3 for safety
+    dpr = Math.max(1, Math.min(3, dpr));
+    
+    // Validate dimensions to prevent Safari rendering issues
+    const safeWidth = Math.max(1, Math.floor(width));
+    const safeHeight = Math.max(1, Math.floor(height));
+    
+    // Set canvas buffer size (actual pixels)
+    this.canvas.width = safeWidth * dpr;
+    this.canvas.height = safeHeight * dpr;
+    
+    // Set display size (CSS pixels)
+    this.canvas.style.width = `${safeWidth}px`;
+    this.canvas.style.height = `${safeHeight}px`;
+    
+    // Reset transform first (Safari can accumulate transforms)
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    
+    // Apply DPR scaling
     this.ctx.scale(dpr, dpr);
+    
+    // Reapply rendering settings (Safari may reset these)
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
     
     // Clear gradient cache on resize
     this.edgeGradientCache.clear();
