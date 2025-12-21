@@ -53,14 +53,92 @@ export function extractJSON(response: string): string | null {
 
 /**
  * Parse JSON safely with error handling
+ * Attempts to fix truncated JSON by closing unclosed brackets/braces
  */
 export function parseJSON<T>(json: string): { data: T | null; error: string | null } {
   try {
     const data = JSON.parse(json) as T;
     return { data, error: null };
   } catch (e) {
+    // Try to fix truncated JSON
+    const fixed = attemptFixTruncatedJSON(json);
+    if (fixed !== json) {
+      try {
+        const data = JSON.parse(fixed) as T;
+        console.warn('AI response was truncated, recovered partial data');
+        return { data, error: null };
+      } catch {
+        // Fall through to original error
+      }
+    }
     return { data: null, error: `JSON parse error: ${e instanceof Error ? e.message : 'Unknown error'}` };
   }
+}
+
+/**
+ * Attempt to fix truncated JSON by closing unclosed brackets and braces
+ */
+function attemptFixTruncatedJSON(json: string): string {
+  // Remove any trailing incomplete string (after last complete value)
+  let fixed = json.trim();
+  
+  // Remove trailing comma if present
+  fixed = fixed.replace(/,\s*$/, '');
+  
+  // Remove incomplete string at end (text that starts with " but doesn't end)
+  const lastQuote = fixed.lastIndexOf('"');
+  if (lastQuote > 0) {
+    const beforeQuote = fixed.substring(0, lastQuote);
+    const quoteCount = (beforeQuote.match(/(?<!\\)"/g) || []).length;
+    // If odd number of quotes before the last one, the string is incomplete
+    if (quoteCount % 2 === 0) {
+      // Last quote starts an incomplete string, remove everything from last complete structure
+      const lastBracket = Math.max(
+        fixed.lastIndexOf('}'),
+        fixed.lastIndexOf(']'),
+        fixed.lastIndexOf(',')
+      );
+      if (lastBracket > 0) {
+        fixed = fixed.substring(0, lastBracket + 1);
+      }
+    }
+  }
+  
+  // Remove trailing comma again
+  fixed = fixed.replace(/,\s*$/, '');
+  
+  // Count brackets
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  let escape = false;
+  
+  for (const char of fixed) {
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (char === '\\') {
+      escape = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    
+    if (char === '{') openBraces++;
+    if (char === '}') openBraces--;
+    if (char === '[') openBrackets++;
+    if (char === ']') openBrackets--;
+  }
+  
+  // Close any unclosed brackets/braces
+  fixed += ']'.repeat(Math.max(0, openBrackets));
+  fixed += '}'.repeat(Math.max(0, openBraces));
+  
+  return fixed;
 }
 
 // ============================================================================

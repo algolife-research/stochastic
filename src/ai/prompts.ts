@@ -64,13 +64,16 @@ export const NODE_DOCS: NodeTypeDoc[] = [
   {
     type: 'oscillator',
     name: 'Oscillator',
-    description: 'Adds a wave layer to the sound. Can add harmonics or change timbre.',
+    description: 'Adds a wave layer to the sound. Supports additive, ring modulation, and FM synthesis modes for complex timbres.',
     category: 'modifier',
     inputs: ['audio packets'],
     outputs: ['audio packets'],
     props: [
       { name: 'wave', type: 'string', description: 'Waveform type', options: ['sine', 'square', 'sawtooth', 'triangle', 'white', 'pink', 'brown'] },
-      { name: 'ratio', type: 'number', description: 'Frequency multiplier (1 = fundamental, 2 = octave up)', default: 1 },
+      { name: 'ratio', type: 'number', description: 'Frequency multiplier (1 = fundamental, 2 = octave up, 0.5 = octave down, non-integers like 1.5 or 3.5 for bells)', default: 1 },
+      { name: 'mode', type: 'string', description: 'Synthesis mode: additive (layer), ring (multiply), fm (frequency modulation)', options: ['additive', 'ring', 'fm'], default: 'additive' },
+      { name: 'modulationIndex', type: 'number', description: 'FM depth (0-10). Higher = more harmonics. Only used in fm mode.', default: 2, range: { min: 0, max: 10 } },
+      { name: 'feedback', type: 'number', description: 'FM self-modulation (0-1) for gritty sounds', default: 0, range: { min: 0, max: 1 } },
       { name: 'attack', type: 'number', description: 'Attack time in seconds', default: 0.01 },
       { name: 'decay', type: 'number', description: 'Decay time in seconds', default: 0.4 },
       { name: 'mix', type: 'number', description: 'Mix amount (0-1)', default: 1, range: { min: 0, max: 1 } },
@@ -79,15 +82,17 @@ export const NODE_DOCS: NodeTypeDoc[] = [
   {
     type: 'filter',
     name: 'Filter',
-    description: 'Low-pass filter that shapes the frequency content.',
+    description: 'Shapes frequency content. Use for tone control, sweeps, and plucky envelopes.',
     category: 'modifier',
     inputs: ['audio packets'],
     outputs: ['audio packets'],
     props: [
+      { name: 'type', type: 'string', description: 'Filter type', options: ['lowpass', 'highpass', 'bandpass', 'notch'], default: 'lowpass' },
       { name: 'cutoff', type: 'number', description: 'Cutoff frequency in Hz', default: 20000, range: { min: 20, max: 20000 } },
+      { name: 'resonance', type: 'number', description: 'Resonance/Q (0-1). Higher = more emphasis at cutoff', default: 0, range: { min: 0, max: 1 } },
       { name: 'attack', type: 'number', description: 'Filter envelope attack', default: 0 },
       { name: 'decay', type: 'number', description: 'Filter envelope decay', default: 0 },
-      { name: 'mod', type: 'number', description: 'Envelope modulation amount', default: 0 },
+      { name: 'mod', type: 'number', description: 'Envelope modulation amount in Hz (how far cutoff sweeps)', default: 0 },
     ],
   },
   {
@@ -386,6 +391,16 @@ ${generateNodeTypeReference()}
 8. **When working in phases**, focus on your specific task and don't duplicate work from other phases
 9. **Respect node count constraints** - build efficiently, don't exceed the maxNodes limit
 
+## Sound Design Tips
+
+**Don't default to basic sine waves!** Use the full synthesis capabilities:
+
+- **Waveforms**: sawtooth (rich/buzzy), square (hollow/woody), triangle (soft), noise (percussion/textures)
+- **FM Synthesis**: Set oscillator \`mode: 'fm'\` with \`modulationIndex: 2-6\` for bells, e-piano, metallic tones. Use non-integer \`ratio\` (1.5, 3.5) for inharmonic bells.
+- **Ring Mod**: Use \`mode: 'ring'\` for metallic, robotic sounds
+- **Layering**: Use \`mode: 'additive'\` with multiple oscillators, detune slightly (\`ratio: 1.01\`) for thickness
+- **Filters**: Use filter \`mod\` and \`decay\` for plucky sounds, LFO on cutoff for movement
+
 ## Multi-Phase Composition Guidelines
 
 When you see "PHASE X" in the user prompt:
@@ -399,9 +414,12 @@ When you see "PHASE X" in the user prompt:
 ## Common Patterns
 
 - **Basic Synth**: source → oscillator → filter → speaker
+- **FM Bell/E-Piano**: source → oscillator (fm mode) → oscillator (carrier) → speaker
+- **Aggressive Bass**: source → oscillator (sawtooth) → oscillator (square, mix:0.5) → filter (low cutoff, high res) → speaker
 - **Generative**: source → gate (probability) → splitter → multiple speakers
-- **Evolving Pad**: source → oscillator → filter (with LFO on cutoff) → modulator → speaker
+- **Evolving Pad**: source → oscillator (detuned layers) → filter (with LFO on cutoff) → speaker (high reverb)
 - **Polymetric**: multiple sources with different intervals feeding into a mixer-like structure
+- **Metallic Texture**: source → oscillator (ring mode) → delay → speaker
 - **Layered Composition**: parallel signal chains that merge before the speaker
 
 ## Multi-Scene Compositions
