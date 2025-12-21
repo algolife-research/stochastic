@@ -1,6 +1,6 @@
 {
   "name": "stochastic",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Stochastic - The Generative Music Engine (Production Build)",
   "type": "module",
   "scripts": {

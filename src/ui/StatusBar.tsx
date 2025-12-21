@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useGraphStore } from '@core/store';
+import { APP_VERSION } from '../version';
 import styles from './StatusBar.module.css';
 
 // ============================================================================
@@ -59,7 +60,7 @@ export function StatusBar({ isAudioReady }: StatusBarProps): React.ReactElement 
       
       {/* Version */}
       <div className={styles.section}>
-        <span className={styles.version}>Stochastic v0.5.0</span>
+        <span className={styles.version}>Stochastic v{APP_VERSION}</span>
       </div>
     </div>
   );

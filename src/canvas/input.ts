@@ -1227,7 +1227,7 @@ export class CanvasInputHandler {
     }
 
     // Single-finger gesture
-    if (touches.length === 1) {
+    if (touches.length === 1 && touches[0]) {
       const touch = touches[0];
       const rect = this.canvas.getBoundingClientRect();
       const screenX = touch.clientX - rect.left;
@@ -1459,7 +1459,7 @@ export class CanvasInputHandler {
     }
 
     // Single-finger gesture
-    if (touches.length === 1) {
+    if (touches.length === 1 && touches[0]) {
       const touch = touches[0];
       const rect = this.canvas.getBoundingClientRect();
       const screenX = touch.clientX - rect.left;
@@ -1743,11 +1743,13 @@ export class CanvasInputHandler {
       store.setIsPanning(false);
       
       // Restart single-finger tracking
-      const touch = touches[0];
-      const rect = this.canvas.getBoundingClientRect();
-      const screenX = touch.clientX - rect.left;
-      const screenY = touch.clientY - rect.top;
-      this.touchStartPosition = { x: screenX, y: screenY };
+      if (touches[0]) {
+        const touch = touches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const screenX = touch.clientX - rect.left;
+        const screenY = touch.clientY - rect.top;
+        this.touchStartPosition = { x: screenX, y: screenY };
+      }
     }
   };
 
@@ -1826,9 +1828,9 @@ export class CanvasInputHandler {
     const store = getGraphStore();
 
     // Check for annotation double-tap (enter edit mode)
-    const annotation = this.findAnnotationAt(worldX, worldY);
-    if (annotation) {
-      store.selectAnnotation(annotation.id);
+    const annotationId = this.findAnnotationAt(worldX, worldY);
+    if (annotationId) {
+      store.selectAnnotation(annotationId);
       return;
     }
 
