@@ -53,6 +53,39 @@ body {
   background: var(--bg-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Disable pull-to-refresh on mobile */
+  overscroll-behavior: none;
+  /* Prevent iOS Safari bounce */
+  position: fixed;
+  /* Disable double-tap zoom */
+  touch-action: manipulation;
+}
+
+/* Canvas element - allow pinch zoom but prevent default behaviors */
+canvas {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Increase button sizes for touch */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+  }
+  
+  /* Better tap highlight */
+  * {
+    -webkit-tap-highlight-color: rgba(76, 175, 80, 0.2);
+  }
+  
+  /* Prevent text selection during touch interactions */
+  body {
+    -webkit-touch-callout: none;
+  }
 }
 
 /* Focus styles */

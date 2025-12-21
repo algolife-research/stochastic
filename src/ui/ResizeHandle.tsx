@@ -28,6 +28,17 @@ export function ResizeHandle({ direction, onResize, onResizeEnd }: ResizeHandleP
     document.body.style.userSelect = 'none';
   }, [direction]);
   
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.touches.length === 1 && e.touches[0]) {
+      isDragging.current = true;
+      const touch = e.touches[0];
+      lastPos.current = direction === 'left' || direction === 'right' ? touch.clientX : touch.clientY;
+      document.body.style.userSelect = 'none';
+    }
+  }, [direction]);
+  
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging.current) return;
@@ -50,12 +61,40 @@ export function ResizeHandle({ direction, onResize, onResizeEnd }: ResizeHandleP
       }
     };
     
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging.current || e.touches.length !== 1 || !e.touches[0]) return;
+      
+      e.preventDefault();
+      const touch = e.touches[0];
+      const currentPos = direction === 'left' || direction === 'right' ? touch.clientX : touch.clientY;
+      const delta = currentPos - lastPos.current;
+      lastPos.current = currentPos;
+      
+      // For left/top handles, invert the delta
+      const adjustedDelta = direction === 'left' || direction === 'top' ? -delta : delta;
+      onResize(adjustedDelta);
+    };
+    
+    const handleTouchEnd = () => {
+      if (isDragging.current) {
+        isDragging.current = false;
+        document.body.style.userSelect = '';
+        onResizeEnd?.();
+      }
+    };
+    
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchcancel', handleTouchEnd);
     
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchcancel', handleTouchEnd);
     };
   }, [direction, onResize, onResizeEnd]);
   
@@ -63,6 +102,7 @@ export function ResizeHandle({ direction, onResize, onResizeEnd }: ResizeHandleP
     <div 
       className={`${styles.handle} ${styles[direction]}`}
       onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
     />
   );
 }

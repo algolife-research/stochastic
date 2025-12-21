@@ -107,6 +107,9 @@
   background: #333;
   border-radius: 3px;
   outline: none;
+  /* Increase touch target area */
+  padding: 10px 0;
+  margin: -10px 0;
 }
 
 .slider::-webkit-slider-thumb {
@@ -121,6 +124,31 @@
 
 .slider::-webkit-slider-thumb:hover {
   transform: scale(1.2);
+}
+
+/* Touch device enhancements */
+@media (hover: none) and (pointer: coarse) {
+  .slider::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .slider {
+    height: 8px;
+  }
+  
+  .numberInput,
+  .textInput,
+  .select {
+    padding: 12px 14px;
+    font-size: 16px; /* Prevents iOS zoom on focus */
+    min-height: 44px; /* Apple's recommended minimum touch target */
+  }
+  
+  .checkbox {
+    width: 24px;
+    height: 24px;
+  }
 }
 
 .sliderValue {

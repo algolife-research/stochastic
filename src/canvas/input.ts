@@ -4,7 +4,7 @@
 import { getGraphStore } from '@core/store';
 import type { NodeId, NodeType, Tool, EdgeId, AnnotationId, RegionId, TunnelProps, GraphNode } from '@core/types';
 import { 
-  NODE_RADIUS, MIN_ZOOM, MAX_ZOOM, dist, HANDLE_OFFSET_X, HANDLE_RADIUS,
+  NODE_RADIUS, MIN_ZOOM, MAX_ZOOM, dist, HANDLE_RADIUS,
   SNAP_STEP, GRID_SIZE, GRID_ATTRACT_STRENGTH, EDGE_ATTRACT_STRENGTH,
   EDGE_SNAP_INTERVAL, ATTRACT_RADIUS, REGION_HANDLE_SIZE, MIN_REGION_SIZE,
   getNodeEffectiveRadius
@@ -13,31 +13,6 @@ import {
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
-
-/**
- * Calculate distance from point to line segment
- */
-function distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
-  const A = px - x1;
-  const B = py - y1;
-  const C = x2 - x1;
-  const D = y2 - y1;
-  
-  const dot = A * C + B * D;
-  const lenSq = C * C + D * D;
-  let t = lenSq !== 0 ? dot / lenSq : -1;
-  
-  if (t < 0) t = 0;
-  else if (t > 1) t = 1;
-  
-  const xx = x1 + t * C;
-  const yy = y1 + t * D;
-  
-  const dx = px - xx;
-  const dy = py - yy;
-  
-  return Math.sqrt(dx * dx + dy * dy);
-}
 
 /**
  * Calculate a point on a cubic Bezier curve at parameter t (0-1)
@@ -128,6 +103,19 @@ export class CanvasInputHandler {
   private dragOffset: { x: number; y: number } = { x: 0, y: 0 };
   private regionDragContents: { nodeIds: NodeId[]; annotationIds: AnnotationId[] } | null = null;
   
+  // Touch support properties
+  private activeTouches: Map<number, Touch> = new Map();
+  private initialPinchDistance: number = 0;
+  private initialZoomLevel: number = 1;
+  private lastTapTime: number = 0;
+  private lastTapPosition: { x: number; y: number } = { x: 0, y: 0 };
+  private longPressTimer: number | null = null;
+  private touchStartPosition: { x: number; y: number } = { x: 0, y: 0 };
+  private readonly DOUBLE_TAP_THRESHOLD = 300; // ms
+  private readonly DOUBLE_TAP_DISTANCE = 30; // pixels
+  private readonly LONG_PRESS_DURATION = 500; // ms
+  private readonly TOUCH_MOVE_THRESHOLD = 10; // pixels to distinguish tap from drag
+  
   // Callbacks for audio/external systems
   onNodeClick?: (nodeId: NodeId, node: unknown) => void;
   onPacketArrival?: (nodeId: NodeId, payload: unknown) => void;
@@ -141,20 +129,36 @@ export class CanvasInputHandler {
    * Clean up event listeners
    */
   destroy(): void {
+    // Mouse events
     this.canvas.removeEventListener('mousedown', this.handleMouseDown);
     this.canvas.removeEventListener('mousemove', this.handleMouseMove);
     window.removeEventListener('mouseup', this.handleMouseUp);
     this.canvas.removeEventListener('dblclick', this.handleDoubleClick);
     this.canvas.removeEventListener('wheel', this.handleWheel);
     this.canvas.removeEventListener('contextmenu', this.handleContextMenu);
+    
+    // Touch events
+    this.canvas.removeEventListener('touchstart', this.handleTouchStart);
+    this.canvas.removeEventListener('touchmove', this.handleTouchMove);
+    this.canvas.removeEventListener('touchend', this.handleTouchEnd);
+    this.canvas.removeEventListener('touchcancel', this.handleTouchCancel);
+    
+    // Keyboard events
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
+    
+    // Clear any pending timers
+    if (this.longPressTimer !== null) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
   }
   
   /**
    * Setup all event listeners
    */
   private setupEventListeners(): void {
+    // Mouse events
     this.canvas.addEventListener('mousedown', this.handleMouseDown);
     this.canvas.addEventListener('mousemove', this.handleMouseMove);
     window.addEventListener('mouseup', this.handleMouseUp);
@@ -162,6 +166,14 @@ export class CanvasInputHandler {
     this.canvas.addEventListener('wheel', this.handleWheel, { passive: false });
     this.canvas.addEventListener('dblclick', this.handleDoubleClick);
     this.canvas.addEventListener('contextmenu', this.handleContextMenu);
+    
+    // Touch events
+    this.canvas.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+    this.canvas.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+    this.canvas.addEventListener('touchend', this.handleTouchEnd, { passive: false });
+    this.canvas.addEventListener('touchcancel', this.handleTouchCancel, { passive: false });
+    
+    // Keyboard events
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
   }
@@ -390,6 +402,32 @@ export class CanvasInputHandler {
     const handleDist = dist(worldX, worldY, handleX, handleY);
     if (handleDist < HANDLE_RADIUS + 6) {
       return { nodeId: foundNode.id, handleX, handleY };
+    }
+    
+    return null;
+  }
+
+  /**
+   * Find link handle for touch (checks selected nodes with fixed handle position)
+   */
+  findLinkHandleTouch(worldX: number, worldY: number): NodeId | null {
+    const store = getGraphStore();
+    const TOUCH_HANDLE_RADIUS = 12; // Larger for touch
+    
+    // Check if touching link handle of any selected node
+    for (const nodeId of store.selection.selectedNodeIds) {
+      const node = store.getNode(nodeId);
+      if (!node) continue;
+      
+      // Handle is always to the right on touch devices
+      const nodeRadius = getNodeEffectiveRadius(node);
+      const handleX = node.x + nodeRadius + 10;
+      const handleY = node.y;
+      
+      const handleDist = dist(worldX, worldY, handleX, handleY);
+      if (handleDist < TOUCH_HANDLE_RADIUS + 10) {
+        return nodeId;
+      }
     }
     
     return null;
@@ -1128,6 +1166,696 @@ export class CanvasInputHandler {
   private handleKeyUp = (e: KeyboardEvent): void => {
     // Nothing special for now
   };
+
+  // ============================================================================
+  // TOUCH EVENT HANDLERS
+  // ============================================================================
+
+  /**
+   * Get distance between two touches (for pinch gesture)
+   */
+  private getTouchDistance(touch1: Touch | undefined, touch2: Touch | undefined): number {
+    if (!touch1 || !touch2) return 0;
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  /**
+   * Get center point between two touches
+   */
+  private getTouchCenter(touch1: Touch | undefined, touch2: Touch | undefined): { x: number; y: number } {
+    if (!touch1 || !touch2) return { x: 0, y: 0 };
+    return {
+      x: (touch1.clientX + touch2.clientX) / 2,
+      y: (touch1.clientY + touch2.clientY) / 2,
+    };
+  }
+
+  /**
+   * Handle touch start event
+   */
+  private handleTouchStart = (e: TouchEvent): void => {
+    e.preventDefault(); // Prevent mouse events and scrolling
+    
+    const store = getGraphStore();
+    const touches = Array.from(e.touches);
+
+    // Update active touches map
+    for (const touch of touches) {
+      this.activeTouches.set(touch.identifier, touch);
+    }
+
+    // Two-finger gesture (pinch-to-zoom or two-finger pan)
+    if (touches.length === 2 && touches[0] && touches[1]) {
+      // Clear any long-press timer
+      if (this.longPressTimer !== null) {
+        clearTimeout(this.longPressTimer);
+        this.longPressTimer = null;
+      }
+
+      // Initialize pinch-to-zoom
+      this.initialPinchDistance = this.getTouchDistance(touches[0], touches[1]);
+      this.initialZoomLevel = store.viewport.zoomLevel;
+
+      // Initialize two-finger pan
+      const center = this.getTouchCenter(touches[0], touches[1]);
+      this.isPanning = true;
+      this.panStart = center;
+      
+      return;
+    }
+
+    // Single-finger gesture
+    if (touches.length === 1) {
+      const touch = touches[0];
+      const rect = this.canvas.getBoundingClientRect();
+      const screenX = touch.clientX - rect.left;
+      const screenY = touch.clientY - rect.top;
+      const world = this.screenToWorld(screenX, screenY);
+
+      // Store touch start position for tap detection
+      this.touchStartPosition = { x: screenX, y: screenY };
+
+      // Check for double-tap
+      const now = Date.now();
+      const timeSinceLastTap = now - this.lastTapTime;
+      const distanceFromLastTap = Math.sqrt(
+        Math.pow(screenX - this.lastTapPosition.x, 2) +
+        Math.pow(screenY - this.lastTapPosition.y, 2)
+      );
+
+      if (
+        timeSinceLastTap < this.DOUBLE_TAP_THRESHOLD &&
+        distanceFromLastTap < this.DOUBLE_TAP_DISTANCE
+      ) {
+        // Double-tap detected
+        this.handleDoubleTap(screenX, screenY, world.x, world.y);
+        this.lastTapTime = 0; // Reset to prevent triple-tap
+        return;
+      }
+
+      this.lastTapTime = now;
+      this.lastTapPosition = { x: screenX, y: screenY };
+
+      // Start long-press timer for context menu
+      this.longPressTimer = window.setTimeout(() => {
+        this.handleLongPress(screenX, screenY, world.x, world.y);
+        this.longPressTimer = null;
+      }, this.LONG_PRESS_DURATION);
+
+      // Initiate potential drag (same logic as mouse down)
+      this.handleSingleTouchStart(screenX, screenY, world.x, world.y);
+    }
+  };
+
+  /**
+   * Handle single-finger touch start (equivalent to mouse down)
+   */
+  private handleSingleTouchStart(screenX: number, screenY: number, worldX: number, worldY: number): void {
+    const store = getGraphStore();
+    const tool = store.currentTool;
+
+    store.setMouse(screenX, screenY, worldX, worldY);
+
+    // Region tool overrides ALL interactions (same as mouse)
+    if (tool === 'region') {
+      this.isBoxSelecting = true;
+      store.setBoxSelecting(true, { x: worldX, y: worldY });
+      return;
+    }
+
+    // Check for link handle touch on selected nodes (touch-specific)
+    const linkHandleNodeId = this.findLinkHandleTouch(worldX, worldY);
+    if (linkHandleNodeId) {
+      store.setLinkingFrom(linkHandleNodeId);
+      return;
+    }
+
+    // Check for region resize handle
+    if (store.selection.hoveredRegionId && store.selection.hoveredRegionHandle) {
+      this.isResizingRegion = true;
+      store.setResizingRegion(store.selection.hoveredRegionId);
+      store.selectRegion(store.selection.hoveredRegionId);
+      return;
+    }
+
+    // Find what's under the touch (in priority order)
+    const nodeId = this.findNodeAt(worldX, worldY);
+    const annotationId = this.findAnnotationAt(worldX, worldY);
+    const regionId = this.findRegionAt(worldX, worldY);
+    const edgeId = !nodeId ? this.findEdgeAt(worldX, worldY) : null;
+
+    if (nodeId) {
+      const node = store.getNode(nodeId);
+      
+      // Check if we're in linking mode
+      if (store.selection.linkingFromId) {
+        // Complete link
+        store.addEdge(store.selection.linkingFromId, nodeId);
+        store.setLinkingFrom(null);
+        return;
+      }
+      
+      // Touch on source node with manual trigger
+      if (node && node.type === 'source' && (node.props as { autoTrigger: boolean }).autoTrigger === false) {
+        store.spawnPacket(nodeId);
+        store.flashNode(nodeId);
+      }
+      
+      // Start drag
+      if (!store.selection.selectedNodeIds.includes(nodeId)) {
+        store.selectNode(nodeId);
+      }
+      
+      this.isDragging = true;
+      store.setDraggingNode(nodeId);
+      
+      if (node) {
+        this.dragOffset = {
+          x: worldX - node.x,
+          y: worldY - node.y,
+        };
+      }
+      
+      // Callback for external systems
+      if (this.onNodeClick && node) {
+        this.onNodeClick(nodeId, node);
+      }
+    } else if (annotationId) {
+      // Touch on annotation
+      const ann = store.getAnnotation(annotationId);
+      if (ann) {
+        store.selectAnnotation(annotationId);
+        this.isDraggingAnnotation = true;
+        store.setDraggingAnnotation(annotationId);
+        this.dragOffset = { x: worldX - ann.x, y: worldY - ann.y };
+      }
+    } else if (edgeId) {
+      // Touch on edge
+      store.selectEdge(edgeId);
+    } else if (regionId && !nodeId && !annotationId) {
+      // Touch on region (only if not touching node/annotation inside it)
+      const region = store.getRegion(regionId);
+      if (region) {
+        store.selectRegion(regionId);
+        this.isDraggingRegion = true;
+        store.setDraggingRegion(regionId);
+        this.dragOffset = { x: worldX - region.x, y: worldY - region.y };
+        
+        // Capture region contents at drag start
+        const contents = store.getRegionContents(regionId);
+        this.regionDragContents = {
+          nodeIds: contents.nodes.map(n => n.id),
+          annotationIds: contents.annotations.map(a => a.id),
+        };
+      }
+    } else {
+      // Touch on empty space
+      if (store.selection.linkingFromId) {
+        // Cancel linking
+        store.setLinkingFrom(null);
+      } else if (tool === 'annotation') {
+        // Create annotation
+        const newId = store.addAnnotation(snapToGrid(worldX), snapToGrid(worldY), 'Note');
+        store.selectAnnotation(newId);
+        store.setTool('select');
+      } else if (isNodeTool(tool)) {
+        // Create new node
+        const newNodeId = store.addNode(tool as NodeType, snapToGrid(worldX), snapToGrid(worldY));
+        store.selectNode(newNodeId);
+        store.setTool('select');
+      } else {
+        // Clear selection and start box selection
+        store.clearSelection();
+        this.isBoxSelecting = true;
+        store.setBoxSelecting(true, { x: worldX, y: worldY });
+      }
+    }
+  }
+
+  /**
+   * Handle touch move event
+   */
+  private handleTouchMove = (e: TouchEvent): void => {
+    e.preventDefault(); // Prevent scrolling
+    
+    const store = getGraphStore();
+    const touches = Array.from(e.touches);
+
+    // Update active touches map
+    this.activeTouches.clear();
+    for (const touch of touches) {
+      this.activeTouches.set(touch.identifier, touch);
+    }
+
+    // Two-finger gesture (pinch-to-zoom with simultaneous pan)
+    if (touches.length === 2) {
+      // Cancel long-press if active
+      if (this.longPressTimer !== null) {
+        clearTimeout(this.longPressTimer);
+        this.longPressTimer = null;
+      }
+
+      // Calculate pinch-to-zoom
+      const currentDistance = this.getTouchDistance(touches[0], touches[1]);
+      const scale = this.initialPinchDistance > 0 ? currentDistance / this.initialPinchDistance : 1;
+      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, this.initialZoomLevel * scale));
+
+      // Get pinch center point for zoom-to-point
+      const center = this.getTouchCenter(touches[0], touches[1]);
+      const rect = this.canvas.getBoundingClientRect();
+      const screenX = center.x - rect.left;
+      const screenY = center.y - rect.top;
+
+      // Calculate pan offset adjustment to zoom toward center
+      const worldBeforeZoom = this.screenToWorld(screenX, screenY);
+      store.setZoom(newZoom);
+      const worldAfterZoom = this.screenToWorld(screenX, screenY);
+
+      const panDeltaX = (worldAfterZoom.x - worldBeforeZoom.x) * newZoom;
+      const panDeltaY = (worldAfterZoom.y - worldBeforeZoom.y) * newZoom;
+
+      const { viewport } = store;
+      store.setPan(
+        viewport.panOffset.x + panDeltaX,
+        viewport.panOffset.y + panDeltaY
+      );
+
+      // Two-finger pan
+      if (this.isPanning) {
+        const deltaX = center.x - this.panStart.x;
+        const deltaY = center.y - this.panStart.y;
+
+        store.setPan(
+          store.viewport.panOffset.x + deltaX,
+          store.viewport.panOffset.y + deltaY
+        );
+
+        this.panStart = center;
+      }
+
+      return;
+    }
+
+    // Single-finger gesture
+    if (touches.length === 1) {
+      const touch = touches[0];
+      const rect = this.canvas.getBoundingClientRect();
+      const screenX = touch.clientX - rect.left;
+      const screenY = touch.clientY - rect.top;
+      const world = this.screenToWorld(screenX, screenY);
+
+      // Check if moved enough to cancel tap/long-press
+      const moveDistance = Math.sqrt(
+        Math.pow(screenX - this.touchStartPosition.x, 2) +
+        Math.pow(screenY - this.touchStartPosition.y, 2)
+      );
+
+      if (moveDistance > this.TOUCH_MOVE_THRESHOLD) {
+        // Cancel long-press timer
+        if (this.longPressTimer !== null) {
+          clearTimeout(this.longPressTimer);
+          this.longPressTimer = null;
+        }
+
+        // Handle drag (delegate to existing mouse move logic)
+        this.handleTouchDrag(screenX, screenY, world.x, world.y);
+      }
+    }
+  };
+
+  /**
+   * Handle single-finger drag (equivalent to mouse move while dragging)
+   */
+  private handleTouchDrag(screenX: number, screenY: number, worldX: number, worldY: number): void {
+    const store = getGraphStore();
+
+    store.setMouse(screenX, screenY, worldX, worldY);
+
+    // Box selection (matches mouse logic)
+    if (this.isBoxSelecting) {
+      store.updateBoxSelectEnd({ x: worldX, y: worldY });
+      
+      // Update selected nodes based on box
+      const start = store.selection.boxSelectStart;
+      const end = store.selection.boxSelectEnd;
+      if (start && end) {
+        const minX = Math.min(start.x, end.x);
+        const maxX = Math.max(start.x, end.x);
+        const minY = Math.min(start.y, end.y);
+        const maxY = Math.max(start.y, end.y);
+        
+        const selectedIds: NodeId[] = [];
+        store.nodes.forEach((node, id) => {
+          if (node.x >= minX && node.x <= maxX && node.y >= minY && node.y <= maxY) {
+            selectedIds.push(id);
+          }
+        });
+        store.selectNodes(selectedIds);
+      }
+      return;
+    }
+
+    // Region resizing (matches mouse logic)
+    if (this.isResizingRegion && store.selection.resizingRegionId) {
+      const region = store.getRegion(store.selection.resizingRegionId);
+      const handle = store.selection.hoveredRegionHandle;
+      if (!region || !handle) return;
+      
+      let newX = region.x;
+      let newY = region.y;
+      let newWidth = region.width;
+      let newHeight = region.height;
+      
+      if (handle.includes('w')) {
+        newWidth = region.x + region.width - worldX;
+        newX = worldX;
+      }
+      if (handle.includes('e')) {
+        newWidth = worldX - region.x;
+      }
+      if (handle.includes('n')) {
+        newHeight = region.y + region.height - worldY;
+        newY = worldY;
+      }
+      if (handle.includes('s')) {
+        newHeight = worldY - region.y;
+      }
+      
+      // Enforce minimum size
+      if (newWidth < MIN_REGION_SIZE) {
+        if (handle.includes('w')) newX = region.x + region.width - MIN_REGION_SIZE;
+        newWidth = MIN_REGION_SIZE;
+      }
+      if (newHeight < MIN_REGION_SIZE) {
+        if (handle.includes('n')) newY = region.y + region.height - MIN_REGION_SIZE;
+        newHeight = MIN_REGION_SIZE;
+      }
+      
+      store.updateRegion(store.selection.resizingRegionId, {
+        x: newX, y: newY, width: newWidth, height: newHeight
+      });
+      return;
+    }
+
+    // Region dragging (matches mouse logic)
+    if (this.isDraggingRegion && store.selection.draggingRegionId && this.regionDragContents) {
+      const region = store.getRegion(store.selection.draggingRegionId);
+      if (!region) return;
+      
+      const newX = worldX - this.dragOffset.x;
+      const newY = worldY - this.dragOffset.y;
+      const deltaX = newX - region.x;
+      const deltaY = newY - region.y;
+      
+      // Move region
+      store.updateRegion(store.selection.draggingRegionId, { x: newX, y: newY });
+      
+      // Move contained nodes
+      this.regionDragContents.nodeIds.forEach(nodeId => {
+        const node = store.getNode(nodeId);
+        if (node) {
+          store.moveNode(nodeId, node.x + deltaX, node.y + deltaY);
+        }
+      });
+      
+      // Move contained annotations
+      this.regionDragContents.annotationIds.forEach(annId => {
+        const ann = store.getAnnotation(annId);
+        if (ann) {
+          store.updateAnnotation(annId, { x: ann.x + deltaX, y: ann.y + deltaY });
+        }
+      });
+      return;
+    }
+
+    // Annotation dragging (matches mouse logic)
+    if (this.isDraggingAnnotation && store.selection.draggingAnnotationId) {
+      const newX = snapToGrid(worldX - this.dragOffset.x);
+      const newY = snapToGrid(worldY - this.dragOffset.y);
+      store.updateAnnotation(store.selection.draggingAnnotationId, { x: newX, y: newY });
+      return;
+    }
+
+    // Node dragging (matches mouse logic with attractor snapping)
+    if (this.isDragging && store.selection.draggingNodeId) {
+      const rawX = worldX - this.dragOffset.x;
+      const rawY = worldY - this.dragOffset.y;
+      const snapped = this.applyAttractors(store.selection.draggingNodeId, rawX, rawY);
+      
+      // Move all selected nodes if dragging one of them
+      const selectedIds = store.selection.selectedNodeIds;
+      if (selectedIds.includes(store.selection.draggingNodeId)) {
+        const draggedNode = store.getNode(store.selection.draggingNodeId);
+        if (draggedNode) {
+          const deltaX = snapped.x - draggedNode.x;
+          const deltaY = snapped.y - draggedNode.y;
+          
+          selectedIds.forEach(id => {
+            const node = store.getNode(id);
+            if (node) {
+              store.moveNode(id, node.x + deltaX, node.y + deltaY);
+            }
+          });
+        }
+      } else {
+        store.moveNode(store.selection.draggingNodeId, snapped.x, snapped.y);
+      }
+      return;
+    }
+  }
+
+  /**
+   * Handle touch end event
+   */
+  private handleTouchEnd = (e: TouchEvent): void => {
+    e.preventDefault();
+    
+    const store = getGraphStore();
+    const touches = Array.from(e.touches);
+
+    // Remove ended touches from active touches map
+    for (const touch of e.changedTouches) {
+      this.activeTouches.delete(touch.identifier);
+    }
+
+    // Clear long-press timer
+    if (this.longPressTimer !== null) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+
+    // If no touches remain, treat as complete touch end
+    if (touches.length === 0) {
+      // Check if it was a tap (no significant movement)
+      if (e.changedTouches.length > 0 && e.changedTouches[0]) {
+        const touch = e.changedTouches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const screenX = touch.clientX - rect.left;
+        const screenY = touch.clientY - rect.top;
+
+        const moveDistance = Math.sqrt(
+          Math.pow(screenX - this.touchStartPosition.x, 2) +
+          Math.pow(screenY - this.touchStartPosition.y, 2)
+        );
+
+        // If it was a tap (minimal movement), handle tap logic
+        if (moveDistance < this.TOUCH_MOVE_THRESHOLD) {
+          const world = this.screenToWorld(screenX, screenY);
+          this.handleTap(screenX, screenY, world.x, world.y);
+        }
+      }
+
+      // Complete linking (matches mouse up logic)
+      if (store.selection.linkingFromId && e.changedTouches[0]) {
+        const touch = e.changedTouches[0];
+        const rect = this.canvas.getBoundingClientRect();
+        const screenX = touch.clientX - rect.left;
+        const screenY = touch.clientY - rect.top;
+        const world = this.screenToWorld(screenX, screenY);
+
+        const nodeId = this.findNodeAt(world.x, world.y);
+        if (nodeId && nodeId !== store.selection.linkingFromId) {
+          // Link to existing node
+          store.addEdge(store.selection.linkingFromId, nodeId);
+          store.setLinkingFrom(null);
+        } else if (!nodeId) {
+          // Dropped on empty canvas - show context menu
+          store.setPendingLinkNode(store.selection.linkingFromId);
+          store.setLinkingFrom(null);
+          store.setContextMenuPos(snapToGrid(world.x), snapToGrid(world.y));
+          
+          // Trigger context menu display
+          const event = new CustomEvent('stochastic-show-add-menu', {
+            detail: { x: screenX, y: screenY }
+          });
+          window.dispatchEvent(event);
+        }
+      }
+
+      // End box selection or region creation (matches mouse up logic)
+      if (this.isBoxSelecting) {
+        const tool = store.currentTool;
+        
+        if (tool === 'region') {
+          // Create region from box selection
+          const start = store.selection.boxSelectStart;
+          const end = store.selection.boxSelectEnd;
+          if (start && end) {
+            const minX = Math.min(start.x, end.x);
+            const maxX = Math.max(start.x, end.x);
+            const minY = Math.min(start.y, end.y);
+            const maxY = Math.max(start.y, end.y);
+            const width = maxX - minX;
+            const height = maxY - minY;
+            
+            if (width >= MIN_REGION_SIZE && height >= MIN_REGION_SIZE) {
+              const newRegionId = store.addRegion(minX, minY, width, height, 'Region');
+              if (newRegionId) {
+                store.selectRegion(newRegionId);
+              }
+            }
+          }
+          // Switch back to select tool
+          store.setTool('select');
+        }
+        
+        this.isBoxSelecting = false;
+        store.setBoxSelecting(false);
+      }
+
+      // Reset all drag states (matches mouse up logic)
+      this.isDragging = false;
+      this.isDraggingAnnotation = false;
+      this.isDraggingRegion = false;
+      this.isResizingRegion = false;
+      this.isPanning = false;
+      store.setIsPanning(false);
+      store.setDraggingNode(null);
+      store.setDraggingAnnotation(null);
+      store.setDraggingRegion(null);
+      store.setResizingRegion(null);
+      this.regionDragContents = null;
+    } else if (touches.length === 1) {
+      // Went from 2+ fingers to 1 finger - reset single-finger gesture
+      this.isPanning = false;
+      store.setIsPanning(false);
+      
+      // Restart single-finger tracking
+      const touch = touches[0];
+      const rect = this.canvas.getBoundingClientRect();
+      const screenX = touch.clientX - rect.left;
+      const screenY = touch.clientY - rect.top;
+      this.touchStartPosition = { x: screenX, y: screenY };
+    }
+  };
+
+  /**
+   * Handle touch cancel event (system interrupted touch)
+   */
+  private handleTouchCancel = (e: TouchEvent): void => {
+    e.preventDefault();
+    
+    const store = getGraphStore();
+    
+    // Clear all touch state
+    this.activeTouches.clear();
+    this.isDragging = false;
+    this.isDraggingAnnotation = false;
+    this.isDraggingRegion = false;
+    this.isResizingRegion = false;
+    this.isPanning = false;
+    this.isBoxSelecting = false;
+    this.regionDragContents = null;
+
+    // Reset store states
+    store.setIsPanning(false);
+    store.setDraggingNode(null);
+    store.setDraggingAnnotation(null);
+    store.setDraggingRegion(null);
+    store.setResizingRegion(null);
+    store.setBoxSelecting(false);
+    store.setLinkingFrom(null);
+
+    if (this.longPressTimer !== null) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+  };
+
+  /**
+   * Handle single tap (equivalent to click)
+   */
+  private handleTap(screenX: number, screenY: number, worldX: number, worldY: number): void {
+    const store = getGraphStore();
+    const tool = store.currentTool;
+
+    // Handle tool-specific tap actions
+    if (isNodeTool(tool)) {
+      // Create node at tap position
+      store.addNode(tool as NodeType, snapToGrid(worldX), snapToGrid(worldY));
+      return;
+    }
+
+    if (tool === 'annotation') {
+      // Tap on annotation tool creates new annotation
+      const annotation = this.findAnnotationAt(worldX, worldY);
+      if (!annotation) {
+        const annotationId = store.addAnnotation(snapToGrid(worldX), snapToGrid(worldY), 'Note');
+        store.selectAnnotation(annotationId);
+        store.setTool('select');
+      }
+      return;
+    }
+
+    if (tool === 'region') {
+      // Tap on region tool creates new region
+      const region = this.findRegionAt(worldX, worldY);
+      if (!region) {
+        store.addRegion(worldX - 100, worldY - 100, 200, 200, 'Region');
+      }
+      return;
+    }
+  }
+
+  /**
+   * Handle double-tap (equivalent to double-click)
+   */
+  private handleDoubleTap(screenX: number, screenY: number, worldX: number, worldY: number): void {
+    const store = getGraphStore();
+
+    // Check for annotation double-tap (enter edit mode)
+    const annotation = this.findAnnotationAt(worldX, worldY);
+    if (annotation) {
+      store.selectAnnotation(annotation.id);
+      return;
+    }
+
+    // Check for node double-tap (could open properties, etc.)
+    const nodeId = this.findNodeAt(worldX, worldY);
+    if (nodeId !== null) {
+      // Could open node properties panel or other action
+      // For now, just select it
+      store.selectNode(nodeId);
+      return;
+    }
+  }
+
+  /**
+   * Handle long-press (equivalent to right-click context menu)
+   */
+  private handleLongPress(screenX: number, screenY: number, worldX: number, worldY: number): void {
+    // Show context menu at long-press location
+    // This would require implementing a touch-friendly context menu
+    // For now, we'll just log it
+    console.log('Long press detected at', { screenX, screenY, worldX, worldY });
+
+    // Could trigger context menu for:
+    // - Nodes (delete, duplicate, copy, etc.)
+    // - Edges (delete)
+    // - Empty space (paste, etc.)
+  }
 }
 
 /**

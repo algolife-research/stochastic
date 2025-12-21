@@ -3,7 +3,7 @@
 // Updated: 2025-12-09 with Bezier curve edges and flowing animation
 
 import { getGraphStore } from '@core/store';
-import type { GraphNode, GraphEdge, Packet, TunnelProps } from '@core/types';
+import type { GraphNode, GraphEdge, Packet, TunnelProps, NodeId } from '@core/types';
 import { 
   NODE_RADIUS, GRID_SIZE, NODE_COLORS, NODE_ICONS, 
   midiToNoteName, getNodeEffectiveRadius
@@ -15,6 +15,21 @@ import {
   validateHexColor,
   safeCanvasOp,
 } from './validator';
+
+// ============================================================================
+// TOUCH DEVICE DETECTION
+// ============================================================================
+
+/**
+ * Check if the device supports touch input
+ */
+function isTouchDevice(): boolean {
+  return (
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0 ||
+    (navigator as any).msMaxTouchPoints > 0
+  );
+}
 
 // ============================================================================
 // BEZIER CURVE UTILITIES
@@ -1092,44 +1107,58 @@ export class CanvasRenderer {
     const store = getGraphStore();
     const { selection } = store;
     
-    // Only show handle when hovering a node and not linking
-    if (!selection.isHoveringHandle || selection.linkingFromId) {
-      return;
+    const isTouch = isTouchDevice();
+    
+    // For touch devices: show handles on selected nodes
+    // For mouse devices: show handle when hovering a node
+    const nodesToShowHandles: NodeId[] = [];
+    
+    if (isTouch) {
+      // On touch devices, show handles for all selected nodes (unless linking)
+      if (!selection.linkingFromId && selection.selectedNodeIds.length > 0) {
+        nodesToShowHandles.push(...selection.selectedNodeIds);
+      }
+    } else {
+      // On mouse devices, show handle only when hovering (original behavior)
+      if (selection.isHoveringHandle && !selection.linkingFromId && selection.hoveredNodeId) {
+        nodesToShowHandles.push(selection.hoveredNodeId);
+      }
     }
     
-    // Find hovered node
-    const hoveredNodeId = selection.hoveredNodeId;
-    if (!hoveredNodeId) return;
+    if (nodesToShowHandles.length === 0) return;
     
-    const node = store.getNode(hoveredNodeId);
-    if (!node) return;
-    
-    // Calculate handle position (to the right of node, accounting for node width)
-    const nodeRadius = getNodeEffectiveRadius(node);
-    const HANDLE_OFFSET = nodeRadius + 10; // 10px past the node edge
-    const HANDLE_RADIUS = 8;
-    const handleX = node.x + HANDLE_OFFSET;
-    const handleY = node.y;
-    
-    // Draw handle circle
-    ctx.beginPath();
-    ctx.arc(handleX, handleY, HANDLE_RADIUS, 0, Math.PI * 2);
-    ctx.fillStyle = '#00e676';
-    ctx.fill();
-    
-    // Draw + icon
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    
-    const iconSize = 5;
-    ctx.beginPath();
-    ctx.moveTo(handleX - iconSize, handleY);
-    ctx.lineTo(handleX + iconSize, handleY);
-    ctx.moveTo(handleX, handleY - iconSize);
-    ctx.lineTo(handleX, handleY + iconSize);
-    ctx.stroke();
-    ctx.lineCap = 'butt';
+    // Draw handle for each node
+    nodesToShowHandles.forEach((nodeId: NodeId) => {
+      const node = store.getNode(nodeId);
+      if (!node) return;
+      
+      // Calculate handle position (to the right of node, accounting for node width)
+      const nodeRadius = getNodeEffectiveRadius(node);
+      const HANDLE_OFFSET = nodeRadius + 10; // 10px past the node edge
+      const HANDLE_RADIUS = isTouch ? 12 : 8; // Larger on touch devices
+      const handleX = node.x + HANDLE_OFFSET;
+      const handleY = node.y;
+      
+      // Draw handle circle
+      ctx.beginPath();
+      ctx.arc(handleX, handleY, HANDLE_RADIUS, 0, Math.PI * 2);
+      ctx.fillStyle = '#00e676';
+      ctx.fill();
+      
+      // Draw + icon
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = isTouch ? 2.5 : 2;
+      ctx.lineCap = 'round';
+      
+      const iconSize = isTouch ? 6 : 5;
+      ctx.beginPath();
+      ctx.moveTo(handleX - iconSize, handleY);
+      ctx.lineTo(handleX + iconSize, handleY);
+      ctx.moveTo(handleX, handleY - iconSize);
+      ctx.lineTo(handleX, handleY + iconSize);
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    });
   }
   
   /**
