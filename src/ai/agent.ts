@@ -681,6 +681,15 @@ Original request: ${prompt}`;
     
     if (!response.ok) {
       const error = await response.text();
+      // Free-tier models rotate; a retired slug returns a 404 with a
+      // migration hint. Make the fix obvious instead of surfacing raw JSON.
+      if (error.includes('free period has ended') || (response.status === 404 && error.includes('model'))) {
+        throw new Error(
+          `The configured model is no longer available on OpenRouter. ` +
+          `Pick a current model (e.g. a :free one from https://openrouter.ai/models) ` +
+          `in the AI settings. Details: ${error}`
+        );
+      }
       throw new Error(`OpenRouter API error: ${error}`);
     }
     

@@ -57,7 +57,7 @@ export const DEFAULT_CONFIGS: Record<AIProvider, Partial<AIAgentConfig>> = {
     temperature: 0.7,
   },
   'openrouter-free': {
-    model: 'mistralai/devstral-2512:free',
+    model: 'qwen/qwen3-coder:free',
     baseUrl: 'https://openrouter.ai/api/v1',
     maxTokens: 4096,
     temperature: 0.7,
@@ -100,7 +100,7 @@ export const EXECUTION_CONFIGS: Record<AIProvider, Partial<AIAgentConfig>> = {
     temperature: 0.3,
   },
   'openrouter-free': {
-    model: 'mistralai/devstral-2512:free',
+    model: 'qwen/qwen3-coder:free',
     baseUrl: 'https://openrouter.ai/api/v1',
     maxTokens: 1000,
     temperature: 0.3,
