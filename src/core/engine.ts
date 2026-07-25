@@ -216,16 +216,22 @@ function processGate(payload: AudioPayload, node: GraphNode): AudioPayload {
     const now = performance.now();
     const bpm = store.scenePlayback.effectiveBpm || store.masterSpeed;
     const msPerBeat = (60 / bpm) * 1000;
-    
-    // Use node's timer to track packets per beat window
-    if (now - node.lastTrigger > msPerBeat) {
-      node.timer = 0;
-      node.lastTrigger = now;
+
+    // Track packets per beat window. Canvas nodes are frozen store state, so
+    // the counter write goes through the store; virtual-channel nodes are
+    // plain mutable copies and take the direct write.
+    const windowExpired = now - node.lastTrigger > msPerBeat;
+    const timer = (windowExpired ? 0 : node.timer) + 1;
+    const lastTrigger = windowExpired ? now : node.lastTrigger;
+
+    if (store.nodes.has(node.id)) {
+      store.setNodeRuntime(node.id, { timer, lastTrigger });
+    } else {
+      node.timer = timer;
+      node.lastTrigger = lastTrigger;
     }
-    
-    node.timer += 1;
-    
-    if (node.timer > props.densityThreshold) {
+
+    if (timer > props.densityThreshold) {
       survives = false;
     }
   }

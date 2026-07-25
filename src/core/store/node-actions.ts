@@ -90,6 +90,19 @@ export const createNodeActions = (
     });
   },
 
+  // Runtime bookkeeping write (gate density windows): does not mark dirty —
+  // playback state is not an edit. Store nodes are frozen outside actions,
+  // so engine code must come through here instead of mutating in place.
+  setNodeRuntime: (id: NodeId, runtime: { timer?: number; lastTrigger?: number }): void => {
+    set(state => {
+      const node = state.nodes.get(id);
+      if (node) {
+        if (runtime.timer !== undefined) node.timer = runtime.timer;
+        if (runtime.lastTrigger !== undefined) node.lastTrigger = runtime.lastTrigger;
+      }
+    });
+  },
+
   // Hot path: per-frame visual flash decay for all nodes in one update.
   decayNodeFlashes: (deltaTime: number): void => {
     set(state => {

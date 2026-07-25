@@ -93,6 +93,7 @@ export interface GraphActions {
   addNode: (type: NodeType, x: number, y: number) => NodeId;
   updateNode: <T extends NodeType>(id: NodeId, updates: Partial<GraphNode<T>>) => void;
   batchMergeNodeProps: (entries: Array<[NodeId, Record<string, unknown>]>) => void;
+  setNodeRuntime: (id: NodeId, runtime: { timer?: number; lastTrigger?: number }) => void;
   decayNodeFlashes: (deltaTime: number) => void;
   updateNodeProps: (id: NodeId, props: Record<string, unknown>) => void;
   deleteNode: (id: NodeId) => void;
