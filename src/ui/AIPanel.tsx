@@ -25,6 +25,8 @@ interface AIPanelProps {
 export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement {
   const {
     isConfigured,
+    setApiKey,
+    clearConfig,
     isGenerating,
     messages,
     hasPreview,
@@ -193,6 +195,11 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
         />
       )}
       
+      {/* API key setup — the key stays in this browser only */}
+      {user && !isConfigured && (
+        <ApiKeySetup onSave={setApiKey} />
+      )}
+
       {/* Input Container (for absolute positioning of templates) */}
       <div className={styles.inputContainer}>
         {/* Templates Panel */}
@@ -246,9 +253,11 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
       <QuickActions />
       
       {/* Advanced Settings */}
-      <AdvancedSettings 
+      <AdvancedSettings
         maxNodesPerPhase={maxNodesPerPhase}
         onChangeMaxNodes={setMaxNodesPerPhase}
+        isConfigured={isConfigured}
+        onClearApiKey={clearConfig}
       />
     </div>
   );
@@ -486,12 +495,63 @@ function TemplatesPanel({ onSelect, onClose }: TemplatesPanelProps): React.React
 // ADVANCED SETTINGS
 // ============================================================================
 
+interface ApiKeySetupProps {
+  onSave: (apiKey: string) => void;
+}
+
+/**
+ * Bring-your-own-key setup. The key is stored in this browser's localStorage
+ * only — it is never sent anywhere except directly to the AI provider.
+ */
+function ApiKeySetup({ onSave }: ApiKeySetupProps): React.ReactElement {
+  const [draft, setDraft] = useState('');
+
+  const handleSave = () => {
+    const key = draft.trim();
+    if (key) onSave(key);
+  };
+
+  return (
+    <div className={styles.apiKeySetup}>
+      <div className={styles.apiKeyTitle}>Connect your AI provider</div>
+      <p className={styles.apiKeyHint}>
+        Paste an{' '}
+        <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">
+          OpenRouter API key
+        </a>{' '}
+        to enable Iannis. It is stored only in this browser and sent only to
+        OpenRouter. Free models are available.
+      </p>
+      <div className={styles.apiKeyRow}>
+        <input
+          type="password"
+          className={styles.apiKeyInput}
+          placeholder="sk-or-v1-..."
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
+          autoComplete="off"
+        />
+        <button
+          className={styles.apiKeySave}
+          onClick={handleSave}
+          disabled={!draft.trim()}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface AdvancedSettingsProps {
   maxNodesPerPhase: number;
   onChangeMaxNodes: (value: number) => void;
+  isConfigured: boolean;
+  onClearApiKey: () => void;
 }
 
-function AdvancedSettings({ maxNodesPerPhase, onChangeMaxNodes }: AdvancedSettingsProps): React.ReactElement {
+function AdvancedSettings({ maxNodesPerPhase, onChangeMaxNodes, isConfigured, onClearApiKey }: AdvancedSettingsProps): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false);
   
   if (!isOpen) {
@@ -525,6 +585,11 @@ function AdvancedSettings({ maxNodesPerPhase, onChangeMaxNodes }: AdvancedSettin
       <p className={styles.advancedHint}>
         Higher values allow larger compositions but may hit API limits.
       </p>
+      {isConfigured && (
+        <button className={styles.apiKeyRemove} onClick={onClearApiKey}>
+          Disconnect API key
+        </button>
+      )}
     </div>
   );
 }
