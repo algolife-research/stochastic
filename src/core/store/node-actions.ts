@@ -150,7 +150,8 @@ export const createNodeActions = (
   },
   
   holdPacketAtNode: (id: NodeId, payload: AudioPayload, delayBeats: number): void => {
-    const bpm = get().masterSpeed;
+    // Honor the playing scene's BPM override for held-packet timing
+    const bpm = get().scenePlayback.effectiveBpm || get().masterSpeed;
     const delayMs = (delayBeats * 60 / bpm) * 1000;
     const releaseTime = performance.now() + delayMs;
     

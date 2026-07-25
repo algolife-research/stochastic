@@ -214,14 +214,13 @@ const NODE_DOCS: DocSection[] = [
     id: 'gain',
     title: 'Gain',
     icon: '📶',
-    keywords: 'volume amplitude mass gravity',
+    keywords: 'volume amplitude',
     content: (
       <>
         <p>Scales the loudness of passing packets.</p>
         <h4>Properties</h4>
         <ul>
           <li><strong>Value</strong> - Gain multiplier applied to the packet</li>
-          <li><strong>Mass</strong> - Physical weight used by gravity-based timing effects</li>
         </ul>
       </>
     ),
@@ -317,7 +316,7 @@ const NODE_DOCS: DocSection[] = [
         <h4>Properties</h4>
         <ul>
           <li><strong>Target Scene</strong> - Index of the scene to switch to (-1 = off)</li>
-          <li><strong>Behavior</strong> - Jump instantly or crossfade</li>
+          <li><strong>Behavior</strong> - Jump instantly, or queue the switch at the next bar</li>
         </ul>
       </>
     ),

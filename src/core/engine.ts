@@ -214,7 +214,8 @@ function processGate(payload: AudioPayload, node: GraphNode): AudioPayload {
   // Check density fitness (is there room for more packets?)
   if (survives && (mode === 'density' || mode === 'all')) {
     const now = performance.now();
-    const msPerBeat = (60 / store.masterSpeed) * 1000;
+    const bpm = store.scenePlayback.effectiveBpm || store.masterSpeed;
+    const msPerBeat = (60 / bpm) * 1000;
     
     // Use node's timer to track packets per beat window
     if (now - node.lastTrigger > msPerBeat) {
@@ -313,8 +314,9 @@ function processQuantizer(payload: AudioPayload, node: GraphNode): AudioPayload 
     
     const interval = scale[selectedIndex] ?? 0;
     const chroma = (root + interval) % 12;
+    // Standard octave naming: octave n starts at MIDI (n+1)*12, so C4 = 60
     const octave = props.defaultPitch;
-    const quantized = octave * 12 + chroma;
+    const quantized = (octave + 1) * 12 + chroma;
     
     return {
       ...payload,

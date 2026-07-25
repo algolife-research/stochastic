@@ -210,7 +210,7 @@ export const DEFAULT_GATE_PROPS: GateProps = {
   mode: 'probability',
   probability: 0.5,
   // Fitness mode properties
-  harmonicThreshold: 0.5,  // 50% consonance required
+  harmonicThreshold: 0.9,  // > 5/6 so harmonic mode actually filters (see MUSICAL_MODEL.md)  // 50% consonance required
   energyThreshold: 0.1,    // Min 10% gain to survive
   densityThreshold: 8,     // Max 8 packets per beat
   useGlobalKey: true,
@@ -508,7 +508,7 @@ export const INITIAL_SCENE_PLAYBACK_STATE: ScenePlaybackState = {
   previousSceneId: null,
   effectiveBpm: DEFAULT_SPEED,
   effectiveRoot: 0,
-  effectiveScale: 'minor',
+  effectiveScale: 'major',  // must match the musicalContext default
 };
 
 /**

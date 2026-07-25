@@ -26,7 +26,7 @@ export function updateLFOs(now: number): void {
     
     const props = node.props as {
       rate: number;
-      shape: 'sine' | 'triangle' | 'square' | 'sawtooth';
+      shape: 'sine' | 'triangle' | 'square' | 'sawtooth' | 'random' | 'noise';
       min: number;
       max: number;
       phase: number;
@@ -54,6 +54,16 @@ export function updateLFOs(now: number): void {
         break;
       case 'sawtooth':
         value = t % 1;
+        break;
+      case 'random': {
+        // Sample and Hold: stable random value for each cycle
+        // (same hash as the per-packet LFO path in engine.ts)
+        const cycle = Math.floor(t);
+        value = Math.abs(Math.sin(cycle * 12.9898 + 78.233) * 43758.5453) % 1;
+        break;
+      }
+      case 'noise':
+        value = Math.random();
         break;
       default:
         value = 0.5;

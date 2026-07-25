@@ -128,6 +128,19 @@ function updateArrangementMode(_deltaBeats: number): void {
       const primarySlot = activeSlots[0];
       setCanvasChannelIndex(primarySlot.channelIndex);
       store.loadSceneToCanvas(primarySlot.sceneId);
+
+      // Re-resolve the effective musical context for the new canvas scene —
+      // scene overrides and per-slot instanceBpm apply on slot transitions,
+      // not only at play start
+      const scene = store.scenes.get(primarySlot.sceneId);
+      if (scene) {
+        const slotRecord = store.arrangement.find(s => s.id === primarySlot.slotId);
+        store.setScenePlayback({
+          effectiveBpm: slotRecord?.instanceBpm ?? getEffectiveBpm(scene, store.masterSpeed),
+          effectiveRoot: getEffectiveRoot(scene, store.musicalContext.root),
+          effectiveScale: getEffectiveScale(scene, store.musicalContext.scaleName),
+        });
+      }
     }
     
     // Update virtual channel scenes (for non-canvas channels)

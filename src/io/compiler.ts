@@ -1161,8 +1161,9 @@ function applyQuantizer(
 
     const interval = scale[selectedIndex] ?? 0;
     const chroma = (root + interval) % 12;
-    const octave = props.defaultPitch ?? 4;  // defaultPitch is the octave
-    quantized = octave * 12 + chroma;
+    // Standard octave naming: octave n starts at MIDI (n+1)*12, so C4 = 60
+    const octave = props.defaultPitch ?? 4;
+    quantized = (octave + 1) * 12 + chroma;
   } else {
     // Nearest scale degree
     const midiNote = payload.midiNote;

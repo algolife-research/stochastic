@@ -456,9 +456,11 @@ export function updateNodeFlash(deltaTime: number): void {
  */
 export function updateDelayNodes(now: number): void {
   const store = getGraphStore();
-  
+
   store.nodes.forEach((node) => {
-    if (node.type !== 'delay') return;
+    // Crossover: a parent whose wait expired passes through unchanged instead
+    // of silently vanishing (the timeout promises pass-through semantics)
+    if (node.type !== 'delay' && node.type !== 'crossover') return;
     
     const heldPackets = node.heldPackets ?? [];
     const toRelease: number[] = [];

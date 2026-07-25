@@ -104,8 +104,7 @@ export const NODE_DOCS: NodeTypeDoc[] = [
     outputs: ['audio packets'],
     props: [
       { name: 'value', type: 'number', description: 'Gain multiplier', default: 1, range: { min: 0, max: 2 } },
-      { name: 'mass', type: 'number', description: 'Physics mass for gravity mode', default: 1 },
-    ],
+      ],
   },
   {
     type: 'delay',
