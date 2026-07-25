@@ -15,7 +15,9 @@ import type {
 // ============================================================================
 
 /** Supported AI providers */
-export type AIProvider = 'openai' | 'anthropic' | 'gemini' | 'openrouter' | 'openrouter-free' | 'ollama' | 'lmstudio';
+export type AIProvider =
+  | 'stochastic-cloud'   // Server-side proxy: key stays on the backend, usage metered in credits
+  | 'openai' | 'anthropic' | 'gemini' | 'openrouter' | 'openrouter-free' | 'ollama' | 'lmstudio';
 
 /** AI Agent configuration */
 export interface AIAgentConfig {
@@ -48,6 +50,11 @@ export const DEFAULT_CONFIGS: Record<AIProvider, Partial<AIAgentConfig>> = {
   gemini: {
     model: 'gemini-2.5-pro-preview-06-05',
     maxTokens: 8192,
+    temperature: 0.7,
+  },
+  'stochastic-cloud': {
+    model: 'anthropic/claude-sonnet-4',
+    maxTokens: 4096,
     temperature: 0.7,
   },
   openrouter: {
@@ -93,6 +100,11 @@ export const EXECUTION_CONFIGS: Record<AIProvider, Partial<AIAgentConfig>> = {
     maxTokens: 1000,
     temperature: 0.3,
   },
+  'stochastic-cloud': {
+    model: 'openai/gpt-4o-mini',
+    maxTokens: 1000,
+    temperature: 0.3,
+  },
   openrouter: {
     model: 'openai/gpt-4o-mini',
     baseUrl: 'https://openrouter.ai/api/v1',
@@ -121,6 +133,12 @@ export const EXECUTION_CONFIGS: Record<AIProvider, Partial<AIAgentConfig>> = {
 
 /** Provider info for UI */
 export const PROVIDER_INFO: Record<AIProvider, { name: string; hint: string; requiresKey: boolean; isFree: boolean }> = {
+  'stochastic-cloud': {
+    name: 'Stochastic Cloud',
+    hint: 'Sign in and use your AI credits - no API key needed',
+    requiresKey: false,
+    isFree: false,
+  },
   openai: {
     name: 'OpenAI (GPT-4)',
     hint: 'Get API key from platform.openai.com - Paid',
@@ -146,8 +164,8 @@ export const PROVIDER_INFO: Record<AIProvider, { name: string; hint: string; req
     isFree: false,
   },
   'openrouter-free': {
-    name: 'OpenRouter ⭐ Free (Devstral)',
-    hint: 'Get API key from openrouter.ai - Uses free Devstral model',
+    name: 'OpenRouter ⭐ Free models',
+    hint: 'Get API key from openrouter.ai - Uses a free model (roster rotates)',
     requiresKey: true,
     isFree: true,
   },

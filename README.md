@@ -14,7 +14,7 @@ The core idea: **Space is Time**. Musical events (packets) travel along edges at
 - **Examples Library** — 50+ compositions across tutorials, demos, synthesis, generative, and orchestral categories, plus full multi-scene pieces (the Dune suite and more). Fetched on demand and cached; only the tutorial and welcome demo are bundled, so onboarding works offline
 - **Export** — render compositions to WAV, or capture visualization videos
 - **Cloud Projects** — optional sign-in to save and sync projects (Supabase)
-- **AI Assistant** — describe what you want and let the assistant build or modify the graph (requires credits)
+- **AI Assistant** — describe what you want and let the assistant build or modify the graph. Signed-in users go through the [server-side AI proxy](doc/AI_CLOUD_PROXY.md) metered in credits; alternatively bring your own OpenRouter key (stored in your browser only)
 
 ## Getting Started
 

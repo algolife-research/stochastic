@@ -13,6 +13,7 @@ import { DEFAULT_CONFIGS, EXECUTION_CONFIGS } from './types';
 import { aiAgent } from './agent';
 import { applyOperations } from './operations';
 import { useAuthStore } from '@auth/store';
+import { isSupabaseConfigured } from '@auth/supabase';
 import type { CompositionPlan, CompositionPhase } from './planner';
 
 // ============================================================================
@@ -159,6 +160,14 @@ const initialState: AIAgentState & {
 // If we have env config, configure the agent immediately
 if (envTieredConfig) {
   aiAgent.configureTiered(envTieredConfig.planning, envTieredConfig.execution);
+}
+
+
+/** After a cloud-proxied generation, refresh the visible credit balance. */
+function refreshCloudCredits(): void {
+  if (useAIStore.getState().config?.provider === 'stochastic-cloud') {
+    useAuthStore.getState().fetchCredits();
+  }
 }
 
 // ============================================================================
@@ -352,6 +361,7 @@ export const useAIStore = create<AIStoreState>()(
           content: `Error: ${error}`,
         });
       } finally {
+        refreshCloudCredits();
         set({ isGenerating: false });
       }
     },
@@ -429,6 +439,7 @@ export const useAIStore = create<AIStoreState>()(
         const error = e instanceof Error ? e.message : 'Unknown error';
         set({ lastError: error });
       } finally {
+        refreshCloudCredits();
         set({ isGenerating: false });
       }
     },
@@ -473,6 +484,7 @@ export const useAIStore = create<AIStoreState>()(
         const error = e instanceof Error ? e.message : 'Unknown error';
         set({ lastError: error });
       } finally {
+        refreshCloudCredits();
         set({ isGenerating: false, isPlanExecuting: false, currentPhase: null });
       }
     },
@@ -572,6 +584,7 @@ export const useAIStore = create<AIStoreState>()(
           content: `Error: ${error}`,
         });
       } finally {
+        refreshCloudCredits();
         set({ isGenerating: false });
       }
     },
@@ -604,6 +617,7 @@ export const selectMaxNodesPerPhase = (state: AIStoreState) => state.maxNodesPer
  */
 export function useAIPanel() {
   const isConfigured = useAIStore(selectIsConfigured);
+  const provider = useAIStore(state => state.config?.provider ?? null);
   const isGenerating = useAIStore(selectIsGenerating);
   const messages = useAIStore(selectMessages);
   const streamingText = useAIStore(selectStreamingText);
@@ -636,6 +650,7 @@ export function useAIPanel() {
   
   return {
     isConfigured,
+    provider,
     setApiKey,
     clearConfig,
     isGenerating,
@@ -663,3 +678,49 @@ export function useAIPanel() {
     clearPlan,
   };
 }
+
+// ============================================================================
+// CLOUD AUTO-CONFIGURATION
+// ============================================================================
+// Signed-in users automatically use the server-side AI proxy (the provider
+// key lives on the backend; usage is metered in credits). A user-provided
+// key (BYO, stored locally) takes precedence because it configures the store
+// at init, before auth resolves.
+
+function buildCloudConfig(): { planning: AIAgentConfig; execution: AIAgentConfig } {
+  const planningDefaults = DEFAULT_CONFIGS['stochastic-cloud'];
+  const executionDefaults = EXECUTION_CONFIGS['stochastic-cloud'];
+  return {
+    planning: {
+      provider: 'stochastic-cloud',
+      apiKey: 'supabase-session',
+      model: ENV_PLANNING_MODEL || planningDefaults.model || 'anthropic/claude-sonnet-4',
+      maxTokens: planningDefaults.maxTokens || 4096,
+      temperature: planningDefaults.temperature || 0.7,
+    },
+    execution: {
+      provider: 'stochastic-cloud',
+      apiKey: 'supabase-session',
+      model: ENV_EXECUTION_MODEL || executionDefaults.model || 'openai/gpt-4o-mini',
+      maxTokens: executionDefaults.maxTokens || 1000,
+      temperature: executionDefaults.temperature || 0.3,
+    },
+  };
+}
+
+useAuthStore.subscribe(
+  state => state.user,
+  user => {
+    const { isConfigured, config } = useAIStore.getState();
+    if (user && !isConfigured && isSupabaseConfigured()) {
+      const tiered = buildCloudConfig();
+      aiAgent.configureTiered(tiered.planning, tiered.execution);
+      useAIStore.setState({ config: tiered.planning, isConfigured: true, lastError: null });
+    } else if (!user && config?.provider === 'stochastic-cloud') {
+      // Signed out: the proxy is unusable; leave any stored personal key alone
+      aiAgent.clearConfig();
+      useAIStore.setState({ config: null, isConfigured: false });
+    }
+  },
+  { fireImmediately: true }
+);

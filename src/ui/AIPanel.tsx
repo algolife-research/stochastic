@@ -25,6 +25,7 @@ interface AIPanelProps {
 export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement {
   const {
     isConfigured,
+    provider,
     setApiKey,
     clearConfig,
     isGenerating,
@@ -257,6 +258,7 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
         maxNodesPerPhase={maxNodesPerPhase}
         onChangeMaxNodes={setMaxNodesPerPhase}
         isConfigured={isConfigured}
+        isCloud={provider === 'stochastic-cloud'}
         onClearApiKey={clearConfig}
       />
     </div>
@@ -548,10 +550,11 @@ interface AdvancedSettingsProps {
   maxNodesPerPhase: number;
   onChangeMaxNodes: (value: number) => void;
   isConfigured: boolean;
+  isCloud: boolean;
   onClearApiKey: () => void;
 }
 
-function AdvancedSettings({ maxNodesPerPhase, onChangeMaxNodes, isConfigured, onClearApiKey }: AdvancedSettingsProps): React.ReactElement {
+function AdvancedSettings({ maxNodesPerPhase, onChangeMaxNodes, isConfigured, isCloud, onClearApiKey }: AdvancedSettingsProps): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false);
   
   if (!isOpen) {
@@ -587,7 +590,7 @@ function AdvancedSettings({ maxNodesPerPhase, onChangeMaxNodes, isConfigured, on
       </p>
       {isConfigured && (
         <button className={styles.apiKeyRemove} onClick={onClearApiKey}>
-          Disconnect API key
+          {isCloud ? 'Use my own API key instead' : 'Disconnect API key'}
         </button>
       )}
     </div>
