@@ -212,9 +212,11 @@ export function updatePackets(deltaTime: number): void {
     const processedPayload = processNodeArrival(packet, node, edge);
 
     // Gates mark blocked packets with a negative-gain sentinel (see processGate,
-    // which handles the probability roll AND all fitness modes). Drop them here —
-    // rolling again would square the pass probability.
-    if (node.type === 'gate' && processedPayload.gain < 0) {
+    // which handles the probability roll AND all fitness modes). Tunnels forward
+    // the sentinel when an internal sub-gate blocks. Drop both here — rolling
+    // again would square the pass probability, and a negative-gain packet
+    // reaching a speaker renders as a phase-inverted note.
+    if ((node.type === 'gate' || node.type === 'tunnel') && processedPayload.gain < 0) {
       return;
     }
 
