@@ -1,32 +1,5 @@
 // Stochastic v2/v3 - File I/O for Save/Load
 
-// ============================================================================
-// NODE PROPS NORMALIZATION (load-time)
-// ============================================================================
-
-/** Legacy prop names migrated when loading older files. */
-const LEGACY_PROP_RENAMES: Record<string, Record<string, string>> = {
-  gate: { prob: 'probability' },
-};
-
-/**
- * Normalize node props on load: migrate legacy names and merge over the
- * type's defaults, so nodes saved by older versions never surface undefined
- * props (e.g. gates showing NaN% probability).
- */
-function normalizeNodeProps(type: string, raw: Record<string, unknown> | undefined): GraphNode['props'] {
-  const props = raw ?? {};
-  if (!isValidNodeType(type)) {
-    return props as unknown as GraphNode['props'];
-  }
-  const renames = LEGACY_PROP_RENAMES[type];
-  const migrated: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(props)) {
-    migrated[renames?.[key] ?? key] = value;
-  }
-  return { ...getDefaultProps(type), ...migrated } as GraphNode['props'];
-}
-
 /** Current .sto file format version (also stamped into projectMeta). */
 export const FILE_FORMAT_VERSION = '3.0.0';
 
@@ -51,6 +24,44 @@ import type {
 } from '@core/types';
 import { getDefaultProps } from '@core/constants';
 import { isValidNodeType } from '@core/type-guards';
+
+// ============================================================================
+// NODE PROPS NORMALIZATION (load-time)
+// ============================================================================
+
+/** Legacy prop names migrated when loading older files. */
+const LEGACY_PROP_RENAMES: Record<string, Record<string, string>> = {
+  gate: { prob: 'probability' },
+};
+
+/**
+ * Migrate a CV edge's targetParam saved under a legacy prop name
+ * (e.g. an LFO writing 'prob' on a gate would silently modulate nothing).
+ */
+function normalizeTargetParam(targetType: string | undefined, param: string | null | undefined): string | null {
+  if (!param) return null;
+  const renames = targetType ? LEGACY_PROP_RENAMES[targetType] : undefined;
+  return renames?.[param] ?? param;
+}
+
+/**
+ * Normalize node props on load: migrate legacy names and merge over the
+ * type's defaults, so nodes saved by older versions never surface undefined
+ * props (e.g. gates showing NaN% probability).
+ */
+function normalizeNodeProps(type: string, raw: Record<string, unknown> | undefined): GraphNode['props'] {
+  const props = raw ?? {};
+  if (!isValidNodeType(type)) {
+    return props as unknown as GraphNode['props'];
+  }
+  const renames = LEGACY_PROP_RENAMES[type];
+  const migrated: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(props)) {
+    migrated[renames?.[key] ?? key] = value;
+  }
+  return { ...getDefaultProps(type), ...migrated } as GraphNode['props'];
+}
+
 
 // ============================================================================
 // V2 FORMAT (Legacy - single graph)
@@ -388,6 +399,8 @@ export function serializeScene(scene: Scene): SerializedScene {
 }
 
 export function deserializeScene(data: SerializedScene): Scene {
+  const nodeTypesById = new Map(data.nodes.map(n => [n.id as string, n.type]));
+
   return {
     id: data.id as SceneId,
     name: data.name,
@@ -428,7 +441,7 @@ export function deserializeScene(data: SerializedScene): Scene {
       to: e.to as NodeId,
       timingMode: e.timingMode,
       durationBeats: e.durationBeats,
-      targetParam: e.targetParam,
+      targetParam: normalizeTargetParam(nodeTypesById.get(e.to), e.targetParam),
       weight: e.weight ?? 1,
     })),
     annotations: data.annotations?.map(a => ({
