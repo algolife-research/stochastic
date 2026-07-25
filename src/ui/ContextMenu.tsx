@@ -1,6 +1,6 @@
 // Stochastic v2 - Context Menu Component
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getGraphStore } from '@core/store';
 import type { NodeType, NodeId } from '@core/types';
 import { 
@@ -97,6 +97,23 @@ export function ContextMenu(): React.ReactElement | null {
     y: 0,
     type: 'canvas',
   });
+  // Position corrected after measuring, so the menu never overflows the viewport
+  const [adjustedPos, setAdjustedPos] = useState<{ x: number; y: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!state.visible) {
+      setAdjustedPos(null);
+      return;
+    }
+    const el = menuRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const margin = 8;
+    const x = Math.min(state.x, Math.max(margin, window.innerWidth - rect.width - margin));
+    const y = Math.min(state.y, Math.max(margin, window.innerHeight - rect.height - margin));
+    setAdjustedPos(x !== state.x || y !== state.y ? { x, y } : null);
+  }, [state.visible, state.x, state.y]);
+
   const [showAddSubmenu, setShowAddSubmenu] = useState(false);
   const [showPresetSubmenu, setShowPresetSubmenu] = useState(false);
   const [showInsertNodeSubmenu, setShowInsertNodeSubmenu] = useState(false);
@@ -498,11 +515,10 @@ export function ContextMenu(): React.ReactElement | null {
   };
   
   if (!state.visible) return null;
-  
-  // Adjust position to stay on screen
-  let menuX = state.x;
-  let menuY = state.y;
-  
+
+  const menuX = adjustedPos?.x ?? state.x;
+  const menuY = adjustedPos?.y ?? state.y;
+
   return (
     <div 
       ref={menuRef}

@@ -14,6 +14,7 @@ import { ContextMenu } from './ContextMenu';
 import { AnnotationEditor } from './AnnotationEditor';
 import { ProjectStartupModal } from './ProjectStartupModal';
 import { WelcomeModal } from './WelcomeModal';
+import { FirstRunHint } from './FirstRunHint';
 import { SettingsModal } from './SettingsModal';
 import { ExportModal } from './ExportModal';
 import { ScenePanel } from './ScenePanel';
@@ -116,12 +117,18 @@ export function App(): React.ReactElement {
     const initDefaultScene = () => {
       const store = useGraphStore.getState();
       if (store.scenes.size === 0) {
-        // Create a default scene with a source node
+        // Create a default scene with a minimal audible graph:
+        // a source wired to a speaker, 200px apart (= 1 beat of travel),
+        // so pressing Space immediately produces sound.
         const sceneId = store.createScene('Scene 1');
         store.loadSceneToCanvas(sceneId);
-        
-        // Add a default source node at center
-        store.addNode('source', 400, 300);
+
+        const sourceId = store.addNode('source', 400, 300);
+        store.updateNodeProps(sourceId, { midiNote: 60, noteIndex: -2 });
+        const speakerId = store.addNode('speaker', 600, 300);
+        store.updateNodeProps(speakerId, { reverb: 0.3 });
+        store.addEdge(sourceId, speakerId);
+        store.saveCurrentScene();
       }
     };
     initDefaultScene();
@@ -227,6 +234,9 @@ export function App(): React.ReactElement {
               Click anywhere to enable audio
             </div>
           )}
+
+          {/* First-run gesture hints */}
+          <FirstRunHint />
           
           {/* Inline annotation editor overlay */}
           <AnnotationEditor />

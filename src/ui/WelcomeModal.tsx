@@ -1,7 +1,8 @@
 // Stochastic - Welcome Modal for Web Users
-// Shows on first load with options to load cloud project, start temporary, or load from file
+// First-run entry point: guided paths to sound (tutorial, demo) plus
+// cloud/file/new-project options. Dismissible with Esc, ×, or "New Project".
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@auth/store';
 import { useGraphStore } from '@core/store';
 import { isCloudStorageAvailable, listCloudProjects, loadProjectFromCloud } from '../io/cloud-storage';
@@ -9,10 +10,33 @@ import type { CloudProjectSummary } from '../io/cloud-storage';
 import { deserializeComposition, detectFileVersion, migrateV2ToV3, loadCompositionFromFile } from '../io/file-io';
 import type { SerializedGraph, SerializedComposition } from '../io/file-io';
 import { isTauri } from '../io/filesystem';
+import { loadExample } from '../data/examples';
 import { SCALES } from '@core/constants';
 import type { ScaleName } from '@core/types';
 import { AuthModal } from './AuthModal';
-import styles from './ProjectStartupModal.module.css';
+import styles from './WelcomeModal.module.css';
+
+const SKIP_STORAGE_KEY = 'stochastic-skip-welcome';
+
+function readSkipPreference(): boolean {
+  try {
+    return localStorage.getItem(SKIP_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function writeSkipPreference(skip: boolean): void {
+  try {
+    if (skip) {
+      localStorage.setItem(SKIP_STORAGE_KEY, 'true');
+    } else {
+      localStorage.removeItem(SKIP_STORAGE_KEY);
+    }
+  } catch {
+    // Private browsing: preference simply isn't remembered
+  }
+}
 
 export function WelcomeModal(): React.ReactElement | null {
   const { isAuthenticated } = useAuth();
@@ -24,31 +48,42 @@ export function WelcomeModal(): React.ReactElement | null {
   const setProjectMeta = useGraphStore(state => state.setProjectMeta);
   const markClean = useGraphStore(state => state.markClean);
   const setCloudProjectId = useGraphStore(state => state.setCloudProjectId);
-  
-  const [step, setStep] = useState<'welcome' | 'cloud-projects' | 'signing-in'>('welcome');
+
+  const [step, setStep] = useState<'welcome' | 'cloud-projects'>('welcome');
   const [cloudProjects, setCloudProjects] = useState<CloudProjectSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [wasSigningIn, setWasSigningIn] = useState(false);
-  
+  const [skipOnStartup, setSkipOnStartup] = useState(readSkipPreference);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // When auth modal closes and user is now authenticated, show cloud projects
+
+  const dismiss = useCallback(() => {
+    setShowWelcome(false);
+  }, [setShowWelcome]);
+
+  // Respect the "don't show again" preference
+  const skippedRef = useRef(false);
   useEffect(() => {
-    if (wasSigningIn && !showAuthModal && isAuthenticated) {
-      setWasSigningIn(false);
-      handleShowCloudProjects();
+    if (showWelcome && readSkipPreference() && !skippedRef.current) {
+      skippedRef.current = true;
+      dismiss();
     }
-  }, [showAuthModal, isAuthenticated, wasSigningIn]);
-  
-  // Don't show in Tauri or if already dismissed
-  if (isTauri() || !showWelcome) {
-    return null;
-  }
-  
-  const fetchCloudProjects = async () => {
-    if (!isAuthenticated || !isCloudStorageAvailable()) return;
+  }, [showWelcome, dismiss]);
+
+  // Close on Escape (but not while the auth modal is open)
+  useEffect(() => {
+    if (!showWelcome || showAuthModal) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') dismiss();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showWelcome, showAuthModal, dismiss]);
+
+  const fetchCloudProjects = useCallback(async () => {
+    if (!isCloudStorageAvailable()) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -62,26 +97,66 @@ export function WelcomeModal(): React.ReactElement | null {
       setError('Network error');
     }
     setIsLoading(false);
+  }, []);
+
+  const handleShowCloudProjects = useCallback(async () => {
+    setStep('cloud-projects');
+    await fetchCloudProjects();
+  }, [fetchCloudProjects]);
+
+  // When auth modal closes and user is now authenticated, show cloud projects
+  useEffect(() => {
+    if (wasSigningIn && !showAuthModal && isAuthenticated) {
+      setWasSigningIn(false);
+      handleShowCloudProjects();
+    }
+  }, [showAuthModal, isAuthenticated, wasSigningIn, handleShowCloudProjects]);
+
+  // Don't show in Tauri (ProjectStartupModal handles that) or if dismissed
+  if (isTauri() || !showWelcome) {
+    return null;
+  }
+
+  const handleSkipToggle = (skip: boolean) => {
+    setSkipOnStartup(skip);
+    writeSkipPreference(skip);
   };
-  
-  const handleTemporarySession = () => {
-    setShowWelcome(false);
+
+  /**
+   * Load an example from the welcome screen. The app seeds a placeholder
+   * scene on startup; since the user hasn't touched it yet, replace it with
+   * the example's scenes instead of piling them on top.
+   */
+  const loadExampleFresh = (exampleKey: string) => {
+    const store = useGraphStore.getState();
+    const placeholderSceneIds = [...store.scenes.keys()];
+    loadExample(exampleKey);
+    placeholderSceneIds.forEach(id => store.deleteScene(id));
   };
-  
+
+  const handleStartTutorial = () => {
+    loadExampleFresh('tutorial');
+    dismiss();
+  };
+
+  const handlePlayDemo = () => {
+    loadExampleFresh('pachelbel_canon');
+    const store = useGraphStore.getState();
+    if (!store.isRunning) {
+      store.togglePlayback();
+    }
+    dismiss();
+  };
+
   const handleSignInForCloud = () => {
     setWasSigningIn(true);
     setShowAuthModal(true);
   };
-  
-  const handleShowCloudProjects = async () => {
-    setStep('cloud-projects');
-    await fetchCloudProjects();
-  };
-  
+
   const handleLoadCloudProject = async (projectId: string) => {
     setIsLoading(true);
     setError(null);
-    
+
     const result = await loadProjectFromCloud(projectId);
     if (result.success && result.project) {
       try {
@@ -111,7 +186,7 @@ export function WelcomeModal(): React.ReactElement | null {
         setProjectMeta(data.projectMeta);
         setCloudProjectId(projectId);
         markClean();
-        setShowWelcome(false);
+        dismiss();
       } catch {
         setError('Failed to parse project data');
       }
@@ -120,21 +195,21 @@ export function WelcomeModal(): React.ReactElement | null {
     }
     setIsLoading(false);
   };
-  
+
   const handleLoadFromFile = () => {
     fileInputRef.current?.click();
   };
-  
+
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const data = await loadCompositionFromFile(file);
-      
+
       loadComposition(data.scenes, data.arrangement, data.channels, data.masterBpm);
 
       const scaleName = data.musicalContext.scaleName as ScaleName;
@@ -155,22 +230,22 @@ export function WelcomeModal(): React.ReactElement | null {
         modified: Date.now(),
       });
       markClean();
-      setShowWelcome(false);
+      dismiss();
     } catch (err) {
       setError('Failed to load file. Make sure it\'s a valid .sto file.');
       console.error('Load error:', err);
     }
-    
+
     setIsLoading(false);
     // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
-  
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return 'Today ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else if (diffDays === 1) {
@@ -180,92 +255,49 @@ export function WelcomeModal(): React.ReactElement | null {
     }
     return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
   };
-  
+
   // Cloud Projects step
   if (step === 'cloud-projects') {
     return (
       <div className={styles.overlay}>
         <div className={styles.modal}>
+          <button className={styles.closeButton} onClick={dismiss} title="Close (Esc)">✕</button>
           <div className={styles.header}>
             <div className={styles.title}>☁️ Cloud Projects</div>
             <div className={styles.subtitle}>Select a project to continue working on</div>
           </div>
-          
-          {error && (
-            <div style={{ padding: '8px 12px', background: '#ff000030', border: '1px solid #ff0000', borderRadius: '4px', color: '#ff6b6b', fontSize: '13px' }}>
-              {error}
-            </div>
-          )}
-          
+
+          {error && <div className={styles.error}>{error}</div>}
+
           {isLoading ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: '#888' }}>Loading projects...</div>
+            <div className={styles.emptyState}>Loading projects...</div>
           ) : cloudProjects.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: '#888' }}>
+            <div className={styles.emptyState}>
               No cloud projects yet. Start a new project and save it to the cloud!
             </div>
           ) : (
-            <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className={styles.projectList}>
               {cloudProjects.map(proj => (
                 <button
                   key={proj.id}
+                  className={styles.projectButton}
                   onClick={() => handleLoadCloudProject(proj.id)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '12px 16px',
-                    background: '#2a2a2a',
-                    border: '1px solid #333',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    color: '#eee',
-                    transition: 'all 0.15s',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = '#333';
-                    e.currentTarget.style.borderColor = '#444';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = '#2a2a2a';
-                    e.currentTarget.style.borderColor = '#333';
-                  }}
                 >
-                  <span style={{ fontWeight: 500 }}>{proj.name}</span>
-                  <span style={{ fontSize: '12px', color: '#888' }}>{formatDate(proj.updatedAt)}</span>
+                  <span className={styles.projectName}>{proj.name}</span>
+                  <span className={styles.projectDate}>{formatDate(proj.updatedAt)}</span>
                 </button>
               ))}
             </div>
           )}
-          
-          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-            <button
-              onClick={() => setStep('welcome')}
-              style={{
-                flex: 1,
-                padding: '10px',
-                background: '#333',
-                border: '1px solid #444',
-                borderRadius: '6px',
-                color: '#ccc',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
-            >
+
+          <div className={styles.actionRow}>
+            <button className={styles.backButton} onClick={() => setStep('welcome')}>
               ← Back
             </button>
             <button
+              className={styles.secondaryButton}
               onClick={fetchCloudProjects}
               disabled={isLoading}
-              style={{
-                padding: '10px 16px',
-                background: '#333',
-                border: '1px solid #444',
-                borderRadius: '6px',
-                color: '#ccc',
-                cursor: isLoading ? 'wait' : 'pointer',
-                fontSize: '14px',
-              }}
             >
               🔄 Refresh
             </button>
@@ -274,19 +306,51 @@ export function WelcomeModal(): React.ReactElement | null {
       </div>
     );
   }
-  
+
   // Welcome step
   return (
     <>
       <div className={styles.overlay}>
         <div className={styles.modal}>
+          <button className={styles.closeButton} onClick={dismiss} title="Close (Esc)">✕</button>
           <div className={styles.header}>
             <div className={styles.title}>Welcome to Stochastic</div>
-            <div className={styles.subtitle}>Choose how you want to start</div>
+            <div className={styles.subtitle}>
+              Compose generative music by connecting nodes — distance is rhythm, topology is melody
+            </div>
           </div>
-          
+
           <div className={styles.options}>
-            {/* Cloud Projects Option */}
+            {/* New user paths: straight to sound */}
+            <button
+              className={`${styles.optionButton} ${styles.optionButtonPrimary}`}
+              onClick={handleStartTutorial}
+            >
+              <span className={styles.icon}>🎓</span>
+              <div className={styles.info}>
+                <span className={styles.label}>Start the Tutorial</span>
+                <span className={styles.description}>
+                  Ten guided scenes, from your first sound to advanced graphs
+                </span>
+              </div>
+            </button>
+
+            <button
+              className={`${styles.optionButton} ${styles.optionButtonPrimary}`}
+              onClick={handlePlayDemo}
+            >
+              <span className={styles.icon}>▶️</span>
+              <div className={styles.info}>
+                <span className={styles.label}>Play a Demo</span>
+                <span className={styles.description}>
+                  Hear Pachelbel&apos;s Canon reimagined as a generative graph
+                </span>
+              </div>
+            </button>
+
+            <div className={styles.divider} />
+
+            {/* Returning user paths */}
             {isAuthenticated ? (
               <button className={styles.optionButton} onClick={handleShowCloudProjects}>
                 <span className={styles.icon}>☁️</span>
@@ -308,10 +372,7 @@ export function WelcomeModal(): React.ReactElement | null {
                 </div>
               </button>
             )}
-            
-            <div className={styles.divider} />
-            
-            {/* Load from File */}
+
             <button className={styles.optionButton} onClick={handleLoadFromFile}>
               <span className={styles.icon}>📂</span>
               <div className={styles.info}>
@@ -321,11 +382,8 @@ export function WelcomeModal(): React.ReactElement | null {
                 </span>
               </div>
             </button>
-            
-            <div className={styles.divider} />
-            
-            {/* Temporary Session */}
-            <button className={styles.optionButton} onClick={handleTemporarySession}>
+
+            <button className={styles.optionButton} onClick={dismiss}>
               <span className={styles.icon}>⚡</span>
               <div className={styles.info}>
                 <span className={styles.label}>New Project</span>
@@ -335,9 +393,20 @@ export function WelcomeModal(): React.ReactElement | null {
               </div>
             </button>
           </div>
+
+          <div className={styles.footer}>
+            <label className={styles.skipLabel}>
+              <input
+                type="checkbox"
+                checked={skipOnStartup}
+                onChange={e => handleSkipToggle(e.target.checked)}
+              />
+              Don&apos;t show this on startup
+            </label>
+          </div>
         </div>
       </div>
-      
+
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -346,15 +415,12 @@ export function WelcomeModal(): React.ReactElement | null {
         style={{ display: 'none' }}
         onChange={handleFileSelected}
       />
-      
+
       {/* Auth Modal */}
       {showAuthModal && (
-        <AuthModal 
+        <AuthModal
           isOpen={showAuthModal}
-          onClose={() => {
-            setShowAuthModal(false);
-            // Check auth after modal closes - need to re-render to get updated state
-          }} 
+          onClose={() => setShowAuthModal(false)}
         />
       )}
     </>
