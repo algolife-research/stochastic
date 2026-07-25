@@ -1,0 +1,223 @@
+{
+  "name": "Advanced: Harmonic Series",
+  "category": "Synthesis",
+  "description": "Oscillators at integer frequency ratios build a rich organ-like tone with natural overtones.",
+  "bpm": 60,
+  "nodes": [
+    {
+      "id": "src",
+      "type": "source",
+      "x": 60,
+      "y": 300,
+      "props": {
+        "interval": 4,
+        "midiNote": 48,
+        "noteIndex": -2,
+        "intensity": 0.5
+      }
+    },
+    {
+      "id": "split",
+      "type": "splitter",
+      "x": 160,
+      "y": 300,
+      "props": {}
+    },
+    {
+      "id": "pol1",
+      "type": "oscillator",
+      "x": 300,
+      "y": 120,
+      "props": {
+        "wave": "sine",
+        "attack": 0.1,
+        "decay": 2
+      }
+    },
+    {
+      "id": "g1",
+      "type": "gain",
+      "x": 400,
+      "y": 120,
+      "props": {
+        "value": 1
+      }
+    },
+    {
+      "id": "h2",
+      "type": "oscillator",
+      "x": 300,
+      "y": 220,
+      "props": {
+        "ratio": 2,
+        "wave": "sine",
+        "attack": 0.08,
+        "decay": 1.8
+      }
+    },
+    {
+      "id": "g2",
+      "type": "gain",
+      "x": 400,
+      "y": 220,
+      "props": {
+        "value": 0.5
+      }
+    },
+    {
+      "id": "h3",
+      "type": "oscillator",
+      "x": 300,
+      "y": 320,
+      "props": {
+        "ratio": 3,
+        "wave": "sine",
+        "attack": 0.06,
+        "decay": 1.5
+      }
+    },
+    {
+      "id": "g3",
+      "type": "gain",
+      "x": 400,
+      "y": 320,
+      "props": {
+        "value": 0.33
+      }
+    },
+    {
+      "id": "h4",
+      "type": "oscillator",
+      "x": 300,
+      "y": 420,
+      "props": {
+        "ratio": 4,
+        "wave": "sine",
+        "attack": 0.05,
+        "decay": 1.2
+      }
+    },
+    {
+      "id": "g4",
+      "type": "gain",
+      "x": 400,
+      "y": 420,
+      "props": {
+        "value": 0.25
+      }
+    },
+    {
+      "id": "h5",
+      "type": "oscillator",
+      "x": 300,
+      "y": 520,
+      "props": {
+        "ratio": 5,
+        "wave": "sine",
+        "attack": 0.04,
+        "decay": 1
+      }
+    },
+    {
+      "id": "g5",
+      "type": "gain",
+      "x": 400,
+      "y": 520,
+      "props": {
+        "value": 0.2
+      }
+    },
+    {
+      "id": "out",
+      "type": "speaker",
+      "x": 550,
+      "y": 300,
+      "props": {
+        "reverb": 0.7,
+        "pan": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_s",
+      "from": "src",
+      "to": "split"
+    },
+    {
+      "id": "e1a",
+      "from": "split",
+      "to": "pol1"
+    },
+    {
+      "id": "e1b",
+      "from": "pol1",
+      "to": "g1"
+    },
+    {
+      "id": "e1c",
+      "from": "g1",
+      "to": "out"
+    },
+    {
+      "id": "e2a",
+      "from": "split",
+      "to": "h2"
+    },
+    {
+      "id": "e2b",
+      "from": "h2",
+      "to": "g2"
+    },
+    {
+      "id": "e2c",
+      "from": "g2",
+      "to": "out"
+    },
+    {
+      "id": "e3a",
+      "from": "split",
+      "to": "h3"
+    },
+    {
+      "id": "e3b",
+      "from": "h3",
+      "to": "g3"
+    },
+    {
+      "id": "e3c",
+      "from": "g3",
+      "to": "out"
+    },
+    {
+      "id": "e4a",
+      "from": "split",
+      "to": "h4"
+    },
+    {
+      "id": "e4b",
+      "from": "h4",
+      "to": "g4"
+    },
+    {
+      "id": "e4c",
+      "from": "g4",
+      "to": "out"
+    },
+    {
+      "id": "e5a",
+      "from": "split",
+      "to": "h5"
+    },
+    {
+      "id": "e5b",
+      "from": "h5",
+      "to": "g5"
+    },
+    {
+      "id": "e5c",
+      "from": "g5",
+      "to": "out"
+    }
+  ]
+}

@@ -1,0 +1,329 @@
+{
+  "name": "Advanced: Generative Sequencer",
+  "category": "Generative",
+  "description": "Gates and quantizers create an ever-evolving melodic sequence with controlled randomness.",
+  "bpm": 120,
+  "nodes": [
+    {
+      "id": "seq1_src",
+      "type": "source",
+      "x": 60,
+      "y": 150,
+      "props": {
+        "interval": 0.25,
+        "noteIndex": -1,
+        "intensity": 0.5
+      }
+    },
+    {
+      "id": "seq1_gate",
+      "type": "gate",
+      "x": 160,
+      "y": 150,
+      "props": {
+        "probability": 0.4
+      }
+    },
+    {
+      "id": "seq1_quant",
+      "type": "quantizer",
+      "x": 260,
+      "y": 150,
+      "props": {
+        "strength": 1
+      }
+    },
+    {
+      "id": "seq1_pol",
+      "type": "oscillator",
+      "x": 360,
+      "y": 150,
+      "props": {
+        "wave": "square",
+        "attack": 0.005,
+        "decay": 0.1
+      }
+    },
+    {
+      "id": "seq1_flt",
+      "type": "filter",
+      "x": 460,
+      "y": 150,
+      "props": {
+        "cutoff": 2000,
+        "mod": 1500,
+        "attack": 0.01,
+        "decay": 0.08
+      }
+    },
+    {
+      "id": "seq1_out",
+      "type": "speaker",
+      "x": 580,
+      "y": 150,
+      "props": {
+        "reverb": 0.3,
+        "pan": -0.4
+      }
+    },
+    {
+      "id": "seq2_src",
+      "type": "source",
+      "x": 60,
+      "y": 300,
+      "props": {
+        "interval": 0.5,
+        "noteIndex": -1,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "seq2_gate",
+      "type": "gate",
+      "x": 160,
+      "y": 300,
+      "props": {
+        "probability": 0.6
+      }
+    },
+    {
+      "id": "seq2_quant",
+      "type": "quantizer",
+      "x": 260,
+      "y": 300,
+      "props": {
+        "strength": 0.9
+      }
+    },
+    {
+      "id": "seq2_split",
+      "type": "splitter",
+      "x": 350,
+      "y": 300,
+      "props": {}
+    },
+    {
+      "id": "seq2_pol1",
+      "type": "oscillator",
+      "x": 460,
+      "y": 250,
+      "props": {
+        "wave": "triangle",
+        "attack": 0.01,
+        "decay": 0.2
+      }
+    },
+    {
+      "id": "seq2_out1",
+      "type": "speaker",
+      "x": 580,
+      "y": 250,
+      "props": {
+        "reverb": 0.4,
+        "pan": 0
+      }
+    },
+    {
+      "id": "seq2_p",
+      "type": "pitch",
+      "x": 460,
+      "y": 350,
+      "props": {
+        "shift": 7
+      }
+    },
+    {
+      "id": "seq2_pol2",
+      "type": "oscillator",
+      "x": 560,
+      "y": 350,
+      "props": {
+        "wave": "sine",
+        "attack": 0.02,
+        "decay": 0.25
+      }
+    },
+    {
+      "id": "seq2_out2",
+      "type": "speaker",
+      "x": 680,
+      "y": 350,
+      "props": {
+        "reverb": 0.5,
+        "pan": 0.3
+      }
+    },
+    {
+      "id": "bass_src",
+      "type": "source",
+      "x": 60,
+      "y": 480,
+      "props": {
+        "interval": 2,
+        "noteIndex": -1,
+        "intensity": 0.7
+      }
+    },
+    {
+      "id": "bass_quant",
+      "type": "quantizer",
+      "x": 160,
+      "y": 480,
+      "props": {
+        "strength": 1
+      }
+    },
+    {
+      "id": "bass_p",
+      "type": "pitch",
+      "x": 260,
+      "y": 480,
+      "props": {
+        "shift": -24
+      }
+    },
+    {
+      "id": "bass_pol",
+      "type": "oscillator",
+      "x": 360,
+      "y": 480,
+      "props": {
+        "wave": "sawtooth",
+        "attack": 0.02,
+        "decay": 0.5
+      }
+    },
+    {
+      "id": "bass_flt",
+      "type": "filter",
+      "x": 460,
+      "y": 480,
+      "props": {
+        "cutoff": 600,
+        "mod": 400,
+        "attack": 0.02,
+        "decay": 0.2
+      }
+    },
+    {
+      "id": "bass_out",
+      "type": "speaker",
+      "x": 580,
+      "y": 480,
+      "props": {
+        "reverb": 0.2,
+        "pan": 0
+      }
+    },
+    {
+      "id": "lfo_sweep",
+      "type": "lfo",
+      "x": 460,
+      "y": 80,
+      "props": {
+        "rate": 0.25,
+        "shape": "sine",
+        "min": 1000,
+        "max": 4000
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1a",
+      "from": "seq1_src",
+      "to": "seq1_gate"
+    },
+    {
+      "id": "e1b",
+      "from": "seq1_gate",
+      "to": "seq1_quant"
+    },
+    {
+      "id": "e1c",
+      "from": "seq1_quant",
+      "to": "seq1_pol"
+    },
+    {
+      "id": "e1d",
+      "from": "seq1_pol",
+      "to": "seq1_flt"
+    },
+    {
+      "id": "e1e",
+      "from": "seq1_flt",
+      "to": "seq1_out"
+    },
+    {
+      "id": "e2a",
+      "from": "seq2_src",
+      "to": "seq2_gate"
+    },
+    {
+      "id": "e2b",
+      "from": "seq2_gate",
+      "to": "seq2_quant"
+    },
+    {
+      "id": "e2c",
+      "from": "seq2_quant",
+      "to": "seq2_split"
+    },
+    {
+      "id": "e2d",
+      "from": "seq2_split",
+      "to": "seq2_pol1"
+    },
+    {
+      "id": "e2e",
+      "from": "seq2_pol1",
+      "to": "seq2_out1"
+    },
+    {
+      "id": "e2f",
+      "from": "seq2_split",
+      "to": "seq2_p"
+    },
+    {
+      "id": "e2g",
+      "from": "seq2_p",
+      "to": "seq2_pol2"
+    },
+    {
+      "id": "e2h",
+      "from": "seq2_pol2",
+      "to": "seq2_out2"
+    },
+    {
+      "id": "e3a",
+      "from": "bass_src",
+      "to": "bass_quant"
+    },
+    {
+      "id": "e3b",
+      "from": "bass_quant",
+      "to": "bass_p"
+    },
+    {
+      "id": "e3c",
+      "from": "bass_p",
+      "to": "bass_pol"
+    },
+    {
+      "id": "e3d",
+      "from": "bass_pol",
+      "to": "bass_flt"
+    },
+    {
+      "id": "e3e",
+      "from": "bass_flt",
+      "to": "bass_out"
+    },
+    {
+      "id": "e_lfo",
+      "from": "lfo_sweep",
+      "to": "seq1_flt",
+      "targetParam": "cutoff"
+    }
+  ]
+}

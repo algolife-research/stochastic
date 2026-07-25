@@ -1,14 +1,34 @@
-// Validation suite for the built-in example library.
+// Validation suite for the example library.
 // These tests keep every example loadable, audible, and free of silent prop
 // typos (unknown props are silently merged by updateNodeProps, so a typo like
 // `prob:` instead of `probability:` produces no error at runtime — only here).
+//
+// Coverage: the bundled fallback set (examples.ts) plus every JSON example in
+// the static library (public/examples-library) while it is staged in-tree.
 
 import { describe, it, expect } from 'vitest';
-import { EXAMPLES, EXAMPLE_CATEGORIES } from './examples';
+import { readdirSync, readFileSync, existsSync } from 'fs';
+import path from 'path';
+import { BUNDLED_EXAMPLES, EXAMPLE_CATEGORIES } from './examples';
 import type { Example, ExampleNode, ExampleEdge } from './examples';
+import { validateExample } from './example-library';
 import { getDefaultProps } from '@core/constants';
 import { isValidNodeType } from '@core/type-guards';
 import type { NodeType } from '@core/types';
+
+// Load the full library from disk when staged in-tree (falls back to bundled
+// only when the library has moved fully to its own repo)
+const LIBRARY_DIR = path.resolve(__dirname, '../../public/examples-library/examples');
+const libraryExamples: Record<string, Example> = {};
+if (existsSync(LIBRARY_DIR)) {
+  for (const file of readdirSync(LIBRARY_DIR).filter(f => f.endsWith('.json'))) {
+    libraryExamples[file.replace('.json', '')] = JSON.parse(
+      readFileSync(path.join(LIBRARY_DIR, file), 'utf8')
+    ) as Example;
+  }
+}
+
+const EXAMPLES: Record<string, Example> = { ...libraryExamples, ...BUNDLED_EXAMPLES };
 
 interface FlatScene {
   label: string;
@@ -51,6 +71,33 @@ function reachableFrom(start: string, edges: ExampleEdge[]): Set<string> {
 }
 
 const allExamples = Object.entries(EXAMPLES);
+
+describe('runtime validator', () => {
+  it('accepts every example in the library', () => {
+    for (const [key, example] of allExamples) {
+      expect(validateExample(example), `validator rejected "${key}"`).toEqual([]);
+    }
+  });
+
+  it('rejects malformed examples', () => {
+    expect(validateExample(null).length).toBeGreaterThan(0);
+    expect(validateExample({ name: 'x', bpm: 0 }).length).toBeGreaterThan(0);
+    expect(
+      validateExample({
+        name: 'bad', category: 'Demos', description: 'd', bpm: 100,
+        nodes: [{ id: 'a', type: 'not_a_node', x: 0, y: 0, props: {} }],
+        edges: [],
+      }).length
+    ).toBeGreaterThan(0);
+    expect(
+      validateExample({
+        name: 'bad-prop', category: 'Demos', description: 'd', bpm: 100,
+        nodes: [{ id: 'a', type: 'gate', x: 0, y: 0, props: { prob: 0.5 } }],
+        edges: [],
+      }).length
+    ).toBeGreaterThan(0);
+  });
+});
 
 describe('example library', () => {
   it('has at least one example per declared category', () => {

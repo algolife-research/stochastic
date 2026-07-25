@@ -1,0 +1,143 @@
+{
+  "name": "Demo: Mozart's Dice Game",
+  "category": "Demos",
+  "description": "An aleatoric system inspired by Musikalisches Würfelspiel. A Splitter creates parallel paths, and Gates randomly allow only some to pass, creating ever-changing melodies.",
+  "bpm": 120,
+  "nodes": [
+    {
+      "id": "src",
+      "type": "source",
+      "x": 100,
+      "y": 300,
+      "props": {
+        "interval": 1,
+        "midiNote": 60,
+        "noteIndex": -2,
+        "intensity": 0.8
+      }
+    },
+    {
+      "id": "split",
+      "type": "splitter",
+      "x": 250,
+      "y": 300,
+      "props": {}
+    },
+    {
+      "id": "gate1",
+      "type": "gate",
+      "x": 400,
+      "y": 150,
+      "props": {
+        "probability": 0.33
+      }
+    },
+    {
+      "id": "pitch1",
+      "type": "pitch",
+      "x": 550,
+      "y": 150,
+      "props": {
+        "shift": 0
+      }
+    },
+    {
+      "id": "gate2",
+      "type": "gate",
+      "x": 400,
+      "y": 300,
+      "props": {
+        "probability": 0.33
+      }
+    },
+    {
+      "id": "pitch2",
+      "type": "pitch",
+      "x": 550,
+      "y": 300,
+      "props": {
+        "shift": 4
+      }
+    },
+    {
+      "id": "gate3",
+      "type": "gate",
+      "x": 400,
+      "y": 450,
+      "props": {
+        "probability": 0.33
+      }
+    },
+    {
+      "id": "pitch3",
+      "type": "pitch",
+      "x": 550,
+      "y": 450,
+      "props": {
+        "shift": 7
+      }
+    },
+    {
+      "id": "spk",
+      "type": "speaker",
+      "x": 700,
+      "y": 300,
+      "props": {
+        "reverb": 0.4,
+        "pan": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "src",
+      "to": "split"
+    },
+    {
+      "id": "e2",
+      "from": "split",
+      "to": "gate1"
+    },
+    {
+      "id": "e3",
+      "from": "gate1",
+      "to": "pitch1"
+    },
+    {
+      "id": "e4",
+      "from": "pitch1",
+      "to": "spk"
+    },
+    {
+      "id": "e5",
+      "from": "split",
+      "to": "gate2"
+    },
+    {
+      "id": "e6",
+      "from": "gate2",
+      "to": "pitch2"
+    },
+    {
+      "id": "e7",
+      "from": "pitch2",
+      "to": "spk"
+    },
+    {
+      "id": "e8",
+      "from": "split",
+      "to": "gate3"
+    },
+    {
+      "id": "e9",
+      "from": "gate3",
+      "to": "pitch3"
+    },
+    {
+      "id": "e10",
+      "from": "pitch3",
+      "to": "spk"
+    }
+  ]
+}

@@ -1,0 +1,189 @@
+{
+  "name": "Advanced: Teleporter",
+  "category": "Effects & Routing",
+  "description": "Teleporters instantly transport packets to create unique spatial effects and feedback loops.",
+  "bpm": 100,
+  "nodes": [
+    {
+      "id": "src",
+      "type": "source",
+      "x": 60,
+      "y": 250,
+      "props": {
+        "interval": 2,
+        "midiNote": 60,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "pol",
+      "type": "oscillator",
+      "x": 160,
+      "y": 250,
+      "props": {
+        "wave": "triangle",
+        "attack": 0.02,
+        "decay": 0.4
+      }
+    },
+    {
+      "id": "out1",
+      "type": "speaker",
+      "x": 280,
+      "y": 250,
+      "props": {
+        "reverb": 0.3,
+        "pan": -0.5
+      }
+    },
+    {
+      "id": "tele_in",
+      "type": "teleporter",
+      "x": 380,
+      "y": 250,
+      "props": {
+        "channel": "A",
+        "isEntry": true
+      }
+    },
+    {
+      "id": "tele_out",
+      "type": "teleporter",
+      "x": 600,
+      "y": 250,
+      "props": {
+        "channel": "A",
+        "isEntry": false
+      }
+    },
+    {
+      "id": "p_up",
+      "type": "pitch",
+      "x": 700,
+      "y": 250,
+      "props": {
+        "shift": 7
+      }
+    },
+    {
+      "id": "out2",
+      "type": "speaker",
+      "x": 820,
+      "y": 250,
+      "props": {
+        "reverb": 0.5,
+        "pan": 0.5
+      }
+    },
+    {
+      "id": "src2",
+      "type": "source",
+      "x": 60,
+      "y": 400,
+      "props": {
+        "interval": 4,
+        "midiNote": 48,
+        "noteIndex": -2,
+        "intensity": 0.7
+      }
+    },
+    {
+      "id": "pol2",
+      "type": "oscillator",
+      "x": 160,
+      "y": 400,
+      "props": {
+        "wave": "sine",
+        "attack": 0.1,
+        "decay": 1
+      }
+    },
+    {
+      "id": "tele_in2",
+      "type": "teleporter",
+      "x": 280,
+      "y": 400,
+      "props": {
+        "channel": "B",
+        "isEntry": true
+      }
+    },
+    {
+      "id": "tele_out2",
+      "type": "teleporter",
+      "x": 500,
+      "y": 400,
+      "props": {
+        "channel": "B",
+        "isEntry": false
+      }
+    },
+    {
+      "id": "p_oct",
+      "type": "pitch",
+      "x": 600,
+      "y": 400,
+      "props": {
+        "shift": 12
+      }
+    },
+    {
+      "id": "out3",
+      "type": "speaker",
+      "x": 720,
+      "y": 400,
+      "props": {
+        "reverb": 0.6,
+        "pan": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "src",
+      "to": "pol"
+    },
+    {
+      "id": "e2",
+      "from": "pol",
+      "to": "out1"
+    },
+    {
+      "id": "e3",
+      "from": "out1",
+      "to": "tele_in"
+    },
+    {
+      "id": "e4",
+      "from": "tele_out",
+      "to": "p_up"
+    },
+    {
+      "id": "e5",
+      "from": "p_up",
+      "to": "out2"
+    },
+    {
+      "id": "e6",
+      "from": "src2",
+      "to": "pol2"
+    },
+    {
+      "id": "e7",
+      "from": "pol2",
+      "to": "tele_in2"
+    },
+    {
+      "id": "e8",
+      "from": "tele_out2",
+      "to": "p_oct"
+    },
+    {
+      "id": "e9",
+      "from": "p_oct",
+      "to": "out3"
+    }
+  ]
+}

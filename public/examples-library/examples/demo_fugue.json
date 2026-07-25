@@ -1,0 +1,270 @@
+{
+  "name": "Demo: Fugue",
+  "category": "Demos",
+  "description": "A 2-voice fugue: voice 2 enters transposed up a fifth (7 semitones) after a delay.",
+  "bpm": 100,
+  "nodes": [
+    {
+      "id": "src",
+      "type": "source",
+      "x": 50,
+      "y": 300,
+      "props": {
+        "interval": 4,
+        "midiNote": 62,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "pol",
+      "type": "oscillator",
+      "x": 120,
+      "y": 300,
+      "props": {
+        "wave": "triangle",
+        "attack": 0.02,
+        "decay": 0.4
+      }
+    },
+    {
+      "id": "v1_e1",
+      "type": "speaker",
+      "x": 220,
+      "y": 180,
+      "props": {
+        "reverb": 0.3,
+        "pan": -0.5
+      }
+    },
+    {
+      "id": "v1_p1",
+      "type": "pitch",
+      "x": 300,
+      "y": 180,
+      "props": {
+        "shift": 7
+      }
+    },
+    {
+      "id": "v1_e2",
+      "type": "speaker",
+      "x": 380,
+      "y": 180,
+      "props": {
+        "reverb": 0.3,
+        "pan": -0.5
+      }
+    },
+    {
+      "id": "v1_p2",
+      "type": "pitch",
+      "x": 460,
+      "y": 180,
+      "props": {
+        "shift": -4
+      }
+    },
+    {
+      "id": "v1_e3",
+      "type": "speaker",
+      "x": 540,
+      "y": 180,
+      "props": {
+        "reverb": 0.3,
+        "pan": -0.5
+      }
+    },
+    {
+      "id": "v1_p3",
+      "type": "pitch",
+      "x": 620,
+      "y": 180,
+      "props": {
+        "shift": -3
+      }
+    },
+    {
+      "id": "v1_e4",
+      "type": "speaker",
+      "x": 700,
+      "y": 180,
+      "props": {
+        "reverb": 0.4,
+        "pan": -0.5
+      }
+    },
+    {
+      "id": "delay",
+      "type": "delay",
+      "x": 180,
+      "y": 420,
+      "props": {
+        "delayTime": 4
+      }
+    },
+    {
+      "id": "trans",
+      "type": "pitch",
+      "x": 260,
+      "y": 420,
+      "props": {
+        "shift": 7
+      }
+    },
+    {
+      "id": "v2_e1",
+      "type": "speaker",
+      "x": 340,
+      "y": 420,
+      "props": {
+        "reverb": 0.3,
+        "pan": 0.5
+      }
+    },
+    {
+      "id": "v2_p1",
+      "type": "pitch",
+      "x": 420,
+      "y": 420,
+      "props": {
+        "shift": 7
+      }
+    },
+    {
+      "id": "v2_e2",
+      "type": "speaker",
+      "x": 500,
+      "y": 420,
+      "props": {
+        "reverb": 0.3,
+        "pan": 0.5
+      }
+    },
+    {
+      "id": "v2_p2",
+      "type": "pitch",
+      "x": 580,
+      "y": 420,
+      "props": {
+        "shift": -4
+      }
+    },
+    {
+      "id": "v2_e3",
+      "type": "speaker",
+      "x": 660,
+      "y": 420,
+      "props": {
+        "reverb": 0.3,
+        "pan": 0.5
+      }
+    },
+    {
+      "id": "v2_p3",
+      "type": "pitch",
+      "x": 740,
+      "y": 420,
+      "props": {
+        "shift": -3
+      }
+    },
+    {
+      "id": "v2_e4",
+      "type": "speaker",
+      "x": 820,
+      "y": 420,
+      "props": {
+        "reverb": 0.4,
+        "pan": 0.5
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_s",
+      "from": "src",
+      "to": "pol"
+    },
+    {
+      "id": "e1_1",
+      "from": "pol",
+      "to": "v1_e1"
+    },
+    {
+      "id": "e1_2",
+      "from": "v1_e1",
+      "to": "v1_p1"
+    },
+    {
+      "id": "e1_3",
+      "from": "v1_p1",
+      "to": "v1_e2"
+    },
+    {
+      "id": "e1_4",
+      "from": "v1_e2",
+      "to": "v1_p2"
+    },
+    {
+      "id": "e1_5",
+      "from": "v1_p2",
+      "to": "v1_e3"
+    },
+    {
+      "id": "e1_6",
+      "from": "v1_e3",
+      "to": "v1_p3"
+    },
+    {
+      "id": "e1_7",
+      "from": "v1_p3",
+      "to": "v1_e4"
+    },
+    {
+      "id": "e2_0",
+      "from": "pol",
+      "to": "delay"
+    },
+    {
+      "id": "e2_t",
+      "from": "delay",
+      "to": "trans"
+    },
+    {
+      "id": "e2_1",
+      "from": "trans",
+      "to": "v2_e1"
+    },
+    {
+      "id": "e2_2",
+      "from": "v2_e1",
+      "to": "v2_p1"
+    },
+    {
+      "id": "e2_3",
+      "from": "v2_p1",
+      "to": "v2_e2"
+    },
+    {
+      "id": "e2_4",
+      "from": "v2_e2",
+      "to": "v2_p2"
+    },
+    {
+      "id": "e2_5",
+      "from": "v2_p2",
+      "to": "v2_e3"
+    },
+    {
+      "id": "e2_6",
+      "from": "v2_e3",
+      "to": "v2_p3"
+    },
+    {
+      "id": "e2_7",
+      "from": "v2_p3",
+      "to": "v2_e4"
+    }
+  ]
+}

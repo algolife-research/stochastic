@@ -1,0 +1,1106 @@
+{
+  "name": "Emergence",
+  "category": "Composition",
+  "description": "Three movements grown from one seed, in D dorian. I. Seeds: a rising arpeggio built purely from distance. II. Dialogue: two offset voices breed melodies at a crossover, their offspring rung as bells. III. Chorus: mutation and harmonic selection bloom into a full ensemble under a breathing filter. Play the movements in order from the Scene panel.",
+  "bpm": 84,
+  "scenes": [
+    {
+      "name": "I. Seeds",
+      "color": "#264653",
+      "durationBeats": 32,
+      "loopCount": -1,
+      "localRoot": 2,
+      "localScale": "dorian",
+      "nodes": [
+        {
+          "id": "seed",
+          "type": "source",
+          "x": 80,
+          "y": 340,
+          "props": {
+            "interval": 4,
+            "midiNote": 50,
+            "noteIndex": -2,
+            "intensity": 0.55
+          }
+        },
+        {
+          "id": "fan",
+          "type": "splitter",
+          "x": 280,
+          "y": 340,
+          "props": {
+            "behavior": "broadcast"
+          }
+        },
+        {
+          "id": "spk_d",
+          "type": "speaker",
+          "x": 480,
+          "y": 340,
+          "props": {
+            "volume": 1,
+            "pan": -0.5,
+            "reverb": 0.55
+          }
+        },
+        {
+          "id": "p_f",
+          "type": "pitch",
+          "x": 520,
+          "y": 160,
+          "props": {
+            "shift": 3
+          }
+        },
+        {
+          "id": "spk_f",
+          "type": "speaker",
+          "x": 570,
+          "y": 160,
+          "props": {
+            "volume": 0.9,
+            "pan": -0.15,
+            "reverb": 0.55
+          }
+        },
+        {
+          "id": "p_g",
+          "type": "pitch",
+          "x": 600,
+          "y": 580,
+          "props": {
+            "shift": 5
+          }
+        },
+        {
+          "id": "spk_g",
+          "type": "speaker",
+          "x": 650,
+          "y": 580,
+          "props": {
+            "volume": 0.85,
+            "pan": 0.2,
+            "reverb": 0.55
+          }
+        },
+        {
+          "id": "p_a",
+          "type": "pitch",
+          "x": 680,
+          "y": 40,
+          "props": {
+            "shift": 7
+          }
+        },
+        {
+          "id": "spk_a",
+          "type": "speaker",
+          "x": 730,
+          "y": 40,
+          "props": {
+            "volume": 0.8,
+            "pan": 0.55,
+            "reverb": 0.55
+          }
+        },
+        {
+          "id": "drone",
+          "type": "source",
+          "x": 80,
+          "y": 540,
+          "props": {
+            "interval": 16,
+            "midiNote": 38,
+            "noteIndex": -2,
+            "intensity": 0.5
+          }
+        },
+        {
+          "id": "drone_tun",
+          "type": "tunnel",
+          "x": 330,
+          "y": 540,
+          "props": {
+            "tunnelName": "Deep Current",
+            "subNodes": [
+              {
+                "type": "oscillator",
+                "props": {
+                  "wave": "sine",
+                  "attack": 2,
+                  "decay": 7,
+                  "mix": 0.8
+                }
+              },
+              {
+                "type": "oscillator",
+                "props": {
+                  "ratio": 2,
+                  "wave": "sine",
+                  "attack": 1.5,
+                  "decay": 5,
+                  "mix": 0.35
+                }
+              },
+              {
+                "type": "modulator",
+                "props": {
+                  "rate": 4.5,
+                  "depth": 8,
+                  "delay": 0.8
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "drone_spk",
+          "type": "speaker",
+          "x": 560,
+          "y": 540,
+          "props": {
+            "volume": 0.9,
+            "pan": 0,
+            "reverb": 0.85,
+            "holdTime": 0.5,
+            "releaseTime": 1.2
+          }
+        },
+        {
+          "id": "wisp",
+          "type": "source",
+          "x": 80,
+          "y": 120,
+          "props": {
+            "interval": 8,
+            "midiNote": 74,
+            "noteIndex": -2,
+            "intensity": 0.3
+          }
+        },
+        {
+          "id": "wisp_gate",
+          "type": "gate",
+          "x": 330,
+          "y": 120,
+          "props": {
+            "probability": 0.35
+          }
+        },
+        {
+          "id": "wisp_spk",
+          "type": "speaker",
+          "x": 560,
+          "y": 120,
+          "props": {
+            "volume": 0.5,
+            "pan": 0.4,
+            "reverb": 0.7
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e_seed",
+          "from": "seed",
+          "to": "fan"
+        },
+        {
+          "id": "e_d",
+          "from": "fan",
+          "to": "spk_d"
+        },
+        {
+          "id": "e_f1",
+          "from": "fan",
+          "to": "p_f"
+        },
+        {
+          "id": "e_f2",
+          "from": "p_f",
+          "to": "spk_f"
+        },
+        {
+          "id": "e_g1",
+          "from": "fan",
+          "to": "p_g"
+        },
+        {
+          "id": "e_g2",
+          "from": "p_g",
+          "to": "spk_g"
+        },
+        {
+          "id": "e_a1",
+          "from": "fan",
+          "to": "p_a"
+        },
+        {
+          "id": "e_a2",
+          "from": "p_a",
+          "to": "spk_a"
+        },
+        {
+          "id": "e_dr1",
+          "from": "drone",
+          "to": "drone_tun"
+        },
+        {
+          "id": "e_dr2",
+          "from": "drone_tun",
+          "to": "drone_spk"
+        },
+        {
+          "id": "e_w1",
+          "from": "wisp",
+          "to": "wisp_gate"
+        },
+        {
+          "id": "e_w2",
+          "from": "wisp_gate",
+          "to": "wisp_spk"
+        }
+      ]
+    },
+    {
+      "name": "II. Dialogue",
+      "color": "#2a9d8f",
+      "durationBeats": 32,
+      "loopCount": -1,
+      "localRoot": 2,
+      "localScale": "dorian",
+      "nodes": [
+        {
+          "id": "va",
+          "type": "source",
+          "x": 80,
+          "y": 180,
+          "props": {
+            "interval": 4,
+            "midiNote": 62,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "vb",
+          "type": "source",
+          "x": 80,
+          "y": 520,
+          "props": {
+            "interval": 4,
+            "midiNote": 57,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "va_split",
+          "type": "splitter",
+          "x": 280,
+          "y": 180,
+          "props": {
+            "behavior": "broadcast"
+          }
+        },
+        {
+          "id": "vb_split",
+          "type": "splitter",
+          "x": 380,
+          "y": 520,
+          "props": {
+            "behavior": "broadcast"
+          }
+        },
+        {
+          "id": "va_tun",
+          "type": "tunnel",
+          "x": 480,
+          "y": 120,
+          "props": {
+            "tunnelName": "East Voice",
+            "subNodes": [
+              {
+                "type": "oscillator",
+                "props": {
+                  "wave": "triangle",
+                  "attack": 0.05,
+                  "decay": 1.1,
+                  "mix": 0.9
+                }
+              },
+              {
+                "type": "modulator",
+                "props": {
+                  "rate": 5.2,
+                  "depth": 14,
+                  "delay": 0.25
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "va_spk",
+          "type": "speaker",
+          "x": 700,
+          "y": 120,
+          "props": {
+            "volume": 0.85,
+            "pan": -0.6,
+            "reverb": 0.5
+          }
+        },
+        {
+          "id": "vb_tun",
+          "type": "tunnel",
+          "x": 580,
+          "y": 580,
+          "props": {
+            "tunnelName": "West Voice",
+            "subNodes": [
+              {
+                "type": "oscillator",
+                "props": {
+                  "wave": "sine",
+                  "attack": 0.04,
+                  "decay": 1,
+                  "mix": 0.85
+                }
+              },
+              {
+                "type": "oscillator",
+                "props": {
+                  "ratio": 2,
+                  "wave": "sine",
+                  "attack": 0.05,
+                  "decay": 0.7,
+                  "mix": 0.3
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "vb_spk",
+          "type": "speaker",
+          "x": 800,
+          "y": 580,
+          "props": {
+            "volume": 0.85,
+            "pan": 0.6,
+            "reverb": 0.5
+          }
+        },
+        {
+          "id": "cross",
+          "type": "crossover",
+          "x": 560,
+          "y": 350,
+          "props": {
+            "inheritance": "random",
+            "pitchFrom": "random",
+            "waveFrom": "random",
+            "gainMode": "average",
+            "timeout": 6
+          }
+        },
+        {
+          "id": "child_quant",
+          "type": "quantizer",
+          "x": 760,
+          "y": 350,
+          "props": {
+            "strength": 1,
+            "mode": "nearest",
+            "useGlobalKey": true
+          }
+        },
+        {
+          "id": "child_pitch",
+          "type": "pitch",
+          "x": 860,
+          "y": 350,
+          "props": {
+            "shift": 12
+          }
+        },
+        {
+          "id": "child_tun",
+          "type": "tunnel",
+          "x": 980,
+          "y": 350,
+          "props": {
+            "tunnelName": "Offspring Bells",
+            "subNodes": [
+              {
+                "type": "oscillator",
+                "props": {
+                  "wave": "sine",
+                  "attack": 0.005,
+                  "decay": 1.4,
+                  "mix": 0.9
+                }
+              },
+              {
+                "type": "oscillator",
+                "props": {
+                  "ratio": 3,
+                  "wave": "triangle",
+                  "attack": 0.003,
+                  "decay": 0.6,
+                  "mix": 0.25
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "child_spk",
+          "type": "speaker",
+          "x": 1080,
+          "y": 350,
+          "props": {
+            "volume": 0.85,
+            "pan": 0,
+            "reverb": 0.7,
+            "releaseTime": 0.6
+          }
+        },
+        {
+          "id": "echo_delay",
+          "type": "delay",
+          "x": 760,
+          "y": 180,
+          "props": {
+            "delayTime": 1.5
+          }
+        },
+        {
+          "id": "echo_gain",
+          "type": "gain",
+          "x": 880,
+          "y": 180,
+          "props": {
+            "value": 0.45
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e_va",
+          "from": "va",
+          "to": "va_split"
+        },
+        {
+          "id": "e_vb",
+          "from": "vb",
+          "to": "vb_split"
+        },
+        {
+          "id": "e_va1",
+          "from": "va_split",
+          "to": "va_tun"
+        },
+        {
+          "id": "e_va2",
+          "from": "va_tun",
+          "to": "va_spk"
+        },
+        {
+          "id": "e_vb1",
+          "from": "vb_split",
+          "to": "vb_tun"
+        },
+        {
+          "id": "e_vb2",
+          "from": "vb_tun",
+          "to": "vb_spk"
+        },
+        {
+          "id": "e_xa",
+          "from": "va_split",
+          "to": "cross"
+        },
+        {
+          "id": "e_xb",
+          "from": "vb_split",
+          "to": "cross"
+        },
+        {
+          "id": "e_c1",
+          "from": "cross",
+          "to": "child_quant"
+        },
+        {
+          "id": "e_c2",
+          "from": "child_quant",
+          "to": "child_pitch"
+        },
+        {
+          "id": "e_c3",
+          "from": "child_pitch",
+          "to": "child_tun"
+        },
+        {
+          "id": "e_c4",
+          "from": "child_tun",
+          "to": "child_spk"
+        },
+        {
+          "id": "e_e1",
+          "from": "child_quant",
+          "to": "echo_delay"
+        },
+        {
+          "id": "e_e2",
+          "from": "echo_delay",
+          "to": "echo_gain"
+        },
+        {
+          "id": "e_e3",
+          "from": "echo_gain",
+          "to": "child_tun"
+        }
+      ]
+    },
+    {
+      "name": "III. Chorus",
+      "color": "#e9c46a",
+      "durationBeats": 48,
+      "loopCount": -1,
+      "localRoot": 2,
+      "localScale": "dorian",
+      "nodes": [
+        {
+          "id": "bass",
+          "type": "source",
+          "x": 60,
+          "y": 600,
+          "props": {
+            "interval": 8,
+            "midiNote": 38,
+            "noteIndex": -2,
+            "intensity": 0.75
+          }
+        },
+        {
+          "id": "bass_tun",
+          "type": "tunnel",
+          "x": 310,
+          "y": 600,
+          "props": {
+            "tunnelName": "Ground",
+            "subNodes": [
+              {
+                "type": "oscillator",
+                "props": {
+                  "wave": "sawtooth",
+                  "attack": 0.4,
+                  "decay": 3.5,
+                  "mix": 0.6
+                }
+              },
+              {
+                "type": "filter",
+                "props": {
+                  "cutoff": 380,
+                  "resonance": 0.25,
+                  "attack": 0.15,
+                  "decay": 1.2,
+                  "mod": 250
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "bass_spk",
+          "type": "speaker",
+          "x": 560,
+          "y": 600,
+          "props": {
+            "volume": 0.95,
+            "pan": 0,
+            "reverb": 0.5,
+            "holdTime": 0.4,
+            "releaseTime": 0.9
+          }
+        },
+        {
+          "id": "pad",
+          "type": "source",
+          "x": 60,
+          "y": 100,
+          "props": {
+            "interval": 8,
+            "midiNote": 50,
+            "noteIndex": -2,
+            "intensity": 0.5
+          }
+        },
+        {
+          "id": "pad_tun",
+          "type": "tunnel",
+          "x": 280,
+          "y": 100,
+          "props": {
+            "tunnelName": "Bloom Pad",
+            "subNodes": [
+              {
+                "type": "oscillator",
+                "props": {
+                  "wave": "sawtooth",
+                  "attack": 0.9,
+                  "decay": 4.5,
+                  "mix": 0.45
+                }
+              },
+              {
+                "type": "oscillator",
+                "props": {
+                  "ratio": 2,
+                  "wave": "sine",
+                  "attack": 0.7,
+                  "decay": 3.5,
+                  "mix": 0.5
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "pad_flt",
+          "type": "filter",
+          "x": 500,
+          "y": 100,
+          "props": {
+            "type": "lowpass",
+            "cutoff": 1200,
+            "resonance": 0.2,
+            "attack": 0.1,
+            "decay": 1,
+            "mod": 0
+          }
+        },
+        {
+          "id": "pad_spk",
+          "type": "speaker",
+          "x": 720,
+          "y": 100,
+          "props": {
+            "volume": 0.8,
+            "pan": -0.25,
+            "reverb": 0.75,
+            "releaseTime": 1
+          }
+        },
+        {
+          "id": "pad_lfo",
+          "type": "lfo",
+          "x": 500,
+          "y": 220,
+          "props": {
+            "rate": 0.07,
+            "shape": "sine",
+            "min": 480,
+            "max": 2600,
+            "phase": 0
+          }
+        },
+        {
+          "id": "da",
+          "type": "source",
+          "x": 60,
+          "y": 260,
+          "props": {
+            "interval": 2,
+            "midiNote": 62,
+            "noteIndex": -2,
+            "intensity": 0.5
+          }
+        },
+        {
+          "id": "db",
+          "type": "source",
+          "x": 60,
+          "y": 440,
+          "props": {
+            "interval": 3,
+            "midiNote": 57,
+            "noteIndex": -2,
+            "intensity": 0.5
+          }
+        },
+        {
+          "id": "da_split",
+          "type": "splitter",
+          "x": 260,
+          "y": 260,
+          "props": {
+            "behavior": "broadcast"
+          }
+        },
+        {
+          "id": "db_split",
+          "type": "splitter",
+          "x": 260,
+          "y": 440,
+          "props": {
+            "behavior": "broadcast"
+          }
+        },
+        {
+          "id": "da_tun",
+          "type": "tunnel",
+          "x": 460,
+          "y": 200,
+          "props": {
+            "tunnelName": "East Voice",
+            "subNodes": [
+              {
+                "type": "oscillator",
+                "props": {
+                  "wave": "triangle",
+                  "attack": 0.04,
+                  "decay": 0.8,
+                  "mix": 0.8
+                }
+              },
+              {
+                "type": "modulator",
+                "props": {
+                  "rate": 5.5,
+                  "depth": 12,
+                  "delay": 0.2
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "da_spk",
+          "type": "speaker",
+          "x": 660,
+          "y": 200,
+          "props": {
+            "volume": 0.75,
+            "pan": -0.55,
+            "reverb": 0.5
+          }
+        },
+        {
+          "id": "db_tun",
+          "type": "tunnel",
+          "x": 460,
+          "y": 500,
+          "props": {
+            "tunnelName": "West Voice",
+            "subNodes": [
+              {
+                "type": "oscillator",
+                "props": {
+                  "wave": "sine",
+                  "attack": 0.03,
+                  "decay": 0.7,
+                  "mix": 0.8
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "db_spk",
+          "type": "speaker",
+          "x": 660,
+          "y": 500,
+          "props": {
+            "volume": 0.75,
+            "pan": 0.55,
+            "reverb": 0.5
+          }
+        },
+        {
+          "id": "cross",
+          "type": "crossover",
+          "x": 560,
+          "y": 350,
+          "props": {
+            "inheritance": "random",
+            "pitchFrom": "random",
+            "waveFrom": "random",
+            "gainMode": "average",
+            "timeout": 4
+          }
+        },
+        {
+          "id": "mut",
+          "type": "mutator",
+          "x": 700,
+          "y": 350,
+          "props": {
+            "mode": "drift",
+            "probability": 0.5,
+            "pitchDrift": 2,
+            "pitchRadiation": 12,
+            "gainDrift": 0.05,
+            "cutoffDrift": 0.1,
+            "waveChange": false,
+            "targets": [
+              "pitch"
+            ]
+          }
+        },
+        {
+          "id": "hgate",
+          "type": "gate",
+          "x": 820,
+          "y": 350,
+          "props": {
+            "mode": "harmonic",
+            "probability": 0.5,
+            "harmonicThreshold": 0.55,
+            "energyThreshold": 0.1,
+            "densityThreshold": 8,
+            "useGlobalKey": true,
+            "scale": "major",
+            "root": 0
+          }
+        },
+        {
+          "id": "hquant",
+          "type": "quantizer",
+          "x": 920,
+          "y": 350,
+          "props": {
+            "strength": 1,
+            "mode": "nearest",
+            "useGlobalKey": true
+          }
+        },
+        {
+          "id": "h_tun",
+          "type": "tunnel",
+          "x": 1020,
+          "y": 350,
+          "props": {
+            "tunnelName": "Offspring Bells",
+            "subNodes": [
+              {
+                "type": "oscillator",
+                "props": {
+                  "wave": "sine",
+                  "attack": 0.005,
+                  "decay": 1.2,
+                  "mix": 0.85
+                }
+              },
+              {
+                "type": "oscillator",
+                "props": {
+                  "ratio": 3,
+                  "wave": "triangle",
+                  "attack": 0.003,
+                  "decay": 0.5,
+                  "mix": 0.22
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "h_spk",
+          "type": "speaker",
+          "x": 1110,
+          "y": 350,
+          "props": {
+            "volume": 0.8,
+            "pan": 0,
+            "reverb": 0.65
+          }
+        },
+        {
+          "id": "gl",
+          "type": "source",
+          "x": 700,
+          "y": 40,
+          "props": {
+            "interval": 1,
+            "noteIndex": -1,
+            "intensity": 0.32
+          }
+        },
+        {
+          "id": "gl_gate",
+          "type": "gate",
+          "x": 850,
+          "y": 40,
+          "props": {
+            "probability": 0.4
+          }
+        },
+        {
+          "id": "gl_quant",
+          "type": "quantizer",
+          "x": 950,
+          "y": 40,
+          "props": {
+            "strength": 1,
+            "mode": "nearest",
+            "useGlobalKey": true
+          }
+        },
+        {
+          "id": "gl_tun",
+          "type": "tunnel",
+          "x": 1050,
+          "y": 40,
+          "props": {
+            "tunnelName": "Glimmer",
+            "subNodes": [
+              {
+                "type": "oscillator",
+                "props": {
+                  "wave": "triangle",
+                  "attack": 0.003,
+                  "decay": 0.22,
+                  "mix": 0.7
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "gl_spk",
+          "type": "speaker",
+          "x": 1130,
+          "y": 40,
+          "props": {
+            "volume": 0.55,
+            "pan": 0.35,
+            "reverb": 0.6
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e_b1",
+          "from": "bass",
+          "to": "bass_tun"
+        },
+        {
+          "id": "e_b2",
+          "from": "bass_tun",
+          "to": "bass_spk"
+        },
+        {
+          "id": "e_p1",
+          "from": "pad",
+          "to": "pad_tun"
+        },
+        {
+          "id": "e_p2",
+          "from": "pad_tun",
+          "to": "pad_flt"
+        },
+        {
+          "id": "e_p3",
+          "from": "pad_flt",
+          "to": "pad_spk"
+        },
+        {
+          "id": "e_lfo",
+          "from": "pad_lfo",
+          "to": "pad_flt",
+          "targetParam": "cutoff"
+        },
+        {
+          "id": "e_da",
+          "from": "da",
+          "to": "da_split"
+        },
+        {
+          "id": "e_db",
+          "from": "db",
+          "to": "db_split"
+        },
+        {
+          "id": "e_da1",
+          "from": "da_split",
+          "to": "da_tun"
+        },
+        {
+          "id": "e_da2",
+          "from": "da_tun",
+          "to": "da_spk"
+        },
+        {
+          "id": "e_db1",
+          "from": "db_split",
+          "to": "db_tun"
+        },
+        {
+          "id": "e_db2",
+          "from": "db_tun",
+          "to": "db_spk"
+        },
+        {
+          "id": "e_xa",
+          "from": "da_split",
+          "to": "cross"
+        },
+        {
+          "id": "e_xb",
+          "from": "db_split",
+          "to": "cross"
+        },
+        {
+          "id": "e_h1",
+          "from": "cross",
+          "to": "mut"
+        },
+        {
+          "id": "e_h2",
+          "from": "mut",
+          "to": "hgate"
+        },
+        {
+          "id": "e_h3",
+          "from": "hgate",
+          "to": "hquant"
+        },
+        {
+          "id": "e_h4",
+          "from": "hquant",
+          "to": "h_tun"
+        },
+        {
+          "id": "e_h5",
+          "from": "h_tun",
+          "to": "h_spk"
+        },
+        {
+          "id": "e_g1",
+          "from": "gl",
+          "to": "gl_gate"
+        },
+        {
+          "id": "e_g2",
+          "from": "gl_gate",
+          "to": "gl_quant"
+        },
+        {
+          "id": "e_g3",
+          "from": "gl_quant",
+          "to": "gl_tun"
+        },
+        {
+          "id": "e_g4",
+          "from": "gl_tun",
+          "to": "gl_spk"
+        }
+      ]
+    }
+  ]
+}

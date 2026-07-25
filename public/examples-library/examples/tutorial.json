@@ -1,0 +1,912 @@
+{
+  "name": "Tutorial: Learn Stochastic",
+  "category": "Tutorials",
+  "description": "A complete interactive tutorial with 10 scenes teaching you Stochastic from basics to advanced concepts. Use the Scene Panel to navigate between lessons.",
+  "bpm": 100,
+  "scenes": [
+    {
+      "name": "1. First Sound",
+      "color": "#4caf50",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "src",
+          "type": "source",
+          "x": 150,
+          "y": 300,
+          "props": {
+            "interval": 1,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.7
+          }
+        },
+        {
+          "id": "spk",
+          "type": "speaker",
+          "x": 350,
+          "y": 300,
+          "props": {
+            "reverb": 0.3,
+            "pan": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "src",
+          "to": "spk"
+        }
+      ]
+    },
+    {
+      "name": "2. Pitch Shifting",
+      "color": "#8bc34a",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 1,
+            "midiNote": 48,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "p1",
+          "type": "pitch",
+          "x": 250,
+          "y": 300,
+          "props": {
+            "shift": 7
+          }
+        },
+        {
+          "id": "spk",
+          "type": "speaker",
+          "x": 400,
+          "y": 300,
+          "props": {
+            "reverb": 0.3,
+            "pan": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "src",
+          "to": "p1"
+        },
+        {
+          "id": "e2",
+          "from": "p1",
+          "to": "spk"
+        }
+      ]
+    },
+    {
+      "name": "3. Shaping Sound",
+      "color": "#cddc39",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "src1",
+          "type": "source",
+          "x": 100,
+          "y": 200,
+          "props": {
+            "interval": 2,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "pol1",
+          "type": "oscillator",
+          "x": 250,
+          "y": 200,
+          "props": {
+            "wave": "sine",
+            "attack": 0.1,
+            "decay": 0.8
+          }
+        },
+        {
+          "id": "spk1",
+          "type": "speaker",
+          "x": 400,
+          "y": 200,
+          "props": {
+            "reverb": 0.4,
+            "pan": -0.5
+          }
+        },
+        {
+          "id": "src2",
+          "type": "source",
+          "x": 100,
+          "y": 400,
+          "props": {
+            "interval": 2,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "pol2",
+          "type": "oscillator",
+          "x": 250,
+          "y": 400,
+          "props": {
+            "wave": "sawtooth",
+            "attack": 0.01,
+            "decay": 0.3
+          }
+        },
+        {
+          "id": "spk2",
+          "type": "speaker",
+          "x": 400,
+          "y": 400,
+          "props": {
+            "reverb": 0.2,
+            "pan": 0.5
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "src1",
+          "to": "pol1"
+        },
+        {
+          "id": "e2",
+          "from": "pol1",
+          "to": "spk1"
+        },
+        {
+          "id": "e3",
+          "from": "src2",
+          "to": "pol2"
+        },
+        {
+          "id": "e4",
+          "from": "pol2",
+          "to": "spk2"
+        }
+      ]
+    },
+    {
+      "name": "4. Chords",
+      "color": "#ffeb3b",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 2,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "pol1",
+          "type": "oscillator",
+          "x": 250,
+          "y": 180,
+          "props": {
+            "wave": "sine",
+            "attack": 0.05,
+            "decay": 0.6
+          }
+        },
+        {
+          "id": "spk1",
+          "type": "speaker",
+          "x": 400,
+          "y": 180,
+          "props": {
+            "reverb": 0.5,
+            "pan": -0.5
+          }
+        },
+        {
+          "id": "p2",
+          "type": "pitch",
+          "x": 250,
+          "y": 300,
+          "props": {
+            "shift": 4
+          }
+        },
+        {
+          "id": "pol2",
+          "type": "oscillator",
+          "x": 350,
+          "y": 300,
+          "props": {
+            "wave": "triangle",
+            "attack": 0.05,
+            "decay": 0.6
+          }
+        },
+        {
+          "id": "spk2",
+          "type": "speaker",
+          "x": 500,
+          "y": 300,
+          "props": {
+            "reverb": 0.5,
+            "pan": 0
+          }
+        },
+        {
+          "id": "p3",
+          "type": "pitch",
+          "x": 250,
+          "y": 420,
+          "props": {
+            "shift": 7
+          }
+        },
+        {
+          "id": "pol3",
+          "type": "oscillator",
+          "x": 350,
+          "y": 420,
+          "props": {
+            "wave": "sine",
+            "attack": 0.05,
+            "decay": 0.6
+          }
+        },
+        {
+          "id": "spk3",
+          "type": "speaker",
+          "x": 500,
+          "y": 420,
+          "props": {
+            "reverb": 0.5,
+            "pan": 0.5
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "src",
+          "to": "pol1"
+        },
+        {
+          "id": "e1b",
+          "from": "pol1",
+          "to": "spk1"
+        },
+        {
+          "id": "e2",
+          "from": "src",
+          "to": "p2"
+        },
+        {
+          "id": "e2b",
+          "from": "p2",
+          "to": "pol2"
+        },
+        {
+          "id": "e2c",
+          "from": "pol2",
+          "to": "spk2"
+        },
+        {
+          "id": "e3",
+          "from": "src",
+          "to": "p3"
+        },
+        {
+          "id": "e3b",
+          "from": "p3",
+          "to": "pol3"
+        },
+        {
+          "id": "e3c",
+          "from": "pol3",
+          "to": "spk3"
+        }
+      ]
+    },
+    {
+      "name": "5. Randomness",
+      "color": "#ffc107",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 0.5,
+            "noteIndex": -1,
+            "intensity": 0.5
+          }
+        },
+        {
+          "id": "gate",
+          "type": "gate",
+          "x": 220,
+          "y": 300,
+          "props": {
+            "probability": 0.6
+          }
+        },
+        {
+          "id": "pol",
+          "type": "oscillator",
+          "x": 340,
+          "y": 300,
+          "props": {
+            "wave": "triangle",
+            "attack": 0.01,
+            "decay": 0.25
+          }
+        },
+        {
+          "id": "spk",
+          "type": "speaker",
+          "x": 460,
+          "y": 300,
+          "props": {
+            "reverb": 0.4,
+            "pan": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "src",
+          "to": "gate"
+        },
+        {
+          "id": "e2",
+          "from": "gate",
+          "to": "pol"
+        },
+        {
+          "id": "e3",
+          "from": "pol",
+          "to": "spk"
+        }
+      ]
+    },
+    {
+      "name": "6. Delays",
+      "color": "#ff9800",
+      "durationBeats": 16,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "src",
+          "type": "source",
+          "x": 80,
+          "y": 300,
+          "props": {
+            "interval": 4,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "pol1",
+          "type": "oscillator",
+          "x": 220,
+          "y": 180,
+          "props": {
+            "wave": "sine",
+            "attack": 0.02,
+            "decay": 0.4
+          }
+        },
+        {
+          "id": "spk1",
+          "type": "speaker",
+          "x": 380,
+          "y": 180,
+          "props": {
+            "reverb": 0.3,
+            "pan": -0.4
+          }
+        },
+        {
+          "id": "d2",
+          "type": "delay",
+          "x": 200,
+          "y": 300,
+          "props": {
+            "delayTime": 1
+          }
+        },
+        {
+          "id": "pol2",
+          "type": "oscillator",
+          "x": 320,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "attack": 0.02,
+            "decay": 0.4
+          }
+        },
+        {
+          "id": "spk2",
+          "type": "speaker",
+          "x": 460,
+          "y": 300,
+          "props": {
+            "reverb": 0.3,
+            "pan": 0
+          }
+        },
+        {
+          "id": "d3",
+          "type": "delay",
+          "x": 200,
+          "y": 420,
+          "props": {
+            "delayTime": 2
+          }
+        },
+        {
+          "id": "pol3",
+          "type": "oscillator",
+          "x": 320,
+          "y": 420,
+          "props": {
+            "wave": "sine",
+            "attack": 0.02,
+            "decay": 0.4
+          }
+        },
+        {
+          "id": "spk3",
+          "type": "speaker",
+          "x": 460,
+          "y": 420,
+          "props": {
+            "reverb": 0.3,
+            "pan": 0.4
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "src",
+          "to": "pol1"
+        },
+        {
+          "id": "e1b",
+          "from": "pol1",
+          "to": "spk1"
+        },
+        {
+          "id": "e2",
+          "from": "src",
+          "to": "d2"
+        },
+        {
+          "id": "e2b",
+          "from": "d2",
+          "to": "pol2"
+        },
+        {
+          "id": "e2c",
+          "from": "pol2",
+          "to": "spk2"
+        },
+        {
+          "id": "e3",
+          "from": "src",
+          "to": "d3"
+        },
+        {
+          "id": "e3b",
+          "from": "d3",
+          "to": "pol3"
+        },
+        {
+          "id": "e3c",
+          "from": "pol3",
+          "to": "spk3"
+        }
+      ]
+    },
+    {
+      "name": "7. Filters",
+      "color": "#ff5722",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 2,
+            "midiNote": 48,
+            "noteIndex": -2,
+            "intensity": 0.7
+          }
+        },
+        {
+          "id": "pol",
+          "type": "oscillator",
+          "x": 220,
+          "y": 300,
+          "props": {
+            "wave": "sawtooth",
+            "attack": 0.02,
+            "decay": 1
+          }
+        },
+        {
+          "id": "flt",
+          "type": "filter",
+          "x": 340,
+          "y": 300,
+          "props": {
+            "cutoff": 800,
+            "mod": 2000,
+            "attack": 0.01,
+            "decay": 0.4
+          }
+        },
+        {
+          "id": "spk",
+          "type": "speaker",
+          "x": 460,
+          "y": 300,
+          "props": {
+            "reverb": 0.4,
+            "pan": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "src",
+          "to": "pol"
+        },
+        {
+          "id": "e2",
+          "from": "pol",
+          "to": "flt"
+        },
+        {
+          "id": "e3",
+          "from": "flt",
+          "to": "spk"
+        }
+      ]
+    },
+    {
+      "name": "8. Dynamics",
+      "color": "#e91e63",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "src",
+          "type": "source",
+          "x": 80,
+          "y": 300,
+          "props": {
+            "interval": 2,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.5
+          }
+        },
+        {
+          "id": "g1",
+          "type": "gain",
+          "x": 200,
+          "y": 180,
+          "props": {
+            "value": 0.3
+          }
+        },
+        {
+          "id": "pol1",
+          "type": "oscillator",
+          "x": 320,
+          "y": 180,
+          "props": {
+            "wave": "sine",
+            "attack": 0.02,
+            "decay": 0.4
+          }
+        },
+        {
+          "id": "spk1",
+          "type": "speaker",
+          "x": 440,
+          "y": 180,
+          "props": {
+            "reverb": 0.3,
+            "pan": -0.3
+          }
+        },
+        {
+          "id": "pol2",
+          "type": "oscillator",
+          "x": 250,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "attack": 0.02,
+            "decay": 0.4
+          }
+        },
+        {
+          "id": "spk2",
+          "type": "speaker",
+          "x": 400,
+          "y": 300,
+          "props": {
+            "reverb": 0.3,
+            "pan": 0
+          }
+        },
+        {
+          "id": "g3",
+          "type": "gain",
+          "x": 200,
+          "y": 420,
+          "props": {
+            "value": 1.5
+          }
+        },
+        {
+          "id": "pol3",
+          "type": "oscillator",
+          "x": 320,
+          "y": 420,
+          "props": {
+            "wave": "sine",
+            "attack": 0.02,
+            "decay": 0.4
+          }
+        },
+        {
+          "id": "spk3",
+          "type": "speaker",
+          "x": 440,
+          "y": 420,
+          "props": {
+            "reverb": 0.3,
+            "pan": 0.3
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "src",
+          "to": "g1"
+        },
+        {
+          "id": "e1b",
+          "from": "g1",
+          "to": "pol1"
+        },
+        {
+          "id": "e1c",
+          "from": "pol1",
+          "to": "spk1"
+        },
+        {
+          "id": "e2",
+          "from": "src",
+          "to": "pol2"
+        },
+        {
+          "id": "e2b",
+          "from": "pol2",
+          "to": "spk2"
+        },
+        {
+          "id": "e3",
+          "from": "src",
+          "to": "g3"
+        },
+        {
+          "id": "e3b",
+          "from": "g3",
+          "to": "pol3"
+        },
+        {
+          "id": "e3c",
+          "from": "pol3",
+          "to": "spk3"
+        }
+      ]
+    },
+    {
+      "name": "9. Tunnels",
+      "color": "#9c27b0",
+      "durationBeats": 16,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 4,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "string",
+          "type": "tunnel",
+          "x": 280,
+          "y": 300,
+          "props": {
+            "tunnelName": "String",
+            "subNodes": [
+              {
+                "type": "oscillator",
+                "props": {
+                  "wave": "sawtooth",
+                  "attack": 0.2,
+                  "decay": 1.5,
+                  "mix": 1
+                }
+              },
+              {
+                "type": "oscillator",
+                "props": {
+                  "ratio": 2,
+                  "wave": "sine",
+                  "attack": 0.15,
+                  "decay": 1.2,
+                  "mix": 0.3
+                }
+              },
+              {
+                "type": "modulator",
+                "props": {
+                  "rate": 5,
+                  "depth": 15,
+                  "delay": 0.3
+                }
+              },
+              {
+                "type": "filter",
+                "props": {
+                  "cutoff": 2000,
+                  "mod": 1000,
+                  "attack": 0.1,
+                  "decay": 0.8
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "spk",
+          "type": "speaker",
+          "x": 460,
+          "y": 300,
+          "props": {
+            "reverb": 0.5,
+            "pan": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "src",
+          "to": "string"
+        },
+        {
+          "id": "e2",
+          "from": "string",
+          "to": "spk"
+        }
+      ]
+    },
+    {
+      "name": "10. Scene Triggers",
+      "color": "#673ab7",
+      "durationBeats": 16,
+      "loopCount": 1,
+      "nodes": [
+        {
+          "id": "src1",
+          "type": "source",
+          "x": 100,
+          "y": 200,
+          "props": {
+            "interval": 1,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.7
+          }
+        },
+        {
+          "id": "spk1",
+          "type": "speaker",
+          "x": 300,
+          "y": 200,
+          "props": {
+            "reverb": 0.3,
+            "pan": -0.3
+          }
+        },
+        {
+          "id": "src2",
+          "type": "source",
+          "x": 100,
+          "y": 400,
+          "props": {
+            "interval": 4,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.5
+          }
+        },
+        {
+          "id": "trig1",
+          "type": "scene_trigger",
+          "x": 300,
+          "y": 400,
+          "props": {
+            "targetSceneIndex": 0,
+            "behavior": "jump"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "src1",
+          "to": "spk1"
+        },
+        {
+          "id": "e2",
+          "from": "src2",
+          "to": "trig1",
+          "timingMode": "fixed",
+          "durationBeats": 4
+        }
+      ]
+    }
+  ]
+}

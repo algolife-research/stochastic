@@ -1,0 +1,148 @@
+{
+  "name": "Demo: Arpeggio",
+  "category": "Demos",
+  "description": "A chord broken into individual notes using fixed-timing edges for precise rhythm.",
+  "bpm": 120,
+  "nodes": [
+    {
+      "id": "src",
+      "type": "source",
+      "x": 100,
+      "y": 300,
+      "props": {
+        "interval": 4,
+        "midiNote": 60,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "pol",
+      "type": "oscillator",
+      "x": 180,
+      "y": 300,
+      "props": {
+        "wave": "sine",
+        "attack": 0.02,
+        "decay": 0.5
+      }
+    },
+    {
+      "id": "spk1",
+      "type": "speaker",
+      "x": 400,
+      "y": 150,
+      "props": {
+        "reverb": 0.4,
+        "pan": -0.4
+      }
+    },
+    {
+      "id": "p2",
+      "type": "pitch",
+      "x": 320,
+      "y": 250,
+      "props": {
+        "shift": 4
+      }
+    },
+    {
+      "id": "spk2",
+      "type": "speaker",
+      "x": 450,
+      "y": 250,
+      "props": {
+        "reverb": 0.4,
+        "pan": -0.1
+      }
+    },
+    {
+      "id": "p3",
+      "type": "pitch",
+      "x": 320,
+      "y": 350,
+      "props": {
+        "shift": 7
+      }
+    },
+    {
+      "id": "spk3",
+      "type": "speaker",
+      "x": 450,
+      "y": 350,
+      "props": {
+        "reverb": 0.4,
+        "pan": 0.1
+      }
+    },
+    {
+      "id": "p4",
+      "type": "pitch",
+      "x": 320,
+      "y": 450,
+      "props": {
+        "shift": 12
+      }
+    },
+    {
+      "id": "spk4",
+      "type": "speaker",
+      "x": 450,
+      "y": 450,
+      "props": {
+        "reverb": 0.4,
+        "pan": 0.4
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_s",
+      "from": "src",
+      "to": "pol"
+    },
+    {
+      "id": "e1",
+      "from": "pol",
+      "to": "spk1",
+      "timingMode": "fixed",
+      "durationBeats": 0
+    },
+    {
+      "id": "e2a",
+      "from": "pol",
+      "to": "p2",
+      "timingMode": "fixed",
+      "durationBeats": 0.5
+    },
+    {
+      "id": "e2b",
+      "from": "p2",
+      "to": "spk2"
+    },
+    {
+      "id": "e3a",
+      "from": "pol",
+      "to": "p3",
+      "timingMode": "fixed",
+      "durationBeats": 1
+    },
+    {
+      "id": "e3b",
+      "from": "p3",
+      "to": "spk3"
+    },
+    {
+      "id": "e4a",
+      "from": "pol",
+      "to": "p4",
+      "timingMode": "fixed",
+      "durationBeats": 1.5
+    },
+    {
+      "id": "e4b",
+      "from": "p4",
+      "to": "spk4"
+    }
+  ]
+}

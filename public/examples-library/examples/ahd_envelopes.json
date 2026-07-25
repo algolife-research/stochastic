@@ -1,0 +1,139 @@
+{
+  "name": "Advanced: AHD Envelopes",
+  "category": "Synthesis",
+  "description": "Demonstrates AHD (Attack-Hold-Decay) envelopes. Compare short staccato vs sustained organ-like tones.",
+  "bpm": 60,
+  "nodes": [
+    {
+      "id": "src1",
+      "type": "source",
+      "x": 60,
+      "y": 180,
+      "props": {
+        "interval": 4,
+        "midiNote": 60,
+        "noteIndex": -2,
+        "intensity": 0.7
+      }
+    },
+    {
+      "id": "pol1",
+      "type": "oscillator",
+      "x": 180,
+      "y": 180,
+      "props": {
+        "wave": "sine",
+        "attack": 0.01,
+        "decay": 0.2
+      }
+    },
+    {
+      "id": "staccato",
+      "type": "speaker",
+      "x": 300,
+      "y": 180,
+      "props": {
+        "reverb": 0.2,
+        "pan": -0.5
+      }
+    },
+    {
+      "id": "src2",
+      "type": "source",
+      "x": 60,
+      "y": 300,
+      "props": {
+        "interval": 4,
+        "midiNote": 60,
+        "noteIndex": -2,
+        "intensity": 0.7
+      }
+    },
+    {
+      "id": "pol2",
+      "type": "oscillator",
+      "x": 180,
+      "y": 300,
+      "props": {
+        "wave": "sine",
+        "attack": 0.3,
+        "decay": 0.5
+      }
+    },
+    {
+      "id": "sustained",
+      "type": "speaker",
+      "x": 300,
+      "y": 300,
+      "props": {
+        "reverb": 0.4,
+        "pan": 0
+      }
+    },
+    {
+      "id": "src3",
+      "type": "source",
+      "x": 60,
+      "y": 420,
+      "props": {
+        "interval": 4,
+        "midiNote": 60,
+        "noteIndex": -2,
+        "intensity": 0.7
+      }
+    },
+    {
+      "id": "pol3",
+      "type": "oscillator",
+      "x": 180,
+      "y": 420,
+      "props": {
+        "wave": "triangle",
+        "attack": 0.8,
+        "decay": 0.1
+      }
+    },
+    {
+      "id": "organ",
+      "type": "speaker",
+      "x": 300,
+      "y": 420,
+      "props": {
+        "reverb": 0.6,
+        "pan": 0.5
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1a",
+      "from": "src1",
+      "to": "pol1"
+    },
+    {
+      "id": "e1b",
+      "from": "pol1",
+      "to": "staccato"
+    },
+    {
+      "id": "e2a",
+      "from": "src2",
+      "to": "pol2"
+    },
+    {
+      "id": "e2b",
+      "from": "pol2",
+      "to": "sustained"
+    },
+    {
+      "id": "e3a",
+      "from": "src3",
+      "to": "pol3"
+    },
+    {
+      "id": "e3b",
+      "from": "pol3",
+      "to": "organ"
+    }
+  ]
+}

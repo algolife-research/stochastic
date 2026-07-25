@@ -1,0 +1,209 @@
+{
+  "name": "Demo: Drum Pattern",
+  "category": "Demos",
+  "description": "A basic drum kit using different waveforms and pitches.",
+  "bpm": 110,
+  "nodes": [
+    {
+      "id": "kick_src",
+      "type": "source",
+      "x": 60,
+      "y": 180,
+      "props": {
+        "interval": 2,
+        "midiNote": 36,
+        "noteIndex": -2,
+        "intensity": 0.8
+      }
+    },
+    {
+      "id": "kick_pol",
+      "type": "oscillator",
+      "x": 180,
+      "y": 180,
+      "props": {
+        "wave": "sine",
+        "attack": 0.01,
+        "decay": 0.25
+      }
+    },
+    {
+      "id": "kick_p",
+      "type": "pitch",
+      "x": 300,
+      "y": 180,
+      "props": {
+        "shift": -12
+      }
+    },
+    {
+      "id": "kick_out",
+      "type": "speaker",
+      "x": 420,
+      "y": 180,
+      "props": {
+        "reverb": 0.1,
+        "pan": 0
+      }
+    },
+    {
+      "id": "snare_src",
+      "type": "source",
+      "x": 60,
+      "y": 300,
+      "props": {
+        "interval": 2,
+        "midiNote": 60,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "snare_del",
+      "type": "delay",
+      "x": 140,
+      "y": 300,
+      "props": {
+        "delayTime": 1
+      }
+    },
+    {
+      "id": "snare_pol",
+      "type": "oscillator",
+      "x": 240,
+      "y": 300,
+      "props": {
+        "wave": "sawtooth",
+        "attack": 0.01,
+        "decay": 0.12
+      }
+    },
+    {
+      "id": "snare_p",
+      "type": "pitch",
+      "x": 340,
+      "y": 300,
+      "props": {
+        "shift": 12
+      }
+    },
+    {
+      "id": "snare_out",
+      "type": "speaker",
+      "x": 460,
+      "y": 300,
+      "props": {
+        "reverb": 0.35,
+        "pan": 0.1
+      }
+    },
+    {
+      "id": "hh_src",
+      "type": "source",
+      "x": 60,
+      "y": 420,
+      "props": {
+        "interval": 0.5,
+        "midiNote": 72,
+        "noteIndex": -2,
+        "intensity": 0.3
+      }
+    },
+    {
+      "id": "hh_gate",
+      "type": "gate",
+      "x": 160,
+      "y": 420,
+      "props": {
+        "probability": 0.75
+      }
+    },
+    {
+      "id": "hh_pol",
+      "type": "oscillator",
+      "x": 260,
+      "y": 420,
+      "props": {
+        "wave": "square",
+        "attack": 0.005,
+        "decay": 0.04
+      }
+    },
+    {
+      "id": "hh_p",
+      "type": "pitch",
+      "x": 360,
+      "y": 420,
+      "props": {
+        "shift": 24
+      }
+    },
+    {
+      "id": "hh_out",
+      "type": "speaker",
+      "x": 480,
+      "y": 420,
+      "props": {
+        "reverb": 0.15,
+        "pan": 0.4
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_k1",
+      "from": "kick_src",
+      "to": "kick_pol"
+    },
+    {
+      "id": "e_k2",
+      "from": "kick_pol",
+      "to": "kick_p"
+    },
+    {
+      "id": "e_k3",
+      "from": "kick_p",
+      "to": "kick_out"
+    },
+    {
+      "id": "e_s1",
+      "from": "snare_src",
+      "to": "snare_del"
+    },
+    {
+      "id": "e_s2",
+      "from": "snare_del",
+      "to": "snare_pol"
+    },
+    {
+      "id": "e_s3",
+      "from": "snare_pol",
+      "to": "snare_p"
+    },
+    {
+      "id": "e_s4",
+      "from": "snare_p",
+      "to": "snare_out"
+    },
+    {
+      "id": "e_h1",
+      "from": "hh_src",
+      "to": "hh_gate"
+    },
+    {
+      "id": "e_h2",
+      "from": "hh_gate",
+      "to": "hh_pol"
+    },
+    {
+      "id": "e_h3",
+      "from": "hh_pol",
+      "to": "hh_p"
+    },
+    {
+      "id": "e_h4",
+      "from": "hh_p",
+      "to": "hh_out"
+    }
+  ]
+}

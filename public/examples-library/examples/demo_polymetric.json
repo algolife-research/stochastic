@@ -1,0 +1,181 @@
+{
+  "name": "Demo: Polymetric Ambient",
+  "category": "Demos",
+  "description": "Three independent loops of 5, 7, and 9 beats phase against each other.",
+  "bpm": 110,
+  "nodes": [
+    {
+      "id": "src5",
+      "type": "source",
+      "x": 50,
+      "y": 150,
+      "props": {
+        "interval": 5,
+        "midiNote": 60,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "pol5",
+      "type": "oscillator",
+      "x": 200,
+      "y": 150,
+      "props": {
+        "wave": "sine",
+        "attack": 0.1,
+        "decay": 2
+      }
+    },
+    {
+      "id": "dly5",
+      "type": "delay",
+      "x": 350,
+      "y": 150,
+      "props": {
+        "delayTime": 0.5
+      }
+    },
+    {
+      "id": "spk5",
+      "type": "speaker",
+      "x": 500,
+      "y": 150,
+      "props": {
+        "reverb": 0.5,
+        "pan": -0.5
+      }
+    },
+    {
+      "id": "src7",
+      "type": "source",
+      "x": 50,
+      "y": 300,
+      "props": {
+        "interval": 7,
+        "midiNote": 64,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "pol7",
+      "type": "oscillator",
+      "x": 200,
+      "y": 300,
+      "props": {
+        "wave": "triangle",
+        "attack": 0.1,
+        "decay": 2
+      }
+    },
+    {
+      "id": "dly7",
+      "type": "delay",
+      "x": 350,
+      "y": 300,
+      "props": {
+        "delayTime": 0.75
+      }
+    },
+    {
+      "id": "spk7",
+      "type": "speaker",
+      "x": 500,
+      "y": 300,
+      "props": {
+        "reverb": 0.5,
+        "pan": 0
+      }
+    },
+    {
+      "id": "src9",
+      "type": "source",
+      "x": 50,
+      "y": 450,
+      "props": {
+        "interval": 9,
+        "midiNote": 67,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "pol9",
+      "type": "oscillator",
+      "x": 200,
+      "y": 450,
+      "props": {
+        "wave": "sine",
+        "attack": 0.1,
+        "decay": 2
+      }
+    },
+    {
+      "id": "dly9",
+      "type": "delay",
+      "x": 350,
+      "y": 450,
+      "props": {
+        "delayTime": 1
+      }
+    },
+    {
+      "id": "spk9",
+      "type": "speaker",
+      "x": 500,
+      "y": 450,
+      "props": {
+        "reverb": 0.5,
+        "pan": 0.5
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "src5",
+      "to": "pol5"
+    },
+    {
+      "id": "e2",
+      "from": "pol5",
+      "to": "dly5"
+    },
+    {
+      "id": "e3",
+      "from": "dly5",
+      "to": "spk5"
+    },
+    {
+      "id": "e4",
+      "from": "src7",
+      "to": "pol7"
+    },
+    {
+      "id": "e5",
+      "from": "pol7",
+      "to": "dly7"
+    },
+    {
+      "id": "e6",
+      "from": "dly7",
+      "to": "spk7"
+    },
+    {
+      "id": "e7",
+      "from": "src9",
+      "to": "pol9"
+    },
+    {
+      "id": "e8",
+      "from": "pol9",
+      "to": "dly9"
+    },
+    {
+      "id": "e9",
+      "from": "dly9",
+      "to": "spk9"
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "name": "Advanced: Layered Pad",
+  "category": "Synthesis",
+  "description": "Uses a tunnel to layer multiple waveforms into a rich, complex pad sound.",
+  "bpm": 60,
+  "nodes": [
+    {
+      "id": "src",
+      "type": "source",
+      "x": 60,
+      "y": 300,
+      "props": {
+        "interval": 6,
+        "midiNote": 60,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "pad",
+      "type": "tunnel",
+      "x": 200,
+      "y": 300,
+      "props": {
+        "tunnelName": "Warm Pad",
+        "subNodes": [
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "sine",
+              "attack": 0.8,
+              "decay": 3
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "triangle",
+              "attack": 1.2,
+              "decay": 2.5
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "sawtooth",
+              "attack": 0.5,
+              "decay": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "out",
+      "type": "speaker",
+      "x": 340,
+      "y": 300,
+      "props": {
+        "reverb": 0.8,
+        "pan": 0
+      }
+    },
+    {
+      "id": "split",
+      "type": "splitter",
+      "x": 200,
+      "y": 150,
+      "props": {}
+    },
+    {
+      "id": "p_hi",
+      "type": "pitch",
+      "x": 280,
+      "y": 150,
+      "props": {
+        "shift": 12
+      }
+    },
+    {
+      "id": "sparkle",
+      "type": "tunnel",
+      "x": 380,
+      "y": 150,
+      "props": {
+        "tunnelName": "Sparkle",
+        "subNodes": [
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "triangle",
+              "attack": 0.01,
+              "decay": 0.4
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "out_hi",
+      "type": "speaker",
+      "x": 500,
+      "y": 150,
+      "props": {
+        "reverb": 0.9,
+        "pan": 0.4
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "src",
+      "to": "pad"
+    },
+    {
+      "id": "e2",
+      "from": "pad",
+      "to": "out"
+    },
+    {
+      "id": "e3",
+      "from": "src",
+      "to": "split"
+    },
+    {
+      "id": "e4",
+      "from": "split",
+      "to": "p_hi"
+    },
+    {
+      "id": "e5",
+      "from": "p_hi",
+      "to": "sparkle"
+    },
+    {
+      "id": "e6",
+      "from": "sparkle",
+      "to": "out_hi"
+    }
+  ]
+}

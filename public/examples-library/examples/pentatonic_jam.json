@@ -1,0 +1,301 @@
+{
+  "name": "Advanced: Pentatonic Jam",
+  "category": "Generative",
+  "description": "A complete jam using quantizer for pentatonic scale, LFO modulation, and virtual edges for precise timing.",
+  "bpm": 100,
+  "nodes": [
+    {
+      "id": "bass_src",
+      "type": "source",
+      "x": 60,
+      "y": 150,
+      "props": {
+        "interval": 2,
+        "noteIndex": -1,
+        "intensity": 0.8
+      }
+    },
+    {
+      "id": "bass_q",
+      "type": "quantizer",
+      "x": 160,
+      "y": 150,
+      "props": {
+        "strength": 1
+      }
+    },
+    {
+      "id": "bass_p",
+      "type": "pitch",
+      "x": 260,
+      "y": 150,
+      "props": {
+        "shift": -12
+      }
+    },
+    {
+      "id": "bass_pol",
+      "type": "oscillator",
+      "x": 360,
+      "y": 150,
+      "props": {
+        "wave": "sawtooth",
+        "attack": 0.02,
+        "decay": 0.5
+      }
+    },
+    {
+      "id": "bass_flt",
+      "type": "filter",
+      "x": 460,
+      "y": 150,
+      "props": {
+        "cutoff": 400,
+        "mod": 800,
+        "attack": 0.01,
+        "decay": 0.3
+      }
+    },
+    {
+      "id": "bass_out",
+      "type": "speaker",
+      "x": 560,
+      "y": 150,
+      "props": {
+        "reverb": 0.2,
+        "pan": 0
+      }
+    },
+    {
+      "id": "mel_src",
+      "type": "source",
+      "x": 60,
+      "y": 300,
+      "props": {
+        "interval": 0.5,
+        "noteIndex": -1,
+        "intensity": 0.5
+      }
+    },
+    {
+      "id": "mel_gate",
+      "type": "gate",
+      "x": 140,
+      "y": 300,
+      "props": {
+        "probability": 0.6
+      }
+    },
+    {
+      "id": "mel_q",
+      "type": "quantizer",
+      "x": 220,
+      "y": 300,
+      "props": {
+        "strength": 1
+      }
+    },
+    {
+      "id": "mel_split",
+      "type": "splitter",
+      "x": 300,
+      "y": 300,
+      "props": {}
+    },
+    {
+      "id": "mel_pol1",
+      "type": "oscillator",
+      "x": 400,
+      "y": 250,
+      "props": {
+        "wave": "triangle",
+        "attack": 0.01,
+        "decay": 0.25
+      }
+    },
+    {
+      "id": "mel_out1",
+      "type": "speaker",
+      "x": 500,
+      "y": 250,
+      "props": {
+        "reverb": 0.5,
+        "pan": -0.4
+      }
+    },
+    {
+      "id": "mel_pol2",
+      "type": "oscillator",
+      "x": 400,
+      "y": 350,
+      "props": {
+        "wave": "sine",
+        "attack": 0.01,
+        "decay": 0.2
+      }
+    },
+    {
+      "id": "mel_out2",
+      "type": "speaker",
+      "x": 500,
+      "y": 350,
+      "props": {
+        "reverb": 0.5,
+        "pan": 0.4
+      }
+    },
+    {
+      "id": "arp_src",
+      "type": "source",
+      "x": 60,
+      "y": 480,
+      "props": {
+        "interval": 4,
+        "midiNote": 72,
+        "noteIndex": -2,
+        "intensity": 0.4
+      }
+    },
+    {
+      "id": "arp_split",
+      "type": "splitter",
+      "x": 160,
+      "y": 480,
+      "props": {}
+    },
+    {
+      "id": "arp_q",
+      "type": "quantizer",
+      "x": 260,
+      "y": 480,
+      "props": {
+        "strength": 1
+      }
+    },
+    {
+      "id": "arp_pol",
+      "type": "oscillator",
+      "x": 360,
+      "y": 480,
+      "props": {
+        "wave": "sine",
+        "attack": 0.005,
+        "decay": 0.15
+      }
+    },
+    {
+      "id": "arp_out",
+      "type": "speaker",
+      "x": 460,
+      "y": 480,
+      "props": {
+        "reverb": 0.7,
+        "pan": 0
+      }
+    },
+    {
+      "id": "lfo_filter",
+      "type": "lfo",
+      "x": 460,
+      "y": 80,
+      "props": {
+        "rate": 0.3,
+        "shape": "sine",
+        "min": 300,
+        "max": 1200
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_b1",
+      "from": "bass_src",
+      "to": "bass_q"
+    },
+    {
+      "id": "e_b2",
+      "from": "bass_q",
+      "to": "bass_p"
+    },
+    {
+      "id": "e_b3",
+      "from": "bass_p",
+      "to": "bass_pol"
+    },
+    {
+      "id": "e_b4",
+      "from": "bass_pol",
+      "to": "bass_flt"
+    },
+    {
+      "id": "e_b5",
+      "from": "bass_flt",
+      "to": "bass_out"
+    },
+    {
+      "id": "e_m1",
+      "from": "mel_src",
+      "to": "mel_gate"
+    },
+    {
+      "id": "e_m2",
+      "from": "mel_gate",
+      "to": "mel_q"
+    },
+    {
+      "id": "e_m3",
+      "from": "mel_q",
+      "to": "mel_split"
+    },
+    {
+      "id": "e_m4",
+      "from": "mel_split",
+      "to": "mel_pol1"
+    },
+    {
+      "id": "e_m5",
+      "from": "mel_pol1",
+      "to": "mel_out1"
+    },
+    {
+      "id": "e_m6",
+      "from": "mel_split",
+      "to": "mel_pol2",
+      "timingMode": "fixed",
+      "durationBeats": 0.25
+    },
+    {
+      "id": "e_m7",
+      "from": "mel_pol2",
+      "to": "mel_out2"
+    },
+    {
+      "id": "e_a1",
+      "from": "arp_src",
+      "to": "arp_split"
+    },
+    {
+      "id": "e_a2",
+      "from": "arp_split",
+      "to": "arp_q",
+      "timingMode": "fixed",
+      "durationBeats": 0
+    },
+    {
+      "id": "e_a3",
+      "from": "arp_q",
+      "to": "arp_pol"
+    },
+    {
+      "id": "e_a4",
+      "from": "arp_pol",
+      "to": "arp_out"
+    },
+    {
+      "id": "e_lfo",
+      "from": "lfo_filter",
+      "to": "bass_flt",
+      "targetParam": "cutoff"
+    }
+  ]
+}

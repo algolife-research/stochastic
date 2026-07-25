@@ -1,0 +1,192 @@
+{
+  "name": "Advanced: Quantizer",
+  "category": "Generative",
+  "description": "Random notes snapped to musical scales using quantizers for in-tune generative music.",
+  "bpm": 100,
+  "nodes": [
+    {
+      "id": "src1",
+      "type": "source",
+      "x": 60,
+      "y": 200,
+      "props": {
+        "interval": 1,
+        "noteIndex": -1,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "quant1",
+      "type": "quantizer",
+      "x": 160,
+      "y": 200,
+      "props": {
+        "strength": 1
+      }
+    },
+    {
+      "id": "pol1",
+      "type": "oscillator",
+      "x": 260,
+      "y": 200,
+      "props": {
+        "wave": "sine",
+        "attack": 0.01,
+        "decay": 0.3
+      }
+    },
+    {
+      "id": "out1",
+      "type": "speaker",
+      "x": 380,
+      "y": 200,
+      "props": {
+        "reverb": 0.4,
+        "pan": -0.5
+      }
+    },
+    {
+      "id": "src2",
+      "type": "source",
+      "x": 60,
+      "y": 320,
+      "props": {
+        "interval": 2,
+        "noteIndex": -1,
+        "intensity": 0.5
+      }
+    },
+    {
+      "id": "quant2",
+      "type": "quantizer",
+      "x": 160,
+      "y": 320,
+      "props": {
+        "strength": 0.7
+      }
+    },
+    {
+      "id": "pol2",
+      "type": "oscillator",
+      "x": 260,
+      "y": 320,
+      "props": {
+        "wave": "triangle",
+        "attack": 0.01,
+        "decay": 0.5
+      }
+    },
+    {
+      "id": "out2",
+      "type": "speaker",
+      "x": 380,
+      "y": 320,
+      "props": {
+        "reverb": 0.5,
+        "pan": 0
+      }
+    },
+    {
+      "id": "src3",
+      "type": "source",
+      "x": 60,
+      "y": 440,
+      "props": {
+        "interval": 3,
+        "noteIndex": -1,
+        "intensity": 0.4
+      }
+    },
+    {
+      "id": "p_oct",
+      "type": "pitch",
+      "x": 140,
+      "y": 440,
+      "props": {
+        "shift": -12
+      }
+    },
+    {
+      "id": "quant3",
+      "type": "quantizer",
+      "x": 220,
+      "y": 440,
+      "props": {
+        "strength": 1
+      }
+    },
+    {
+      "id": "pol3",
+      "type": "oscillator",
+      "x": 320,
+      "y": 440,
+      "props": {
+        "wave": "sawtooth",
+        "attack": 0.1,
+        "decay": 0.8
+      }
+    },
+    {
+      "id": "out3",
+      "type": "speaker",
+      "x": 440,
+      "y": 440,
+      "props": {
+        "reverb": 0.3,
+        "pan": 0.5
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1a",
+      "from": "src1",
+      "to": "quant1"
+    },
+    {
+      "id": "e1b",
+      "from": "quant1",
+      "to": "pol1"
+    },
+    {
+      "id": "e1c",
+      "from": "pol1",
+      "to": "out1"
+    },
+    {
+      "id": "e2a",
+      "from": "src2",
+      "to": "quant2"
+    },
+    {
+      "id": "e2b",
+      "from": "quant2",
+      "to": "pol2"
+    },
+    {
+      "id": "e2c",
+      "from": "pol2",
+      "to": "out2"
+    },
+    {
+      "id": "e3a",
+      "from": "src3",
+      "to": "p_oct"
+    },
+    {
+      "id": "e3b",
+      "from": "p_oct",
+      "to": "quant3"
+    },
+    {
+      "id": "e3c",
+      "from": "quant3",
+      "to": "pol3"
+    },
+    {
+      "id": "e3d",
+      "from": "pol3",
+      "to": "out3"
+    }
+  ]
+}

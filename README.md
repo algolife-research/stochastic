@@ -11,7 +11,7 @@ The core idea: **Space is Time**. Musical events (packets) travel along edges at
 - **Real-Time Synthesis** — AudioWorklet-based synth with layered oscillators (additive/ring/FM), unison, filters, and noise
 - **Scenes & Arrangement** — compose multi-scene pieces on a timeline, or improvise in Jam mode with scene triggers
 - **Tunnels** — encapsulate processing chains into reusable instrument nodes
-- **Examples Library** — 50 built-in compositions across tutorials, demos, synthesis, generative, and orchestral categories, plus full pieces in [`examples/`](examples/)
+- **Examples Library** — 50+ compositions across tutorials, demos, synthesis, generative, and orchestral categories, plus full multi-scene pieces (the Dune suite and more). Fetched on demand and cached; only the tutorial and welcome demo are bundled, so onboarding works offline
 - **Export** — render compositions to WAV, or capture visualization videos
 - **Cloud Projects** — optional sign-in to save and sync projects (Supabase)
 - **AI Assistant** — describe what you want and let the assistant build or modify the graph (requires credits)
@@ -39,6 +39,21 @@ npm run lint       # ESLint
 npm run test:run   # Vitest (includes the example-library validation suite)
 npm run build      # production build
 ```
+
+### Example library
+
+The examples menu is populated from a static library (`index.json` manifest +
+per-example JSON + full `.sto` compositions), fetched lazily and cached in
+localStorage. By default it is served from `public/examples-library/` next to
+the app; set `VITE_EXAMPLES_BASE_URL` to host it elsewhere (e.g. a public
+`stochastic-examples` repository's raw URL). Regenerate the manifest with:
+
+```bash
+npx tsx scripts/export-example-library.mjs
+```
+
+Fetched examples are validated (node types, prop names, edge integrity)
+before they touch the project; the same rules run in the test suite.
 
 ### Desktop (Tauri)
 

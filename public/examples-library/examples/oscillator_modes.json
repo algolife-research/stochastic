@@ -1,0 +1,721 @@
+{
+  "name": "Tutorial: Oscillator Modes",
+  "category": "Tutorials",
+  "description": "Learn the three oscillator modes: Additive (layering), Ring (multiplication), and FM (frequency modulation). Each scene demonstrates one mode with the same base frequency for easy comparison.",
+  "bpm": 80,
+  "scenes": [
+    {
+      "name": "1. Introduction",
+      "color": "#9c27b0",
+      "durationBeats": 16,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "intro_src",
+          "type": "source",
+          "x": 200,
+          "y": 300,
+          "props": {
+            "interval": 2,
+            "midiNote": 48,
+            "noteIndex": -2,
+            "intensity": 0.7
+          }
+        },
+        {
+          "id": "intro_osc",
+          "type": "oscillator",
+          "x": 400,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.01,
+            "decay": 1.5,
+            "mix": 1
+          }
+        },
+        {
+          "id": "intro_spk",
+          "type": "speaker",
+          "x": 600,
+          "y": 300,
+          "props": {
+            "reverb": 0.4,
+            "pan": 0,
+            "holdTime": 0.5,
+            "releaseTime": 0.8
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "intro_src",
+          "to": "intro_osc"
+        },
+        {
+          "id": "e2",
+          "from": "intro_osc",
+          "to": "intro_spk"
+        }
+      ]
+    },
+    {
+      "name": "2. Additive: Organ",
+      "color": "#4caf50",
+      "durationBeats": 16,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "add_src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 2,
+            "midiNote": 48,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "add_osc1",
+          "type": "oscillator",
+          "x": 280,
+          "y": 200,
+          "props": {
+            "wave": "sine",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.01,
+            "decay": 2,
+            "mix": 1
+          }
+        },
+        {
+          "id": "add_osc2",
+          "type": "oscillator",
+          "x": 280,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "ratio": 2,
+            "mode": "additive",
+            "attack": 0.01,
+            "decay": 1.5,
+            "mix": 0.5
+          }
+        },
+        {
+          "id": "add_osc3",
+          "type": "oscillator",
+          "x": 280,
+          "y": 400,
+          "props": {
+            "wave": "sine",
+            "ratio": 3,
+            "mode": "additive",
+            "attack": 0.01,
+            "decay": 1,
+            "mix": 0.3
+          }
+        },
+        {
+          "id": "add_spk",
+          "type": "speaker",
+          "x": 500,
+          "y": 300,
+          "props": {
+            "reverb": 0.5,
+            "pan": 0,
+            "holdTime": 0.5,
+            "releaseTime": 1
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "add_src",
+          "to": "add_osc1"
+        },
+        {
+          "id": "e2",
+          "from": "add_src",
+          "to": "add_osc2"
+        },
+        {
+          "id": "e3",
+          "from": "add_src",
+          "to": "add_osc3"
+        },
+        {
+          "id": "e4",
+          "from": "add_osc1",
+          "to": "add_spk"
+        },
+        {
+          "id": "e5",
+          "from": "add_osc2",
+          "to": "add_spk"
+        },
+        {
+          "id": "e6",
+          "from": "add_osc3",
+          "to": "add_spk"
+        }
+      ]
+    },
+    {
+      "name": "3. Ring: Metallic",
+      "color": "#ff9800",
+      "durationBeats": 16,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "ring_src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 2,
+            "midiNote": 48,
+            "noteIndex": -2,
+            "intensity": 0.7
+          }
+        },
+        {
+          "id": "ring_osc1",
+          "type": "oscillator",
+          "x": 280,
+          "y": 250,
+          "props": {
+            "wave": "sine",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.01,
+            "decay": 2,
+            "mix": 1
+          }
+        },
+        {
+          "id": "ring_osc2",
+          "type": "oscillator",
+          "x": 280,
+          "y": 350,
+          "props": {
+            "wave": "sine",
+            "ratio": 1.4,
+            "mode": "ring",
+            "attack": 0.01,
+            "decay": 2,
+            "mix": 1
+          }
+        },
+        {
+          "id": "ring_spk",
+          "type": "speaker",
+          "x": 500,
+          "y": 300,
+          "props": {
+            "reverb": 0.6,
+            "pan": 0,
+            "holdTime": 0.3,
+            "releaseTime": 1.5
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "ring_src",
+          "to": "ring_osc1"
+        },
+        {
+          "id": "e2",
+          "from": "ring_src",
+          "to": "ring_osc2"
+        },
+        {
+          "id": "e3",
+          "from": "ring_osc1",
+          "to": "ring_spk"
+        },
+        {
+          "id": "e4",
+          "from": "ring_osc2",
+          "to": "ring_spk"
+        }
+      ]
+    },
+    {
+      "name": "4. FM: Bell",
+      "color": "#2196f3",
+      "durationBeats": 16,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "fm_src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 2,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.7
+          }
+        },
+        {
+          "id": "fm_mod",
+          "type": "oscillator",
+          "x": 300,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "ratio": 3.5,
+            "mode": "fm",
+            "modulationIndex": 5,
+            "feedback": 0,
+            "attack": 0.001,
+            "decay": 1.5,
+            "mix": 0.5
+          }
+        },
+        {
+          "id": "fm_car",
+          "type": "oscillator",
+          "x": 500,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.001,
+            "decay": 3,
+            "mix": 1
+          }
+        },
+        {
+          "id": "fm_spk",
+          "type": "speaker",
+          "x": 700,
+          "y": 300,
+          "props": {
+            "reverb": 0.7,
+            "pan": 0,
+            "holdTime": 0.1,
+            "releaseTime": 2
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "fm_src",
+          "to": "fm_mod"
+        },
+        {
+          "id": "e2",
+          "from": "fm_mod",
+          "to": "fm_car"
+        },
+        {
+          "id": "e3",
+          "from": "fm_car",
+          "to": "fm_spk"
+        }
+      ]
+    },
+    {
+      "name": "5. FM: E-Piano",
+      "color": "#3f51b5",
+      "durationBeats": 16,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "ep_src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 1,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "ep_mod",
+          "type": "oscillator",
+          "x": 300,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "ratio": 2,
+            "mode": "fm",
+            "modulationIndex": 2.5,
+            "feedback": 0,
+            "attack": 0.01,
+            "decay": 0.8,
+            "mix": 0.8
+          }
+        },
+        {
+          "id": "ep_car",
+          "type": "oscillator",
+          "x": 500,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.01,
+            "decay": 1.5,
+            "mix": 1
+          }
+        },
+        {
+          "id": "ep_spk",
+          "type": "speaker",
+          "x": 700,
+          "y": 300,
+          "props": {
+            "reverb": 0.4,
+            "pan": 0,
+            "holdTime": 0.2,
+            "releaseTime": 0.8
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "ep_src",
+          "to": "ep_mod"
+        },
+        {
+          "id": "e2",
+          "from": "ep_mod",
+          "to": "ep_car"
+        },
+        {
+          "id": "e3",
+          "from": "ep_car",
+          "to": "ep_spk"
+        }
+      ]
+    },
+    {
+      "name": "6. FM: Feedback Bass",
+      "color": "#673ab7",
+      "durationBeats": 16,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "fb_src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 1,
+            "midiNote": 36,
+            "noteIndex": -2,
+            "intensity": 0.8
+          }
+        },
+        {
+          "id": "fb_mod",
+          "type": "oscillator",
+          "x": 300,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "ratio": 1,
+            "mode": "fm",
+            "modulationIndex": 3,
+            "feedback": 0.4,
+            "attack": 0.001,
+            "decay": 0.3,
+            "mix": 1
+          }
+        },
+        {
+          "id": "fb_car",
+          "type": "oscillator",
+          "x": 500,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "ratio": 0.5,
+            "mode": "additive",
+            "attack": 0.001,
+            "decay": 0.5,
+            "mix": 1
+          }
+        },
+        {
+          "id": "fb_flt",
+          "type": "filter",
+          "x": 650,
+          "y": 300,
+          "props": {
+            "cutoff": 800,
+            "attack": 0.01,
+            "decay": 0.2,
+            "mod": 0.5
+          }
+        },
+        {
+          "id": "fb_spk",
+          "type": "speaker",
+          "x": 800,
+          "y": 300,
+          "props": {
+            "reverb": 0.2,
+            "pan": 0,
+            "holdTime": 0.1,
+            "releaseTime": 0.3
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "fb_src",
+          "to": "fb_mod"
+        },
+        {
+          "id": "e2",
+          "from": "fb_mod",
+          "to": "fb_car"
+        },
+        {
+          "id": "e3",
+          "from": "fb_car",
+          "to": "fb_flt"
+        },
+        {
+          "id": "e4",
+          "from": "fb_flt",
+          "to": "fb_spk"
+        }
+      ]
+    },
+    {
+      "name": "7. Compare All",
+      "color": "#e91e63",
+      "durationBeats": 24,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "cmp_src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 3,
+            "midiNote": 48,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "cmp_split",
+          "type": "splitter",
+          "x": 220,
+          "y": 300,
+          "props": {
+            "behavior": "broadcast"
+          }
+        },
+        {
+          "id": "cmp_add1",
+          "type": "oscillator",
+          "x": 380,
+          "y": 150,
+          "props": {
+            "wave": "sine",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.01,
+            "decay": 2,
+            "mix": 1
+          }
+        },
+        {
+          "id": "cmp_add2",
+          "type": "oscillator",
+          "x": 380,
+          "y": 220,
+          "props": {
+            "wave": "sine",
+            "ratio": 2,
+            "mode": "additive",
+            "attack": 0.01,
+            "decay": 1.5,
+            "mix": 0.4
+          }
+        },
+        {
+          "id": "cmp_add_spk",
+          "type": "speaker",
+          "x": 560,
+          "y": 185,
+          "props": {
+            "reverb": 0.3,
+            "pan": -0.7,
+            "holdTime": 0.5,
+            "releaseTime": 0.8
+          }
+        },
+        {
+          "id": "cmp_ring1",
+          "type": "oscillator",
+          "x": 380,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.01,
+            "decay": 2,
+            "mix": 1
+          }
+        },
+        {
+          "id": "cmp_ring2",
+          "type": "oscillator",
+          "x": 500,
+          "y": 300,
+          "props": {
+            "wave": "sine",
+            "ratio": 1.5,
+            "mode": "ring",
+            "attack": 0.01,
+            "decay": 2,
+            "mix": 1
+          }
+        },
+        {
+          "id": "cmp_ring_spk",
+          "type": "speaker",
+          "x": 650,
+          "y": 300,
+          "props": {
+            "reverb": 0.4,
+            "pan": 0,
+            "holdTime": 0.5,
+            "releaseTime": 1
+          }
+        },
+        {
+          "id": "cmp_fm_mod",
+          "type": "oscillator",
+          "x": 380,
+          "y": 420,
+          "props": {
+            "wave": "sine",
+            "ratio": 3,
+            "mode": "fm",
+            "modulationIndex": 4,
+            "feedback": 0,
+            "attack": 0.001,
+            "decay": 1,
+            "mix": 0.6
+          }
+        },
+        {
+          "id": "cmp_fm_car",
+          "type": "oscillator",
+          "x": 530,
+          "y": 420,
+          "props": {
+            "wave": "sine",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.001,
+            "decay": 2.5,
+            "mix": 1
+          }
+        },
+        {
+          "id": "cmp_fm_spk",
+          "type": "speaker",
+          "x": 680,
+          "y": 420,
+          "props": {
+            "reverb": 0.6,
+            "pan": 0.7,
+            "holdTime": 0.2,
+            "releaseTime": 1.5
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e0",
+          "from": "cmp_src",
+          "to": "cmp_split"
+        },
+        {
+          "id": "ea1",
+          "from": "cmp_split",
+          "to": "cmp_add1"
+        },
+        {
+          "id": "ea2",
+          "from": "cmp_split",
+          "to": "cmp_add2"
+        },
+        {
+          "id": "ea3",
+          "from": "cmp_add1",
+          "to": "cmp_add_spk"
+        },
+        {
+          "id": "ea4",
+          "from": "cmp_add2",
+          "to": "cmp_add_spk"
+        },
+        {
+          "id": "er1",
+          "from": "cmp_split",
+          "to": "cmp_ring1"
+        },
+        {
+          "id": "er2",
+          "from": "cmp_split",
+          "to": "cmp_ring2"
+        },
+        {
+          "id": "er3",
+          "from": "cmp_ring1",
+          "to": "cmp_ring_spk"
+        },
+        {
+          "id": "er4",
+          "from": "cmp_ring2",
+          "to": "cmp_ring_spk"
+        },
+        {
+          "id": "ef1",
+          "from": "cmp_split",
+          "to": "cmp_fm_mod"
+        },
+        {
+          "id": "ef2",
+          "from": "cmp_fm_mod",
+          "to": "cmp_fm_car"
+        },
+        {
+          "id": "ef3",
+          "from": "cmp_fm_car",
+          "to": "cmp_fm_spk"
+        }
+      ]
+    }
+  ]
+}

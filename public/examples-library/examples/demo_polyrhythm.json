@@ -1,0 +1,139 @@
+{
+  "name": "Demo: Polyrhythm",
+  "category": "Demos",
+  "description": "Three independent rhythms at 4, 3, and 5 beats create shifting patterns.",
+  "bpm": 90,
+  "nodes": [
+    {
+      "id": "src4",
+      "type": "source",
+      "x": 60,
+      "y": 180,
+      "props": {
+        "interval": 4,
+        "midiNote": 60,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "pol4",
+      "type": "oscillator",
+      "x": 180,
+      "y": 180,
+      "props": {
+        "wave": "sine",
+        "attack": 0.01,
+        "decay": 0.6
+      }
+    },
+    {
+      "id": "spk4",
+      "type": "speaker",
+      "x": 300,
+      "y": 180,
+      "props": {
+        "reverb": 0.4,
+        "pan": -0.5
+      }
+    },
+    {
+      "id": "src3",
+      "type": "source",
+      "x": 60,
+      "y": 300,
+      "props": {
+        "interval": 3,
+        "midiNote": 67,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "pol3",
+      "type": "oscillator",
+      "x": 180,
+      "y": 300,
+      "props": {
+        "wave": "triangle",
+        "attack": 0.01,
+        "decay": 0.4
+      }
+    },
+    {
+      "id": "spk3",
+      "type": "speaker",
+      "x": 300,
+      "y": 300,
+      "props": {
+        "reverb": 0.4,
+        "pan": 0
+      }
+    },
+    {
+      "id": "src5",
+      "type": "source",
+      "x": 60,
+      "y": 420,
+      "props": {
+        "interval": 5,
+        "midiNote": 55,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "pol5",
+      "type": "oscillator",
+      "x": 180,
+      "y": 420,
+      "props": {
+        "wave": "square",
+        "attack": 0.01,
+        "decay": 0.3
+      }
+    },
+    {
+      "id": "spk5",
+      "type": "speaker",
+      "x": 300,
+      "y": 420,
+      "props": {
+        "reverb": 0.4,
+        "pan": 0.5
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_4a",
+      "from": "src4",
+      "to": "pol4"
+    },
+    {
+      "id": "e_4b",
+      "from": "pol4",
+      "to": "spk4"
+    },
+    {
+      "id": "e_3a",
+      "from": "src3",
+      "to": "pol3"
+    },
+    {
+      "id": "e_3b",
+      "from": "pol3",
+      "to": "spk3"
+    },
+    {
+      "id": "e_5a",
+      "from": "src5",
+      "to": "pol5"
+    },
+    {
+      "id": "e_5b",
+      "from": "pol5",
+      "to": "spk5"
+    }
+  ]
+}

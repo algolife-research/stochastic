@@ -1,0 +1,188 @@
+{
+  "name": "Advanced: Ambient Drone",
+  "category": "Composition",
+  "description": "Slow, evolving drone with high reverb and long decays for meditative atmosphere.",
+  "bpm": 40,
+  "nodes": [
+    {
+      "id": "src1",
+      "type": "source",
+      "x": 60,
+      "y": 200,
+      "props": {
+        "interval": 8,
+        "midiNote": 48,
+        "noteIndex": -2,
+        "intensity": 0.5
+      }
+    },
+    {
+      "id": "pol1",
+      "type": "oscillator",
+      "x": 180,
+      "y": 200,
+      "props": {
+        "wave": "sine",
+        "attack": 2,
+        "decay": 5
+      }
+    },
+    {
+      "id": "out1",
+      "type": "speaker",
+      "x": 300,
+      "y": 200,
+      "props": {
+        "reverb": 0.95,
+        "pan": -0.5
+      }
+    },
+    {
+      "id": "src2",
+      "type": "source",
+      "x": 60,
+      "y": 350,
+      "props": {
+        "interval": 12,
+        "midiNote": 55,
+        "noteIndex": -2,
+        "intensity": 0.4
+      }
+    },
+    {
+      "id": "pol2",
+      "type": "oscillator",
+      "x": 180,
+      "y": 350,
+      "props": {
+        "wave": "triangle",
+        "attack": 1.5,
+        "decay": 4
+      }
+    },
+    {
+      "id": "flt2",
+      "type": "filter",
+      "x": 280,
+      "y": 350,
+      "props": {
+        "cutoff": 500,
+        "mod": 300,
+        "attack": 0.5,
+        "decay": 2
+      }
+    },
+    {
+      "id": "out2",
+      "type": "speaker",
+      "x": 400,
+      "y": 350,
+      "props": {
+        "reverb": 0.9,
+        "pan": 0.5
+      }
+    },
+    {
+      "id": "src3",
+      "type": "source",
+      "x": 60,
+      "y": 500,
+      "props": {
+        "interval": 16,
+        "midiNote": 43,
+        "noteIndex": -2,
+        "intensity": 0.3
+      }
+    },
+    {
+      "id": "d1",
+      "type": "delay",
+      "x": 150,
+      "y": 500,
+      "props": {
+        "delayTime": 4
+      }
+    },
+    {
+      "id": "pol3",
+      "type": "oscillator",
+      "x": 250,
+      "y": 500,
+      "props": {
+        "wave": "sine",
+        "attack": 1,
+        "decay": 6
+      }
+    },
+    {
+      "id": "out3",
+      "type": "speaker",
+      "x": 380,
+      "y": 500,
+      "props": {
+        "reverb": 0.85,
+        "pan": 0
+      }
+    },
+    {
+      "id": "lfo_low",
+      "type": "lfo",
+      "x": 50,
+      "y": 100,
+      "props": {
+        "rate": 0.1,
+        "min": 200,
+        "max": 800,
+        "shape": "sine"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "src1",
+      "to": "pol1"
+    },
+    {
+      "id": "e2",
+      "from": "pol1",
+      "to": "out1"
+    },
+    {
+      "id": "e3",
+      "from": "src2",
+      "to": "pol2"
+    },
+    {
+      "id": "e4",
+      "from": "pol2",
+      "to": "flt2"
+    },
+    {
+      "id": "e5",
+      "from": "flt2",
+      "to": "out2"
+    },
+    {
+      "id": "e6",
+      "from": "src3",
+      "to": "d1"
+    },
+    {
+      "id": "e7",
+      "from": "d1",
+      "to": "pol3"
+    },
+    {
+      "id": "e8",
+      "from": "pol3",
+      "to": "out3"
+    },
+    {
+      "id": "e_lfo",
+      "from": "lfo_low",
+      "to": "flt2",
+      "targetParam": "cutoff"
+    }
+  ]
+}

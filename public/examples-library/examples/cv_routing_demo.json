@@ -1,0 +1,179 @@
+{
+  "name": "Advanced: CV Routing",
+  "category": "Effects & Routing",
+  "description": "Multiple LFOs modulate filter cutoff, pan, and gain for complex modulation effects.",
+  "bpm": 70,
+  "nodes": [
+    {
+      "id": "src",
+      "type": "source",
+      "x": 80,
+      "y": 300,
+      "props": {
+        "interval": 3,
+        "midiNote": 48,
+        "noteIndex": -2,
+        "intensity": 0.7
+      }
+    },
+    {
+      "id": "pol",
+      "type": "oscillator",
+      "x": 200,
+      "y": 300,
+      "props": {
+        "wave": "sawtooth",
+        "attack": 0.8,
+        "decay": 2.5
+      }
+    },
+    {
+      "id": "gain",
+      "type": "gain",
+      "x": 320,
+      "y": 300,
+      "props": {
+        "value": 0.8
+      }
+    },
+    {
+      "id": "flt",
+      "type": "filter",
+      "x": 440,
+      "y": 300,
+      "props": {
+        "cutoff": 1000,
+        "mod": 0
+      }
+    },
+    {
+      "id": "out",
+      "type": "speaker",
+      "x": 560,
+      "y": 300,
+      "props": {
+        "reverb": 0.7,
+        "pan": 0
+      }
+    },
+    {
+      "id": "lfo_cutoff",
+      "type": "lfo",
+      "x": 440,
+      "y": 150,
+      "props": {
+        "rate": 0.2,
+        "shape": "sine",
+        "min": 200,
+        "max": 3000
+      }
+    },
+    {
+      "id": "lfo_pan",
+      "type": "lfo",
+      "x": 560,
+      "y": 150,
+      "props": {
+        "rate": 0.15,
+        "shape": "triangle",
+        "min": -1,
+        "max": 1
+      }
+    },
+    {
+      "id": "lfo_gain",
+      "type": "lfo",
+      "x": 320,
+      "y": 450,
+      "props": {
+        "rate": 0.5,
+        "shape": "sine",
+        "min": 0.3,
+        "max": 1
+      }
+    },
+    {
+      "id": "src2",
+      "type": "source",
+      "x": 80,
+      "y": 500,
+      "props": {
+        "interval": 6,
+        "midiNote": 36,
+        "noteIndex": -2,
+        "intensity": 0.8
+      }
+    },
+    {
+      "id": "pol2",
+      "type": "oscillator",
+      "x": 200,
+      "y": 500,
+      "props": {
+        "wave": "sine",
+        "attack": 0.5,
+        "decay": 3
+      }
+    },
+    {
+      "id": "out2",
+      "type": "speaker",
+      "x": 320,
+      "y": 500,
+      "props": {
+        "reverb": 0.5,
+        "pan": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "src",
+      "to": "pol"
+    },
+    {
+      "id": "e2",
+      "from": "pol",
+      "to": "gain"
+    },
+    {
+      "id": "e3",
+      "from": "gain",
+      "to": "flt"
+    },
+    {
+      "id": "e4",
+      "from": "flt",
+      "to": "out"
+    },
+    {
+      "id": "e_lfo1",
+      "from": "lfo_cutoff",
+      "to": "flt",
+      "targetParam": "cutoff"
+    },
+    {
+      "id": "e_lfo2",
+      "from": "lfo_pan",
+      "to": "out",
+      "targetParam": "pan"
+    },
+    {
+      "id": "e_lfo3",
+      "from": "lfo_gain",
+      "to": "gain",
+      "targetParam": "value"
+    },
+    {
+      "id": "e5",
+      "from": "src2",
+      "to": "pol2"
+    },
+    {
+      "id": "e6",
+      "from": "pol2",
+      "to": "out2"
+    }
+  ]
+}

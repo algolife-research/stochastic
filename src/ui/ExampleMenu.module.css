@@ -164,3 +164,11 @@
 .categoryNodes .nodeButton {
   padding-left: 20px;
 }
+
+.notice {
+  padding: 8px 12px;
+  font-size: 11.5px;
+  color: #e0a94f;
+  background: rgba(224, 169, 79, 0.08);
+  border-bottom: 1px solid #333;
+}

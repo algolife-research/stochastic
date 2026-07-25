@@ -1,0 +1,222 @@
+{
+  "name": "Advanced: Delay Network",
+  "category": "Effects & Routing",
+  "description": "Multiple interconnected delays create a complex echo network with pitch shifting.",
+  "bpm": 90,
+  "nodes": [
+    {
+      "id": "src",
+      "type": "source",
+      "x": 60,
+      "y": 300,
+      "props": {
+        "interval": 4,
+        "midiNote": 60,
+        "noteIndex": -2,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "pol",
+      "type": "oscillator",
+      "x": 160,
+      "y": 300,
+      "props": {
+        "wave": "sine",
+        "attack": 0.05,
+        "decay": 0.6
+      }
+    },
+    {
+      "id": "split",
+      "type": "splitter",
+      "x": 260,
+      "y": 300,
+      "props": {}
+    },
+    {
+      "id": "out_dry",
+      "type": "speaker",
+      "x": 400,
+      "y": 180,
+      "props": {
+        "reverb": 0.2,
+        "pan": 0
+      }
+    },
+    {
+      "id": "d1",
+      "type": "delay",
+      "x": 360,
+      "y": 300,
+      "props": {
+        "delayTime": 0.5
+      }
+    },
+    {
+      "id": "g1",
+      "type": "gain",
+      "x": 460,
+      "y": 300,
+      "props": {
+        "value": 0.7
+      }
+    },
+    {
+      "id": "out1",
+      "type": "speaker",
+      "x": 560,
+      "y": 300,
+      "props": {
+        "reverb": 0.4,
+        "pan": -0.4
+      }
+    },
+    {
+      "id": "d2",
+      "type": "delay",
+      "x": 360,
+      "y": 420,
+      "props": {
+        "delayTime": 1
+      }
+    },
+    {
+      "id": "p2",
+      "type": "pitch",
+      "x": 460,
+      "y": 420,
+      "props": {
+        "shift": 5
+      }
+    },
+    {
+      "id": "g2",
+      "type": "gain",
+      "x": 560,
+      "y": 420,
+      "props": {
+        "value": 0.5
+      }
+    },
+    {
+      "id": "out2",
+      "type": "speaker",
+      "x": 660,
+      "y": 420,
+      "props": {
+        "reverb": 0.5,
+        "pan": 0.4
+      }
+    },
+    {
+      "id": "d3",
+      "type": "delay",
+      "x": 360,
+      "y": 540,
+      "props": {
+        "delayTime": 1.5
+      }
+    },
+    {
+      "id": "p3",
+      "type": "pitch",
+      "x": 460,
+      "y": 540,
+      "props": {
+        "shift": -7
+      }
+    },
+    {
+      "id": "g3",
+      "type": "gain",
+      "x": 560,
+      "y": 540,
+      "props": {
+        "value": 0.3
+      }
+    },
+    {
+      "id": "out3",
+      "type": "speaker",
+      "x": 660,
+      "y": 540,
+      "props": {
+        "reverb": 0.7,
+        "pan": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_s",
+      "from": "src",
+      "to": "pol"
+    },
+    {
+      "id": "e_sp",
+      "from": "pol",
+      "to": "split"
+    },
+    {
+      "id": "e_dry",
+      "from": "split",
+      "to": "out_dry"
+    },
+    {
+      "id": "e1a",
+      "from": "split",
+      "to": "d1"
+    },
+    {
+      "id": "e1b",
+      "from": "d1",
+      "to": "g1"
+    },
+    {
+      "id": "e1c",
+      "from": "g1",
+      "to": "out1"
+    },
+    {
+      "id": "e2a",
+      "from": "split",
+      "to": "d2"
+    },
+    {
+      "id": "e2b",
+      "from": "d2",
+      "to": "p2"
+    },
+    {
+      "id": "e2c",
+      "from": "p2",
+      "to": "g2"
+    },
+    {
+      "id": "e2d",
+      "from": "g2",
+      "to": "out2"
+    },
+    {
+      "id": "e3a",
+      "from": "split",
+      "to": "d3"
+    },
+    {
+      "id": "e3b",
+      "from": "d3",
+      "to": "p3"
+    },
+    {
+      "id": "e3c",
+      "from": "p3",
+      "to": "g3"
+    },
+    {
+      "id": "e3d",
+      "from": "g3",
+      "to": "out3"
+    }
+  ]
+}

@@ -1,0 +1,437 @@
+{
+  "name": "Tutorial: Noise Types",
+  "category": "Tutorials",
+  "description": "Learn the three noise types: White (equal energy per frequency), Pink (-3dB/octave, natural), and Brown (-6dB/octave, deep rumble). Use noise for percussion, textures, and effects.",
+  "bpm": 100,
+  "scenes": [
+    {
+      "name": "1. White Noise",
+      "color": "#ffffff",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "wn_src",
+          "type": "source",
+          "x": 150,
+          "y": 300,
+          "props": {
+            "interval": 0.5,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.4
+          }
+        },
+        {
+          "id": "wn_osc",
+          "type": "oscillator",
+          "x": 350,
+          "y": 300,
+          "props": {
+            "wave": "white",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.001,
+            "decay": 0.15,
+            "mix": 1
+          }
+        },
+        {
+          "id": "wn_spk",
+          "type": "speaker",
+          "x": 550,
+          "y": 300,
+          "props": {
+            "reverb": 0.2,
+            "pan": 0,
+            "holdTime": 0.05,
+            "releaseTime": 0.1
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "wn_src",
+          "to": "wn_osc"
+        },
+        {
+          "id": "e2",
+          "from": "wn_osc",
+          "to": "wn_spk"
+        }
+      ]
+    },
+    {
+      "name": "2. Pink Noise",
+      "color": "#e91e63",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "pn_src",
+          "type": "source",
+          "x": 150,
+          "y": 300,
+          "props": {
+            "interval": 0.5,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.5
+          }
+        },
+        {
+          "id": "pn_osc",
+          "type": "oscillator",
+          "x": 350,
+          "y": 300,
+          "props": {
+            "wave": "pink",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.001,
+            "decay": 0.2,
+            "mix": 1
+          }
+        },
+        {
+          "id": "pn_spk",
+          "type": "speaker",
+          "x": 550,
+          "y": 300,
+          "props": {
+            "reverb": 0.3,
+            "pan": 0,
+            "holdTime": 0.05,
+            "releaseTime": 0.15
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "pn_src",
+          "to": "pn_osc"
+        },
+        {
+          "id": "e2",
+          "from": "pn_osc",
+          "to": "pn_spk"
+        }
+      ]
+    },
+    {
+      "name": "3. Brown Noise",
+      "color": "#795548",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "bn_src",
+          "type": "source",
+          "x": 150,
+          "y": 300,
+          "props": {
+            "interval": 0.5,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "bn_osc",
+          "type": "oscillator",
+          "x": 350,
+          "y": 300,
+          "props": {
+            "wave": "brown",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.001,
+            "decay": 0.3,
+            "mix": 1
+          }
+        },
+        {
+          "id": "bn_spk",
+          "type": "speaker",
+          "x": 550,
+          "y": 300,
+          "props": {
+            "reverb": 0.4,
+            "pan": 0,
+            "holdTime": 0.1,
+            "releaseTime": 0.2
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "bn_src",
+          "to": "bn_osc"
+        },
+        {
+          "id": "e2",
+          "from": "bn_osc",
+          "to": "bn_spk"
+        }
+      ]
+    },
+    {
+      "name": "4. Hi-Hat Pattern",
+      "color": "#9e9e9e",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "hh_src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 0.25,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.35
+          }
+        },
+        {
+          "id": "hh_osc",
+          "type": "oscillator",
+          "x": 250,
+          "y": 300,
+          "props": {
+            "wave": "white",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.001,
+            "decay": 0.08,
+            "mix": 1
+          }
+        },
+        {
+          "id": "hh_flt",
+          "type": "filter",
+          "x": 400,
+          "y": 300,
+          "props": {
+            "type": "highpass",
+            "cutoff": 8000,
+            "resonance": 0.2,
+            "attack": 0,
+            "decay": 0,
+            "mod": 0
+          }
+        },
+        {
+          "id": "hh_spk",
+          "type": "speaker",
+          "x": 550,
+          "y": 300,
+          "props": {
+            "reverb": 0.15,
+            "pan": 0,
+            "holdTime": 0.02,
+            "releaseTime": 0.05
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "hh_src",
+          "to": "hh_osc"
+        },
+        {
+          "id": "e2",
+          "from": "hh_osc",
+          "to": "hh_flt"
+        },
+        {
+          "id": "e3",
+          "from": "hh_flt",
+          "to": "hh_spk"
+        }
+      ]
+    },
+    {
+      "name": "5. Snare Hit",
+      "color": "#ff5722",
+      "durationBeats": 8,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "sn_src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 1,
+            "midiNote": 60,
+            "noteIndex": -2,
+            "intensity": 0.6
+          }
+        },
+        {
+          "id": "sn_osc",
+          "type": "oscillator",
+          "x": 250,
+          "y": 300,
+          "props": {
+            "wave": "pink",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.001,
+            "decay": 0.2,
+            "mix": 1
+          }
+        },
+        {
+          "id": "sn_flt",
+          "type": "filter",
+          "x": 400,
+          "y": 300,
+          "props": {
+            "type": "bandpass",
+            "cutoff": 2000,
+            "resonance": 0.3,
+            "attack": 0,
+            "decay": 0,
+            "mod": 0
+          }
+        },
+        {
+          "id": "sn_spk",
+          "type": "speaker",
+          "x": 550,
+          "y": 300,
+          "props": {
+            "reverb": 0.25,
+            "pan": 0,
+            "holdTime": 0.05,
+            "releaseTime": 0.15
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "sn_src",
+          "to": "sn_osc"
+        },
+        {
+          "id": "e2",
+          "from": "sn_osc",
+          "to": "sn_flt"
+        },
+        {
+          "id": "e3",
+          "from": "sn_flt",
+          "to": "sn_spk"
+        }
+      ]
+    },
+    {
+      "name": "6. Textured Pad",
+      "color": "#3f51b5",
+      "durationBeats": 16,
+      "loopCount": -1,
+      "nodes": [
+        {
+          "id": "pad_src",
+          "type": "source",
+          "x": 100,
+          "y": 300,
+          "props": {
+            "interval": 4,
+            "midiNote": 48,
+            "noteIndex": -2,
+            "intensity": 0.5
+          }
+        },
+        {
+          "id": "pad_sine",
+          "type": "oscillator",
+          "x": 280,
+          "y": 200,
+          "props": {
+            "wave": "sine",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.5,
+            "decay": 3,
+            "mix": 0.8
+          }
+        },
+        {
+          "id": "pad_noise",
+          "type": "oscillator",
+          "x": 280,
+          "y": 400,
+          "props": {
+            "wave": "brown",
+            "ratio": 1,
+            "mode": "additive",
+            "attack": 0.3,
+            "decay": 2.5,
+            "mix": 0.15
+          }
+        },
+        {
+          "id": "pad_flt",
+          "type": "filter",
+          "x": 450,
+          "y": 300,
+          "props": {
+            "type": "lowpass",
+            "cutoff": 1500,
+            "resonance": 0.1,
+            "attack": 0,
+            "decay": 0,
+            "mod": 0
+          }
+        },
+        {
+          "id": "pad_spk",
+          "type": "speaker",
+          "x": 600,
+          "y": 300,
+          "props": {
+            "reverb": 0.6,
+            "pan": 0,
+            "holdTime": 2,
+            "releaseTime": 2
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "from": "pad_src",
+          "to": "pad_sine"
+        },
+        {
+          "id": "e2",
+          "from": "pad_src",
+          "to": "pad_noise"
+        },
+        {
+          "id": "e3",
+          "from": "pad_sine",
+          "to": "pad_flt"
+        },
+        {
+          "id": "e4",
+          "from": "pad_noise",
+          "to": "pad_flt"
+        },
+        {
+          "id": "e5",
+          "from": "pad_flt",
+          "to": "pad_spk"
+        }
+      ]
+    }
+  ]
+}

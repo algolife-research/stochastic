@@ -1,0 +1,741 @@
+{
+  "name": "Orchestral: Night Symphony",
+  "category": "Orchestral",
+  "description": "A nocturnal orchestral piece with pizzicato strings, harp arpeggios, and ethereal choir pads. Inspired by romantic-era night music.",
+  "bpm": 54,
+  "nodes": [
+    {
+      "id": "pizz_src",
+      "type": "source",
+      "x": 60,
+      "y": 150,
+      "props": {
+        "interval": 1,
+        "midiNote": 62,
+        "noteIndex": -2,
+        "intensity": 0.4
+      }
+    },
+    {
+      "id": "pizz_gate",
+      "type": "gate",
+      "x": 140,
+      "y": 150,
+      "props": {
+        "probability": 0.65
+      }
+    },
+    {
+      "id": "pizz_tun",
+      "type": "tunnel",
+      "x": 260,
+      "y": 150,
+      "props": {
+        "tunnelName": "Pizzicato",
+        "subNodes": [
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "triangle",
+              "attack": 0.002,
+              "decay": 0.15,
+              "mix": 1
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 2,
+              "wave": "sine",
+              "attack": 0.001,
+              "decay": 0.1,
+              "mix": 0.3
+            }
+          },
+          {
+            "type": "filter",
+            "props": {
+              "cutoff": 3500,
+              "mod": 2000,
+              "attack": 0.001,
+              "decay": 0.1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "pizz_out",
+      "type": "speaker",
+      "x": 400,
+      "y": 150,
+      "props": {
+        "reverb": 0.55,
+        "pan": -0.4
+      }
+    },
+    {
+      "id": "harp_src",
+      "type": "source",
+      "x": 60,
+      "y": 270,
+      "props": {
+        "interval": 0.5,
+        "midiNote": 72,
+        "noteIndex": -2,
+        "intensity": 0.35
+      }
+    },
+    {
+      "id": "harp_split",
+      "type": "splitter",
+      "x": 140,
+      "y": 270,
+      "props": {}
+    },
+    {
+      "id": "harp_p1",
+      "type": "pitch",
+      "x": 220,
+      "y": 230,
+      "props": {
+        "mode": "shift",
+        "shift": 0
+      }
+    },
+    {
+      "id": "harp_p2",
+      "type": "pitch",
+      "x": 220,
+      "y": 310,
+      "props": {
+        "mode": "shift",
+        "shift": 4
+      }
+    },
+    {
+      "id": "harp_tun1",
+      "type": "tunnel",
+      "x": 340,
+      "y": 230,
+      "props": {
+        "tunnelName": "Harp High",
+        "subNodes": [
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "triangle",
+              "attack": 0.002,
+              "decay": 2,
+              "mix": 1
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 2,
+              "wave": "sine",
+              "attack": 0.001,
+              "decay": 1.5,
+              "mix": 0.3
+            }
+          },
+          {
+            "type": "filter",
+            "props": {
+              "cutoff": 4000,
+              "mod": 2000,
+              "attack": 0.001,
+              "decay": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "harp_tun2",
+      "type": "tunnel",
+      "x": 340,
+      "y": 310,
+      "props": {
+        "tunnelName": "Harp Low",
+        "subNodes": [
+          {
+            "type": "pitch",
+            "props": {
+              "mode": "shift",
+              "shift": -12,
+              "fixedMidiNote": 60
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "triangle",
+              "attack": 0.003,
+              "decay": 2.5,
+              "mix": 1
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 2,
+              "wave": "sine",
+              "attack": 0.002,
+              "decay": 2,
+              "mix": 0.25
+            }
+          },
+          {
+            "type": "filter",
+            "props": {
+              "cutoff": 2500,
+              "mod": 1500,
+              "attack": 0.002,
+              "decay": 1.2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "harp_out1",
+      "type": "speaker",
+      "x": 480,
+      "y": 230,
+      "props": {
+        "reverb": 0.65,
+        "pan": 0.3
+      }
+    },
+    {
+      "id": "harp_out2",
+      "type": "speaker",
+      "x": 480,
+      "y": 310,
+      "props": {
+        "reverb": 0.65,
+        "pan": -0.1
+      }
+    },
+    {
+      "id": "choir_src",
+      "type": "source",
+      "x": 60,
+      "y": 420,
+      "props": {
+        "interval": 8,
+        "midiNote": 55,
+        "noteIndex": -2,
+        "intensity": 0.4
+      }
+    },
+    {
+      "id": "choir_tun",
+      "type": "tunnel",
+      "x": 220,
+      "y": 420,
+      "props": {
+        "tunnelName": "Choir",
+        "subNodes": [
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "sine",
+              "attack": 0.5,
+              "decay": 3,
+              "mix": 1
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "triangle",
+              "attack": 0.6,
+              "decay": 2.8,
+              "mix": 0.35
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "sine",
+              "attack": 0.55,
+              "decay": 2.6,
+              "mix": 0.2
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 2,
+              "wave": "sine",
+              "attack": 0.45,
+              "decay": 2.4,
+              "mix": 0.3
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 3,
+              "wave": "sine",
+              "attack": 0.4,
+              "decay": 2,
+              "mix": 0.15
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "pink",
+              "attack": 0.3,
+              "decay": 0.6,
+              "mix": 0.04
+            }
+          },
+          {
+            "type": "modulator",
+            "props": {
+              "rate": 5.2,
+              "depth": 18,
+              "delay": 0.6
+            }
+          },
+          {
+            "type": "filter",
+            "props": {
+              "cutoff": 2200,
+              "mod": 600,
+              "attack": 0.4,
+              "decay": 2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "choir_out",
+      "type": "speaker",
+      "x": 400,
+      "y": 420,
+      "props": {
+        "reverb": 0.7,
+        "pan": 0
+      }
+    },
+    {
+      "id": "horn_src",
+      "type": "source",
+      "x": 560,
+      "y": 180,
+      "props": {
+        "interval": 4,
+        "midiNote": 65,
+        "noteIndex": -2,
+        "intensity": 0.5
+      }
+    },
+    {
+      "id": "horn_delay",
+      "type": "delay",
+      "x": 640,
+      "y": 180,
+      "props": {
+        "delayTime": 1
+      }
+    },
+    {
+      "id": "horn_tun",
+      "type": "tunnel",
+      "x": 760,
+      "y": 180,
+      "props": {
+        "tunnelName": "French Horn",
+        "subNodes": [
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "sawtooth",
+              "attack": 0.15,
+              "decay": 1.4,
+              "mix": 1
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "triangle",
+              "attack": 0.18,
+              "decay": 1.2,
+              "mix": 0.2
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 2,
+              "wave": "sine",
+              "attack": 0.14,
+              "decay": 1.1,
+              "mix": 0.5
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 3,
+              "wave": "sine",
+              "attack": 0.12,
+              "decay": 0.9,
+              "mix": 0.28
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 4,
+              "wave": "sine",
+              "attack": 0.1,
+              "decay": 0.7,
+              "mix": 0.15
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "pink",
+              "attack": 0.04,
+              "decay": 0.18,
+              "mix": 0.05
+            }
+          },
+          {
+            "type": "filter",
+            "props": {
+              "cutoff": 800,
+              "mod": 1200,
+              "attack": 0.12,
+              "decay": 0.8
+            }
+          },
+          {
+            "type": "modulator",
+            "props": {
+              "rate": 4.2,
+              "depth": 10,
+              "delay": 0.45
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "horn_out",
+      "type": "speaker",
+      "x": 920,
+      "y": 180,
+      "props": {
+        "reverb": 0.55,
+        "pan": 0.2
+      }
+    },
+    {
+      "id": "glock_src",
+      "type": "source",
+      "x": 560,
+      "y": 300,
+      "props": {
+        "interval": 2,
+        "midiNote": 84,
+        "noteIndex": -2,
+        "intensity": 0.3
+      }
+    },
+    {
+      "id": "glock_gate",
+      "type": "gate",
+      "x": 640,
+      "y": 300,
+      "props": {
+        "probability": 0.3
+      }
+    },
+    {
+      "id": "glock_tun",
+      "type": "tunnel",
+      "x": 760,
+      "y": 300,
+      "props": {
+        "tunnelName": "Glockenspiel",
+        "subNodes": [
+          {
+            "type": "pitch",
+            "props": {
+              "mode": "shift",
+              "shift": 12,
+              "fixedMidiNote": 60
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "sine",
+              "attack": 0.001,
+              "decay": 2,
+              "mix": 1
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 2.3,
+              "wave": "sine",
+              "attack": 0.001,
+              "decay": 1.5,
+              "mix": 0.4
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 5.4,
+              "wave": "sine",
+              "attack": 0.001,
+              "decay": 0.8,
+              "mix": 0.2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "glock_out",
+      "type": "speaker",
+      "x": 920,
+      "y": 300,
+      "props": {
+        "reverb": 0.7,
+        "pan": 0.5
+      }
+    },
+    {
+      "id": "cello_src",
+      "type": "source",
+      "x": 560,
+      "y": 420,
+      "props": {
+        "interval": 4,
+        "midiNote": 48,
+        "noteIndex": -2,
+        "intensity": 0.5
+      }
+    },
+    {
+      "id": "cello_tun",
+      "type": "tunnel",
+      "x": 720,
+      "y": 420,
+      "props": {
+        "tunnelName": "Cello",
+        "subNodes": [
+          {
+            "type": "pitch",
+            "props": {
+              "mode": "shift",
+              "shift": -12,
+              "fixedMidiNote": 60
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "sawtooth",
+              "attack": 0.22,
+              "decay": 2,
+              "mix": 1
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "sawtooth",
+              "attack": 0.25,
+              "decay": 1.8,
+              "mix": 0.25
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 2,
+              "wave": "sine",
+              "attack": 0.2,
+              "decay": 1.6,
+              "mix": 0.4
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 3,
+              "wave": "sine",
+              "attack": 0.18,
+              "decay": 1.4,
+              "mix": 0.25
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "ratio": 4,
+              "wave": "sine",
+              "attack": 0.15,
+              "decay": 1.2,
+              "mix": 0.12
+            }
+          },
+          {
+            "type": "oscillator",
+            "props": {
+              "wave": "pink",
+              "attack": 0.25,
+              "decay": 1.2,
+              "mix": 0.035
+            }
+          },
+          {
+            "type": "modulator",
+            "props": {
+              "rate": 4.8,
+              "depth": 22,
+              "delay": 0.6
+            }
+          },
+          {
+            "type": "filter",
+            "props": {
+              "cutoff": 1600,
+              "mod": 1000,
+              "attack": 0.18,
+              "decay": 1.2
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "cello_out",
+      "type": "speaker",
+      "x": 880,
+      "y": 420,
+      "props": {
+        "reverb": 0.5,
+        "pan": -0.3
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_pizz1",
+      "from": "pizz_src",
+      "to": "pizz_gate"
+    },
+    {
+      "id": "e_pizz2",
+      "from": "pizz_gate",
+      "to": "pizz_tun"
+    },
+    {
+      "id": "e_pizz3",
+      "from": "pizz_tun",
+      "to": "pizz_out"
+    },
+    {
+      "id": "e_harp1",
+      "from": "harp_src",
+      "to": "harp_split"
+    },
+    {
+      "id": "e_harp2a",
+      "from": "harp_split",
+      "to": "harp_p1"
+    },
+    {
+      "id": "e_harp2b",
+      "from": "harp_split",
+      "to": "harp_p2"
+    },
+    {
+      "id": "e_harp3a",
+      "from": "harp_p1",
+      "to": "harp_tun1"
+    },
+    {
+      "id": "e_harp3b",
+      "from": "harp_p2",
+      "to": "harp_tun2"
+    },
+    {
+      "id": "e_harp4a",
+      "from": "harp_tun1",
+      "to": "harp_out1"
+    },
+    {
+      "id": "e_harp4b",
+      "from": "harp_tun2",
+      "to": "harp_out2"
+    },
+    {
+      "id": "e_choir1",
+      "from": "choir_src",
+      "to": "choir_tun"
+    },
+    {
+      "id": "e_choir2",
+      "from": "choir_tun",
+      "to": "choir_out"
+    },
+    {
+      "id": "e_horn1",
+      "from": "horn_src",
+      "to": "horn_delay"
+    },
+    {
+      "id": "e_horn2",
+      "from": "horn_delay",
+      "to": "horn_tun"
+    },
+    {
+      "id": "e_horn3",
+      "from": "horn_tun",
+      "to": "horn_out"
+    },
+    {
+      "id": "e_glock1",
+      "from": "glock_src",
+      "to": "glock_gate"
+    },
+    {
+      "id": "e_glock2",
+      "from": "glock_gate",
+      "to": "glock_tun"
+    },
+    {
+      "id": "e_glock3",
+      "from": "glock_tun",
+      "to": "glock_out"
+    },
+    {
+      "id": "e_cello1",
+      "from": "cello_src",
+      "to": "cello_tun"
+    },
+    {
+      "id": "e_cello2",
+      "from": "cello_tun",
+      "to": "cello_out"
+    }
+  ]
+}

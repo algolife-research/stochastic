@@ -1,0 +1,184 @@
+{
+  "name": "Demo: Techno Beat",
+  "category": "Demos",
+  "description": "A basic 4-on-the-floor techno pattern with filtered bass and hi-hats.",
+  "bpm": 130,
+  "nodes": [
+    {
+      "id": "kick_src",
+      "type": "source",
+      "x": 60,
+      "y": 150,
+      "props": {
+        "interval": 1,
+        "midiNote": 36,
+        "noteIndex": -2,
+        "intensity": 0.9
+      }
+    },
+    {
+      "id": "kick_pol",
+      "type": "oscillator",
+      "x": 180,
+      "y": 150,
+      "props": {
+        "wave": "sine",
+        "attack": 0.005,
+        "decay": 0.2
+      }
+    },
+    {
+      "id": "kick_p",
+      "type": "pitch",
+      "x": 280,
+      "y": 150,
+      "props": {
+        "shift": -12
+      }
+    },
+    {
+      "id": "kick_out",
+      "type": "speaker",
+      "x": 400,
+      "y": 150,
+      "props": {
+        "reverb": 0.05,
+        "pan": 0
+      }
+    },
+    {
+      "id": "bass_src",
+      "type": "source",
+      "x": 60,
+      "y": 280,
+      "props": {
+        "interval": 2,
+        "midiNote": 36,
+        "noteIndex": -2,
+        "intensity": 0.7
+      }
+    },
+    {
+      "id": "bass_pol",
+      "type": "oscillator",
+      "x": 180,
+      "y": 280,
+      "props": {
+        "wave": "sawtooth",
+        "attack": 0.01,
+        "decay": 0.4
+      }
+    },
+    {
+      "id": "bass_flt",
+      "type": "filter",
+      "x": 300,
+      "y": 280,
+      "props": {
+        "cutoff": 300,
+        "mod": 600,
+        "attack": 0.01,
+        "decay": 0.15
+      }
+    },
+    {
+      "id": "bass_out",
+      "type": "speaker",
+      "x": 420,
+      "y": 280,
+      "props": {
+        "reverb": 0.1,
+        "pan": 0
+      }
+    },
+    {
+      "id": "hh_src",
+      "type": "source",
+      "x": 60,
+      "y": 410,
+      "props": {
+        "interval": 0.5,
+        "midiNote": 96,
+        "noteIndex": -2,
+        "intensity": 0.3
+      }
+    },
+    {
+      "id": "hh_gate",
+      "type": "gate",
+      "x": 160,
+      "y": 410,
+      "props": {
+        "probability": 0.8
+      }
+    },
+    {
+      "id": "hh_pol",
+      "type": "oscillator",
+      "x": 260,
+      "y": 410,
+      "props": {
+        "wave": "square",
+        "attack": 0.001,
+        "decay": 0.03
+      }
+    },
+    {
+      "id": "hh_out",
+      "type": "speaker",
+      "x": 380,
+      "y": 410,
+      "props": {
+        "reverb": 0.2,
+        "pan": 0.3
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_k1",
+      "from": "kick_src",
+      "to": "kick_pol"
+    },
+    {
+      "id": "e_k2",
+      "from": "kick_pol",
+      "to": "kick_p"
+    },
+    {
+      "id": "e_k3",
+      "from": "kick_p",
+      "to": "kick_out"
+    },
+    {
+      "id": "e_b1",
+      "from": "bass_src",
+      "to": "bass_pol"
+    },
+    {
+      "id": "e_b2",
+      "from": "bass_pol",
+      "to": "bass_flt"
+    },
+    {
+      "id": "e_b3",
+      "from": "bass_flt",
+      "to": "bass_out"
+    },
+    {
+      "id": "e_h1",
+      "from": "hh_src",
+      "to": "hh_gate"
+    },
+    {
+      "id": "e_h2",
+      "from": "hh_gate",
+      "to": "hh_pol"
+    },
+    {
+      "id": "e_h3",
+      "from": "hh_pol",
+      "to": "hh_out"
+    }
+  ]
+}

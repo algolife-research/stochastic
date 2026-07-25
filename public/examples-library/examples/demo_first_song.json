@@ -1,0 +1,183 @@
+{
+  "name": "Demo: First Song",
+  "category": "Demos",
+  "description": "A complete piece combining bass, melody with randomness, and a beat.",
+  "bpm": 90,
+  "nodes": [
+    {
+      "id": "bass_src",
+      "type": "source",
+      "x": 60,
+      "y": 150,
+      "props": {
+        "interval": 2,
+        "midiNote": 36,
+        "noteIndex": -2,
+        "intensity": 0.8
+      }
+    },
+    {
+      "id": "bass_pol",
+      "type": "oscillator",
+      "x": 180,
+      "y": 150,
+      "props": {
+        "wave": "sawtooth",
+        "attack": 0.02,
+        "decay": 0.5
+      }
+    },
+    {
+      "id": "bass_flt",
+      "type": "filter",
+      "x": 300,
+      "y": 150,
+      "props": {
+        "cutoff": 500,
+        "mod": 800,
+        "attack": 0.01,
+        "decay": 0.3
+      }
+    },
+    {
+      "id": "bass_spk",
+      "type": "speaker",
+      "x": 420,
+      "y": 150,
+      "props": {
+        "reverb": 0.15,
+        "pan": 0
+      }
+    },
+    {
+      "id": "mel_src",
+      "type": "source",
+      "x": 60,
+      "y": 300,
+      "props": {
+        "interval": 0.5,
+        "noteIndex": -1,
+        "intensity": 0.5
+      }
+    },
+    {
+      "id": "mel_gate",
+      "type": "gate",
+      "x": 160,
+      "y": 300,
+      "props": {
+        "probability": 0.5
+      }
+    },
+    {
+      "id": "mel_pol",
+      "type": "oscillator",
+      "x": 260,
+      "y": 300,
+      "props": {
+        "wave": "triangle",
+        "attack": 0.01,
+        "decay": 0.2
+      }
+    },
+    {
+      "id": "mel_spk",
+      "type": "speaker",
+      "x": 380,
+      "y": 300,
+      "props": {
+        "reverb": 0.5,
+        "pan": 0.3
+      }
+    },
+    {
+      "id": "beat_src",
+      "type": "source",
+      "x": 60,
+      "y": 450,
+      "props": {
+        "interval": 1,
+        "midiNote": 36,
+        "noteIndex": -2,
+        "intensity": 0.7
+      }
+    },
+    {
+      "id": "beat_p",
+      "type": "pitch",
+      "x": 160,
+      "y": 450,
+      "props": {
+        "shift": -24
+      }
+    },
+    {
+      "id": "beat_pol",
+      "type": "oscillator",
+      "x": 260,
+      "y": 450,
+      "props": {
+        "wave": "sine",
+        "attack": 0.005,
+        "decay": 0.15
+      }
+    },
+    {
+      "id": "beat_spk",
+      "type": "speaker",
+      "x": 380,
+      "y": 450,
+      "props": {
+        "reverb": 0.1,
+        "pan": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_b1",
+      "from": "bass_src",
+      "to": "bass_pol"
+    },
+    {
+      "id": "e_b2",
+      "from": "bass_pol",
+      "to": "bass_flt"
+    },
+    {
+      "id": "e_b3",
+      "from": "bass_flt",
+      "to": "bass_spk"
+    },
+    {
+      "id": "e_m1",
+      "from": "mel_src",
+      "to": "mel_gate"
+    },
+    {
+      "id": "e_m2",
+      "from": "mel_gate",
+      "to": "mel_pol"
+    },
+    {
+      "id": "e_m3",
+      "from": "mel_pol",
+      "to": "mel_spk"
+    },
+    {
+      "id": "e_k1",
+      "from": "beat_src",
+      "to": "beat_p"
+    },
+    {
+      "id": "e_k2",
+      "from": "beat_p",
+      "to": "beat_pol"
+    },
+    {
+      "id": "e_k3",
+      "from": "beat_pol",
+      "to": "beat_spk"
+    }
+  ]
+}

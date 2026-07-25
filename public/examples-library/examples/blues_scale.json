@@ -1,0 +1,255 @@
+{
+  "name": "Advanced: Blues Scale",
+  "category": "Generative",
+  "description": "Jamming in blues scale with quantizer and gate for authentic bluesy feel.",
+  "bpm": 85,
+  "nodes": [
+    {
+      "id": "lead_src",
+      "type": "source",
+      "x": 60,
+      "y": 200,
+      "props": {
+        "interval": 0.75,
+        "noteIndex": -1,
+        "intensity": 0.6
+      }
+    },
+    {
+      "id": "lead_gate",
+      "type": "gate",
+      "x": 140,
+      "y": 200,
+      "props": {
+        "probability": 0.7
+      }
+    },
+    {
+      "id": "lead_q",
+      "type": "quantizer",
+      "x": 220,
+      "y": 200,
+      "props": {
+        "strength": 1
+      }
+    },
+    {
+      "id": "lead_pol",
+      "type": "oscillator",
+      "x": 320,
+      "y": 200,
+      "props": {
+        "wave": "sawtooth",
+        "attack": 0.01,
+        "decay": 0.3
+      }
+    },
+    {
+      "id": "lead_flt",
+      "type": "filter",
+      "x": 420,
+      "y": 200,
+      "props": {
+        "cutoff": 1800,
+        "mod": 2000,
+        "attack": 0.01,
+        "decay": 0.2
+      }
+    },
+    {
+      "id": "lead_out",
+      "type": "speaker",
+      "x": 520,
+      "y": 200,
+      "props": {
+        "reverb": 0.4,
+        "pan": 0.3
+      }
+    },
+    {
+      "id": "bass_src",
+      "type": "source",
+      "x": 60,
+      "y": 350,
+      "props": {
+        "interval": 2,
+        "noteIndex": -1,
+        "intensity": 0.8
+      }
+    },
+    {
+      "id": "bass_q",
+      "type": "quantizer",
+      "x": 160,
+      "y": 350,
+      "props": {
+        "strength": 1
+      }
+    },
+    {
+      "id": "bass_p",
+      "type": "pitch",
+      "x": 260,
+      "y": 350,
+      "props": {
+        "shift": -24
+      }
+    },
+    {
+      "id": "bass_pol",
+      "type": "oscillator",
+      "x": 360,
+      "y": 350,
+      "props": {
+        "wave": "triangle",
+        "attack": 0.02,
+        "decay": 0.6
+      }
+    },
+    {
+      "id": "bass_out",
+      "type": "speaker",
+      "x": 460,
+      "y": 350,
+      "props": {
+        "reverb": 0.2,
+        "pan": -0.2
+      }
+    },
+    {
+      "id": "rhythm_src",
+      "type": "source",
+      "x": 60,
+      "y": 500,
+      "props": {
+        "interval": 0.5,
+        "noteIndex": -1,
+        "intensity": 0.4
+      }
+    },
+    {
+      "id": "rhythm_gate",
+      "type": "gate",
+      "x": 140,
+      "y": 500,
+      "props": {
+        "probability": 0.5
+      }
+    },
+    {
+      "id": "rhythm_q",
+      "type": "quantizer",
+      "x": 220,
+      "y": 500,
+      "props": {
+        "strength": 0.8
+      }
+    },
+    {
+      "id": "rhythm_pol",
+      "type": "oscillator",
+      "x": 320,
+      "y": 500,
+      "props": {
+        "wave": "square",
+        "attack": 0.005,
+        "decay": 0.15
+      }
+    },
+    {
+      "id": "rhythm_out",
+      "type": "speaker",
+      "x": 420,
+      "y": 500,
+      "props": {
+        "reverb": 0.3,
+        "pan": -0.4
+      }
+    },
+    {
+      "id": "lfo_wah",
+      "type": "lfo",
+      "x": 420,
+      "y": 100,
+      "props": {
+        "rate": 3,
+        "shape": "sine",
+        "min": 400,
+        "max": 2500
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_l1",
+      "from": "lead_src",
+      "to": "lead_gate"
+    },
+    {
+      "id": "e_l2",
+      "from": "lead_gate",
+      "to": "lead_q"
+    },
+    {
+      "id": "e_l3",
+      "from": "lead_q",
+      "to": "lead_pol"
+    },
+    {
+      "id": "e_l4",
+      "from": "lead_pol",
+      "to": "lead_flt"
+    },
+    {
+      "id": "e_l5",
+      "from": "lead_flt",
+      "to": "lead_out"
+    },
+    {
+      "id": "e_b1",
+      "from": "bass_src",
+      "to": "bass_q"
+    },
+    {
+      "id": "e_b2",
+      "from": "bass_q",
+      "to": "bass_p"
+    },
+    {
+      "id": "e_b3",
+      "from": "bass_p",
+      "to": "bass_pol"
+    },
+    {
+      "id": "e_b4",
+      "from": "bass_pol",
+      "to": "bass_out"
+    },
+    {
+      "id": "e_r1",
+      "from": "rhythm_src",
+      "to": "rhythm_gate"
+    },
+    {
+      "id": "e_r2",
+      "from": "rhythm_gate",
+      "to": "rhythm_q"
+    },
+    {
+      "id": "e_r3",
+      "from": "rhythm_q",
+      "to": "rhythm_pol"
+    },
+    {
+      "id": "e_r4",
+      "from": "rhythm_pol",
+      "to": "rhythm_out"
+    },
+    {
+      "id": "e_lfo",
+      "from": "lfo_wah",
+      "to": "lead_flt",
+      "targetParam": "cutoff"
+    }
+  ]
+}

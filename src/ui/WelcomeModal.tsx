@@ -10,7 +10,7 @@ import type { CloudProjectSummary } from '../io/cloud-storage';
 import { deserializeComposition, detectFileVersion, migrateV2ToV3, loadCompositionFromFile } from '../io/file-io';
 import type { SerializedGraph, SerializedComposition } from '../io/file-io';
 import { isTauri } from '../io/filesystem';
-import { loadExample } from '../data/examples';
+import { loadBundledExample } from '../data/examples';
 import { SCALES } from '@core/constants';
 import type { ScaleName } from '@core/types';
 import { AuthModal } from './AuthModal';
@@ -123,14 +123,14 @@ export function WelcomeModal(): React.ReactElement | null {
   };
 
   /**
-   * Load an example from the welcome screen. The app seeds a placeholder
-   * scene on startup; since the user hasn't touched it yet, replace it with
-   * the example's scenes instead of piling them on top.
+   * Load a bundled example from the welcome screen (works offline). The app
+   * seeds a placeholder scene on startup; since the user hasn't touched it
+   * yet, replace it with the example's scenes instead of piling them on top.
    */
   const loadExampleFresh = (exampleKey: string) => {
     const store = useGraphStore.getState();
     const placeholderSceneIds = [...store.scenes.keys()];
-    loadExample(exampleKey);
+    loadBundledExample(exampleKey);
     placeholderSceneIds.forEach(id => store.deleteScene(id));
   };
 

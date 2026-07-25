@@ -1,0 +1,175 @@
+{
+  "name": "Advanced: Wobble Bass",
+  "category": "Synthesis",
+  "description": "Multiple LFOs at different rates create complex wobble bass movements.",
+  "bpm": 140,
+  "nodes": [
+    {
+      "id": "src",
+      "type": "source",
+      "x": 60,
+      "y": 300,
+      "props": {
+        "interval": 2,
+        "midiNote": 36,
+        "noteIndex": -2,
+        "intensity": 0.8
+      }
+    },
+    {
+      "id": "pol",
+      "type": "oscillator",
+      "x": 180,
+      "y": 300,
+      "props": {
+        "wave": "sawtooth",
+        "attack": 0.01,
+        "decay": 0.8
+      }
+    },
+    {
+      "id": "flt",
+      "type": "filter",
+      "x": 300,
+      "y": 300,
+      "props": {
+        "cutoff": 500,
+        "mod": 0
+      }
+    },
+    {
+      "id": "gain",
+      "type": "gain",
+      "x": 420,
+      "y": 300,
+      "props": {
+        "value": 0.8
+      }
+    },
+    {
+      "id": "out",
+      "type": "speaker",
+      "x": 540,
+      "y": 300,
+      "props": {
+        "reverb": 0.2,
+        "pan": 0
+      }
+    },
+    {
+      "id": "lfo_fast",
+      "type": "lfo",
+      "x": 300,
+      "y": 150,
+      "props": {
+        "rate": 4,
+        "shape": "sine",
+        "min": 200,
+        "max": 2500
+      }
+    },
+    {
+      "id": "lfo_slow",
+      "type": "lfo",
+      "x": 420,
+      "y": 150,
+      "props": {
+        "rate": 0.5,
+        "shape": "triangle",
+        "min": 0.4,
+        "max": 1
+      }
+    },
+    {
+      "id": "src_sub",
+      "type": "source",
+      "x": 60,
+      "y": 450,
+      "props": {
+        "interval": 2,
+        "midiNote": 36,
+        "noteIndex": -2,
+        "intensity": 0.9
+      }
+    },
+    {
+      "id": "p_sub",
+      "type": "pitch",
+      "x": 160,
+      "y": 450,
+      "props": {
+        "shift": -12
+      }
+    },
+    {
+      "id": "pol_sub",
+      "type": "oscillator",
+      "x": 260,
+      "y": 450,
+      "props": {
+        "wave": "sine",
+        "attack": 0.01,
+        "decay": 0.6
+      }
+    },
+    {
+      "id": "out_sub",
+      "type": "speaker",
+      "x": 380,
+      "y": 450,
+      "props": {
+        "reverb": 0.1,
+        "pan": 0
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "src",
+      "to": "pol"
+    },
+    {
+      "id": "e2",
+      "from": "pol",
+      "to": "flt"
+    },
+    {
+      "id": "e3",
+      "from": "flt",
+      "to": "gain"
+    },
+    {
+      "id": "e4",
+      "from": "gain",
+      "to": "out"
+    },
+    {
+      "id": "e_lfo1",
+      "from": "lfo_fast",
+      "to": "flt",
+      "targetParam": "cutoff"
+    },
+    {
+      "id": "e_lfo2",
+      "from": "lfo_slow",
+      "to": "gain",
+      "targetParam": "value"
+    },
+    {
+      "id": "e5",
+      "from": "src_sub",
+      "to": "p_sub"
+    },
+    {
+      "id": "e6",
+      "from": "p_sub",
+      "to": "pol_sub"
+    },
+    {
+      "id": "e7",
+      "from": "pol_sub",
+      "to": "out_sub"
+    }
+  ]
+}

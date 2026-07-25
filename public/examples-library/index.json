@@ -1,0 +1,546 @@
+{
+  "version": 2,
+  "generated": "2026-07-25T16:32:25.561Z",
+  "categories": [
+    "Tutorials",
+    "Demos",
+    "Synthesis",
+    "Generative",
+    "Effects & Routing",
+    "Composition",
+    "Physics & Timing",
+    "Orchestral",
+    "Evolutionary"
+  ],
+  "examples": [
+    {
+      "key": "ahd_envelopes",
+      "name": "Advanced: AHD Envelopes",
+      "category": "Synthesis",
+      "description": "Demonstrates AHD (Attack-Hold-Decay) envelopes. Compare short staccato vs sustained organ-like tones.",
+      "bpm": 60,
+      "path": "examples/ahd_envelopes.json"
+    },
+    {
+      "key": "ambient_drone",
+      "name": "Advanced: Ambient Drone",
+      "category": "Composition",
+      "description": "Slow, evolving drone with high reverb and long decays for meditative atmosphere.",
+      "bpm": 40,
+      "path": "examples/ambient_drone.json"
+    },
+    {
+      "key": "ambient_krell",
+      "name": "Advanced: Krell Patch",
+      "category": "Generative",
+      "description": "A 'Krell' style generative patch with random notes and varying envelope lengths.",
+      "bpm": 80,
+      "path": "examples/ambient_krell.json"
+    },
+    {
+      "key": "blues_scale",
+      "name": "Advanced: Blues Scale",
+      "category": "Generative",
+      "description": "Jamming in blues scale with quantizer and gate for authentic bluesy feel.",
+      "bpm": 85,
+      "path": "examples/blues_scale.json"
+    },
+    {
+      "key": "cv_routing_demo",
+      "name": "Advanced: CV Routing",
+      "category": "Effects & Routing",
+      "description": "Multiple LFOs modulate filter cutoff, pan, and gain for complex modulation effects.",
+      "bpm": 70,
+      "path": "examples/cv_routing_demo.json"
+    },
+    {
+      "key": "delay_network",
+      "name": "Advanced: Delay Network",
+      "category": "Effects & Routing",
+      "description": "Multiple interconnected delays create a complex echo network with pitch shifting.",
+      "bpm": 90,
+      "path": "examples/delay_network.json"
+    },
+    {
+      "key": "demo_ambient",
+      "name": "Demo: Generative Ambient",
+      "category": "Demos",
+      "description": "A self-evolving ambient piece with random notes and delays.",
+      "bpm": 60,
+      "path": "examples/demo_ambient.json"
+    },
+    {
+      "key": "demo_arpeggio",
+      "name": "Demo: Arpeggio",
+      "category": "Demos",
+      "description": "A chord broken into individual notes using fixed-timing edges for precise rhythm.",
+      "bpm": 120,
+      "path": "examples/demo_arpeggio.json"
+    },
+    {
+      "key": "demo_bells",
+      "name": "Demo: Generative Bells",
+      "category": "Demos",
+      "description": "Random bell-like tones with high reverb for an ambient, church-bell atmosphere.",
+      "bpm": 50,
+      "path": "examples/demo_bells.json"
+    },
+    {
+      "key": "demo_canon",
+      "name": "Demo: Canon",
+      "category": "Demos",
+      "description": "A 2-voice canon: the same melody plays in both voices, with the second voice delayed.",
+      "bpm": 100,
+      "path": "examples/demo_canon.json"
+    },
+    {
+      "key": "demo_drums",
+      "name": "Demo: Drum Pattern",
+      "category": "Demos",
+      "description": "A basic drum kit using different waveforms and pitches.",
+      "bpm": 110,
+      "path": "examples/demo_drums.json"
+    },
+    {
+      "key": "demo_dynamics",
+      "name": "Demo: Dynamics",
+      "category": "Demos",
+      "description": "Demonstrates volume dynamics using gain nodes - loud, soft, and swelling passages.",
+      "bpm": 90,
+      "path": "examples/demo_dynamics.json"
+    },
+    {
+      "key": "demo_filter_bass",
+      "name": "Demo: Filter Bass",
+      "category": "Demos",
+      "description": "A bass line with filter modulation for that classic 'wah' sound.",
+      "bpm": 80,
+      "path": "examples/demo_filter_bass.json"
+    },
+    {
+      "key": "demo_first_song",
+      "name": "Demo: First Song",
+      "category": "Demos",
+      "description": "A complete piece combining bass, melody with randomness, and a beat.",
+      "bpm": 90,
+      "path": "examples/demo_first_song.json"
+    },
+    {
+      "key": "demo_fixed_timing",
+      "name": "Demo: Fixed Edge Timing",
+      "category": "Demos",
+      "description": "Shows edge timing modes: physical (distance-based) vs fixed (beat-based) travel time.",
+      "bpm": 120,
+      "path": "examples/demo_fixed_timing.json"
+    },
+    {
+      "key": "demo_fugue",
+      "name": "Demo: Fugue",
+      "category": "Demos",
+      "description": "A 2-voice fugue: voice 2 enters transposed up a fifth (7 semitones) after a delay.",
+      "bpm": 100,
+      "path": "examples/demo_fugue.json"
+    },
+    {
+      "key": "demo_melody",
+      "name": "Demo: Simple Melody",
+      "category": "Demos",
+      "description": "A 4-note melody created by chaining speakers with pitch shifts.",
+      "bpm": 100,
+      "path": "examples/demo_melody.json"
+    },
+    {
+      "key": "demo_mozart_dice",
+      "name": "Demo: Mozart's Dice Game",
+      "category": "Demos",
+      "description": "An aleatoric system inspired by Musikalisches Würfelspiel. A Splitter creates parallel paths, and Gates randomly allow only some to pass, creating ever-changing melodies.",
+      "bpm": 120,
+      "path": "examples/demo_mozart_dice.json"
+    },
+    {
+      "key": "demo_polymetric",
+      "name": "Demo: Polymetric Ambient",
+      "category": "Demos",
+      "description": "Three independent loops of 5, 7, and 9 beats phase against each other.",
+      "bpm": 110,
+      "path": "examples/demo_polymetric.json"
+    },
+    {
+      "key": "demo_polyrhythm",
+      "name": "Demo: Polyrhythm",
+      "category": "Demos",
+      "description": "Three independent rhythms at 4, 3, and 5 beats create shifting patterns.",
+      "bpm": 90,
+      "path": "examples/demo_polyrhythm.json"
+    },
+    {
+      "key": "demo_sequential_melody",
+      "name": "Demo: Sequential Melody",
+      "category": "Demos",
+      "description": "A scale pattern using chained speakers with pitch shifts - packets pass through each speaker.",
+      "bpm": 120,
+      "path": "examples/demo_sequential_melody.json"
+    },
+    {
+      "key": "demo_techno",
+      "name": "Demo: Techno Beat",
+      "category": "Demos",
+      "description": "A basic 4-on-the-floor techno pattern with filtered bass and hi-hats.",
+      "bpm": 130,
+      "path": "examples/demo_techno.json"
+    },
+    {
+      "key": "emergence",
+      "name": "Emergence",
+      "category": "Composition",
+      "description": "Three movements grown from one seed, in D dorian. I. Seeds: a rising arpeggio built purely from distance. II. Dialogue: two offset voices breed melodies at a crossover, their offspring rung as bells. III. Chorus: mutation and harmonic selection bloom into a full ensemble under a breathing filter. Play the movements in order from the Scene panel.",
+      "bpm": 84,
+      "path": "examples/emergence.json"
+    },
+    {
+      "key": "euclidean_rhythms",
+      "name": "Advanced: Complex Rhythms",
+      "category": "Generative",
+      "description": "Gates with different probabilities create Euclidean-style distributed rhythms.",
+      "bpm": 125,
+      "path": "examples/euclidean_rhythms.json"
+    },
+    {
+      "key": "filter_types",
+      "name": "Tutorial: Filter Types",
+      "category": "Tutorials",
+      "description": "Learn the four filter types: Lowpass (removes highs), Highpass (removes lows), Bandpass (isolates a band), and Notch (removes a band). Each scene demonstrates one filter type with the same source for easy comparison.",
+      "bpm": 90,
+      "path": "examples/filter_types.json"
+    },
+    {
+      "key": "gamelan",
+      "name": "Advanced: Gamelan",
+      "category": "Composition",
+      "description": "Indonesian gamelan-inspired metallic tones with interlocking rhythms and harmonics.",
+      "bpm": 85,
+      "path": "examples/gamelan.json"
+    },
+    {
+      "key": "generative_sequencer",
+      "name": "Advanced: Generative Sequencer",
+      "category": "Generative",
+      "description": "Gates and quantizers create an ever-evolving melodic sequence with controlled randomness.",
+      "bpm": 120,
+      "path": "examples/generative_sequencer.json"
+    },
+    {
+      "key": "genetic_evolution",
+      "name": "Evolutionary: Genetic Melodies",
+      "category": "Evolutionary",
+      "description": "Demonstrates genetic algorithm nodes: Mutator adds random variations, Fitness Gate filters out dissonant notes, creating melodies that naturally evolve toward harmony.",
+      "bpm": 100,
+      "path": "examples/genetic_evolution.json"
+    },
+    {
+      "key": "gravity_tempo",
+      "name": "Advanced: Gravity Tempo",
+      "category": "Physics & Timing",
+      "description": "Demonstrates gravity physics - heavy nodes (high mass) slow down approaching packets, creating ritardando effects.",
+      "bpm": 100,
+      "path": "examples/gravity_tempo.json"
+    },
+    {
+      "key": "harmonic_series",
+      "name": "Advanced: Harmonic Series",
+      "category": "Synthesis",
+      "description": "Oscillators at integer frequency ratios build a rich organ-like tone with natural overtones.",
+      "bpm": 60,
+      "path": "examples/harmonic_series.json"
+    },
+    {
+      "key": "layered_pad",
+      "name": "Advanced: Layered Pad",
+      "category": "Synthesis",
+      "description": "Uses a tunnel to layer multiple waveforms into a rich, complex pad sound.",
+      "bpm": 60,
+      "path": "examples/layered_pad.json"
+    },
+    {
+      "key": "lfo_modulation",
+      "name": "Advanced: LFO Modulation",
+      "category": "Effects & Routing",
+      "description": "LFO nodes generate continuous values for CV routing to modulate filter cutoff and pan.",
+      "bpm": 80,
+      "path": "examples/lfo_modulation.json"
+    },
+    {
+      "key": "night_symphony",
+      "name": "Orchestral: Night Symphony",
+      "category": "Orchestral",
+      "description": "A nocturnal orchestral piece with pizzicato strings, harp arpeggios, and ethereal choir pads. Inspired by romantic-era night music.",
+      "bpm": 54,
+      "path": "examples/night_symphony.json"
+    },
+    {
+      "key": "noise_percussion",
+      "name": "Advanced: Noise Percussion",
+      "category": "Synthesis",
+      "description": "White, pink, and brown noise sources create realistic hi-hats, snares, and rumbles.",
+      "bpm": 110,
+      "path": "examples/noise_percussion.json"
+    },
+    {
+      "key": "noise_types",
+      "name": "Tutorial: Noise Types",
+      "category": "Tutorials",
+      "description": "Learn the three noise types: White (equal energy per frequency), Pink (-3dB/octave, natural), and Brown (-6dB/octave, deep rumble). Use noise for percussion, textures, and effects.",
+      "bpm": 100,
+      "path": "examples/noise_types.json"
+    },
+    {
+      "key": "orchestra",
+      "name": "Advanced: Orchestra",
+      "category": "Composition",
+      "description": "Three instrument voices built from layered oscillators, modulators, and filters simulating violin, cello, and flute.",
+      "bpm": 80,
+      "path": "examples/orchestra.json"
+    },
+    {
+      "key": "orchestral_bolero",
+      "name": "Orchestral: Bolero Build",
+      "category": "Orchestral",
+      "description": "Inspired by Ravel's Bolero - a hypnotic repetitive melody that builds with layered orchestration. Start minimal, then unmute voices progressively.",
+      "bpm": 72,
+      "path": "examples/orchestral_bolero.json"
+    },
+    {
+      "key": "oscillator_modes",
+      "name": "Tutorial: Oscillator Modes",
+      "category": "Tutorials",
+      "description": "Learn the three oscillator modes: Additive (layering), Ring (multiplication), and FM (frequency modulation). Each scene demonstrates one mode with the same base frequency for easy comparison.",
+      "bpm": 80,
+      "path": "examples/oscillator_modes.json"
+    },
+    {
+      "key": "pachelbel_canon",
+      "name": "Orchestral: Canon in D",
+      "category": "Orchestral",
+      "description": "Pachelbel's Canon - Ground bass (D-A-B-F#-G-D-G-A) with canon melody entering on staggered string voices. One trigger starts the 8-note sequence that cascades through all voices.",
+      "bpm": 60,
+      "path": "examples/pachelbel_canon.json"
+    },
+    {
+      "key": "pentatonic_jam",
+      "name": "Advanced: Pentatonic Jam",
+      "category": "Generative",
+      "description": "A complete jam using quantizer for pentatonic scale, LFO modulation, and virtual edges for precise timing.",
+      "bpm": 100,
+      "path": "examples/pentatonic_jam.json"
+    },
+    {
+      "key": "quantizer_demo",
+      "name": "Advanced: Quantizer",
+      "category": "Generative",
+      "description": "Random notes snapped to musical scales using quantizers for in-tune generative music.",
+      "bpm": 100,
+      "path": "examples/quantizer_demo.json"
+    },
+    {
+      "key": "radiation_burst",
+      "name": "Evolutionary: Radiation Burst",
+      "category": "Evolutionary",
+      "description": "Mutator in radiation mode creates dramatic sonic explosions with large pitch jumps and wave changes. Gates control the density of mutations.",
+      "bpm": 85,
+      "path": "examples/radiation_burst.json"
+    },
+    {
+      "key": "synth_bass",
+      "name": "Advanced: Synth Bass",
+      "category": "Synthesis",
+      "description": "A fat bass sound using multiple waveform layers in a tunnel for synthesis.",
+      "bpm": 100,
+      "path": "examples/synth_bass.json"
+    },
+    {
+      "key": "teleporter_echo",
+      "name": "Advanced: Teleporter",
+      "category": "Effects & Routing",
+      "description": "Teleporters instantly transport packets to create unique spatial effects and feedback loops.",
+      "bpm": 100,
+      "path": "examples/teleporter_echo.json"
+    },
+    {
+      "key": "tunnel_melody",
+      "name": "Advanced: Tunnel Melody",
+      "category": "Composition",
+      "description": "Demonstrates tunnels creating arpeggios and harmonies with cascading delays.",
+      "bpm": 100,
+      "path": "examples/tunnel_melody.json"
+    },
+    {
+      "key": "tunnel_processing",
+      "name": "Advanced: Full Tunnel",
+      "category": "Synthesis",
+      "description": "Tunnels containing pitch, oscillator, modulator, and filter for complete synthesis.",
+      "bpm": 90,
+      "path": "examples/tunnel_processing.json"
+    },
+    {
+      "key": "tutorial",
+      "name": "Tutorial: Learn Stochastic",
+      "category": "Tutorials",
+      "description": "A complete interactive tutorial with 10 scenes teaching you Stochastic from basics to advanced concepts. Use the Scene Panel to navigate between lessons.",
+      "bpm": 100,
+      "path": "examples/tutorial.json"
+    },
+    {
+      "key": "unison_detune",
+      "name": "Tutorial: Unison & Detune",
+      "category": "Tutorials",
+      "description": "Learn how unison voices and detuning create thick, chorus-like sounds. Unison duplicates the oscillator, detune spreads the pitch, and stereo spread places voices across the stereo field.",
+      "bpm": 80,
+      "path": "examples/unison_detune.json"
+    },
+    {
+      "key": "vibrato_strings",
+      "name": "Advanced: Vibrato Strings",
+      "category": "Synthesis",
+      "description": "Modulator nodes add expressive vibrato to create realistic string instrument sounds.",
+      "bpm": 70,
+      "path": "examples/vibrato_strings.json"
+    },
+    {
+      "key": "virtual_edges",
+      "name": "Advanced: Virtual Edges",
+      "category": "Physics & Timing",
+      "description": "Fixed-timing edges for precise rhythmic patterns independent of physical distance.",
+      "bpm": 120,
+      "path": "examples/virtual_edges.json"
+    },
+    {
+      "key": "wobble_bass",
+      "name": "Advanced: Wobble Bass",
+      "category": "Synthesis",
+      "description": "Multiple LFOs at different rates create complex wobble bass movements.",
+      "bpm": 140,
+      "path": "examples/wobble_bass.json"
+    }
+  ],
+  "compositions": [
+    {
+      "key": "arrakis_awakening",
+      "name": "Arrakis Awakening",
+      "description": "Full composition — 3 scenes",
+      "scenes": 3,
+      "path": "compositions/arrakis_awakening.sto"
+    },
+    {
+      "key": "axiom_of_the_void",
+      "name": "Axiom of the Void",
+      "description": "Full composition — 3 scenes",
+      "scenes": 3,
+      "path": "compositions/axiom_of_the_void.sto"
+    },
+    {
+      "key": "battle_for_arrakis",
+      "name": "Battle for Arrakis (Titan)",
+      "description": "Full composition — 1 scene",
+      "scenes": 1,
+      "path": "compositions/battle_for_arrakis.sto"
+    },
+    {
+      "key": "crystalline_waters",
+      "name": "Crystalline Waters",
+      "description": "Full composition — 1 scene",
+      "scenes": 1,
+      "path": "compositions/crystalline_waters.sto"
+    },
+    {
+      "key": "discrete_phasing",
+      "name": "Discrete Phasing",
+      "description": "Full composition — 1 scene",
+      "scenes": 1,
+      "path": "compositions/discrete_phasing.sto"
+    },
+    {
+      "key": "orchestrator_of_probabilities",
+      "name": "The Orchestrator of Infinite Probabilities",
+      "description": "Full composition — 1 scene",
+      "scenes": 1,
+      "path": "compositions/orchestrator_of_probabilities.sto"
+    },
+    {
+      "key": "polymetric_glass_gardens",
+      "name": "Polymetric Glass Gardens",
+      "description": "Full composition — 1 scene",
+      "scenes": 1,
+      "path": "compositions/polymetric_glass_gardens.sto"
+    },
+    {
+      "key": "quantum_turing_machine",
+      "name": "The Quantum Turing Machine",
+      "description": "Full composition — 1 scene",
+      "scenes": 1,
+      "path": "compositions/quantum_turing_machine.sto"
+    },
+    {
+      "key": "real_rock_band",
+      "name": "Real Rock Band",
+      "description": "Full composition — 1 scene",
+      "scenes": 1,
+      "path": "compositions/real_rock_band.sto"
+    },
+    {
+      "key": "sands_of_arrakis",
+      "name": "Sands of Arrakis",
+      "description": "Full composition — 1 scene",
+      "scenes": 1,
+      "path": "compositions/sands_of_arrakis.sto"
+    },
+    {
+      "key": "symbiotic_neuro_choir",
+      "name": "The Symbiotic Neuro-Choir",
+      "description": "Full composition — 1 scene",
+      "scenes": 1,
+      "path": "compositions/symbiotic_neuro_choir.sto"
+    },
+    {
+      "key": "symphony_no_5_arrakis",
+      "name": "Symphony No. 5 (Arrakis)",
+      "description": "Full composition — 1 scene",
+      "scenes": 1,
+      "path": "compositions/symphony_no_5_arrakis.sto"
+    },
+    {
+      "key": "the_dune_symphony",
+      "name": "The Dune Symphony",
+      "description": "Full composition — 3 scenes",
+      "scenes": 3,
+      "path": "compositions/the_dune_symphony.sto"
+    },
+    {
+      "key": "the_golden_path",
+      "name": "The Golden Path",
+      "description": "Full composition — 3 scenes",
+      "scenes": 3,
+      "path": "compositions/the_golden_path.sto"
+    },
+    {
+      "key": "the_spice_opera",
+      "name": "The Spice Opera",
+      "description": "Full composition — 3 scenes",
+      "scenes": 3,
+      "path": "compositions/the_spice_opera.sto"
+    },
+    {
+      "key": "the_star_gate",
+      "name": "The Star Gate",
+      "description": "Full composition — 4 scenes",
+      "scenes": 4,
+      "path": "compositions/the_star_gate.sto"
+    },
+    {
+      "key": "the_stochastic_web",
+      "name": "The Stochastic Web",
+      "description": "Full composition — 5 scenes",
+      "scenes": 5,
+      "path": "compositions/the_stochastic_web.sto"
+    }
+  ]
+}
