@@ -208,25 +208,28 @@ export function updatePackets(deltaTime: number): void {
     
     // Process node type
     const processedPayload = processNodeArrival(packet, node, edge);
-    
-    // Handle special node types
-    if (node.type === 'gate') {
-      const props = node.props as { probability: number };
-      if (Math.random() > props.probability) {
-        // Gate blocked - don't propagate
-        return;
-      }
+
+    // Gates mark blocked packets with a negative-gain sentinel (see processGate,
+    // which handles the probability roll AND all fitness modes). Drop them here —
+    // rolling again would square the pass probability.
+    if (node.type === 'gate' && processedPayload.gain < 0) {
+      return;
     }
-    
+
     if (node.type === 'speaker') {
       // Trigger audio playback with speaker settings
-      const speakerProps = node.props as { volume?: number; reverb?: number; pan?: number };
-      // Apply speaker volume to payload gain
+      const speakerProps = node.props as {
+        volume?: number; reverb?: number; pan?: number;
+        holdTime?: number; releaseTime?: number;
+      };
+      // Apply speaker volume and envelope tail to the payload
       const finalPayload = {
         ...processedPayload,
         gain: processedPayload.gain * (speakerProps.volume ?? 1),
+        holdTime: speakerProps.holdTime ?? processedPayload.holdTime,
+        releaseTime: speakerProps.releaseTime ?? processedPayload.releaseTime,
       };
-      
+
       audioEngine.playNote(finalPayload, {
         reverb: speakerProps.reverb ?? 0.3,
         pan: speakerProps.pan ?? 0,

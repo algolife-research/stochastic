@@ -29,6 +29,7 @@ export class AudioEngine {
   private audioContext: AudioContext | null = null;
   private synthNode: AudioWorkletNode | null = null;
   private masterGain: GainNode | null = null;
+  private lastMasterGain = 0.9;
   private reverbNode: ConvolverNode | null = null;
   private reverbGain: GainNode | null = null;
   private isInitialized: boolean = false;
@@ -223,6 +224,7 @@ export class AudioEngine {
    * Set master gain
    */
   setMasterGain(value: number): void {
+    this.lastMasterGain = value;
     if (this.masterGain) {
       this.masterGain.gain.setTargetAtTime(
         value,
@@ -256,10 +258,10 @@ export class AudioEngine {
    */
   setMuted(muted: boolean): void {
     this.isMuted = muted;
-    
+
     if (this.masterGain) {
       this.masterGain.gain.setTargetAtTime(
-        muted ? 0 : 0.5,
+        muted ? 0 : this.lastMasterGain,
         this.audioContext?.currentTime ?? 0,
         0.01
       );

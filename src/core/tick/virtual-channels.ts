@@ -273,15 +273,20 @@ function processVirtualArrival(
   
   // Handle speaker nodes - this triggers audio!
   if (node.type === 'speaker') {
-    const props = node.props as { volume?: number; pan?: number; reverb?: number };
+    const props = node.props as {
+      volume?: number; pan?: number; reverb?: number;
+      holdTime?: number; releaseTime?: number;
+    };
     const volume = (props.volume ?? 1) * channelVolume;
     const pan = props.pan ?? 0;
     const reverb = props.reverb ?? 0.3;
-    
-    // Apply speaker volume to processed payload
+
+    // Apply speaker volume and envelope tail to processed payload
     const finalPayload = {
       ...processedPayload,
       gain: processedPayload.gain * volume,
+      holdTime: props.holdTime ?? processedPayload.holdTime,
+      releaseTime: props.releaseTime ?? processedPayload.releaseTime,
     };
     
     audioEngine.playNote(finalPayload, { pan, reverb });
