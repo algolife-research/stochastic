@@ -36,8 +36,24 @@ export interface ExampleScene {
   edges: ExampleEdge[];
 }
 
+/** Menu categories, in display order. Every example must declare one. */
+export const EXAMPLE_CATEGORIES = [
+  'Tutorials',
+  'Demos',
+  'Synthesis',
+  'Generative',
+  'Effects & Routing',
+  'Composition',
+  'Physics & Timing',
+  'Orchestral',
+  'Evolutionary',
+] as const;
+
+export type ExampleCategory = (typeof EXAMPLE_CATEGORIES)[number];
+
 export interface Example {
   name: string;
+  category: ExampleCategory;
   description: string;
   bpm: number;
   // Single-scene examples (legacy format)
@@ -55,6 +71,7 @@ export const EXAMPLES: Record<string, Example> = {
   // Complete Tutorial - Learn Stochastic step by step
   tutorial: {
     name: "Tutorial: Learn Stochastic",
+    category: "Tutorials",
     description: "A complete interactive tutorial with 10 scenes teaching you Stochastic from basics to advanced concepts. Use the Scene Panel to navigate between lessons.",
     bpm: 100,
     scenes: [
@@ -65,7 +82,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "src", type: "source", x: 150, y: 300, props: { interval: 1, midiNote: 60, intensity: 0.7 } },
+          { id: "src", type: "source", x: 150, y: 300, props: { interval: 1, midiNote: 60, noteIndex: -2, intensity: 0.7 } },
           { id: "spk", type: "speaker", x: 350, y: 300, props: { reverb: 0.3, pan: 0 } }
         ],
         edges: [
@@ -79,7 +96,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 48, intensity: 0.6 } },
+          { id: "src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 48, noteIndex: -2, intensity: 0.6 } },
           { id: "p1", type: "pitch", x: 250, y: 300, props: { shift: 7 } },
           { id: "spk", type: "speaker", x: 400, y: 300, props: { reverb: 0.3, pan: 0 } }
         ],
@@ -95,11 +112,11 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "src1", type: "source", x: 100, y: 200, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+          { id: "src1", type: "source", x: 100, y: 200, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
           { id: "pol1", type: "oscillator", x: 250, y: 200, props: { wave: "sine", attack: 0.1, decay: 0.8 } },
           { id: "spk1", type: "speaker", x: 400, y: 200, props: { reverb: 0.4, pan: -0.5 } },
           
-          { id: "src2", type: "source", x: 100, y: 400, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+          { id: "src2", type: "source", x: 100, y: 400, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
           { id: "pol2", type: "oscillator", x: 250, y: 400, props: { wave: "sawtooth", attack: 0.01, decay: 0.3 } },
           { id: "spk2", type: "speaker", x: 400, y: 400, props: { reverb: 0.2, pan: 0.5 } }
         ],
@@ -115,7 +132,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+          { id: "src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
           
           { id: "pol1", type: "oscillator", x: 250, y: 180, props: { wave: "sine", attack: 0.05, decay: 0.6 } },
           { id: "spk1", type: "speaker", x: 400, y: 180, props: { reverb: 0.5, pan: -0.5 } },
@@ -142,7 +159,7 @@ export const EXAMPLES: Record<string, Example> = {
         loopCount: -1,
         nodes: [
           { id: "src", type: "source", x: 100, y: 300, props: { interval: 0.5, noteIndex: -1, intensity: 0.5 } },
-          { id: "gate", type: "gate", x: 220, y: 300, props: { prob: 0.6 } },
+          { id: "gate", type: "gate", x: 220, y: 300, props: { probability: 0.6 } },
           { id: "pol", type: "oscillator", x: 340, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.25 } },
           { id: "spk", type: "speaker", x: 460, y: 300, props: { reverb: 0.4, pan: 0 } }
         ],
@@ -159,7 +176,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 16,
         loopCount: -1,
         nodes: [
-          { id: "src", type: "source", x: 80, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
+          { id: "src", type: "source", x: 80, y: 300, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
           
           { id: "pol1", type: "oscillator", x: 220, y: 180, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
           { id: "spk1", type: "speaker", x: 380, y: 180, props: { reverb: 0.3, pan: -0.4 } },
@@ -185,7 +202,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          { id: "src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.7 } },
           { id: "pol", type: "oscillator", x: 220, y: 300, props: { wave: "sawtooth", attack: 0.02, decay: 1.0 } },
           { id: "flt", type: "filter", x: 340, y: 300, props: { cutoff: 800, mod: 2000, attack: 0.01, decay: 0.4 } },
           { id: "spk", type: "speaker", x: 460, y: 300, props: { reverb: 0.4, pan: 0 } }
@@ -203,7 +220,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "src", type: "source", x: 80, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.5 } },
+          { id: "src", type: "source", x: 80, y: 300, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.5 } },
           
           { id: "g1", type: "gain", x: 200, y: 180, props: { value: 0.3 } },
           { id: "pol1", type: "oscillator", x: 320, y: 180, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
@@ -229,7 +246,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 16,
         loopCount: -1,
         nodes: [
-          { id: "src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
+          { id: "src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
           { id: "string", type: "tunnel", x: 280, y: 300, props: {
             tunnelName: "String",
             subNodes: [
@@ -253,9 +270,9 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 16,
         loopCount: 1,
         nodes: [
-          { id: "src1", type: "source", x: 100, y: 200, props: { interval: 1, midiNote: 60, intensity: 0.7 } },
+          { id: "src1", type: "source", x: 100, y: 200, props: { interval: 1, midiNote: 60, noteIndex: -2, intensity: 0.7 } },
           { id: "spk1", type: "speaker", x: 300, y: 200, props: { reverb: 0.3, pan: -0.3 } },
-          { id: "src2", type: "source", x: 100, y: 400, props: { interval: 4, midiNote: 60, intensity: 0.5 } },
+          { id: "src2", type: "source", x: 100, y: 400, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.5 } },
           { id: "trig1", type: "scene_trigger", x: 300, y: 400, props: { targetSceneIndex: 0, behavior: "jump" } }
         ],
         edges: [
@@ -273,19 +290,20 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Mozart's Dice Game
   demo_mozart_dice: {
     name: "Demo: Mozart's Dice Game",
+    category: "Demos",
     description: "An aleatoric system inspired by Musikalisches Würfelspiel. A Splitter creates parallel paths, and Gates randomly allow only some to pass, creating ever-changing melodies.",
     bpm: 120,
     nodes: [
-      { id: "src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 60, intensity: 0.8 } },
+      { id: "src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 60, noteIndex: -2, intensity: 0.8 } },
       { id: "split", type: "splitter", x: 250, y: 300, props: {} },
       
-      { id: "gate1", type: "gate", x: 400, y: 150, props: { prob: 0.33 } },
+      { id: "gate1", type: "gate", x: 400, y: 150, props: { probability: 0.33 } },
       { id: "pitch1", type: "pitch", x: 550, y: 150, props: { shift: 0 } },
       
-      { id: "gate2", type: "gate", x: 400, y: 300, props: { prob: 0.33 } },
+      { id: "gate2", type: "gate", x: 400, y: 300, props: { probability: 0.33 } },
       { id: "pitch2", type: "pitch", x: 550, y: 300, props: { shift: 4 } },
       
-      { id: "gate3", type: "gate", x: 400, y: 450, props: { prob: 0.33 } },
+      { id: "gate3", type: "gate", x: 400, y: 450, props: { probability: 0.33 } },
       { id: "pitch3", type: "pitch", x: 550, y: 450, props: { shift: 7 } },
       
       { id: "spk", type: "speaker", x: 700, y: 300, props: { reverb: 0.4, pan: 0 } }
@@ -301,11 +319,12 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Generative Ambient
   demo_ambient: {
     name: "Demo: Generative Ambient",
+    category: "Demos",
     description: "A self-evolving ambient piece with random notes and delays.",
     bpm: 60,
     nodes: [
       { id: "src1", type: "source", x: 100, y: 200, props: { interval: 3, noteIndex: -1, intensity: 0.4 } },
-      { id: "gate1", type: "gate", x: 220, y: 200, props: { prob: 0.5 } },
+      { id: "gate1", type: "gate", x: 220, y: 200, props: { probability: 0.5 } },
       { id: "pol1", type: "oscillator", x: 340, y: 200, props: { wave: "sine", attack: 0.3, decay: 2.0 } },
       { id: "spk1", type: "speaker", x: 500, y: 200, props: { reverb: 0.7, pan: -0.3 } },
       
@@ -314,7 +333,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "pol2", type: "oscillator", x: 340, y: 350, props: { wave: "triangle", attack: 0.5, decay: 3.0 } },
       { id: "spk2", type: "speaker", x: 500, y: 350, props: { reverb: 0.8, pan: 0.3 } },
       
-      { id: "src3", type: "source", x: 100, y: 500, props: { interval: 6, midiNote: 36, intensity: 0.5 } },
+      { id: "src3", type: "source", x: 100, y: 500, props: { interval: 6, midiNote: 36, noteIndex: -2, intensity: 0.5 } },
       { id: "pol3", type: "oscillator", x: 250, y: 500, props: { wave: "sine", attack: 0.2, decay: 4.0 } },
       { id: "spk3", type: "speaker", x: 400, y: 500, props: { reverb: 0.6, pan: 0 } }
     ],
@@ -333,10 +352,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Simple Melody
   demo_melody: {
     name: "Demo: Simple Melody",
+    category: "Demos",
     description: "A 4-note melody created by chaining speakers with pitch shifts.",
     bpm: 100,
     nodes: [
-      { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+      { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "pol", type: "oscillator", x: 160, y: 300, props: { wave: "triangle", attack: 0.02, decay: 0.3 } },
       { id: "spk1", type: "speaker", x: 280, y: 300, props: { reverb: 0.3, pan: -0.4 } },
       { id: "p1", type: "pitch", x: 400, y: 300, props: { shift: 4 } },
@@ -361,10 +381,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Filter Bass
   demo_filter_bass: {
     name: "Demo: Filter Bass",
+    category: "Demos",
     description: "A bass line with filter modulation for that classic 'wah' sound.",
     bpm: 80,
     nodes: [
-      { id: "src", type: "source", x: 100, y: 300, props: { interval: 0.5, midiNote: 36, intensity: 0.8 } },
+      { id: "src", type: "source", x: 100, y: 300, props: { interval: 0.5, midiNote: 36, noteIndex: -2, intensity: 0.8 } },
       { id: "pol", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", attack: 0.01, decay: 0.5 } },
       { id: "flt", type: "filter", x: 400, y: 300, props: { cutoff: 400, mod: 2000, attack: 0.01, decay: 0.2 } },
       { id: "spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.2, pan: 0 } }
@@ -379,22 +400,23 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Drum Pattern
   demo_drums: {
     name: "Demo: Drum Pattern",
+    category: "Demos",
     description: "A basic drum kit using different waveforms and pitches.",
     bpm: 110,
     nodes: [
-      { id: "kick_src", type: "source", x: 60, y: 180, props: { interval: 2, midiNote: 36, intensity: 0.8 } },
+      { id: "kick_src", type: "source", x: 60, y: 180, props: { interval: 2, midiNote: 36, noteIndex: -2, intensity: 0.8 } },
       { id: "kick_pol", type: "oscillator", x: 180, y: 180, props: { wave: "sine", attack: 0.01, decay: 0.25 } },
       { id: "kick_p", type: "pitch", x: 300, y: 180, props: { shift: -12 } },
       { id: "kick_out", type: "speaker", x: 420, y: 180, props: { reverb: 0.1, pan: 0 } },
       
-      { id: "snare_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+      { id: "snare_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "snare_del", type: "delay", x: 140, y: 300, props: { delayTime: 1 } },
       { id: "snare_pol", type: "oscillator", x: 240, y: 300, props: { wave: "sawtooth", attack: 0.01, decay: 0.12 } },
       { id: "snare_p", type: "pitch", x: 340, y: 300, props: { shift: 12 } },
       { id: "snare_out", type: "speaker", x: 460, y: 300, props: { reverb: 0.35, pan: 0.1 } },
       
-      { id: "hh_src", type: "source", x: 60, y: 420, props: { interval: 0.5, midiNote: 72, intensity: 0.3 } },
-      { id: "hh_gate", type: "gate", x: 160, y: 420, props: { prob: 0.75 } },
+      { id: "hh_src", type: "source", x: 60, y: 420, props: { interval: 0.5, midiNote: 72, noteIndex: -2, intensity: 0.3 } },
+      { id: "hh_gate", type: "gate", x: 160, y: 420, props: { probability: 0.75 } },
       { id: "hh_pol", type: "oscillator", x: 260, y: 420, props: { wave: "square", attack: 0.005, decay: 0.04 } },
       { id: "hh_p", type: "pitch", x: 360, y: 420, props: { shift: 24 } },
       { id: "hh_out", type: "speaker", x: 480, y: 420, props: { reverb: 0.15, pan: 0.4 } }
@@ -409,18 +431,19 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Polyrhythm
   demo_polyrhythm: {
     name: "Demo: Polyrhythm",
+    category: "Demos",
     description: "Three independent rhythms at 4, 3, and 5 beats create shifting patterns.",
     bpm: 90,
     nodes: [
-      { id: "src4", type: "source", x: 60, y: 180, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
+      { id: "src4", type: "source", x: 60, y: 180, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "pol4", type: "oscillator", x: 180, y: 180, props: { wave: "sine", attack: 0.01, decay: 0.6 } },
       { id: "spk4", type: "speaker", x: 300, y: 180, props: { reverb: 0.4, pan: -0.5 } },
       
-      { id: "src3", type: "source", x: 60, y: 300, props: { interval: 3, midiNote: 67, intensity: 0.6 } },
+      { id: "src3", type: "source", x: 60, y: 300, props: { interval: 3, midiNote: 67, noteIndex: -2, intensity: 0.6 } },
       { id: "pol3", type: "oscillator", x: 180, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.4 } },
       { id: "spk3", type: "speaker", x: 300, y: 300, props: { reverb: 0.4, pan: 0 } },
       
-      { id: "src5", type: "source", x: 60, y: 420, props: { interval: 5, midiNote: 55, intensity: 0.6 } },
+      { id: "src5", type: "source", x: 60, y: 420, props: { interval: 5, midiNote: 55, noteIndex: -2, intensity: 0.6 } },
       { id: "pol5", type: "oscillator", x: 180, y: 420, props: { wave: "square", attack: 0.01, decay: 0.3 } },
       { id: "spk5", type: "speaker", x: 300, y: 420, props: { reverb: 0.4, pan: 0.5 } }
     ],
@@ -434,20 +457,21 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: First Song
   demo_first_song: {
     name: "Demo: First Song",
+    category: "Demos",
     description: "A complete piece combining bass, melody with randomness, and a beat.",
     bpm: 90,
     nodes: [
-      { id: "bass_src", type: "source", x: 60, y: 150, props: { interval: 2, midiNote: 36, intensity: 0.8 } },
+      { id: "bass_src", type: "source", x: 60, y: 150, props: { interval: 2, midiNote: 36, noteIndex: -2, intensity: 0.8 } },
       { id: "bass_pol", type: "oscillator", x: 180, y: 150, props: { wave: "sawtooth", attack: 0.02, decay: 0.5 } },
       { id: "bass_flt", type: "filter", x: 300, y: 150, props: { cutoff: 500, mod: 800, attack: 0.01, decay: 0.3 } },
       { id: "bass_spk", type: "speaker", x: 420, y: 150, props: { reverb: 0.15, pan: 0 } },
       
       { id: "mel_src", type: "source", x: 60, y: 300, props: { interval: 0.5, noteIndex: -1, intensity: 0.5 } },
-      { id: "mel_gate", type: "gate", x: 160, y: 300, props: { prob: 0.5 } },
+      { id: "mel_gate", type: "gate", x: 160, y: 300, props: { probability: 0.5 } },
       { id: "mel_pol", type: "oscillator", x: 260, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.2 } },
       { id: "mel_spk", type: "speaker", x: 380, y: 300, props: { reverb: 0.5, pan: 0.3 } },
       
-      { id: "beat_src", type: "source", x: 60, y: 450, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+      { id: "beat_src", type: "source", x: 60, y: 450, props: { interval: 1, midiNote: 36, noteIndex: -2, intensity: 0.7 } },
       { id: "beat_p", type: "pitch", x: 160, y: 450, props: { shift: -24 } },
       { id: "beat_pol", type: "oscillator", x: 260, y: 450, props: { wave: "sine", attack: 0.005, decay: 0.15 } },
       { id: "beat_spk", type: "speaker", x: 380, y: 450, props: { reverb: 0.1, pan: 0 } }
@@ -468,10 +492,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Fixed Edge Timing
   demo_fixed_timing: {
     name: "Demo: Fixed Edge Timing",
+    category: "Demos",
     description: "Shows edge timing modes: physical (distance-based) vs fixed (beat-based) travel time.",
     bpm: 120,
     nodes: [
-      { id: "src", type: "source", x: 100, y: 200, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+      { id: "src", type: "source", x: 100, y: 200, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       
       { id: "pol1", type: "oscillator", x: 300, y: 200, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
       { id: "spk1", type: "speaker", x: 500, y: 200, props: { reverb: 0.3, pan: -0.3 } },
@@ -492,20 +517,21 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Ambient Polymetric
   demo_polymetric: {
     name: "Demo: Polymetric Ambient",
+    category: "Demos",
     description: "Three independent loops of 5, 7, and 9 beats phase against each other.",
     bpm: 110,
     nodes: [
-      { id: "src5", type: "source", x: 50, y: 150, props: { interval: 5, midiNote: 60, intensity: 0.6 } },
+      { id: "src5", type: "source", x: 50, y: 150, props: { interval: 5, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "pol5", type: "oscillator", x: 200, y: 150, props: { wave: "sine", attack: 0.1, decay: 2.0 } },
       { id: "dly5", type: "delay", x: 350, y: 150, props: { delayTime: 0.5 } },
       { id: "spk5", type: "speaker", x: 500, y: 150, props: { reverb: 0.5, pan: -0.5 } },
 
-      { id: "src7", type: "source", x: 50, y: 300, props: { interval: 7, midiNote: 64, intensity: 0.6 } },
+      { id: "src7", type: "source", x: 50, y: 300, props: { interval: 7, midiNote: 64, noteIndex: -2, intensity: 0.6 } },
       { id: "pol7", type: "oscillator", x: 200, y: 300, props: { wave: "triangle", attack: 0.1, decay: 2.0 } },
       { id: "dly7", type: "delay", x: 350, y: 300, props: { delayTime: 0.75 } },
       { id: "spk7", type: "speaker", x: 500, y: 300, props: { reverb: 0.5, pan: 0 } },
 
-      { id: "src9", type: "source", x: 50, y: 450, props: { interval: 9, midiNote: 67, intensity: 0.6 } },
+      { id: "src9", type: "source", x: 50, y: 450, props: { interval: 9, midiNote: 67, noteIndex: -2, intensity: 0.6 } },
       { id: "pol9", type: "oscillator", x: 200, y: 450, props: { wave: "sine", attack: 0.1, decay: 2.0 } },
       { id: "dly9", type: "delay", x: 350, y: 450, props: { delayTime: 1.0 } },
       { id: "spk9", type: "speaker", x: 500, y: 450, props: { reverb: 0.5, pan: 0.5 } }
@@ -520,10 +546,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Sequential Melody
   demo_sequential_melody: {
     name: "Demo: Sequential Melody",
+    category: "Demos",
     description: "A scale pattern using chained speakers with pitch shifts - packets pass through each speaker.",
     bpm: 120,
     nodes: [
-      { id: "src", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
+      { id: "src", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "pol", type: "oscillator", x: 140, y: 300, props: { wave: "sine", attack: 0.02, decay: 0.4 } },
       { id: "e1", type: "speaker", x: 220, y: 300, props: { reverb: 0.3, pan: -0.5 } },
       { id: "p1", type: "pitch", x: 300, y: 300, props: { shift: 2 } },
@@ -552,10 +579,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Canon
   demo_canon: {
     name: "Demo: Canon",
+    category: "Demos",
     description: "A 2-voice canon: the same melody plays in both voices, with the second voice delayed.",
     bpm: 100,
     nodes: [
-      { id: "src", type: "source", x: 50, y: 300, props: { interval: 4, midiNote: 62, intensity: 0.6 } },
+      { id: "src", type: "source", x: 50, y: 300, props: { interval: 4, midiNote: 62, noteIndex: -2, intensity: 0.6 } },
       { id: "pol", type: "oscillator", x: 120, y: 300, props: { wave: "triangle", attack: 0.02, decay: 0.4 } },
       
       // Voice 1 - immediate
@@ -602,10 +630,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Fugue
   demo_fugue: {
     name: "Demo: Fugue",
+    category: "Demos",
     description: "A 2-voice fugue: voice 2 enters transposed up a fifth (7 semitones) after a delay.",
     bpm: 100,
     nodes: [
-      { id: "src", type: "source", x: 50, y: 300, props: { interval: 4, midiNote: 62, intensity: 0.6 } },
+      { id: "src", type: "source", x: 50, y: 300, props: { interval: 4, midiNote: 62, noteIndex: -2, intensity: 0.6 } },
       { id: "pol", type: "oscillator", x: 120, y: 300, props: { wave: "triangle", attack: 0.02, decay: 0.4 } },
       
       // Voice 1 - subject
@@ -654,21 +683,22 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Dynamics
   demo_dynamics: {
     name: "Demo: Dynamics",
+    category: "Demos",
     description: "Demonstrates volume dynamics using gain nodes - loud, soft, and swelling passages.",
     bpm: 90,
     nodes: [
       // Loud layer
-      { id: "src_loud", type: "source", x: 60, y: 150, props: { interval: 4, midiNote: 60, intensity: 0.8 } },
+      { id: "src_loud", type: "source", x: 60, y: 150, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.8 } },
       { id: "pol_loud", type: "oscillator", x: 180, y: 150, props: { wave: "sawtooth", attack: 0.01, decay: 0.5 } },
       { id: "out_loud", type: "speaker", x: 300, y: 150, props: { reverb: 0.2, pan: -0.3 } },
       
       // Soft layer
-      { id: "src_soft", type: "source", x: 60, y: 280, props: { interval: 2, midiNote: 72, intensity: 0.2 } },
+      { id: "src_soft", type: "source", x: 60, y: 280, props: { interval: 2, midiNote: 72, noteIndex: -2, intensity: 0.2 } },
       { id: "pol_soft", type: "oscillator", x: 180, y: 280, props: { wave: "triangle", attack: 0.1, decay: 0.8 } },
       { id: "out_soft", type: "speaker", x: 300, y: 280, props: { reverb: 0.6, pan: 0.3 } },
       
       // Swell layer - goes through gain stages
-      { id: "src_swell", type: "source", x: 60, y: 420, props: { interval: 1, midiNote: 67, intensity: 0.3 } },
+      { id: "src_swell", type: "source", x: 60, y: 420, props: { interval: 1, midiNote: 67, noteIndex: -2, intensity: 0.3 } },
       { id: "gain_up", type: "gain", x: 160, y: 420, props: { value: 1.5 } },
       { id: "pol_swell", type: "oscillator", x: 260, y: 420, props: { wave: "sine", attack: 0.2, decay: 0.6 } },
       { id: "gain_down", type: "gain", x: 360, y: 420, props: { value: 0.5 } },
@@ -685,10 +715,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Arpeggio
   demo_arpeggio: {
     name: "Demo: Arpeggio",
+    category: "Demos",
     description: "A chord broken into individual notes using fixed-timing edges for precise rhythm.",
     bpm: 120,
     nodes: [
-      { id: "src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
+      { id: "src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "pol", type: "oscillator", x: 180, y: 300, props: { wave: "sine", attack: 0.02, decay: 0.5 } },
       
       // Root note - immediate
@@ -725,21 +756,22 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Generative Bells
   demo_bells: {
     name: "Demo: Generative Bells",
+    category: "Demos",
     description: "Random bell-like tones with high reverb for an ambient, church-bell atmosphere.",
     bpm: 50,
     nodes: [
       { id: "src1", type: "source", x: 80, y: 200, props: { interval: 3, noteIndex: -1, intensity: 0.5 } },
-      { id: "gate1", type: "gate", x: 180, y: 200, props: { prob: 0.4 } },
+      { id: "gate1", type: "gate", x: 180, y: 200, props: { probability: 0.4 } },
       { id: "pol1", type: "oscillator", x: 280, y: 200, props: { wave: "sine", attack: 0.01, decay: 3.0 } },
       { id: "spk1", type: "speaker", x: 400, y: 200, props: { reverb: 0.9, pan: -0.5 } },
       
       { id: "src2", type: "source", x: 80, y: 350, props: { interval: 5, noteIndex: -1, intensity: 0.4 } },
-      { id: "gate2", type: "gate", x: 180, y: 350, props: { prob: 0.5 } },
+      { id: "gate2", type: "gate", x: 180, y: 350, props: { probability: 0.5 } },
       { id: "p2", type: "pitch", x: 260, y: 350, props: { shift: 12 } },
       { id: "pol2", type: "oscillator", x: 340, y: 350, props: { wave: "triangle", attack: 0.01, decay: 2.5 } },
       { id: "spk2", type: "speaker", x: 460, y: 350, props: { reverb: 0.9, pan: 0.5 } },
       
-      { id: "src3", type: "source", x: 80, y: 500, props: { interval: 7, midiNote: 36, intensity: 0.6 } },
+      { id: "src3", type: "source", x: 80, y: 500, props: { interval: 7, midiNote: 36, noteIndex: -2, intensity: 0.6 } },
       { id: "pol3", type: "oscillator", x: 200, y: 500, props: { wave: "sine", attack: 0.05, decay: 4.0 } },
       { id: "spk3", type: "speaker", x: 350, y: 500, props: { reverb: 0.8, pan: 0 } }
     ],
@@ -753,24 +785,25 @@ export const EXAMPLES: Record<string, Example> = {
   // Demo: Techno Kick
   demo_techno: {
     name: "Demo: Techno Beat",
+    category: "Demos",
     description: "A basic 4-on-the-floor techno pattern with filtered bass and hi-hats.",
     bpm: 130,
     nodes: [
       // Kick - every beat
-      { id: "kick_src", type: "source", x: 60, y: 150, props: { interval: 1, midiNote: 36, intensity: 0.9 } },
+      { id: "kick_src", type: "source", x: 60, y: 150, props: { interval: 1, midiNote: 36, noteIndex: -2, intensity: 0.9 } },
       { id: "kick_pol", type: "oscillator", x: 180, y: 150, props: { wave: "sine", attack: 0.005, decay: 0.2 } },
       { id: "kick_p", type: "pitch", x: 280, y: 150, props: { shift: -12 } },
       { id: "kick_out", type: "speaker", x: 400, y: 150, props: { reverb: 0.05, pan: 0 } },
       
       // Bass - every 2 beats
-      { id: "bass_src", type: "source", x: 60, y: 280, props: { interval: 2, midiNote: 36, intensity: 0.7 } },
+      { id: "bass_src", type: "source", x: 60, y: 280, props: { interval: 2, midiNote: 36, noteIndex: -2, intensity: 0.7 } },
       { id: "bass_pol", type: "oscillator", x: 180, y: 280, props: { wave: "sawtooth", attack: 0.01, decay: 0.4 } },
       { id: "bass_flt", type: "filter", x: 300, y: 280, props: { cutoff: 300, mod: 600, attack: 0.01, decay: 0.15 } },
       { id: "bass_out", type: "speaker", x: 420, y: 280, props: { reverb: 0.1, pan: 0 } },
       
       // Hi-hat - every 0.5 beats with random gates
-      { id: "hh_src", type: "source", x: 60, y: 410, props: { interval: 0.5, midiNote: 96, intensity: 0.3 } },
-      { id: "hh_gate", type: "gate", x: 160, y: 410, props: { prob: 0.8 } },
+      { id: "hh_src", type: "source", x: 60, y: 410, props: { interval: 0.5, midiNote: 96, noteIndex: -2, intensity: 0.3 } },
+      { id: "hh_gate", type: "gate", x: 160, y: 410, props: { probability: 0.8 } },
       { id: "hh_pol", type: "oscillator", x: 260, y: 410, props: { wave: "square", attack: 0.001, decay: 0.03 } },
       { id: "hh_out", type: "speaker", x: 380, y: 410, props: { reverb: 0.2, pan: 0.3 } }
     ],
@@ -784,11 +817,13 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Layered Pad using Tunnel
   layered_pad: {
     name: "Advanced: Layered Pad",
+    category: "Synthesis",
     description: "Uses a tunnel to layer multiple waveforms into a rich, complex pad sound.",
     bpm: 60,
     nodes: [
-      { id: "src", type: "source", x: 60, y: 300, props: { interval: 6, midiNote: 60, intensity: 0.6 } },
+      { id: "src", type: "source", x: 60, y: 300, props: { interval: 6, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "pad", type: "tunnel", x: 200, y: 300, props: {
+        tunnelName: "Warm Pad",
         subNodes: [
           { type: "oscillator", props: { wave: "sine", attack: 0.8, decay: 3.0 } },
           { type: "oscillator", props: { wave: "triangle", attack: 1.2, decay: 2.5 } },
@@ -800,6 +835,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "split", type: "splitter", x: 200, y: 150, props: {} },
       { id: "p_hi", type: "pitch", x: 280, y: 150, props: { shift: 12 } },
       { id: "sparkle", type: "tunnel", x: 380, y: 150, props: {
+        tunnelName: "Sparkle",
         subNodes: [
           { type: "oscillator", props: { wave: "triangle", attack: 0.01, decay: 0.4 } }
         ]
@@ -819,12 +855,14 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Synth Bass using Tunnel
   synth_bass: {
     name: "Advanced: Synth Bass",
+    category: "Synthesis",
     description: "A fat bass sound using multiple waveform layers in a tunnel for synthesis.",
     bpm: 100,
     nodes: [
-      { id: "src", type: "source", x: 60, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
-      { id: "gate", type: "gate", x: 160, y: 300, props: { prob: 0.6 } },
+      { id: "src", type: "source", x: 60, y: 300, props: { interval: 1, midiNote: 36, noteIndex: -2, intensity: 0.7 } },
+      { id: "gate", type: "gate", x: 160, y: 300, props: { probability: 0.6 } },
       { id: "bass", type: "tunnel", x: 280, y: 300, props: {
+        tunnelName: "Sub Bass",
         subNodes: [
           { type: "pitch", props: { shift: -12 } },
           { type: "oscillator", props: { wave: "sine", attack: 0.01, decay: 0.3 } },
@@ -844,12 +882,14 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Orchestra with Harmonics
   orchestra: {
     name: "Advanced: Orchestra",
-    description: "Three instrument voices with harmonics, modulators, and filters simulating strings, cello, and flute.",
+    category: "Composition",
+    description: "Three instrument voices built from layered oscillators, modulators, and filters simulating violin, cello, and flute.",
     bpm: 80,
     nodes: [
       // Violin
-      { id: "v_src", type: "source", x: 60, y: 150, props: { interval: 4, midiNote: 72, intensity: 0.7 } },
+      { id: "v_src", type: "source", x: 60, y: 150, props: { interval: 4, midiNote: 72, noteIndex: -2, intensity: 0.7 } },
       { id: "v_tun", type: "tunnel", x: 200, y: 150, props: {
+        tunnelName: "Violin",
         subNodes: [
           { type: "oscillator", props: { wave: "sawtooth", attack: 0.15, decay: 1.2 } },
           { type: "oscillator", props: { ratio: 2, wave: "sine", attack: 0.12, decay: 1.0 } },
@@ -861,8 +901,9 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "v_out", type: "speaker", x: 340, y: 150, props: { reverb: 0.55, pan: -0.4 } },
 
       // Cello
-      { id: "c_src", type: "source", x: 60, y: 300, props: { interval: 8, midiNote: 36, intensity: 0.8 } },
+      { id: "c_src", type: "source", x: 60, y: 300, props: { interval: 8, midiNote: 36, noteIndex: -2, intensity: 0.8 } },
       { id: "c_tun", type: "tunnel", x: 200, y: 300, props: {
+        tunnelName: "Cello",
         subNodes: [
           { type: "pitch", props: { shift: -12 } },
           { type: "oscillator", props: { wave: "sawtooth", attack: 0.25, decay: 1.8 } },
@@ -875,8 +916,9 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "c_out", type: "speaker", x: 340, y: 300, props: { reverb: 0.5, pan: 0.4 } },
 
       // Flute
-      { id: "f_src", type: "source", x: 60, y: 450, props: { interval: 2, midiNote: 84, intensity: 0.5 } },
+      { id: "f_src", type: "source", x: 60, y: 450, props: { interval: 2, midiNote: 84, noteIndex: -2, intensity: 0.5 } },
       { id: "f_tun", type: "tunnel", x: 200, y: 450, props: {
+        tunnelName: "Flute",
         subNodes: [
           { type: "pitch", props: { shift: 12 } },
           { type: "oscillator", props: { wave: "sine", attack: 0.08, decay: 0.5 } },
@@ -897,14 +939,16 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Tunnel Melody with Delays
   tunnel_melody: {
     name: "Advanced: Tunnel Melody",
+    category: "Composition",
     description: "Demonstrates tunnels creating arpeggios and harmonies with cascading delays.",
     bpm: 100,
     nodes: [
-      { id: "main_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.7 } },
+      { id: "main_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.7 } },
       { id: "split", type: "splitter", x: 180, y: 300, props: {} },
       
       // Root note tunnel
       { id: "root_tun", type: "tunnel", x: 340, y: 180, props: {
+        tunnelName: "Root Voice",
         subNodes: [
           { type: "oscillator", props: { wave: "sine", attack: 0.05, decay: 0.8 } },
           { type: "oscillator", props: { ratio: 2, wave: "sine", attack: 0.1, decay: 0.6 } },
@@ -916,6 +960,7 @@ export const EXAMPLES: Record<string, Example> = {
       // Third with delay
       { id: "d1", type: "delay", x: 260, y: 300, props: { delayTime: 0.25 } },
       { id: "third_tun", type: "tunnel", x: 340, y: 300, props: {
+        tunnelName: "Third Voice",
         subNodes: [
           { type: "pitch", props: { shift: 4 } },
           { type: "oscillator", props: { wave: "triangle", attack: 0.02, decay: 0.5 } },
@@ -927,6 +972,7 @@ export const EXAMPLES: Record<string, Example> = {
       // Fifth with more delay
       { id: "d2", type: "delay", x: 260, y: 420, props: { delayTime: 0.5 } },
       { id: "fifth_tun", type: "tunnel", x: 340, y: 420, props: {
+        tunnelName: "Fifth Voice",
         subNodes: [
           { type: "pitch", props: { shift: 7 } },
           { type: "oscillator", props: { wave: "sine", attack: 0.01, decay: 0.4 } },
@@ -946,6 +992,7 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Quantizer Demo
   quantizer_demo: {
     name: "Advanced: Quantizer",
+    category: "Generative",
     description: "Random notes snapped to musical scales using quantizers for in-tune generative music.",
     bpm: 100,
     nodes: [
@@ -975,10 +1022,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: LFO Modulation
   lfo_modulation: {
     name: "Advanced: LFO Modulation",
+    category: "Effects & Routing",
     description: "LFO nodes generate continuous values for CV routing to modulate filter cutoff and pan.",
     bpm: 80,
     nodes: [
-      { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+      { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.7 } },
       { id: "pol", type: "oscillator", x: 180, y: 300, props: { wave: "sawtooth", attack: 0.5, decay: 2.0 } },
       { id: "flt", type: "filter", x: 300, y: 300, props: { cutoff: 800, mod: 0 } },
       { id: "out", type: "speaker", x: 420, y: 300, props: { reverb: 0.6, pan: 0 } },
@@ -998,10 +1046,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: CV Routing
   cv_routing_demo: {
     name: "Advanced: CV Routing",
+    category: "Effects & Routing",
     description: "Multiple LFOs modulate filter cutoff, pan, and gain for complex modulation effects.",
     bpm: 70,
     nodes: [
-      { id: "src", type: "source", x: 80, y: 300, props: { interval: 3, midiNote: 48, intensity: 0.7 } },
+      { id: "src", type: "source", x: 80, y: 300, props: { interval: 3, midiNote: 48, noteIndex: -2, intensity: 0.7 } },
       { id: "pol", type: "oscillator", x: 200, y: 300, props: { wave: "sawtooth", attack: 0.8, decay: 2.5 } },
       { id: "gain", type: "gain", x: 320, y: 300, props: { value: 0.8 } },
       { id: "flt", type: "filter", x: 440, y: 300, props: { cutoff: 1000, mod: 0 } },
@@ -1011,7 +1060,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "lfo_pan", type: "lfo", x: 560, y: 150, props: { rate: 0.15, shape: "triangle", min: -1, max: 1 } },
       { id: "lfo_gain", type: "lfo", x: 320, y: 450, props: { rate: 0.5, shape: "sine", min: 0.3, max: 1.0 } },
       
-      { id: "src2", type: "source", x: 80, y: 500, props: { interval: 6, midiNote: 36, intensity: 0.8 } },
+      { id: "src2", type: "source", x: 80, y: 500, props: { interval: 6, midiNote: 36, noteIndex: -2, intensity: 0.8 } },
       { id: "pol2", type: "oscillator", x: 200, y: 500, props: { wave: "sine", attack: 0.5, decay: 3.0 } },
       { id: "out2", type: "speaker", x: 320, y: 500, props: { reverb: 0.5, pan: 0 } }
     ],
@@ -1031,11 +1080,12 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Blues Scale
   blues_scale: {
     name: "Advanced: Blues Scale",
+    category: "Generative",
     description: "Jamming in blues scale with quantizer and gate for authentic bluesy feel.",
     bpm: 85,
     nodes: [
       { id: "lead_src", type: "source", x: 60, y: 200, props: { interval: 0.75, noteIndex: -1, intensity: 0.6 } },
-      { id: "lead_gate", type: "gate", x: 140, y: 200, props: { prob: 0.7 } },
+      { id: "lead_gate", type: "gate", x: 140, y: 200, props: { probability: 0.7 } },
       { id: "lead_q", type: "quantizer", x: 220, y: 200, props: { strength: 1.0 } },
       { id: "lead_pol", type: "oscillator", x: 320, y: 200, props: { wave: "sawtooth", attack: 0.01, decay: 0.3 } },
       { id: "lead_flt", type: "filter", x: 420, y: 200, props: { cutoff: 1800, mod: 2000, attack: 0.01, decay: 0.2 } },
@@ -1048,7 +1098,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "bass_out", type: "speaker", x: 460, y: 350, props: { reverb: 0.2, pan: -0.2 } },
       
       { id: "rhythm_src", type: "source", x: 60, y: 500, props: { interval: 0.5, noteIndex: -1, intensity: 0.4 } },
-      { id: "rhythm_gate", type: "gate", x: 140, y: 500, props: { prob: 0.5 } },
+      { id: "rhythm_gate", type: "gate", x: 140, y: 500, props: { probability: 0.5 } },
       { id: "rhythm_q", type: "quantizer", x: 220, y: 500, props: { strength: 0.8 } },
       { id: "rhythm_pol", type: "oscillator", x: 320, y: 500, props: { wave: "square", attack: 0.005, decay: 0.15 } },
       { id: "rhythm_out", type: "speaker", x: 420, y: 500, props: { reverb: 0.3, pan: -0.4 } },
@@ -1076,19 +1126,20 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Ambient Drone
   ambient_drone: {
     name: "Advanced: Ambient Drone",
+    category: "Composition",
     description: "Slow, evolving drone with high reverb and long decays for meditative atmosphere.",
     bpm: 40,
     nodes: [
-      { id: "src1", type: "source", x: 60, y: 200, props: { interval: 8, midiNote: 48, intensity: 0.5 } },
+      { id: "src1", type: "source", x: 60, y: 200, props: { interval: 8, midiNote: 48, noteIndex: -2, intensity: 0.5 } },
       { id: "pol1", type: "oscillator", x: 180, y: 200, props: { wave: "sine", attack: 2.0, decay: 5.0 } },
       { id: "out1", type: "speaker", x: 300, y: 200, props: { reverb: 0.95, pan: -0.5 } },
       
-      { id: "src2", type: "source", x: 60, y: 350, props: { interval: 12, midiNote: 55, intensity: 0.4 } },
+      { id: "src2", type: "source", x: 60, y: 350, props: { interval: 12, midiNote: 55, noteIndex: -2, intensity: 0.4 } },
       { id: "pol2", type: "oscillator", x: 180, y: 350, props: { wave: "triangle", attack: 1.5, decay: 4.0 } },
       { id: "flt2", type: "filter", x: 280, y: 350, props: { cutoff: 500, mod: 300, attack: 0.5, decay: 2.0 } },
       { id: "out2", type: "speaker", x: 400, y: 350, props: { reverb: 0.9, pan: 0.5 } },
       
-      { id: "src3", type: "source", x: 60, y: 500, props: { interval: 16, midiNote: 43, intensity: 0.3 } },
+      { id: "src3", type: "source", x: 60, y: 500, props: { interval: 16, midiNote: 43, noteIndex: -2, intensity: 0.3 } },
       { id: "d1", type: "delay", x: 150, y: 500, props: { delayTime: 4.0 } },
       { id: "pol3", type: "oscillator", x: 250, y: 500, props: { wave: "sine", attack: 1.0, decay: 6.0 } },
       { id: "out3", type: "speaker", x: 380, y: 500, props: { reverb: 0.85, pan: 0 } },
@@ -1111,10 +1162,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Virtual Edges with Fixed Timing
   virtual_edges: {
     name: "Advanced: Virtual Edges",
+    category: "Physics & Timing",
     description: "Fixed-timing edges for precise rhythmic patterns independent of physical distance.",
     bpm: 120,
     nodes: [
-      { id: "src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.7 } },
+      { id: "src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.7 } },
       { id: "split", type: "splitter", x: 200, y: 300, props: {} },
       
       { id: "pol1", type: "oscillator", x: 500, y: 150, props: { wave: "sine", attack: 0.01, decay: 0.3 } },
@@ -1145,25 +1197,26 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Noise Percussion
   noise_percussion: {
     name: "Advanced: Noise Percussion",
+    category: "Synthesis",
     description: "White, pink, and brown noise sources create realistic hi-hats, snares, and rumbles.",
     bpm: 110,
     nodes: [
       // Hi-hat with white noise
-      { id: "hh_src", type: "source", x: 60, y: 150, props: { interval: 0.5, midiNote: 80, intensity: 0.4 } },
-      { id: "hh_gate", type: "gate", x: 150, y: 150, props: { prob: 0.75 } },
+      { id: "hh_src", type: "source", x: 60, y: 150, props: { interval: 0.5, midiNote: 80, noteIndex: -2, intensity: 0.4 } },
+      { id: "hh_gate", type: "gate", x: 150, y: 150, props: { probability: 0.75 } },
       { id: "hh_noise", type: "oscillator", x: 240, y: 150, props: { wave: "white", attack: 0.001, decay: 0.05 } },
       { id: "hh_flt", type: "filter", x: 330, y: 150, props: { cutoff: 8000, mod: 2000, attack: 0.001, decay: 0.03 } },
       { id: "hh_out", type: "speaker", x: 440, y: 150, props: { reverb: 0.15, pan: 0.3 } },
       
       // Snare with pink noise
-      { id: "sn_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.7 } },
+      { id: "sn_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.7 } },
       { id: "sn_del", type: "delay", x: 140, y: 300, props: { delayTime: 1 } },
       { id: "sn_noise", type: "oscillator", x: 240, y: 300, props: { wave: "pink", attack: 0.005, decay: 0.15 } },
       { id: "sn_flt", type: "filter", x: 340, y: 300, props: { cutoff: 3000, mod: 2000, attack: 0.01, decay: 0.1 } },
       { id: "sn_out", type: "speaker", x: 460, y: 300, props: { reverb: 0.3, pan: -0.1 } },
       
       // Rumble with brown noise
-      { id: "rm_src", type: "source", x: 60, y: 450, props: { interval: 4, midiNote: 36, intensity: 0.5 } },
+      { id: "rm_src", type: "source", x: 60, y: 450, props: { interval: 4, midiNote: 36, noteIndex: -2, intensity: 0.5 } },
       { id: "rm_noise", type: "oscillator", x: 180, y: 450, props: { wave: "brown", attack: 0.1, decay: 1.5 } },
       { id: "rm_flt", type: "filter", x: 300, y: 450, props: { cutoff: 200, mod: 150, attack: 0.05, decay: 0.8 } },
       { id: "rm_out", type: "speaker", x: 420, y: 450, props: { reverb: 0.4, pan: 0 } }
@@ -1186,11 +1239,12 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Vibrato Strings
   vibrato_strings: {
     name: "Advanced: Vibrato Strings",
+    category: "Synthesis",
     description: "Modulator nodes add expressive vibrato to create realistic string instrument sounds.",
     bpm: 70,
     nodes: [
       // Violin with fast vibrato
-      { id: "v_src", type: "source", x: 60, y: 180, props: { interval: 4, midiNote: 76, intensity: 0.6 } },
+      { id: "v_src", type: "source", x: 60, y: 180, props: { interval: 4, midiNote: 76, noteIndex: -2, intensity: 0.6 } },
       { id: "v_pol", type: "oscillator", x: 180, y: 180, props: { wave: "sawtooth", attack: 0.2, decay: 1.5 } },
       { id: "v_mod", type: "modulator", x: 300, y: 180, props: { rate: 6.0, depth: 20 } },
       { id: "v_harm", type: "oscillator", x: 420, y: 180, props: { ratio: 2, wave: "sine", attack: 0.15, decay: 1.2 } },
@@ -1198,7 +1252,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "v_out", type: "speaker", x: 660, y: 180, props: { reverb: 0.5, pan: -0.4 } },
       
       // Viola with medium vibrato
-      { id: "va_src", type: "source", x: 60, y: 330, props: { interval: 6, midiNote: 60, intensity: 0.65 } },
+      { id: "va_src", type: "source", x: 60, y: 330, props: { interval: 6, midiNote: 60, noteIndex: -2, intensity: 0.65 } },
       { id: "va_pol", type: "oscillator", x: 180, y: 330, props: { wave: "sawtooth", attack: 0.25, decay: 2.0 } },
       { id: "va_mod", type: "modulator", x: 300, y: 330, props: { rate: 5.0, depth: 18 } },
       { id: "va_harm", type: "oscillator", x: 420, y: 330, props: { ratio: 3, wave: "triangle", attack: 0.2, decay: 1.5 } },
@@ -1206,7 +1260,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "va_out", type: "speaker", x: 660, y: 330, props: { reverb: 0.55, pan: 0 } },
       
       // Cello with slow vibrato
-      { id: "c_src", type: "source", x: 60, y: 480, props: { interval: 8, midiNote: 48, intensity: 0.7 } },
+      { id: "c_src", type: "source", x: 60, y: 480, props: { interval: 8, midiNote: 48, noteIndex: -2, intensity: 0.7 } },
       { id: "c_pol", type: "oscillator", x: 180, y: 480, props: { wave: "sawtooth", attack: 0.3, decay: 2.5 } },
       { id: "c_mod", type: "modulator", x: 300, y: 480, props: { rate: 4.5, depth: 15 } },
       { id: "c_harm", type: "oscillator", x: 420, y: 480, props: { ratio: 2, wave: "sine", attack: 0.25, decay: 2.0 } },
@@ -1229,10 +1283,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Teleporter Echo
   teleporter_echo: {
     name: "Advanced: Teleporter",
+    category: "Effects & Routing",
     description: "Teleporters instantly transport packets to create unique spatial effects and feedback loops.",
     bpm: 100,
     nodes: [
-      { id: "src", type: "source", x: 60, y: 250, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+      { id: "src", type: "source", x: 60, y: 250, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "pol", type: "oscillator", x: 160, y: 250, props: { wave: "triangle", attack: 0.02, decay: 0.4 } },
       { id: "out1", type: "speaker", x: 280, y: 250, props: { reverb: 0.3, pan: -0.5 } },
       
@@ -1244,7 +1299,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "out2", type: "speaker", x: 820, y: 250, props: { reverb: 0.5, pan: 0.5 } },
       
       // Second teleporter pair for octave
-      { id: "src2", type: "source", x: 60, y: 400, props: { interval: 4, midiNote: 48, intensity: 0.7 } },
+      { id: "src2", type: "source", x: 60, y: 400, props: { interval: 4, midiNote: 48, noteIndex: -2, intensity: 0.7 } },
       { id: "pol2", type: "oscillator", x: 160, y: 400, props: { wave: "sine", attack: 0.1, decay: 1.0 } },
       { id: "tele_in2", type: "teleporter", x: 280, y: 400, props: { channel: "B", isEntry: true } },
       { id: "tele_out2", type: "teleporter", x: 500, y: 400, props: { channel: "B", isEntry: false } },
@@ -1267,10 +1322,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Harmonic Series
   harmonic_series: {
     name: "Advanced: Harmonic Series",
-    description: "Multiple harmonic nodes build a rich organ-like tone with natural overtones.",
+    category: "Synthesis",
+    description: "Oscillators at integer frequency ratios build a rich organ-like tone with natural overtones.",
     bpm: 60,
     nodes: [
-      { id: "src", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 48, intensity: 0.5 } },
+      { id: "src", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 48, noteIndex: -2, intensity: 0.5 } },
       { id: "split", type: "splitter", x: 160, y: 300, props: {} },
       
       // Fundamental
@@ -1309,10 +1365,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Multi-LFO Wobble Bass
   wobble_bass: {
     name: "Advanced: Wobble Bass",
+    category: "Synthesis",
     description: "Multiple LFOs at different rates create complex wobble bass movements.",
     bpm: 140,
     nodes: [
-      { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 36, intensity: 0.8 } },
+      { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 36, noteIndex: -2, intensity: 0.8 } },
       { id: "pol", type: "oscillator", x: 180, y: 300, props: { wave: "sawtooth", attack: 0.01, decay: 0.8 } },
       { id: "flt", type: "filter", x: 300, y: 300, props: { cutoff: 500, mod: 0 } },
       { id: "gain", type: "gain", x: 420, y: 300, props: { value: 0.8 } },
@@ -1325,7 +1382,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "lfo_slow", type: "lfo", x: 420, y: 150, props: { rate: 0.5, shape: "triangle", min: 0.4, max: 1.0 } },
       
       // Sub bass layer
-      { id: "src_sub", type: "source", x: 60, y: 450, props: { interval: 2, midiNote: 36, intensity: 0.9 } },
+      { id: "src_sub", type: "source", x: 60, y: 450, props: { interval: 2, midiNote: 36, noteIndex: -2, intensity: 0.9 } },
       { id: "p_sub", type: "pitch", x: 160, y: 450, props: { shift: -12 } },
       { id: "pol_sub", type: "oscillator", x: 260, y: 450, props: { wave: "sine", attack: 0.01, decay: 0.6 } },
       { id: "out_sub", type: "speaker", x: 380, y: 450, props: { reverb: 0.1, pan: 0 } }
@@ -1346,12 +1403,13 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Generative Sequencer
   generative_sequencer: {
     name: "Advanced: Generative Sequencer",
+    category: "Generative",
     description: "Gates and quantizers create an ever-evolving melodic sequence with controlled randomness.",
     bpm: 120,
     nodes: [
       // Fast sequence with high gate probability
       { id: "seq1_src", type: "source", x: 60, y: 150, props: { interval: 0.25, noteIndex: -1, intensity: 0.5 } },
-      { id: "seq1_gate", type: "gate", x: 160, y: 150, props: { prob: 0.4 } },
+      { id: "seq1_gate", type: "gate", x: 160, y: 150, props: { probability: 0.4 } },
       { id: "seq1_quant", type: "quantizer", x: 260, y: 150, props: { strength: 1.0 } },
       { id: "seq1_pol", type: "oscillator", x: 360, y: 150, props: { wave: "square", attack: 0.005, decay: 0.1 } },
       { id: "seq1_flt", type: "filter", x: 460, y: 150, props: { cutoff: 2000, mod: 1500, attack: 0.01, decay: 0.08 } },
@@ -1359,7 +1417,7 @@ export const EXAMPLES: Record<string, Example> = {
       
       // Medium sequence with splitter for harmony
       { id: "seq2_src", type: "source", x: 60, y: 300, props: { interval: 0.5, noteIndex: -1, intensity: 0.6 } },
-      { id: "seq2_gate", type: "gate", x: 160, y: 300, props: { prob: 0.6 } },
+      { id: "seq2_gate", type: "gate", x: 160, y: 300, props: { probability: 0.6 } },
       { id: "seq2_quant", type: "quantizer", x: 260, y: 300, props: { strength: 0.9 } },
       { id: "seq2_split", type: "splitter", x: 350, y: 300, props: {} },
       { id: "seq2_pol1", type: "oscillator", x: 460, y: 250, props: { wave: "triangle", attack: 0.01, decay: 0.2 } },
@@ -1398,27 +1456,30 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Full Tunnel Processing
   tunnel_processing: {
     name: "Advanced: Full Tunnel",
+    category: "Synthesis",
     description: "Tunnels containing pitch, oscillator, modulator, and filter for complete synthesis.",
     bpm: 90,
     nodes: [
-      { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.7 } },
+      { id: "src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.7 } },
       
       // Complex tunnel with full processing chain
       { id: "synth", type: "tunnel", x: 250, y: 300, props: {
+        tunnelName: "Lead Synth",
         subNodes: [
           { type: "pitch", props: { shift: 0 } },
           { type: "oscillator", props: { wave: "sawtooth", attack: 0.02, decay: 0.8 } },
           { type: "oscillator", props: { ratio: 2, wave: "sine", attack: 0.03, decay: 0.6 } },
           { type: "oscillator", props: { ratio: 3, wave: "triangle", attack: 0.04, decay: 0.5 } },
-          { type: "modulator", props: { rate: 5.5, depth: 20 } },
-          { type: "filter", props: { cutoff: 2000, mod: 1500, attack: 0.02, decay: 0.4 } }
+          { type: "modulator", props: { rate: 5.5, depth: 20 } }
         ]
       }},
-      { id: "out1", type: "speaker", x: 440, y: 300, props: { reverb: 0.5, pan: 0 } },
+      { id: "flt", type: "filter", x: 440, y: 300, props: { cutoff: 2000, resonance: 0.3, attack: 0.02, decay: 0.4 } },
+      { id: "out1", type: "speaker", x: 620, y: 300, props: { reverb: 0.5, pan: 0 } },
       
       // Second voice with different tunnel
-      { id: "src2", type: "source", x: 60, y: 480, props: { interval: 4, midiNote: 48, intensity: 0.6 } },
+      { id: "src2", type: "source", x: 60, y: 480, props: { interval: 4, midiNote: 48, noteIndex: -2, intensity: 0.6 } },
       { id: "pad", type: "tunnel", x: 250, y: 480, props: {
+        tunnelName: "Soft Pad",
         subNodes: [
           { type: "oscillator", props: { wave: "sine", attack: 0.5, decay: 2.0 } },
           { type: "oscillator", props: { ratio: 2, wave: "sine", attack: 0.4, decay: 1.8 } },
@@ -1427,47 +1488,50 @@ export const EXAMPLES: Record<string, Example> = {
         ]
       }},
       { id: "out2", type: "speaker", x: 440, y: 480, props: { reverb: 0.8, pan: 0.3 } },
-      
-      // LFO for filter modulation on main synth
-      { id: "lfo1", type: "lfo", x: 350, y: 180, props: { rate: 0.5, shape: "sine", min: 800, max: 3500 } }
+
+      // LFO sweeping the lead synth's filter cutoff
+      { id: "lfo1", type: "lfo", x: 440, y: 180, props: { rate: 0.5, shape: "sine", min: 800, max: 3500 } }
     ],
     edges: [
       { id: "e1", from: "src", to: "synth" },
-      { id: "e2", from: "synth", to: "out1" },
-      { id: "e3", from: "src2", to: "pad" },
-      { id: "e4", from: "pad", to: "out2" }
+      { id: "e2", from: "synth", to: "flt" },
+      { id: "e3", from: "flt", to: "out1" },
+      { id: "e4", from: "src2", to: "pad" },
+      { id: "e5", from: "pad", to: "out2" },
+      { id: "e6", from: "lfo1", to: "flt", targetParam: "cutoff" }
     ]
   },
 
   // Advanced: Euclidean-style Rhythms
   euclidean_rhythms: {
     name: "Advanced: Complex Rhythms",
+    category: "Generative",
     description: "Gates with different probabilities create Euclidean-style distributed rhythms.",
     bpm: 125,
     nodes: [
       // High density - 8 steps, ~5 hits (prob 0.625)
-      { id: "h_src", type: "source", x: 60, y: 150, props: { interval: 0.5, midiNote: 72, intensity: 0.5 } },
-      { id: "h_gate", type: "gate", x: 160, y: 150, props: { prob: 0.625 } },
+      { id: "h_src", type: "source", x: 60, y: 150, props: { interval: 0.5, midiNote: 72, noteIndex: -2, intensity: 0.5 } },
+      { id: "h_gate", type: "gate", x: 160, y: 150, props: { probability: 0.625 } },
       { id: "h_pol", type: "oscillator", x: 260, y: 150, props: { wave: "square", attack: 0.001, decay: 0.04 } },
       { id: "h_p", type: "pitch", x: 360, y: 150, props: { shift: 24 } },
       { id: "h_out", type: "speaker", x: 460, y: 150, props: { reverb: 0.15, pan: 0.4 } },
       
       // Medium density - 8 steps, ~3 hits (prob 0.375)
-      { id: "m_src", type: "source", x: 60, y: 300, props: { interval: 0.5, midiNote: 60, intensity: 0.6 } },
-      { id: "m_gate", type: "gate", x: 160, y: 300, props: { prob: 0.375 } },
+      { id: "m_src", type: "source", x: 60, y: 300, props: { interval: 0.5, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
+      { id: "m_gate", type: "gate", x: 160, y: 300, props: { probability: 0.375 } },
       { id: "m_pol", type: "oscillator", x: 260, y: 300, props: { wave: "triangle", attack: 0.01, decay: 0.15 } },
       { id: "m_out", type: "speaker", x: 360, y: 300, props: { reverb: 0.25, pan: 0 } },
       
       // Low density - kick pattern (prob 0.25)
-      { id: "k_src", type: "source", x: 60, y: 450, props: { interval: 0.5, midiNote: 36, intensity: 0.8 } },
-      { id: "k_gate", type: "gate", x: 160, y: 450, props: { prob: 0.25 } },
+      { id: "k_src", type: "source", x: 60, y: 450, props: { interval: 0.5, midiNote: 36, noteIndex: -2, intensity: 0.8 } },
+      { id: "k_gate", type: "gate", x: 160, y: 450, props: { probability: 0.25 } },
       { id: "k_pol", type: "oscillator", x: 260, y: 450, props: { wave: "sine", attack: 0.005, decay: 0.2 } },
       { id: "k_p", type: "pitch", x: 360, y: 450, props: { shift: -12 } },
       { id: "k_out", type: "speaker", x: 460, y: 450, props: { reverb: 0.1, pan: -0.2 } },
       
       // Accent layer - very sparse (prob 0.125)
-      { id: "a_src", type: "source", x: 500, y: 300, props: { interval: 1, midiNote: 84, intensity: 0.4 } },
-      { id: "a_gate", type: "gate", x: 580, y: 300, props: { prob: 0.125 } },
+      { id: "a_src", type: "source", x: 500, y: 300, props: { interval: 1, midiNote: 84, noteIndex: -2, intensity: 0.4 } },
+      { id: "a_gate", type: "gate", x: 580, y: 300, props: { probability: 0.125 } },
       { id: "a_pol", type: "oscillator", x: 660, y: 300, props: { wave: "sine", attack: 0.01, decay: 0.5 } },
       { id: "a_out", type: "speaker", x: 760, y: 300, props: { reverb: 0.6, pan: 0.3 } }
     ],
@@ -1486,10 +1550,11 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Delay Network
   delay_network: {
     name: "Advanced: Delay Network",
+    category: "Effects & Routing",
     description: "Multiple interconnected delays create a complex echo network with pitch shifting.",
     bpm: 90,
     nodes: [
-      { id: "src", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.6 } },
+      { id: "src", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "pol", type: "oscillator", x: 160, y: 300, props: { wave: "sine", attack: 0.05, decay: 0.6 } },
       { id: "split", type: "splitter", x: 260, y: 300, props: {} },
       
@@ -1526,32 +1591,33 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Gamelan
   gamelan: {
     name: "Advanced: Gamelan",
+    category: "Composition",
     description: "Indonesian gamelan-inspired metallic tones with interlocking rhythms and harmonics.",
     bpm: 85,
     nodes: [
       // Gong - low, slow
-      { id: "gong_src", type: "source", x: 60, y: 150, props: { interval: 8, midiNote: 36, intensity: 0.8 } },
+      { id: "gong_src", type: "source", x: 60, y: 150, props: { interval: 8, midiNote: 36, noteIndex: -2, intensity: 0.8 } },
       { id: "gong_pol", type: "oscillator", x: 180, y: 150, props: { wave: "sine", attack: 0.02, decay: 4.0 } },
       { id: "gong_h", type: "oscillator", x: 300, y: 150, props: { ratio: 2.2, wave: "sine", attack: 0.03, decay: 3.0 } },
       { id: "gong_out", type: "speaker", x: 420, y: 150, props: { reverb: 0.8, pan: 0 } },
       
       // Kenong - medium
-      { id: "ken_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+      { id: "ken_src", type: "source", x: 60, y: 300, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "ken_pol", type: "oscillator", x: 180, y: 300, props: { wave: "triangle", attack: 0.01, decay: 1.5 } },
       { id: "ken_h1", type: "oscillator", x: 300, y: 300, props: { ratio: 2.76, wave: "sine", attack: 0.02, decay: 1.2 } },
       { id: "ken_h2", type: "oscillator", x: 400, y: 300, props: { ratio: 5.4, wave: "sine", attack: 0.03, decay: 0.8 } },
       { id: "ken_out", type: "speaker", x: 520, y: 300, props: { reverb: 0.6, pan: -0.3 } },
       
       // Bonang - high, fast
-      { id: "bon_src", type: "source", x: 60, y: 450, props: { interval: 0.5, midiNote: 72, intensity: 0.5 } },
-      { id: "bon_gate", type: "gate", x: 160, y: 450, props: { prob: 0.7 } },
+      { id: "bon_src", type: "source", x: 60, y: 450, props: { interval: 0.5, midiNote: 72, noteIndex: -2, intensity: 0.5 } },
+      { id: "bon_gate", type: "gate", x: 160, y: 450, props: { probability: 0.7 } },
       { id: "bon_pol", type: "oscillator", x: 260, y: 450, props: { wave: "sine", attack: 0.005, decay: 0.5 } },
       { id: "bon_h", type: "oscillator", x: 360, y: 450, props: { ratio: 3.14, wave: "sine", attack: 0.01, decay: 0.3 } },
       { id: "bon_out", type: "speaker", x: 480, y: 450, props: { reverb: 0.5, pan: 0.3 } },
       
       // Peking - highest, fastest interlocking
-      { id: "pek_src", type: "source", x: 550, y: 300, props: { interval: 0.25, midiNote: 84, intensity: 0.4 } },
-      { id: "pek_gate", type: "gate", x: 640, y: 300, props: { prob: 0.5 } },
+      { id: "pek_src", type: "source", x: 550, y: 300, props: { interval: 0.25, midiNote: 84, noteIndex: -2, intensity: 0.4 } },
+      { id: "pek_gate", type: "gate", x: 640, y: 300, props: { probability: 0.5 } },
       { id: "pek_pol", type: "oscillator", x: 730, y: 300, props: { wave: "sine", attack: 0.002, decay: 0.2 } },
       { id: "pek_h", type: "oscillator", x: 820, y: 300, props: { ratio: 4.16, wave: "sine", attack: 0.005, decay: 0.15 } },
       { id: "pek_out", type: "speaker", x: 910, y: 300, props: { reverb: 0.4, pan: 0.5 } }
@@ -1571,6 +1637,7 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Pentatonic Jam
   pentatonic_jam: {
     name: "Advanced: Pentatonic Jam",
+    category: "Generative",
     description: "A complete jam using quantizer for pentatonic scale, LFO modulation, and virtual edges for precise timing.",
     bpm: 100,
     nodes: [
@@ -1582,7 +1649,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "bass_out", type: "speaker", x: 560, y: 150, props: { reverb: 0.2, pan: 0 } },
       
       { id: "mel_src", type: "source", x: 60, y: 300, props: { interval: 0.5, noteIndex: -1, intensity: 0.5 } },
-      { id: "mel_gate", type: "gate", x: 140, y: 300, props: { prob: 0.6 } },
+      { id: "mel_gate", type: "gate", x: 140, y: 300, props: { probability: 0.6 } },
       { id: "mel_q", type: "quantizer", x: 220, y: 300, props: { strength: 1.0 } },
       { id: "mel_split", type: "splitter", x: 300, y: 300, props: {} },
       
@@ -1592,7 +1659,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "mel_pol2", type: "oscillator", x: 400, y: 350, props: { wave: "sine", attack: 0.01, decay: 0.2 } },
       { id: "mel_out2", type: "speaker", x: 500, y: 350, props: { reverb: 0.5, pan: 0.4 } },
       
-      { id: "arp_src", type: "source", x: 60, y: 480, props: { interval: 4, midiNote: 72, intensity: 0.4 } },
+      { id: "arp_src", type: "source", x: 60, y: 480, props: { interval: 4, midiNote: 72, noteIndex: -2, intensity: 0.4 } },
       { id: "arp_split", type: "splitter", x: 160, y: 480, props: {} },
       { id: "arp_q", type: "quantizer", x: 260, y: 480, props: { strength: 1.0 } },
       { id: "arp_pol", type: "oscillator", x: 360, y: 480, props: { wave: "sine", attack: 0.005, decay: 0.15 } },
@@ -1624,15 +1691,17 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: Krell Patch
   ambient_krell: {
     name: "Advanced: Krell Patch",
+    category: "Generative",
     description: "A 'Krell' style generative patch with random notes and varying envelope lengths.",
     bpm: 80,
     nodes: [
       { id: "clock", type: "source", x: 50, y: 300, props: { interval: 0.5, noteIndex: -1, intensity: 0.7 } },
-      { id: "gate", type: "gate", x: 150, y: 300, props: { prob: 0.4 } },
+      { id: "gate", type: "gate", x: 150, y: 300, props: { probability: 0.4 } },
       { id: "quant", type: "quantizer", x: 250, y: 300, props: { strength: 1.0 } },
       
+      // LFO slowly varying the envelope decay (the classic Krell "breathing")
       { id: "lfo_decay", type: "lfo", x: 250, y: 150, props: { rate: 0.2, min: 0.1, max: 2.0, shape: "sine" } },
-      
+
       { id: "pol", type: "oscillator", x: 400, y: 300, props: { wave: "sine", attack: 0.05, decay: 0.5 } },
       { id: "delay", type: "delay", x: 550, y: 300, props: { delayTime: 0.75 } },
       { id: "spk", type: "speaker", x: 700, y: 300, props: { reverb: 0.6, pan: 0 } }
@@ -1642,27 +1711,29 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "e2", from: "gate", to: "quant" },
       { id: "e3", from: "quant", to: "pol" },
       { id: "e4", from: "pol", to: "delay" },
-      { id: "e5", from: "delay", to: "spk" }
+      { id: "e5", from: "delay", to: "spk" },
+      { id: "e6", from: "lfo_decay", to: "pol", targetParam: "decay" }
     ]
   },
 
   // Advanced: Gravity Tempo
   gravity_tempo: {
     name: "Advanced: Gravity Tempo",
+    category: "Physics & Timing",
     description: "Demonstrates gravity physics - heavy nodes (high mass) slow down approaching packets, creating ritardando effects.",
     bpm: 100,
     nodes: [
-      { id: "src1", type: "source", x: 60, y: 200, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+      { id: "src1", type: "source", x: 60, y: 200, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "light_gain", type: "gain", x: 200, y: 200, props: { value: 1.0 } },
       { id: "pol1", type: "oscillator", x: 340, y: 200, props: { wave: "sine", attack: 0.01, decay: 0.4 } },
       { id: "out1", type: "speaker", x: 480, y: 200, props: { reverb: 0.3, pan: -0.5 } },
       
-      { id: "src2", type: "source", x: 60, y: 350, props: { interval: 2, midiNote: 60, intensity: 0.6 } },
+      { id: "src2", type: "source", x: 60, y: 350, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
       { id: "heavy_gain", type: "gain", x: 200, y: 350, props: { value: 1.0 } },
       { id: "pol2", type: "oscillator", x: 340, y: 350, props: { wave: "sine", attack: 0.01, decay: 0.4 } },
       { id: "out2", type: "speaker", x: 480, y: 350, props: { reverb: 0.3, pan: 0.5 } },
       
-      { id: "src3", type: "source", x: 60, y: 500, props: { interval: 2, midiNote: 48, intensity: 0.5 } },
+      { id: "src3", type: "source", x: 60, y: 500, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.5 } },
       { id: "heavy_spk", type: "speaker", x: 300, y: 500, props: { reverb: 0.4, pan: 0 } }
     ],
     edges: [
@@ -1675,18 +1746,19 @@ export const EXAMPLES: Record<string, Example> = {
   // Advanced: AHD Envelopes
   ahd_envelopes: {
     name: "Advanced: AHD Envelopes",
+    category: "Synthesis",
     description: "Demonstrates AHD (Attack-Hold-Decay) envelopes. Compare short staccato vs sustained organ-like tones.",
     bpm: 60,
     nodes: [
-      { id: "src1", type: "source", x: 60, y: 180, props: { interval: 4, midiNote: 60, intensity: 0.7 } },
+      { id: "src1", type: "source", x: 60, y: 180, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.7 } },
       { id: "pol1", type: "oscillator", x: 180, y: 180, props: { wave: "sine", attack: 0.01, decay: 0.2 } },
       { id: "staccato", type: "speaker", x: 300, y: 180, props: { reverb: 0.2, pan: -0.5 } },
       
-      { id: "src2", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.7 } },
+      { id: "src2", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.7 } },
       { id: "pol2", type: "oscillator", x: 180, y: 300, props: { wave: "sine", attack: 0.3, decay: 0.5 } },
       { id: "sustained", type: "speaker", x: 300, y: 300, props: { reverb: 0.4, pan: 0 } },
       
-      { id: "src3", type: "source", x: 60, y: 420, props: { interval: 4, midiNote: 60, intensity: 0.7 } },
+      { id: "src3", type: "source", x: 60, y: 420, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.7 } },
       { id: "pol3", type: "oscillator", x: 180, y: 420, props: { wave: "triangle", attack: 0.8, decay: 0.1 } },
       { id: "organ", type: "speaker", x: 300, y: 420, props: { reverb: 0.6, pan: 0.5 } }
     ],
@@ -1712,6 +1784,7 @@ export const EXAMPLES: Record<string, Example> = {
   
   pachelbel_canon: {
     name: "Orchestral: Canon in D",
+    category: "Orchestral",
     description: "Pachelbel's Canon - Ground bass (D-A-B-F#-G-D-G-A) with canon melody entering on staggered string voices. One trigger starts the 8-note sequence that cascades through all voices.",
     bpm: 60,
     nodes: [
@@ -1720,7 +1793,7 @@ export const EXAMPLES: Record<string, Example> = {
       // D(38)-A(33)-B(35)-F#(30)-G(31)-D(38)-G(31)-A(33)
       // Each note 2 beats apart, total cycle = 16 beats
       // =====================================================================
-      { id: "bass_trigger", type: "source", x: 60, y: 700, props: { interval: 16, midiNote: 38, intensity: 0.55 } },
+      { id: "bass_trigger", type: "source", x: 60, y: 700, props: { interval: 16, midiNote: 38, noteIndex: -2, intensity: 0.55 } },
       { id: "bass_split", type: "splitter", x: 140, y: 700, props: {} },
       
       // Note 1: D (beat 0) - direct from source
@@ -1771,7 +1844,7 @@ export const EXAMPLES: Record<string, Example> = {
       // =====================================================================
       
       // Melody trigger - fires every 16 beats
-      { id: "mel_trigger", type: "source", x: 60, y: 100, props: { interval: 16, midiNote: 66, intensity: 0.5 } },
+      { id: "mel_trigger", type: "source", x: 60, y: 100, props: { interval: 16, midiNote: 66, noteIndex: -2, intensity: 0.5 } },
       { id: "mel_split", type: "splitter", x: 140, y: 100, props: {} },
       
       // ========== VIOLIN 1 (enters immediately) ==========
@@ -2007,11 +2080,12 @@ export const EXAMPLES: Record<string, Example> = {
   
   orchestral_bolero: {
     name: "Orchestral: Bolero Build",
+    category: "Orchestral",
     description: "Inspired by Ravel's Bolero - a hypnotic repetitive melody that builds with layered orchestration. Start minimal, then unmute voices progressively.",
     bpm: 72,
     nodes: [
       // ========== SNARE DRUM OSTINATO ==========
-      { id: "drum_src", type: "source", x: 60, y: 100, props: { interval: 0.5, midiNote: 60, intensity: 0.25 } },
+      { id: "drum_src", type: "source", x: 60, y: 100, props: { interval: 0.5, midiNote: 60, noteIndex: -2, intensity: 0.25 } },
       { id: "drum_tun", type: "tunnel", x: 180, y: 100, props: {
         tunnelName: "Snare",
         subNodes: [
@@ -2023,7 +2097,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "drum_out", type: "speaker", x: 320, y: 100, props: { reverb: 0.15, pan: 0 } },
       
       // ========== FLUTE (First Statement) ==========
-      { id: "flute_src", type: "source", x: 60, y: 200, props: { interval: 4, midiNote: 72, intensity: 0.45 } },
+      { id: "flute_src", type: "source", x: 60, y: 200, props: { interval: 4, midiNote: 72, noteIndex: -2, intensity: 0.45 } },
       { id: "flute_tun", type: "tunnel", x: 200, y: 200, props: {
         tunnelName: "Flute",
         subNodes: [
@@ -2039,7 +2113,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "flute_out", type: "speaker", x: 360, y: 200, props: { reverb: 0.4, pan: -0.3 } },
       
       // ========== CLARINET (Second Voice) ==========
-      { id: "clar_src", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 67, intensity: 0.4 } },
+      { id: "clar_src", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 67, noteIndex: -2, intensity: 0.4 } },
       { id: "clar_delay", type: "delay", x: 160, y: 300, props: { delayTime: 0.25 } },
       { id: "clar_tun", type: "tunnel", x: 280, y: 300, props: {
         tunnelName: "Clarinet",
@@ -2057,8 +2131,8 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "clar_out", type: "speaker", x: 420, y: 300, props: { reverb: 0.4, pan: 0.3 } },
       
       // ========== OBOE (Counter-melody) ==========
-      { id: "oboe_src", type: "source", x: 60, y: 400, props: { interval: 2, midiNote: 76, intensity: 0.4 } },
-      { id: "oboe_gate", type: "gate", x: 160, y: 400, props: { prob: 0.7 } },
+      { id: "oboe_src", type: "source", x: 60, y: 400, props: { interval: 2, midiNote: 76, noteIndex: -2, intensity: 0.4 } },
+      { id: "oboe_gate", type: "gate", x: 160, y: 400, props: { probability: 0.7 } },
       { id: "oboe_tun", type: "tunnel", x: 280, y: 400, props: {
         tunnelName: "Oboe",
         subNodes: [
@@ -2076,7 +2150,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "oboe_out", type: "speaker", x: 420, y: 400, props: { reverb: 0.45, pan: -0.2 } },
       
       // ========== FRENCH HORN (Sustained Harmony) ==========
-      { id: "horn_src", type: "source", x: 500, y: 200, props: { interval: 8, midiNote: 60, intensity: 0.5 } },
+      { id: "horn_src", type: "source", x: 500, y: 200, props: { interval: 8, midiNote: 60, noteIndex: -2, intensity: 0.5 } },
       { id: "horn_tun", type: "tunnel", x: 640, y: 200, props: {
         tunnelName: "French Horn",
         subNodes: [
@@ -2094,7 +2168,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "horn_out", type: "speaker", x: 800, y: 200, props: { reverb: 0.5, pan: 0.4 } },
       
       // ========== STRINGS PAD ==========
-      { id: "strings_src", type: "source", x: 500, y: 320, props: { interval: 8, midiNote: 55, intensity: 0.45 } },
+      { id: "strings_src", type: "source", x: 500, y: 320, props: { interval: 8, midiNote: 55, noteIndex: -2, intensity: 0.45 } },
       { id: "strings_tun", type: "tunnel", x: 640, y: 320, props: {
         tunnelName: "String Pad",
         subNodes: [
@@ -2111,7 +2185,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "strings_out", type: "speaker", x: 800, y: 320, props: { reverb: 0.6, pan: 0 } },
       
       // ========== TRUMPET (Climax) ==========
-      { id: "trump_src", type: "source", x: 500, y: 440, props: { interval: 4, midiNote: 79, intensity: 0.55 } },
+      { id: "trump_src", type: "source", x: 500, y: 440, props: { interval: 4, midiNote: 79, noteIndex: -2, intensity: 0.55 } },
       { id: "trump_delay", type: "delay", x: 580, y: 440, props: { delayTime: 2 } },
       { id: "trump_tun", type: "tunnel", x: 700, y: 440, props: {
         tunnelName: "Trumpet",
@@ -2130,8 +2204,8 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "trump_out", type: "speaker", x: 860, y: 440, props: { reverb: 0.45, pan: -0.4 } },
       
       // ========== TIMPANI (Accents) ==========
-      { id: "timp_src", type: "source", x: 500, y: 540, props: { interval: 4, midiNote: 43, intensity: 0.5 } },
-      { id: "timp_gate", type: "gate", x: 580, y: 540, props: { prob: 0.4 } },
+      { id: "timp_src", type: "source", x: 500, y: 540, props: { interval: 4, midiNote: 43, noteIndex: -2, intensity: 0.5 } },
+      { id: "timp_gate", type: "gate", x: 580, y: 540, props: { probability: 0.4 } },
       { id: "timp_tun", type: "tunnel", x: 700, y: 540, props: {
         tunnelName: "Timpani",
         subNodes: [
@@ -2181,12 +2255,13 @@ export const EXAMPLES: Record<string, Example> = {
   
   night_symphony: {
     name: "Orchestral: Night Symphony",
+    category: "Orchestral",
     description: "A nocturnal orchestral piece with pizzicato strings, harp arpeggios, and ethereal choir pads. Inspired by romantic-era night music.",
     bpm: 54,
     nodes: [
       // ========== PIZZICATO STRINGS ==========
-      { id: "pizz_src", type: "source", x: 60, y: 150, props: { interval: 1, midiNote: 62, intensity: 0.4 } },
-      { id: "pizz_gate", type: "gate", x: 140, y: 150, props: { prob: 0.65 } },
+      { id: "pizz_src", type: "source", x: 60, y: 150, props: { interval: 1, midiNote: 62, noteIndex: -2, intensity: 0.4 } },
+      { id: "pizz_gate", type: "gate", x: 140, y: 150, props: { probability: 0.65 } },
       { id: "pizz_tun", type: "tunnel", x: 260, y: 150, props: {
         tunnelName: "Pizzicato",
         subNodes: [
@@ -2198,7 +2273,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "pizz_out", type: "speaker", x: 400, y: 150, props: { reverb: 0.55, pan: -0.4 } },
       
       // ========== HARP ARPEGGIOS ==========
-      { id: "harp_src", type: "source", x: 60, y: 270, props: { interval: 0.5, midiNote: 72, intensity: 0.35 } },
+      { id: "harp_src", type: "source", x: 60, y: 270, props: { interval: 0.5, midiNote: 72, noteIndex: -2, intensity: 0.35 } },
       { id: "harp_split", type: "splitter", x: 140, y: 270, props: {} },
       { id: "harp_p1", type: "pitch", x: 220, y: 230, props: { mode: 'shift', shift: 0 } },
       { id: "harp_p2", type: "pitch", x: 220, y: 310, props: { mode: 'shift', shift: 4 } },
@@ -2223,7 +2298,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "harp_out2", type: "speaker", x: 480, y: 310, props: { reverb: 0.65, pan: -0.1 } },
       
       // ========== CHOIR PAD ==========
-      { id: "choir_src", type: "source", x: 60, y: 420, props: { interval: 8, midiNote: 55, intensity: 0.4 } },
+      { id: "choir_src", type: "source", x: 60, y: 420, props: { interval: 8, midiNote: 55, noteIndex: -2, intensity: 0.4 } },
       { id: "choir_tun", type: "tunnel", x: 220, y: 420, props: {
         tunnelName: "Choir",
         subNodes: [
@@ -2240,7 +2315,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "choir_out", type: "speaker", x: 400, y: 420, props: { reverb: 0.7, pan: 0 } },
       
       // ========== HORN MELODY ==========
-      { id: "horn_src", type: "source", x: 560, y: 180, props: { interval: 4, midiNote: 65, intensity: 0.5 } },
+      { id: "horn_src", type: "source", x: 560, y: 180, props: { interval: 4, midiNote: 65, noteIndex: -2, intensity: 0.5 } },
       { id: "horn_delay", type: "delay", x: 640, y: 180, props: { delayTime: 1 } },
       { id: "horn_tun", type: "tunnel", x: 760, y: 180, props: {
         tunnelName: "French Horn",
@@ -2258,8 +2333,8 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "horn_out", type: "speaker", x: 920, y: 180, props: { reverb: 0.55, pan: 0.2 } },
       
       // ========== GLOCKENSPIEL SPARKLE ==========
-      { id: "glock_src", type: "source", x: 560, y: 300, props: { interval: 2, midiNote: 84, intensity: 0.3 } },
-      { id: "glock_gate", type: "gate", x: 640, y: 300, props: { prob: 0.3 } },
+      { id: "glock_src", type: "source", x: 560, y: 300, props: { interval: 2, midiNote: 84, noteIndex: -2, intensity: 0.3 } },
+      { id: "glock_gate", type: "gate", x: 640, y: 300, props: { probability: 0.3 } },
       { id: "glock_tun", type: "tunnel", x: 760, y: 300, props: {
         tunnelName: "Glockenspiel",
         subNodes: [
@@ -2272,7 +2347,7 @@ export const EXAMPLES: Record<string, Example> = {
       { id: "glock_out", type: "speaker", x: 920, y: 300, props: { reverb: 0.7, pan: 0.5 } },
       
       // ========== CELLO BASS ==========
-      { id: "cello_src", type: "source", x: 560, y: 420, props: { interval: 4, midiNote: 48, intensity: 0.5 } },
+      { id: "cello_src", type: "source", x: 560, y: 420, props: { interval: 4, midiNote: 48, noteIndex: -2, intensity: 0.5 } },
       { id: "cello_tun", type: "tunnel", x: 720, y: 420, props: {
         tunnelName: "Cello",
         subNodes: [
@@ -2325,6 +2400,7 @@ export const EXAMPLES: Record<string, Example> = {
   
   genetic_evolution: {
     name: "Evolutionary: Genetic Melodies",
+    category: "Evolutionary",
     description: "Demonstrates genetic algorithm nodes: Mutator adds random variations, Fitness Gate filters out dissonant notes, creating melodies that naturally evolve toward harmony.",
     bpm: 100,
     nodes: [
@@ -2345,8 +2421,8 @@ export const EXAMPLES: Record<string, Example> = {
       
       // Fitness gate - only let through notes that fit the scale
       { id: "fitness", type: "gate", x: 300, y: 250, props: {
-        mode: "oscillator",
-        prob: 0.5,
+        mode: "harmonic",
+        probability: 0.5,
         harmonicThreshold: 0.7,
         energyThreshold: 0.1,
         densityThreshold: 8,
@@ -2375,8 +2451,8 @@ export const EXAMPLES: Record<string, Example> = {
         targets: ["pitch"]
       }},
       { id: "bass_fit", type: "gate", x: 300, y: 400, props: {
-        mode: "oscillator",
-        prob: 0.5,
+        mode: "harmonic",
+        probability: 0.5,
         harmonicThreshold: 0.8,
         energyThreshold: 0.2,
         densityThreshold: 4,
@@ -2412,11 +2488,12 @@ export const EXAMPLES: Record<string, Example> = {
   
   radiation_burst: {
     name: "Evolutionary: Radiation Burst",
+    category: "Evolutionary",
     description: "Mutator in radiation mode creates dramatic sonic explosions with large pitch jumps and wave changes. Gates control the density of mutations.",
     bpm: 85,
     nodes: [
       // Trigger source
-      { id: "trigger", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, intensity: 0.7 } },
+      { id: "trigger", type: "source", x: 60, y: 300, props: { interval: 4, midiNote: 60, noteIndex: -2, intensity: 0.7 } },
       { id: "split", type: "splitter", x: 160, y: 300, props: {} },
       
       // Pure voice - no mutation (for reference)
@@ -2475,8 +2552,9 @@ export const EXAMPLES: Record<string, Example> = {
   // OSCILLATOR MODES TUTORIAL
   // ============================================================================
 
-  oscillatorModes: {
+  oscillator_modes: {
     name: "Tutorial: Oscillator Modes",
+    category: "Tutorials",
     description: "Learn the three oscillator modes: Additive (layering), Ring (multiplication), and FM (frequency modulation). Each scene demonstrates one mode with the same base frequency for easy comparison.",
     bpm: 80,
     scenes: [
@@ -2487,7 +2565,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 16,
         loopCount: -1,
         nodes: [
-          { id: "intro_src", type: "source", x: 200, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          { id: "intro_src", type: "source", x: 200, y: 300, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.7 } },
           { id: "intro_osc", type: "oscillator", x: 400, y: 300, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1 } },
           { id: "intro_spk", type: "speaker", x: 600, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.5, releaseTime: 0.8 } }
         ],
@@ -2504,7 +2582,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 16,
         loopCount: -1,
         nodes: [
-          { id: "add_src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.6 } },
+          { id: "add_src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.6 } },
           // Fundamental
           { id: "add_osc1", type: "oscillator", x: 280, y: 200, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.01, decay: 2, mix: 1 } },
           // 2nd harmonic (octave)
@@ -2530,7 +2608,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 16,
         loopCount: -1,
         nodes: [
-          { id: "ring_src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          { id: "ring_src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.7 } },
           // Carrier (this will be multiplied)
           { id: "ring_osc1", type: "oscillator", x: 280, y: 250, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.01, decay: 2, mix: 1 } },
           // Modulator - non-integer ratio creates inharmonic sidebands
@@ -2552,7 +2630,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 16,
         loopCount: -1,
         nodes: [
-          { id: "fm_src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 60, intensity: 0.7 } },
+          { id: "fm_src", type: "source", x: 100, y: 300, props: { interval: 2, midiNote: 60, noteIndex: -2, intensity: 0.7 } },
           // Modulator (mode:fm) - this is SILENT, only modulates the next osc
           { id: "fm_mod", type: "oscillator", x: 300, y: 300, props: { wave: "sine", ratio: 3.5, mode: "fm", modulationIndex: 5, feedback: 0, attack: 0.001, decay: 1.5, mix: 0.5 } },
           // Carrier (mode:additive) - this produces the sound
@@ -2573,7 +2651,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 16,
         loopCount: -1,
         nodes: [
-          { id: "ep_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 60, intensity: 0.6 } },
+          { id: "ep_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
           // Modulator - ratio:2 (octave) with moderate index
           { id: "ep_mod", type: "oscillator", x: 300, y: 300, props: { wave: "sine", ratio: 2, mode: "fm", modulationIndex: 2.5, feedback: 0, attack: 0.01, decay: 0.8, mix: 0.8 } },
           // Carrier - fundamental
@@ -2594,7 +2672,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 16,
         loopCount: -1,
         nodes: [
-          { id: "fb_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.8 } },
+          { id: "fb_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, noteIndex: -2, intensity: 0.8 } },
           // Modulator with self-feedback for grittier sound
           { id: "fb_mod", type: "oscillator", x: 300, y: 300, props: { wave: "sine", ratio: 1, mode: "fm", modulationIndex: 3, feedback: 0.4, attack: 0.001, decay: 0.3, mix: 1 } },
           // Carrier at sub-octave
@@ -2618,8 +2696,8 @@ export const EXAMPLES: Record<string, Example> = {
         loopCount: -1,
         nodes: [
           // Shared trigger
-          { id: "cmp_src", type: "source", x: 100, y: 300, props: { interval: 3, midiNote: 48, intensity: 0.6 } },
-          { id: "cmp_split", type: "splitter", x: 220, y: 300, props: { mode: "all" } },
+          { id: "cmp_src", type: "source", x: 100, y: 300, props: { interval: 3, midiNote: 48, noteIndex: -2, intensity: 0.6 } },
+          { id: "cmp_split", type: "splitter", x: 220, y: 300, props: { behavior: "broadcast" } },
           
           // Top: Additive (warm organ)
           { id: "cmp_add1", type: "oscillator", x: 380, y: 150, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.01, decay: 2, mix: 1 } },
@@ -2661,8 +2739,9 @@ export const EXAMPLES: Record<string, Example> = {
   // FILTER TYPES TUTORIAL
   // ============================================================================
 
-  filterTypesTutorial: {
+  filter_types: {
     name: "Tutorial: Filter Types",
+    category: "Tutorials",
     description: "Learn the four filter types: Lowpass (removes highs), Highpass (removes lows), Bandpass (isolates a band), and Notch (removes a band). Each scene demonstrates one filter type with the same source for easy comparison.",
     bpm: 90,
     scenes: [
@@ -2673,7 +2752,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "raw_src", type: "source", x: 150, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "raw_src", type: "source", x: 150, y: 300, props: { interval: 1, midiNote: 36, noteIndex: -2, intensity: 0.7 } },
           { id: "raw_osc", type: "oscillator", x: 300, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.8, mix: 1 } },
           { id: "raw_spk", type: "speaker", x: 500, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
         ],
@@ -2690,7 +2769,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "lp_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "lp_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, noteIndex: -2, intensity: 0.7 } },
           { id: "lp_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.8, mix: 1 } },
           { id: "lp_flt", type: "filter", x: 400, y: 300, props: { type: "lowpass", cutoff: 800, resonance: 0.3, attack: 0, decay: 0, mod: 0 } },
           { id: "lp_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
@@ -2709,7 +2788,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "hp_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "hp_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, noteIndex: -2, intensity: 0.7 } },
           { id: "hp_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.8, mix: 1 } },
           { id: "hp_flt", type: "filter", x: 400, y: 300, props: { type: "highpass", cutoff: 1000, resonance: 0.2, attack: 0, decay: 0, mod: 0 } },
           { id: "hp_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
@@ -2728,7 +2807,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "bp_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "bp_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, noteIndex: -2, intensity: 0.7 } },
           { id: "bp_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.8, mix: 1 } },
           { id: "bp_flt", type: "filter", x: 400, y: 300, props: { type: "bandpass", cutoff: 500, resonance: 0.6, attack: 0, decay: 0, mod: 0 } },
           { id: "bp_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
@@ -2747,7 +2826,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "nt_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "nt_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, noteIndex: -2, intensity: 0.7 } },
           { id: "nt_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.8, mix: 1 } },
           { id: "nt_flt", type: "filter", x: 400, y: 300, props: { type: "notch", cutoff: 1000, resonance: 0.7, attack: 0, decay: 0, mod: 0 } },
           { id: "nt_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
@@ -2766,7 +2845,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "env_src", type: "source", x: 100, y: 300, props: { interval: 0.5, midiNote: 36, intensity: 0.7 } },
+          { id: "env_src", type: "source", x: 100, y: 300, props: { interval: 0.5, midiNote: 36, noteIndex: -2, intensity: 0.7 } },
           { id: "env_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.001, decay: 0.5, mix: 1 } },
           { id: "env_flt", type: "filter", x: 400, y: 300, props: { type: "lowpass", cutoff: 200, resonance: 0.5, attack: 0.01, decay: 0.3, mod: 4000 } },
           { id: "env_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.2, pan: 0, holdTime: 0.1, releaseTime: 0.4 } }
@@ -2785,7 +2864,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "res_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.5 } },
+          { id: "res_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, noteIndex: -2, intensity: 0.5 } },
           { id: "res_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 0.6, mix: 1 } },
           { id: "res_flt", type: "filter", x: 400, y: 300, props: { type: "lowpass", cutoff: 600, resonance: 0.85, attack: 0, decay: 0, mod: 0 } },
           { id: "res_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.2, releaseTime: 0.5 } }
@@ -2803,8 +2882,9 @@ export const EXAMPLES: Record<string, Example> = {
   // UNISON & DETUNE TUTORIAL
   // ============================================================================
 
-  unisonTutorial: {
+  unison_detune: {
     name: "Tutorial: Unison & Detune",
+    category: "Tutorials",
     description: "Learn how unison voices and detuning create thick, chorus-like sounds. Unison duplicates the oscillator, detune spreads the pitch, and stereo spread places voices across the stereo field.",
     bpm: 80,
     scenes: [
@@ -2815,7 +2895,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "sv_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          { id: "sv_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.7 } },
           { id: "sv_osc", type: "oscillator", x: 350, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 1, detune: 0, stereoSpread: 0.5 } },
           { id: "sv_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.5, releaseTime: 0.8 } }
         ],
@@ -2832,7 +2912,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "2v_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          { id: "2v_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.7 } },
           { id: "2v_osc", type: "oscillator", x: 350, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 2, detune: 10, stereoSpread: 0.7 } },
           { id: "2v_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.5, releaseTime: 0.8 } }
         ],
@@ -2849,7 +2929,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "4v_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.7 } },
+          { id: "4v_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.7 } },
           { id: "4v_osc", type: "oscillator", x: 350, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 4, detune: 15, stereoSpread: 0.8 } },
           { id: "4v_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.5, releaseTime: 0.8 } }
         ],
@@ -2866,7 +2946,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "8v_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, intensity: 0.6 } },
+          { id: "8v_src", type: "source", x: 150, y: 300, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.6 } },
           { id: "8v_osc", type: "oscillator", x: 350, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 8, detune: 25, stereoSpread: 1.0 } },
           { id: "8v_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.5, releaseTime: 0.8 } }
         ],
@@ -2884,11 +2964,11 @@ export const EXAMPLES: Record<string, Example> = {
         loopCount: -1,
         nodes: [
           // Narrow spread (left)
-          { id: "ns_src", type: "source", x: 100, y: 200, props: { interval: 2, midiNote: 48, intensity: 0.6 } },
+          { id: "ns_src", type: "source", x: 100, y: 200, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.6 } },
           { id: "ns_osc", type: "oscillator", x: 280, y: 200, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 4, detune: 20, stereoSpread: 0.2 } },
           { id: "ns_spk", type: "speaker", x: 460, y: 200, props: { reverb: 0.3, pan: -0.5, holdTime: 0.5, releaseTime: 0.8 } },
           // Wide spread (right)
-          { id: "ws_src", type: "source", x: 100, y: 400, props: { interval: 2, midiNote: 48, intensity: 0.6 } },
+          { id: "ws_src", type: "source", x: 100, y: 400, props: { interval: 2, midiNote: 48, noteIndex: -2, intensity: 0.6 } },
           { id: "ws_osc", type: "oscillator", x: 280, y: 400, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.01, decay: 1.5, mix: 1, unison: 4, detune: 20, stereoSpread: 1.0 } },
           { id: "ws_spk", type: "speaker", x: 460, y: 400, props: { reverb: 0.3, pan: 0.5, holdTime: 0.5, releaseTime: 0.8 } }
         ],
@@ -2907,7 +2987,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "uf_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, intensity: 0.7 } },
+          { id: "uf_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 36, noteIndex: -2, intensity: 0.7 } },
           { id: "uf_osc", type: "oscillator", x: 250, y: 300, props: { wave: "sawtooth", ratio: 1, mode: "additive", attack: 0.001, decay: 0.8, mix: 1, unison: 6, detune: 20, stereoSpread: 0.8 } },
           { id: "uf_flt", type: "filter", x: 400, y: 300, props: { type: "lowpass", cutoff: 300, resonance: 0.4, attack: 0.01, decay: 0.4, mod: 3000 } },
           { id: "uf_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.2, releaseTime: 0.6 } }
@@ -2925,8 +3005,9 @@ export const EXAMPLES: Record<string, Example> = {
   // NOISE TYPES TUTORIAL  
   // ============================================================================
 
-  noiseTypesTutorial: {
+  noise_types: {
     name: "Tutorial: Noise Types",
+    category: "Tutorials",
     description: "Learn the three noise types: White (equal energy per frequency), Pink (-3dB/octave, natural), and Brown (-6dB/octave, deep rumble). Use noise for percussion, textures, and effects.",
     bpm: 100,
     scenes: [
@@ -2937,7 +3018,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "wn_src", type: "source", x: 150, y: 300, props: { interval: 0.5, midiNote: 60, intensity: 0.4 } },
+          { id: "wn_src", type: "source", x: 150, y: 300, props: { interval: 0.5, midiNote: 60, noteIndex: -2, intensity: 0.4 } },
           { id: "wn_osc", type: "oscillator", x: 350, y: 300, props: { wave: "white", ratio: 1, mode: "additive", attack: 0.001, decay: 0.15, mix: 1 } },
           { id: "wn_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.2, pan: 0, holdTime: 0.05, releaseTime: 0.1 } }
         ],
@@ -2954,7 +3035,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "pn_src", type: "source", x: 150, y: 300, props: { interval: 0.5, midiNote: 60, intensity: 0.5 } },
+          { id: "pn_src", type: "source", x: 150, y: 300, props: { interval: 0.5, midiNote: 60, noteIndex: -2, intensity: 0.5 } },
           { id: "pn_osc", type: "oscillator", x: 350, y: 300, props: { wave: "pink", ratio: 1, mode: "additive", attack: 0.001, decay: 0.2, mix: 1 } },
           { id: "pn_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.3, pan: 0, holdTime: 0.05, releaseTime: 0.15 } }
         ],
@@ -2971,7 +3052,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "bn_src", type: "source", x: 150, y: 300, props: { interval: 0.5, midiNote: 60, intensity: 0.6 } },
+          { id: "bn_src", type: "source", x: 150, y: 300, props: { interval: 0.5, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
           { id: "bn_osc", type: "oscillator", x: 350, y: 300, props: { wave: "brown", ratio: 1, mode: "additive", attack: 0.001, decay: 0.3, mix: 1 } },
           { id: "bn_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.4, pan: 0, holdTime: 0.1, releaseTime: 0.2 } }
         ],
@@ -2988,7 +3069,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "hh_src", type: "source", x: 100, y: 300, props: { interval: 0.25, midiNote: 60, intensity: 0.35 } },
+          { id: "hh_src", type: "source", x: 100, y: 300, props: { interval: 0.25, midiNote: 60, noteIndex: -2, intensity: 0.35 } },
           { id: "hh_osc", type: "oscillator", x: 250, y: 300, props: { wave: "white", ratio: 1, mode: "additive", attack: 0.001, decay: 0.08, mix: 1 } },
           { id: "hh_flt", type: "filter", x: 400, y: 300, props: { type: "highpass", cutoff: 8000, resonance: 0.2, attack: 0, decay: 0, mod: 0 } },
           { id: "hh_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.15, pan: 0, holdTime: 0.02, releaseTime: 0.05 } }
@@ -3007,7 +3088,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 8,
         loopCount: -1,
         nodes: [
-          { id: "sn_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 60, intensity: 0.6 } },
+          { id: "sn_src", type: "source", x: 100, y: 300, props: { interval: 1, midiNote: 60, noteIndex: -2, intensity: 0.6 } },
           { id: "sn_osc", type: "oscillator", x: 250, y: 300, props: { wave: "pink", ratio: 1, mode: "additive", attack: 0.001, decay: 0.2, mix: 1 } },
           { id: "sn_flt", type: "filter", x: 400, y: 300, props: { type: "bandpass", cutoff: 2000, resonance: 0.3, attack: 0, decay: 0, mod: 0 } },
           { id: "sn_spk", type: "speaker", x: 550, y: 300, props: { reverb: 0.25, pan: 0, holdTime: 0.05, releaseTime: 0.15 } }
@@ -3026,7 +3107,7 @@ export const EXAMPLES: Record<string, Example> = {
         durationBeats: 16,
         loopCount: -1,
         nodes: [
-          { id: "pad_src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 48, intensity: 0.5 } },
+          { id: "pad_src", type: "source", x: 100, y: 300, props: { interval: 4, midiNote: 48, noteIndex: -2, intensity: 0.5 } },
           // Tonal component
           { id: "pad_sine", type: "oscillator", x: 280, y: 200, props: { wave: "sine", ratio: 1, mode: "additive", attack: 0.5, decay: 3, mix: 0.8 } },
           // Noise texture
@@ -3060,9 +3141,14 @@ export function loadExample(exampleKey: string): void {
     console.error(`Example not found: ${exampleKey}`);
     return;
   }
-  
+
   const store = getGraphStore();
-  
+
+  // Stop any running playback so the example starts from a clean transport
+  if (store.isRunning) {
+    store.stopPlayback();
+  }
+
   // Set BPM
   store.setMasterSpeed(example.bpm);
   

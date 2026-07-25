@@ -2,52 +2,27 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { EXAMPLES, loadExample } from '../data/examples';
+import { EXAMPLES, EXAMPLE_CATEGORIES, loadExample } from '../data/examples';
 import styles from './ExampleMenu.module.css';
 
-interface ExampleCategory {
+interface ExampleCategoryGroup {
   name: string;
-  items: Array<{ key: string; label: string }>;
+  items: Array<{ key: string; label: string; description: string }>;
 }
 
-// Helper to categorize examples
-const getCategories = (): ExampleCategory[] => {
-  const categories: Record<string, Array<{ key: string; label: string }>> = {
-    'Tutorials': [],
-    'Demos': [],
-    'Synthesis': [],
-    'Generative': [],
-    'Effects & Routing': [],
-    'Composition': [],
-    'Physics & Timing': [],
-    'Other': []
-  };
+// Group examples by their declared category, preserving the canonical order
+const getCategories = (): ExampleCategoryGroup[] => {
+  const byCategory = new Map<string, ExampleCategoryGroup['items']>();
 
   Object.entries(EXAMPLES).forEach(([key, ex]) => {
-    const item = { key, label: ex.name };
-    
-    if (key.startsWith('tut_')) {
-      categories['Tutorials']!.push(item);
-    } else if (key.startsWith('demo_')) {
-      categories['Demos']!.push(item);
-    } else if (['layered_pad', 'synth_bass', 'harmonic_series', 'wobble_bass', 'tunnel_processing', 'noise_percussion', 'vibrato_strings', 'ahd_envelopes'].includes(key)) {
-      categories['Synthesis']!.push(item);
-    } else if (['quantizer_demo', 'blues_scale', 'generative_sequencer', 'euclidean_rhythms', 'pentatonic_jam', 'ambient_krell'].includes(key)) {
-      categories['Generative']!.push(item);
-    } else if (['lfo_modulation', 'cv_routing_demo', 'teleporter_echo', 'delay_network'].includes(key)) {
-      categories['Effects & Routing']!.push(item);
-    } else if (['orchestra', 'tunnel_melody', 'ambient_drone', 'gamelan'].includes(key)) {
-      categories['Composition']!.push(item);
-    } else if (['virtual_edges', 'gravity_tempo'].includes(key)) {
-      categories['Physics & Timing']!.push(item);
-    } else {
-      categories['Other']!.push(item);
-    }
+    const items = byCategory.get(ex.category) ?? [];
+    items.push({ key, label: ex.name, description: ex.description });
+    byCategory.set(ex.category, items);
   });
 
-  return Object.entries(categories)
-    .filter(([_, items]) => items.length > 0)
-    .map(([name, items]) => ({ name, items }));
+  return EXAMPLE_CATEGORIES
+    .filter(name => byCategory.has(name))
+    .map(name => ({ name, items: byCategory.get(name)! }));
 };
 
 export function ExampleMenu(): React.ReactElement {
@@ -135,7 +110,7 @@ export function ExampleMenu(): React.ReactElement {
                       key={item.key}
                       className={styles['nodeButton']}
                       onClick={() => handleExampleClick(item.key)}
-                      title={item.label}
+                      title={item.description}
                     >
                       <span className={styles['nodeIcon']}>📄</span>
                       <span className={styles['nodeLabel']}>{item.label}</span>
