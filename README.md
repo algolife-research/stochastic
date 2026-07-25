@@ -42,18 +42,16 @@ npm run build      # production build
 
 ### Example library
 
-The examples menu is populated from a static library (`index.json` manifest +
-per-example JSON + full `.sto` compositions), fetched lazily and cached in
-localStorage. By default it is served from `public/examples-library/` next to
-the app; set `VITE_EXAMPLES_BASE_URL` to host it elsewhere (e.g. a public
-`stochastic-examples` repository's raw URL). Regenerate the manifest with:
-
-```bash
-npx tsx scripts/export-example-library.mjs
-```
+The examples menu is populated from
+[stochastic-examples](https://github.com/algolife-research/stochastic-examples)
+— a manifest (`index.json`), per-example JSON, and full `.sto` compositions —
+fetched lazily and cached in localStorage. Only the tutorial and the welcome
+demo are bundled with the app. Set `VITE_EXAMPLES_BASE_URL` to point at a
+fork or a local copy. Contribution instructions and the manifest build script
+live in that repository.
 
 Fetched examples are validated (node types, prop names, edge integrity)
-before they touch the project; the same rules run in the test suite.
+before they touch the project; the same rules run in this repo's test suite.
 
 ### Desktop (Tauri)
 

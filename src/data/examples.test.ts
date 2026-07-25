@@ -3,8 +3,10 @@
 // typos (unknown props are silently merged by updateNodeProps, so a typo like
 // `prob:` instead of `probability:` produces no error at runtime — only here).
 //
-// Coverage: the bundled fallback set (examples.ts) plus every JSON example in
-// the static library (public/examples-library) while it is staged in-tree.
+// Coverage: the bundled fallback set (examples.ts), plus every JSON example
+// in the static library when a checkout of stochastic-examples is staged at
+// public/examples-library (kept optional — the library lives in its own
+// repository: https://github.com/algolife-research/stochastic-examples).
 
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, existsSync } from 'fs';
@@ -100,12 +102,17 @@ describe('runtime validator', () => {
 });
 
 describe('example library', () => {
-  it('has at least one example per declared category', () => {
-    const used = new Set(allExamples.map(([, ex]) => ex.category));
-    for (const category of EXAMPLE_CATEGORIES) {
-      expect(used, `category "${category}" has no examples`).toContain(category);
+  // Category completeness only holds for the full library, not the bundled
+  // fallback set — assert it when a library checkout is staged on disk.
+  it.runIf(Object.keys(libraryExamples).length > 0)(
+    'has at least one example per declared category',
+    () => {
+      const used = new Set(allExamples.map(([, ex]) => ex.category));
+      for (const category of EXAMPLE_CATEGORIES) {
+        expect(used, `category "${category}" has no examples`).toContain(category);
+      }
     }
-  });
+  );
 
   it('uses snake_case keys', () => {
     for (const [key] of allExamples) {

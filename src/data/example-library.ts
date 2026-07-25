@@ -5,8 +5,8 @@
 // static library (manifest + per-item JSON) and cached in localStorage.
 //
 // Source resolution:
-//   VITE_EXAMPLES_BASE_URL  — e.g. a raw GitHub URL of the examples repo
-//   default '/examples-library' — served alongside the app
+//   VITE_EXAMPLES_BASE_URL  — override the library location
+//   default — the public stochastic-examples repository (raw URL)
 //
 // Offline safety: the tutorial and the welcome-screen demo are bundled
 // (see examples.ts BUNDLED_EXAMPLES) and never require the network.
@@ -57,7 +57,7 @@ export interface LibraryIndex {
 // ============================================================================
 
 const BASE_URL = (import.meta.env.VITE_EXAMPLES_BASE_URL as string | undefined)?.replace(/\/$/, '')
-  || '/examples-library';
+  || 'https://raw.githubusercontent.com/algolife-research/stochastic-examples/main';
 
 const INDEX_CACHE_KEY = 'stochastic-library:index';
 const INDEX_TTL_MS = 60 * 60 * 1000; // refresh the manifest at most hourly
