@@ -15,6 +15,19 @@ import type {
 } from './types';
 import { FEATURE_CREDIT_COSTS, SIGNUP_BONUS_CREDITS } from './types';
 
+/**
+ * Translate low-level network failures into an actionable message.
+ * A paused/offline backend or a dropped connection surfaces from fetch as a
+ * cryptic browser-specific string ("Failed to fetch", "Load failed", ...).
+ */
+function describeAuthError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message : fallback;
+  if (/failed to fetch|networkerror|load failed|fetch failed/i.test(message)) {
+    return 'Could not reach the sign-in server. Check your internet connection — or the backend may be paused or waking up; try again in a minute.';
+  }
+  return message;
+}
+
 // ============================================================================
 // INITIAL STATE
 // ============================================================================
@@ -165,7 +178,7 @@ export const useAuthStore = create<AuthStore>()(
           email: data.user?.email,
         };
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Signup failed';
+        const message = describeAuthError(error, 'Signup failed');
         set({ isLoading: false, error: message });
         return { error: message };
       }
@@ -204,7 +217,7 @@ export const useAuthStore = create<AuthStore>()(
 
         return {};
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Sign in failed';
+        const message = describeAuthError(error, 'Sign in failed');
         set({ isLoading: false, error: message });
         return { error: message };
       }
@@ -263,7 +276,7 @@ export const useAuthStore = create<AuthStore>()(
 
         return { success: true };
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to resend verification email';
+        const message = describeAuthError(error, 'Failed to resend verification email');
         return { error: message };
       }
     },
