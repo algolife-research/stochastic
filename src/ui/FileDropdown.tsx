@@ -13,11 +13,10 @@ import { NewCompositionDialog, LoadCompositionDialog } from './ProjectDialogs';
 import styles from './FileDropdown.module.css';
 
 interface FileDropdownProps {
-  onShowSettings: () => void;
   onShowExport: () => void;
 }
 
-export function FileDropdown({ onShowSettings, onShowExport }: FileDropdownProps): React.ReactElement {
+export function FileDropdown({ onShowExport }: FileDropdownProps): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false);
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [showLoadDialog, setShowLoadDialog] = useState(false);

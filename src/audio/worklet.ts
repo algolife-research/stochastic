@@ -1,7 +1,7 @@
 // Stochastic v2 - Audio Worklet Processor
 // Runs on the audio thread for sample-accurate scheduling
-// Updated: 2025-12-11 with filter types, unison, proper noise
-/// <reference path="../vite-env.d.ts" />
+// AudioWorklet globals (sampleRate, registerProcessor, ...) are declared in
+// src/vite-env.d.ts, which tsconfig includes globally.
 
 // Filter types
 type FilterType = 'lowpass' | 'highpass' | 'bandpass' | 'notch';
@@ -170,7 +170,7 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
         }
         break;
         
-      case 'getVoices':
+      case 'getVoices': {
         // Send active voices back to main thread
         const activeVoices = Array.from(this.voices.values())
           .filter(v => v.state !== 'dead')
@@ -185,6 +185,7 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
           }));
         this.port.postMessage({ type: 'voicesResponse', voices: activeVoices });
         break;
+      }
     }
   }
   
@@ -349,7 +350,7 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
               layer.unisonPhases[u]! -= Math.PI * 2;
             }
             
-            let unisonSample = this.oscillate(layer.wave, modulatedPhase) * layer.gain * layer.envelope * gainPerVoice;
+            const unisonSample = this.oscillate(layer.wave, modulatedPhase) * layer.gain * layer.envelope * gainPerVoice;
             
             // Calculate stereo position for this unison voice
             const stereoPos = detuneSpread * layer.stereoSpread;

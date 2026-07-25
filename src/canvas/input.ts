@@ -164,7 +164,6 @@ export class CanvasInputHandler {
     window.addEventListener('mouseup', this.handleMouseUp);
     this.canvas.addEventListener('dblclick', this.handleDoubleClick);
     this.canvas.addEventListener('wheel', this.handleWheel, { passive: false });
-    this.canvas.addEventListener('dblclick', this.handleDoubleClick);
     this.canvas.addEventListener('contextmenu', this.handleContextMenu);
     
     // Touch events
@@ -1163,7 +1162,7 @@ export class CanvasInputHandler {
   /**
    * Handle key up
    */
-  private handleKeyUp = (e: KeyboardEvent): void => {
+  private handleKeyUp = (_e: KeyboardEvent): void => {
     // Nothing special for now
   };
 

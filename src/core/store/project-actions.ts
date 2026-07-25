@@ -24,7 +24,7 @@ export const createProjectActions = (
         newContext.root = ctx.root;
       }
       
-      state.musicalContext = newContext as any;
+      state.musicalContext = newContext;
     });
   },
   

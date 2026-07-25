@@ -103,10 +103,14 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
     }
   };
   
-  // Get suggestions based on current context (memoized to avoid expensive buildCanvasContext on every render)
+  // Get suggestions based on current context (memoized to avoid expensive
+  // buildCanvasContext on every render). nodeCount/edgeCount are proxy deps:
+  // buildCanvasContext reads the store directly, so we recompute when the
+  // graph's shape changes.
   const suggestions = useMemo(() => {
     const context = buildCanvasContext();
     return getContextSuggestions(context);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodeCount, edgeCount]);
   
   return (

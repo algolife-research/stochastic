@@ -2,8 +2,8 @@
 // Operations for creating, updating, and deleting nodes
 
 import type { GraphStore, ImmerSet } from './types';
-import type { 
-  NodeId, EdgeId, GraphNode, NodeType, AudioPayload
+import type {
+  NodeId, EdgeId, GraphNode, NodeType, AudioPayload, PropsForNodeType
 } from '../types';
 import { createNodeId, createEdgeId } from '../types';
 import { getDefaultProps } from '../constants';
@@ -282,13 +282,14 @@ export const createNodeActions = (
       const newId = createNodeId();
       newNodeIds.push(newId);
       
-      // Use JSON for deep copy to maintain type compatibility
+      // Use JSON for deep copy to maintain type compatibility. Clipboard props
+      // are stored untyped; they originated from a node of the same type.
       const newNode = createTypedNode(
         clipNode.type,
         newId,
         pasteX + clipNode.relX,
         pasteY + clipNode.relY,
-        JSON.parse(JSON.stringify(clipNode.props)) as any
+        JSON.parse(JSON.stringify(clipNode.props)) as PropsForNodeType<typeof clipNode.type>
       );
       
       set(s => {

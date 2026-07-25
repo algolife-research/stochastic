@@ -27,7 +27,7 @@ function isTouchDevice(): boolean {
   return (
     'ontouchstart' in window ||
     navigator.maxTouchPoints > 0 ||
-    (navigator as any).msMaxTouchPoints > 0
+    ((navigator as Navigator & { msMaxTouchPoints?: number }).msMaxTouchPoints ?? 0) > 0
   );
 }
 
@@ -361,7 +361,7 @@ export class CanvasRenderer {
     });
     
     // Draw links for each channel
-    channels.forEach((teleporters, channel) => {
+    channels.forEach((teleporters) => {
       if (teleporters.length < 2) return;
       
       const isActive = teleporters.some(tp => 
@@ -830,7 +830,7 @@ export class CanvasRenderer {
       ctx.fillStyle = '#1e1e1e';
       ctx.beginPath();
       ctx.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
-      ctx.fill();;
+      ctx.fill();
       
       // Colored outline
       ctx.strokeStyle = color;

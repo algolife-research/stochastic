@@ -477,12 +477,13 @@ function processLFO(payload: AudioPayload, node: GraphNode): AudioPayload {
     case 'sawtooth':
       value = t % 1;
       break;
-    case 'random':
+    case 'random': {
       // Sample and Hold: stable random value for each cycle
       const cycle = Math.floor(t);
       // Simple hash function for deterministic random per cycle
       value = Math.abs(Math.sin(cycle * 12.9898 + 78.233) * 43758.5453) % 1;
       break;
+    }
     case 'noise':
       // Pure white noise
       value = Math.random();

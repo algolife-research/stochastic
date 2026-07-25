@@ -1,6 +1,7 @@
 // Scene Actions
 // Operations for scene management, arrangement, and playback
 
+import { castDraft } from 'immer';
 import type { GraphStore, ImmerSet } from './types';
 import type { 
   SceneId, Scene,
@@ -29,7 +30,7 @@ export const createSceneActions = (
     const scene = createDefaultScene(id, sceneName, sceneCount);
     
     set(state => {
-      state.scenes.set(id, scene as any);
+      state.scenes.set(id, castDraft(scene));
       state.isDirty = true;
     });
     
@@ -52,7 +53,7 @@ export const createSceneActions = (
     };
     
     set(state => {
-      state.scenes.set(newId, newScene as any);
+      state.scenes.set(newId, castDraft(newScene));
       state.isDirty = true;
     });
     
@@ -96,7 +97,7 @@ export const createSceneActions = (
       // Clear and rebuild the Map to preserve new order (Immer-compatible)
       state.scenes.clear();
       for (const [id, scene] of scenesArray) {
-        state.scenes.set(id, scene as any);
+        state.scenes.set(id, castDraft(scene));
       }
       state.isDirty = true;
     });
@@ -118,16 +119,16 @@ export const createSceneActions = (
     set(state => {
       const scene = state.scenes.get(id);
       if (scene) {
-        (scene as any).nodes = Array.from(nodes.values()).map(n => ({
+        scene.nodes = castDraft(Array.from(nodes.values()).map(n => ({
           ...n,
           timer: 0,
           lastTrigger: 0,
           flash: 0,
           heldPackets: [],
-        }));
-        (scene as any).edges = Array.from(edges.values());
-        (scene as any).annotations = Array.from(annotations.values());
-        (scene as any).regions = Array.from(regions.values());
+        })));
+        scene.edges = castDraft(Array.from(edges.values()));
+        scene.annotations = castDraft(Array.from(annotations.values()));
+        scene.regions = castDraft(Array.from(regions.values()));
         state.isDirty = true;
       }
     });
@@ -143,16 +144,16 @@ export const createSceneActions = (
       if (currentEditingId) {
         const currentScene = state.scenes.get(currentEditingId);
         if (currentScene) {
-          (currentScene as any).nodes = Array.from(state.nodes.values()).map(n => ({
+          currentScene.nodes = castDraft(Array.from(state.nodes.values()).map(n => ({
             ...n,
             timer: 0,
             lastTrigger: 0,
             flash: 0,
             heldPackets: [],
-          }));
-          (currentScene as any).edges = Array.from(state.edges.values());
-          (currentScene as any).annotations = Array.from(state.annotations.values());
-          (currentScene as any).regions = Array.from(state.regions.values());
+          })));
+          currentScene.edges = castDraft(Array.from(state.edges.values()));
+          currentScene.annotations = castDraft(Array.from(state.annotations.values()));
+          currentScene.regions = castDraft(Array.from(state.regions.values()));
         }
       }
       
@@ -175,16 +176,16 @@ export const createSceneActions = (
           flash: 0,
           heldPackets: [],
         };
-        state.nodes.set(node.id, newNode as any);
+        state.nodes.set(node.id, castDraft(newNode));
       }
       for (const edge of scene.edges) {
-        state.edges.set(edge.id, { ...edge } as any);
+        state.edges.set(edge.id, castDraft({ ...edge }));
       }
       for (const annotation of scene.annotations) {
-        state.annotations.set(annotation.id, { ...annotation } as any);
+        state.annotations.set(annotation.id, castDraft({ ...annotation }));
       }
       for (const region of scene.regions) {
-        state.regions.set(region.id, { ...region } as any);
+        state.regions.set(region.id, castDraft({ ...region }));
       }
       
       state.editingSceneId = id;
@@ -244,16 +245,16 @@ export const createSceneActions = (
         if (!scene) return;
         
         for (const node of scene.nodes) {
-          state.nodes.set(node.id, { ...node, timer: 0, lastTrigger: 0, flash: 0, heldPackets: [] } as any);
+          state.nodes.set(node.id, castDraft({ ...node, timer: 0, lastTrigger: 0, flash: 0, heldPackets: [] }));
         }
         for (const edge of scene.edges) {
-          state.edges.set(edge.id, { ...edge } as any);
+          state.edges.set(edge.id, castDraft({ ...edge }));
         }
         for (const annotation of scene.annotations) {
-          state.annotations.set(annotation.id, { ...annotation } as any);
+          state.annotations.set(annotation.id, castDraft({ ...annotation }));
         }
         for (const region of scene.regions) {
-          state.regions.set(region.id, { ...region } as any);
+          state.regions.set(region.id, castDraft({ ...region }));
         }
         
         state.editingSceneId = firstSceneId;
@@ -276,12 +277,12 @@ export const createSceneActions = (
       set(state => {
         const sceneToSave = state.scenes.get(sceneId);
         if (sceneToSave) {
-          (sceneToSave as any).nodes = Array.from(nodes.values()).map(n => ({
+          sceneToSave.nodes = castDraft(Array.from(nodes.values()).map(n => ({
             ...n, timer: 0, lastTrigger: 0, flash: 0, heldPackets: [],
-          }));
-          (sceneToSave as any).edges = Array.from(edges.values());
-          (sceneToSave as any).annotations = Array.from(annotations.values());
-          (sceneToSave as any).regions = Array.from(regions.values());
+          })));
+          sceneToSave.edges = castDraft(Array.from(edges.values()));
+          sceneToSave.annotations = castDraft(Array.from(annotations.values()));
+          sceneToSave.regions = castDraft(Array.from(regions.values()));
         }
       });
     }
@@ -480,16 +481,16 @@ export const createSceneActions = (
            s.packets.clear();
            
            for (const node of scene.nodes) {
-             s.nodes.set(node.id, { ...node, timer: 0, lastTrigger: 0, flash: 0, heldPackets: [] } as any);
+             s.nodes.set(node.id, castDraft({ ...node, timer: 0, lastTrigger: 0, flash: 0, heldPackets: [] }));
            }
            for (const edge of scene.edges) {
-             s.edges.set(edge.id, { ...edge } as any);
+             s.edges.set(edge.id, castDraft({ ...edge }));
            }
            for (const annotation of scene.annotations) {
-             s.annotations.set(annotation.id, { ...annotation } as any);
+             s.annotations.set(annotation.id, castDraft({ ...annotation }));
            }
            for (const region of scene.regions) {
-             s.regions.set(region.id, { ...region } as any);
+             s.regions.set(region.id, castDraft({ ...region }));
            }
            
            s.editingSceneId = slot.sceneId;

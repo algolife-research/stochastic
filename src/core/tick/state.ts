@@ -16,7 +16,7 @@ let beatAccumulator = 0;     // Fractional beats accumulated
 // ============================================================================
 
 /** Active channel scenes (excluding the one on canvas) */
-let activeChannelScenes: Map<number, ChannelSceneState> = new Map();
+const activeChannelScenes: Map<number, ChannelSceneState> = new Map();
 
 /** Which channel is currently displayed on canvas (-1 for none/jam mode) */
 let canvasChannelIndex: number = 0;

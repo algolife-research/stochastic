@@ -48,7 +48,7 @@ export function updateScenePlayback(dt: number): void {
  * Update arrangement mode - multi-channel scene playback
  * Multiple scenes can play simultaneously on different channels
  */
-function updateArrangementMode(deltaBeats: number): void {
+function updateArrangementMode(_deltaBeats: number): void {
   const store = getGraphStore();
   const { scenePlayback, scenes, arrangement, arrangementChannels } = store;
   
@@ -301,10 +301,11 @@ function checkQueueTrigger(
       // Trigger on bar boundary (4 beats)
       return Math.floor(currentBeat / 4) > Math.floor(prevBeat / 4);
       
-    case 'phrase':
+    case 'phrase': {
       // Trigger on phrase boundary (custom phrase length, default to scene duration)
       const pLen = phraseLength > 0 ? phraseLength : sceneDuration;
       return Math.floor(currentBeat / pLen) > Math.floor(prevBeat / pLen);
+    }
       
     default:
       return false;

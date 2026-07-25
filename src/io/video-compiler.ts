@@ -339,7 +339,7 @@ function processVideoArrival(
   // Flash the node
   nodeFlashes.set(node.id, 1);
   
-  let payload = { ...packet.payload };
+  const payload = { ...packet.payload };
   
   switch (node.type) {
     case 'speaker': {

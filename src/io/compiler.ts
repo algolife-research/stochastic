@@ -10,6 +10,13 @@ import type {
   MidiNote,
   WaveOrNoiseType,
   MusicalContext,
+  SpeakerProps,
+  PitchProps,
+  OscillatorProps,
+  ModulatorProps,
+  FilterProps,
+  GainProps,
+  GateProps,
   GlobalSettings,
   PropsForNodeType
 } from '@core/types';
@@ -446,14 +453,14 @@ function processArrival(
       const props = node.props as PropsForNodeType<'tunnel'>;
       const subNodes = props.subNodes ?? [];
       
-      let currentPayload = { ...payload };
+      const currentPayload = { ...payload };
       
       for (const subNode of subNodes) {
         // Process each sub-node (subNode.props is Record<string, unknown>)
         switch (subNode.type) {
           case 'speaker': {
             // Speaker inside tunnel - emit event
-            const subProps = subNode.props as any; // SubNode type limitation
+            const subProps = subNode.props as Partial<SpeakerProps>;
             const volume = subProps.volume ?? 1.0;
             const pan = subProps.pan ?? 0;
             const reverb = subProps.reverb ?? 0;
@@ -482,7 +489,8 @@ function processArrival(
           }
           
           case 'pitch': {
-            const subProps = subNode.props as any; // SubNode type limitation
+            // `semitones` is a legacy alias for `shift`
+            const subProps = subNode.props as Partial<PitchProps> & { semitones?: number };
             const semitones = subProps.semitones ?? subProps.shift ?? 0;
             const newMidi = Math.max(0, Math.min(127, currentPayload.midiNote + semitones));
             currentPayload.midiNote = newMidi as MidiNote;
@@ -491,7 +499,7 @@ function processArrival(
           }
           
           case 'oscillator': {
-            const subProps = subNode.props as any; // SubNode type limitation
+            const subProps = subNode.props as Partial<OscillatorProps>;
             const attack = subProps.attack ?? 0.01;
             const decay = subProps.decay ?? 0.4;
             const mix = subProps.mix ?? 1.0;
@@ -516,7 +524,7 @@ function processArrival(
           }
           
           case 'modulator': {
-            const subProps = subNode.props as any; // SubNode type limitation
+            const subProps = subNode.props as Partial<ModulatorProps>;
             currentPayload.vibratoRate = subProps.rate ?? 5;
             currentPayload.vibratoDepth = subProps.depth ?? 20;
             currentPayload.vibratoDelay = subProps.delay ?? 0.2;
@@ -524,7 +532,7 @@ function processArrival(
           }
           
           case 'filter': {
-            const subProps = subNode.props as any; // SubNode type limitation
+            const subProps = subNode.props as Partial<FilterProps>;
             currentPayload.cutoff = (subProps.cutoff ?? 20000) as Frequency;
             const mod = subProps.mod ?? 0;
             if (mod !== 0) {
@@ -538,13 +546,13 @@ function processArrival(
           }
           
           case 'gain': {
-            const subProps = subNode.props as any; // SubNode type limitation
+            const subProps = subNode.props as Partial<GainProps>;
             currentPayload.gain *= subProps.value ?? 1.0;
             break;
           }
           
           case 'gate': {
-            const subProps = subNode.props as any; // SubNode type limitation
+            const subProps = subNode.props as Partial<GateProps>;
             if (Math.random() > (subProps.probability ?? 0.5)) {
               return; // Gate blocked
             }
