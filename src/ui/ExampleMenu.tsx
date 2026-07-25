@@ -43,8 +43,10 @@ function buildCategories(index: LibraryIndex | null): MenuCategory[] {
     .filter(name => byCategory.has(name))
     .map(name => ({ name, items: byCategory.get(name)! }));
 
+  // Full compositions lead the menu — they are complete pieces (opened as
+  // projects), not add-on example scenes
   if (index && index.compositions.length > 0) {
-    categories.push({
+    categories.unshift({
       name: COMPOSITIONS_CATEGORY,
       items: index.compositions.map(comp => ({
         key: `composition:${comp.key}`,
@@ -182,7 +184,10 @@ export function ExampleMenu(): React.ReactElement {
                 className={`${styles['categoryHeader']} ${activeCategory === category.name ? styles['expanded'] : ''}`}
                 onClick={() => setActiveCategory(activeCategory === category.name ? null : category.name)}
               >
-                <span>{category.name}</span>
+                <span>
+                  {category.name === COMPOSITIONS_CATEGORY ? '🎼 ' : ''}{category.name}
+                  <span className={styles['categoryCount']}> {category.items.length}</span>
+                </span>
                 <span className={styles['categoryChevron']}>{activeCategory === category.name ? '−' : '+'}</span>
               </button>
 

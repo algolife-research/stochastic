@@ -172,3 +172,9 @@
   background: rgba(224, 169, 79, 0.08);
   border-bottom: 1px solid #333;
 }
+
+.categoryCount {
+  color: #666;
+  font-size: 10.5px;
+  font-weight: 400;
+}
