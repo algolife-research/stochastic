@@ -92,6 +92,12 @@ export function ScenePanel({ collapsed, onToggleCollapse, onSceneSelected }: Sce
   
   const handleDeleteScene = useCallback((sceneId: SceneId) => {
     if (scenes.size > 1) {
+      // Scene deletion is outside the undo history — confirm it
+      const scene = scenes.get(sceneId);
+      const label = scene?.name ? `"${scene.name}"` : 'this scene';
+      if (!window.confirm(`Delete scene ${label}? This cannot be undone.`)) {
+        return;
+      }
       deleteScene(sceneId);
       // Select next available scene
       const remaining = Array.from(scenes.keys()).filter(id => id !== sceneId);

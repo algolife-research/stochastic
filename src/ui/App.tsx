@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useGraphStore } from '@core/store';
 import { initHistory } from '@core/store/history';
+import { initAutosave } from '@core/store/autosave';
 import { startTick, stopTick, resetTick } from '@core/tick';
 import { CanvasRenderer } from '@canvas/renderer';
 import { CanvasInputHandler } from '@canvas/input';
@@ -130,12 +131,18 @@ export function App(): React.ReactElement {
         store.updateNodeProps(speakerId, { reverb: 0.3 });
         store.addEdge(sourceId, speakerId);
         store.saveCurrentScene();
+        // The starter template is not unsaved user work: keep it clean so
+        // autosave doesn't offer to "restore" an untouched seed project
+        store.markClean();
       }
     };
     initDefaultScene();
 
     // Start edit history (undo/redo) after the default scene is seeded
     initHistory();
+
+    // Periodic crash-recovery snapshots
+    initAutosave();
 
     // Initialize audio (deferred until user interaction)
     const initAudio = async () => {

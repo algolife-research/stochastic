@@ -61,6 +61,8 @@ interface SimPacket {
   edgeId: EdgeId;
   t: number;
   spawnTime: number;
+  /** Entangled packets share payload changes (live: Packet.entanglementGroupId) */
+  entanglementGroupId?: string;
   payload: {
     freq: Frequency;
     midiNote: MidiNote;
@@ -251,24 +253,30 @@ export function compileGraph(
       heldPackets.set(node.id, held.filter(h => h.releaseTime > currentTime));
     }
     
-    // 3. Move packets and process arrivals
+    // 3. Move packets and collect arrivals. Mirrors the live engine's two-phase
+    //    structure (tick/packets.ts:135-187): every packet moves first, then
+    //    arrivals are processed - so entanglement sync from one arrival never
+    //    rewrites a sibling that is itself arriving in the same tick (live
+    //    excludes the whole arrivingPacketIds set, tick/packets.ts:183-184).
+    const arrivals: Array<{ packet: SimPacket; node: GraphNode; edge: GraphEdge }> = [];
+
     for (let i = simPackets.length - 1; i >= 0; i--) {
       const p = simPackets[i];
       if (!p) continue;
-      
+
       const edge = edges.get(p.edgeId);
       if (!edge) {
         simPackets.splice(i, 1);
         continue;
       }
-      
+
       const fromNode = nodes.get(edge.from);
       const toNode = nodes.get(edge.to);
       if (!fromNode || !toNode) {
         simPackets.splice(i, 1);
         continue;
       }
-      
+
       // Calculate travel time
       let edgeDuration: number;
       if (edge.timingMode === 'fixed' && edge.durationBeats !== null) {
@@ -281,25 +289,43 @@ export function compileGraph(
         const steps = Math.max(0.1, dist / pixelsPerBeat);
         edgeDuration = steps * beatDuration;
       }
-      
+
       p.t += tickDuration / Math.max(0.001, edgeDuration);
-      
+
       if (p.t >= 1.0) {
-        if (edge.targetParam) {
-          // Modulation edge (CV routing): write the value to the target node's
-          // prop and consume the packet - modulation packets never forward
-          // (tick/packets.ts:191-207)
-          const value = p.payload.modulationValue ?? p.payload.gain;
-          const overrides = simState.cvOverrides.get(toNode.id) ?? {};
-          overrides[edge.targetParam] = value;
-          simState.cvOverrides.set(toNode.id, overrides);
-        } else {
-          // Process arrival at destination node
-          processArrival(p, toNode, nodes, edges, currentTime, beatDuration, events, simPackets, heldPackets, musicalContext, simState);
-        }
+        arrivals.push({ packet: p, node: toNode, edge });
         simPackets.splice(i, 1);
       }
     }
+
+    // Backward iteration collected arrivals newest-first; restore insertion
+    // order to match the live store's iteration order (tick/packets.ts:187).
+    arrivals.reverse();
+
+    // Packets spawned by arrivals join the pool only after every arrival this
+    // tick is processed (live's packetsToSpawn buffer, tick/packets.ts:421),
+    // so entanglement sync never touches same-tick spawns.
+    const spawnedThisTick: SimPacket[] = [];
+
+    for (const arrival of arrivals) {
+      const { packet, node, edge } = arrival;
+
+      if (edge.targetParam) {
+        // Modulation edge (CV routing): write the value to the target node's
+        // prop and consume the packet - modulation packets never forward and
+        // never sync entangled siblings (tick/packets.ts:194-209)
+        const value = packet.payload.modulationValue ?? packet.payload.gain;
+        const overrides = simState.cvOverrides.get(node.id) ?? {};
+        overrides[edge.targetParam] = value;
+        simState.cvOverrides.set(node.id, overrides);
+        continue;
+      }
+
+      // Process arrival at destination node
+      processArrival(packet, node, nodes, edges, currentTime, beatDuration, events, spawnedThisTick, simPackets, heldPackets, musicalContext, simState);
+    }
+
+    simPackets.push(...spawnedThisTick);
   }
   
   return events.sort((a, b) => a.time - b.time);
@@ -313,7 +339,8 @@ function processArrival(
   currentTime: number,
   beatDuration: number,
   events: AudioEvent[],
-  simPackets: SimPacket[],
+  spawnedPackets: SimPacket[],
+  inFlightPackets: SimPacket[],
   heldPackets: Map<NodeId, Array<{ payload: SimPacket['payload']; releaseTime: number }>>,
   musicalContext: MusicalContext,
   simState: SimModState
@@ -354,8 +381,10 @@ function processArrival(
         filterEnv: payload.filterEnv,
       });
       // Live engine still propagates the (unchanged) payload past a speaker
-      // if it has outgoing edges (tick/packets.ts falls through to propagation)
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      // if it has outgoing edges (tick/packets.ts falls through to propagation).
+      // No entanglement sync at speakers (tick/packets.ts:392 excludes them),
+      // but the group id is preserved on forwarded packets.
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
 
@@ -367,7 +396,8 @@ function processArrival(
         : clampMidi(payload.midiNote + (props.shift ?? 0));
       payload.midiNote = newMidi;
       payload.freq = midiToFreq(newMidi);
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
     
@@ -402,20 +432,22 @@ function processArrival(
         detune,
         stereoSpread,
       }];
-      
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
-    
+
     case 'modulator': {
       const props = effectiveProps as PropsForNodeType<'modulator'>;
       payload.vibratoRate = props.rate ?? 5;
       payload.vibratoDepth = props.depth ?? 20;
       payload.vibratoDelay = props.delay ?? 0.2;
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
-    
+
     case 'filter': {
       const props = effectiveProps as PropsForNodeType<'filter'>;
       payload.cutoff = (props.cutoff ?? 20000) as Frequency;
@@ -426,26 +458,32 @@ function processArrival(
       payload.filterEnv = mod !== 0
         ? { attack: props.attack ?? 0, decay: props.decay ?? 0, mod }
         : undefined;
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
-    
+
     case 'gate': {
       const props = effectiveProps as PropsForNodeType<'gate'>;
       // Single authority for the roll (mirrors processGate in engine.ts: one
       // probability roll / fitness evaluation; live marks blocked packets with
       // gain: -1 and the pipeline drops them - the sim just drops them here)
       if (gateSurvives(payload, props, musicalContext, simState.gateDensity, node.id, currentTime, beatDuration)) {
-        forwardPacket(node.id, payload, edges, simPackets, currentTime);
+        // Passed packets sync their (unchanged) payload to entangled siblings;
+        // blocked packets are dropped before the sync in live (tick/packets.ts:219)
+        syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+        forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       }
       break;
     }
     
     case 'delay': {
+      // Live returns before the entanglement sync (tick/packets.ts:275-280),
+      // and delay-released packets spawn without a group (tick/packets.ts:485)
       const props = effectiveProps as PropsForNodeType<'delay'>;
       const delayBeats = props.delayTime ?? 1;
       const delaySeconds = delayBeats * beatDuration;
-      
+
       if (!heldPackets.has(node.id)) {
         heldPackets.set(node.id, []);
       }
@@ -455,19 +493,21 @@ function processArrival(
       });
       break;
     }
-    
+
     case 'gain': {
       const props = effectiveProps as PropsForNodeType<'gain'>;
       const gainMult = props.value ?? 1.0;
       payload.gain *= gainMult;
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
 
     case 'quantizer': {
       const props = effectiveProps as PropsForNodeType<'quantizer'>;
       applyQuantizer(payload, props, musicalContext);
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
     
@@ -618,27 +658,36 @@ function processArrival(
         if (speakerTerminus) break;
       }
 
-      // Forward processed payload
+      // Forward processed payload. Tunnels are regular nodes for entanglement:
+      // the fully sub-processed payload syncs to siblings (tick/packets.ts:391;
+      // a blocked sub-gate returned above, before the sync, like live :219)
       payload = currentPayload;
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
-    
+
     case 'teleporter': {
       const props = effectiveProps as PropsForNodeType<'teleporter'>;
       const channel = props.channel;
       const isEntry = props.isEntry ?? true;
-      
+
       if (isEntry) {
-        // Find exit teleporters
+        // Entry teleporters return before the entanglement sync in live
+        // (tick/packets.ts:243-272), but teleported packets keep their group
+        // (tick/packets.ts:264)
         for (const n of nodes.values()) {
           if (n.type === 'teleporter' && n.id !== node.id) {
             const nProps = n.props as PropsForNodeType<'teleporter'>;
             if (nProps.channel === channel && !nProps.isEntry) {
-              forwardPacket(n.id, payload, edges, simPackets, currentTime);
+              forwardPacket(n.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
             }
           }
         }
+      } else {
+        // A direct-edge arrival at an exit teleporter falls through to the
+        // entanglement sync in live (tick/packets.ts:391)
+        syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
       }
       break;
     }
@@ -649,9 +698,11 @@ function processArrival(
       const mode = props.mode ?? 'drift';
       const targets = props.targets ?? ['pitch'];
 
-      // Check probability
+      // Check probability (live syncs the pass-through payload even when the
+      // mutation roll fails - the sync at tick/packets.ts:391 is unconditional)
       if (Math.random() > probability) {
-        forwardPacket(node.id, payload, edges, simPackets, currentTime);
+        syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+        forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
         break;
       }
 
@@ -700,7 +751,8 @@ function processArrival(
         }
       }
 
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
     
@@ -710,7 +762,8 @@ function processArrival(
       const held = heldPackets.get(node.id) || [];
 
       if (held.length === 0) {
-        // First parent - hold it
+        // First parent - hold it (live returns before the entanglement sync,
+        // tick/packets.ts:290-293)
         const timeout = (props.timeout ?? 2) * beatDuration;
         heldPackets.set(node.id, [{ payload, releaseTime: currentTime + timeout }]);
       } else {
@@ -718,9 +771,11 @@ function processArrival(
 
         if (currentTime >= firstHeld.releaseTime) {
           // First parent timed out - discard it and pass the new packet
-          // through unchanged (matches tick/packets.ts)
+          // through unchanged (matches tick/packets.ts). This path falls
+          // through to the entanglement sync in live (tick/packets.ts:391)
           heldPackets.set(node.id, []);
-          forwardPacket(node.id, payload, edges, simPackets, currentTime);
+          syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+          forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
           break;
         }
 
@@ -739,27 +794,31 @@ function processArrival(
           waves: offspring.waves ? [...offspring.waves] : undefined,
         };
 
-        // Clear held and forward offspring
+        // Clear held and forward offspring. Live returns before the
+        // entanglement sync (tick/packets.ts:337) and offspring spawn without
+        // a group id (tick/packets.ts:327-333)
         heldPackets.set(node.id, []);
-        forwardPacket(node.id, offspringPayload, edges, simPackets, currentTime);
+        forwardPacket(node.id, offspringPayload, edges, spawnedPackets, currentTime, undefined);
       }
       break;
     }
-    
+
     case 'lfo': {
       // Continuous modulation is handled via getEffectiveProps; packets that
       // physically pass through an LFO node get stamped with the current LFO
       // value and keep going (engine.ts processLFO + normal propagation)
       const props = effectiveProps as PropsForNodeType<'lfo'>;
       payload.modulationValue = computeLfoValue(props, currentTime, true);
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
 
     case 'scene_trigger':
       // Scene triggers are not relevant during offline export
       // Just pass through
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
 
     case 'splitter': {
@@ -767,6 +826,15 @@ function processArrival(
       const behavior = props.behavior ?? 'broadcast';
       const outgoing = Array.from(edges.values()).filter(e => e.from === node.id);
       let targetEdges = outgoing;
+
+      // Entangled splitters mint a fresh group for the packets split here,
+      // replacing any inherited group; non-entangled splitters pass the
+      // inherited group through (tick/packets.ts:343-351). Live does this for
+      // every behavior - random/weighted just produce a one-packet group.
+      // No entanglement sync happens at splitters (tick/packets.ts:392).
+      const entanglementGroupId = props.entangled
+        ? crypto.randomUUID()
+        : packet.entanglementGroupId;
 
       if (behavior === 'random' && outgoing.length > 0) {
         // Pick one random edge (tick/packets.ts)
@@ -798,13 +866,37 @@ function processArrival(
       }
       // 'broadcast' is default (all edges)
 
-      spawnOnEdges(targetEdges, payload, simPackets, currentTime);
+      spawnOnEdges(targetEdges, payload, spawnedPackets, currentTime, entanglementGroupId);
       break;
     }
 
     default:
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
+  }
+}
+
+/**
+ * Mirror of syncEntangledPayloads (tick/crossover.ts:16-28): replace the
+ * entire payload of every same-group packet with a shallow copy of the
+ * arriving packet's processed payload - the live sync copies the whole
+ * payload object and nothing else (not t, edge, or hop metadata).
+ * Exclusions are structural here, matching live: packets arriving this tick
+ * were already spliced out of the in-flight pool (live skips the whole
+ * arrivingPacketIds set), and same-tick spawns sit in a separate buffer until
+ * all arrivals are processed (live's packetsToSpawn is outside store.packets).
+ */
+function syncEntangled(
+  groupId: string | undefined,
+  newPayload: SimPacket['payload'],
+  inFlightPackets: SimPacket[]
+): void {
+  if (!groupId) return;
+  for (const p of inFlightPackets) {
+    if (p.entanglementGroupId === groupId) {
+      p.payload = { ...newPayload };
+    }
   }
 }
 
@@ -812,25 +904,29 @@ function forwardPacket(
   nodeId: NodeId,
   payload: SimPacket['payload'],
   edges: Map<EdgeId, GraphEdge>,
-  simPackets: SimPacket[],
-  currentTime: number
+  spawnedPackets: SimPacket[],
+  currentTime: number,
+  entanglementGroupId: string | undefined
 ): void {
   const outgoing = Array.from(edges.values()).filter(e => e.from === nodeId);
-  spawnOnEdges(outgoing, payload, simPackets, currentTime);
+  spawnOnEdges(outgoing, payload, spawnedPackets, currentTime, entanglementGroupId);
 }
 
 function spawnOnEdges(
   targetEdges: GraphEdge[],
   payload: SimPacket['payload'],
-  simPackets: SimPacket[],
-  currentTime: number
+  spawnedPackets: SimPacket[],
+  currentTime: number,
+  entanglementGroupId: string | undefined
 ): void {
   for (const edge of targetEdges) {
-    simPackets.push({
+    spawnedPackets.push({
       id: crypto.randomUUID(),
       edgeId: edge.id,
       t: 0,
       spawnTime: currentTime,
+      // Propagate entanglement to spawned packets (tick/packets.ts:410)
+      entanglementGroupId,
       payload: { ...payload },
     });
   }

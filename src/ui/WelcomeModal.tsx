@@ -11,6 +11,8 @@ import { deserializeComposition, detectFileVersion, migrateV2ToV3, loadCompositi
 import type { SerializedGraph, SerializedComposition } from '../io/file-io';
 import { isTauri } from '../io/filesystem';
 import { loadBundledExample } from '../data/examples';
+import { getAutosaveSnapshot } from '@core/store/autosave';
+import type { AutosaveSnapshot } from '@core/store/autosave';
 import { SCALES } from '@core/constants';
 import type { ScaleName } from '@core/types';
 import { AuthModal } from './AuthModal';
@@ -56,6 +58,7 @@ export function WelcomeModal(): React.ReactElement | null {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [wasSigningIn, setWasSigningIn] = useState(false);
   const [skipOnStartup, setSkipOnStartup] = useState(readSkipPreference);
+  const [autosave] = useState<AutosaveSnapshot | null>(getAutosaveSnapshot);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -132,6 +135,45 @@ export function WelcomeModal(): React.ReactElement | null {
     const placeholderSceneIds = [...store.scenes.keys()];
     loadBundledExample(exampleKey);
     placeholderSceneIds.forEach(id => store.deleteScene(id));
+  };
+
+  /** Restore the crash-recovery snapshot as the working project. */
+  const handleRestoreAutosave = () => {
+    if (!autosave) return;
+    try {
+      const data = deserializeComposition(autosave.data);
+      const store = useGraphStore.getState();
+      const placeholderSceneIds = [...store.scenes.keys()];
+
+      loadComposition(data.scenes, data.arrangement, data.channels, data.masterBpm);
+      placeholderSceneIds.forEach(id => store.deleteScene(id));
+
+      const scaleName = data.musicalContext.scaleName as ScaleName;
+      const scale = SCALES[scaleName];
+      if (scale) {
+        setMusicalContext({ root: data.musicalContext.root, scaleName, scale });
+      }
+      setGlobalSettings(data.globalSettings);
+      setProjectMeta({
+        name: autosave.projectName,
+        author: data.projectMeta.author || '',
+        created: data.projectMeta.created || Date.now(),
+        modified: Date.now(),
+      });
+      dismiss();
+    } catch (err) {
+      console.error('Autosave restore failed:', err);
+      setError('Could not restore the last session.');
+    }
+  };
+
+  const formatAutosaveAge = (savedAt: number): string => {
+    const minutes = Math.round((Date.now() - savedAt) / 60000);
+    if (minutes < 1) return 'moments ago';
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 48) return `${hours}h ago`;
+    return `${Math.round(hours / 24)} days ago`;
   };
 
   const handleStartTutorial = () => {
@@ -320,7 +362,28 @@ export function WelcomeModal(): React.ReactElement | null {
             </div>
           </div>
 
+          {error && <div className={styles.error}>{error}</div>}
+
           <div className={styles.options}>
+            {/* Crash / accidental-close recovery */}
+            {autosave && (
+              <>
+                <button
+                  className={`${styles.optionButton} ${styles.optionButtonPrimary}`}
+                  onClick={handleRestoreAutosave}
+                >
+                  <span className={styles.icon}>♻️</span>
+                  <div className={styles.info}>
+                    <span className={styles.label}>Restore last session</span>
+                    <span className={styles.description}>
+                      {autosave.projectName} — autosaved {formatAutosaveAge(autosave.savedAt)}
+                    </span>
+                  </div>
+                </button>
+                <div className={styles.divider} />
+              </>
+            )}
+
             {/* New user paths: straight to sound */}
             <button
               className={`${styles.optionButton} ${styles.optionButtonPrimary}`}

@@ -124,6 +124,7 @@ export function updatePackets(deltaTime: number): void {
   const now = performance.now();
   
   const packetsToDelete: PacketId[] = [];
+  const positionUpdates: Array<[PacketId, number]> = [];
   const packetsToSpawn: Packet[] = [];
   const arrivals: Array<{ packet: Packet; node: GraphNode; edge: GraphEdge }> = [];
   
@@ -169,16 +170,18 @@ export function updatePackets(deltaTime: number): void {
     
     // If traverseTime is 0 or very small, arrive immediately
     const speed = traverseTime > 0.0001 ? deltaTime / traverseTime : 1;
-    
-    // Update position
+
+    // Update position (batched: one store update per frame, not per packet)
     const newT = packet.t + speed;
-    store.updatePacket(packet.id, { t: newT });
-    
+    positionUpdates.push([packet.id, newT]);
+
     // Check if arrived
     if (newT >= 1) {
       arrivals.push({ packet, node: toNode, edge });
     }
   });
+
+  store.batchUpdatePacketPositions(positionUpdates);
   
   // Create set of arriving packet IDs for entanglement sync
   const arrivingPacketIds = new Set(arrivals.map(a => a.packet.id));
@@ -444,18 +447,8 @@ export function updatePackets(deltaTime: number): void {
  * Update node flash decay
  */
 export function updateNodeFlash(deltaTime: number): void {
-  const store = getGraphStore();
-  
-  store.nodes.forEach((node) => {
-    if (node.flash > 0) {
-      const newFlash = node.flash * Math.pow(0.1, deltaTime * 5);
-      if (newFlash < 0.01) {
-        store.updateNode(node.id, { flash: 0 } as Partial<GraphNode>);
-      } else {
-        store.updateNode(node.id, { flash: newFlash } as Partial<GraphNode>);
-      }
-    }
-  });
+  // Batched: one store update decays every node's flash for the frame
+  getGraphStore().decayNodeFlashes(deltaTime);
 }
 
 /**
