@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useGraphStore } from '@core/store';
 import { initHistory } from '@core/store/history';
 import { initAutosave } from '@core/store/autosave';
+import { handleCheckoutReturn } from '../io/checkout';
 import { startTick, stopTick, resetTick } from '@core/tick';
 import { CanvasRenderer } from '@canvas/renderer';
 import { CanvasInputHandler } from '@canvas/input';
@@ -143,6 +144,9 @@ export function App(): React.ReactElement {
 
     // Periodic crash-recovery snapshots
     initAutosave();
+
+    // Returning from a credit purchase? Refetch the balance, clean the URL
+    handleCheckoutReturn();
 
     // Initialize audio (deferred until user interaction)
     const initAudio = async () => {

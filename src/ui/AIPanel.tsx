@@ -11,6 +11,8 @@ import { buildCanvasContext } from '@ai/context-builder';
 import { applyOperations, createSimplePatch } from '@ai/operations';
 import { COMPOSITION_TEMPLATES } from '@ai/templates';
 import type { ChatMessage, CanvasOperation } from '@ai/types';
+import { CREDIT_PACKS, startCreditCheckout, getCheckoutResult } from '../io/checkout';
+import type { CreditPack } from '../io/checkout';
 import type { CompositionPlan } from '@ai/planner';
 import styles from './AIPanel.module.css';
 
@@ -196,6 +198,9 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
         />
       )}
       
+      {/* Credits + purchase (cloud AI is metered) */}
+      {user && provider === 'stochastic-cloud' && <CreditsBar />}
+
       {/* API key setup — the key stays in this browser only */}
       {user && !isConfigured && (
         <ApiKeySetup onSave={setApiKey} />
@@ -496,6 +501,60 @@ function TemplatesPanel({ onSelect, onClose }: TemplatesPanelProps): React.React
 // ============================================================================
 // ADVANCED SETTINGS
 // ============================================================================
+
+/**
+ * Credit balance + purchase bar, shown when the cloud AI provider is active.
+ * Packs open Stripe Checkout; the webhook grants credits after payment.
+ */
+function CreditsBar(): React.ReactElement | null {
+  const credits = useAuthStore(state => state.credits);
+  const [showPacks, setShowPacks] = useState(false);
+  const [busyPack, setBusyPack] = useState<CreditPack | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const checkoutResult = getCheckoutResult();
+
+  const handleBuy = async (pack: CreditPack) => {
+    setBusyPack(pack);
+    setError(null);
+    const failure = await startCreditCheckout(pack);
+    if (failure) {
+      setError(failure);
+      setBusyPack(null);
+    }
+    // On success the page navigates to Stripe — no state to reset
+  };
+
+  return (
+    <div className={styles.creditsBar}>
+      <div className={styles.creditsRow}>
+        <span className={styles.creditsBalance}>
+          ◈ {credits ? credits.balance : '—'} credits
+        </span>
+        {checkoutResult === 'success' && (
+          <span className={styles.creditsNotice}>Payment received — balance updating…</span>
+        )}
+        <button className={styles.creditsBuy} onClick={() => setShowPacks(!showPacks)}>
+          {showPacks ? 'Close' : 'Buy credits'}
+        </button>
+      </div>
+      {showPacks && (
+        <div className={styles.creditsPacks}>
+          {(Object.keys(CREDIT_PACKS) as CreditPack[]).map(pack => (
+            <button
+              key={pack}
+              className={styles.creditsPack}
+              disabled={busyPack !== null}
+              onClick={() => handleBuy(pack)}
+            >
+              {busyPack === pack ? '⏳' : `${CREDIT_PACKS[pack].credits} for ${CREDIT_PACKS[pack].priceLabel}`}
+            </button>
+          ))}
+        </div>
+      )}
+      {error && <div className={styles.creditsError}>{error}</div>}
+    </div>
+  );
+}
 
 interface ApiKeySetupProps {
   onSave: (apiKey: string) => void;
