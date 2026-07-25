@@ -44,6 +44,7 @@ interface NoteOnMessage {
     mod: number;
   };
   pan?: number;
+  reverbSend?: number;
 }
 
 interface NoteOffMessage {
@@ -114,7 +115,10 @@ interface Voice {
   
   // Panning
   pan: number;
-  
+
+  // Per-voice reverb send level (0-1), routed to output bus 1
+  reverbSend: number;
+
   // Biquad filter state
   filterX1: number;
   filterX2: number;
@@ -250,7 +254,8 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
       filterEnvValue: 0,
       
       pan: msg.pan ?? 0,
-      
+      reverbSend: msg.reverbSend ?? 0.3,
+
       filterX1: 0,
       filterX2: 0,
       filterY1: 0,
@@ -280,18 +285,25 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
   ): boolean {
     const output = outputs[0];
     if (!output || output.length === 0) return true;
-    
+
     const left = output[0];
     const right = output[1] ?? output[0];
-    
+
     if (!left || !right) return true;
-    
+
+    // Optional second output: per-voice reverb send bus
+    const wetOutput = outputs[1];
+    const wetLeft = wetOutput?.[0] ?? null;
+    const wetRight = wetOutput?.[1] ?? wetLeft;
+
     const bufferSize = left.length;
     const dt = 1 / this.sampleRate;
-    
+
     // Clear output
     left.fill(0);
     right.fill(0);
+    wetLeft?.fill(0);
+    wetRight?.fill(0);
     
     // Process each voice
     const deadVoices: string[] = [];
@@ -428,7 +440,13 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
         
         left[i]! += finalL * this.masterGain;
         right[i]! += finalR * this.masterGain;
-        
+
+        // Feed the reverb send bus scaled by this voice's send level
+        if (wetLeft && wetRight && voice.reverbSend > 0) {
+          wetLeft[i]! += finalL * this.masterGain * voice.reverbSend;
+          wetRight[i]! += finalR * this.masterGain * voice.reverbSend;
+        }
+
         voice.time += dt;
       }
     });
@@ -440,8 +458,12 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
     for (let i = 0; i < bufferSize; i++) {
       left[i] = Math.max(-1, Math.min(1, left[i]!));
       right[i] = Math.max(-1, Math.min(1, right[i]!));
+      if (wetLeft && wetRight) {
+        wetLeft[i] = Math.max(-1, Math.min(1, wetLeft[i]!));
+        wetRight[i] = Math.max(-1, Math.min(1, wetRight[i]!));
+      }
     }
-    
+
     return true;
   }
   

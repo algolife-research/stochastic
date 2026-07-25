@@ -1007,7 +1007,7 @@ const EDITOR_NODE_ICONS: Record<string, string> = {
   speaker:       '🔊',
   pitch:         '♪',
   oscillator:    '∿',
-  filter:        '⋈',
+  filter:        '▼',
   gate:          '⊡',
   delay:         '⏱',
   gain:          '◐',

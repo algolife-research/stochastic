@@ -140,7 +140,7 @@ export const NODE_ICONS: Record<NodeType, string> = {
   speaker:       '🔊',
   pitch:         '♪',
   oscillator:    '∿',  // Wave symbol (was polariser)
-  filter:        '⋈',
+  filter:        '▼',
   gate:          '⊡',
   delay:         '⏱',
   gain:          '◐',

@@ -2,12 +2,13 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { getGraphStore } from '@core/store';
+import { NODE_ICONS } from '@core/constants';
 import type { NodeType, NodeId } from '@core/types';
-import { 
-  TUNNEL_PRESETS, 
-  CATEGORY_LABELS, 
+import {
+  TUNNEL_PRESETS,
+  CATEGORY_LABELS,
   CATEGORY_ICONS,
-  type TunnelPresetCategory 
+  type TunnelPresetCategory
 } from '@data/tunnel-presets';
 import styles from './ContextMenu.module.css';
 
@@ -40,47 +41,48 @@ interface NodeCategory {
   nodes: Array<{ type: NodeType; label: string; icon: string }>;
 }
 
+// Icons come from NODE_ICONS so the menu matches the canvas and toolbar
 const NODE_CATEGORIES: NodeCategory[] = [
   {
     name: 'Basic',
     nodes: [
-      { type: 'source', label: 'Source', icon: '◉' },
-      { type: 'speaker', label: 'Speaker', icon: '🔊' },
-      { type: 'pitch', label: 'Pitch', icon: '♯' },
+      { type: 'source', label: 'Source', icon: NODE_ICONS.source },
+      { type: 'speaker', label: 'Speaker', icon: NODE_ICONS.speaker },
+      { type: 'pitch', label: 'Pitch', icon: NODE_ICONS.pitch },
     ]
   },
   {
     name: 'Sound',
     nodes: [
-      { type: 'oscillator', label: 'Oscillator', icon: '∿' },
-      { type: 'filter', label: 'Filter', icon: '▼' },
+      { type: 'oscillator', label: 'Oscillator', icon: NODE_ICONS.oscillator },
+      { type: 'filter', label: 'Filter', icon: NODE_ICONS.filter },
     ]
   },
   {
     name: 'Control',
     nodes: [
-      { type: 'gate', label: 'Gate', icon: '⚡' },
-      { type: 'delay', label: 'Delay', icon: '⏱' },
-      { type: 'gain', label: 'Gain', icon: '⬆' },
-      { type: 'quantizer', label: 'Quantizer', icon: '♫' },
-      { type: 'splitter', label: 'Splitter', icon: '⋈' },
+      { type: 'gate', label: 'Gate', icon: NODE_ICONS.gate },
+      { type: 'delay', label: 'Delay', icon: NODE_ICONS.delay },
+      { type: 'gain', label: 'Gain', icon: NODE_ICONS.gain },
+      { type: 'quantizer', label: 'Quantizer', icon: NODE_ICONS.quantizer },
+      { type: 'splitter', label: 'Splitter', icon: NODE_ICONS.splitter },
     ]
   },
   {
     name: 'Advanced',
     nodes: [
-      { type: 'tunnel', label: 'Tunnel', icon: '▭' },
-      { type: 'teleporter', label: 'Teleporter', icon: '⊚' },
-      { type: 'modulator', label: 'Modulator', icon: '⟳' },
-      { type: 'lfo', label: 'LFO', icon: '∿' },
-      { type: 'scene_trigger', label: 'Scene Trigger', icon: '▶' },
+      { type: 'tunnel', label: 'Tunnel', icon: NODE_ICONS.tunnel },
+      { type: 'teleporter', label: 'Teleporter', icon: NODE_ICONS.teleporter },
+      { type: 'modulator', label: 'Modulator', icon: NODE_ICONS.modulator },
+      { type: 'lfo', label: 'LFO', icon: NODE_ICONS.lfo },
+      { type: 'scene_trigger', label: 'Scene Trigger', icon: NODE_ICONS.scene_trigger },
     ]
   },
   {
     name: 'Evolution',
     nodes: [
-      { type: 'mutator', label: 'Mutator', icon: '🧬' },
-      { type: 'crossover', label: 'Crossover', icon: '⚤' },
+      { type: 'mutator', label: 'Mutator', icon: NODE_ICONS.mutator },
+      { type: 'crossover', label: 'Crossover', icon: NODE_ICONS.crossover },
     ]
   }
 ];

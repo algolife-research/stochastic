@@ -28,8 +28,9 @@ function recordSourceEdgeSpawn(edgeId: string, now: number): void {
  */
 export function updateSources(now: number): void {
   const store = getGraphStore();
-  const { masterSpeed } = store;
-  const msPerBeat = (60 / masterSpeed) * 1000;
+  // Honor the playing scene's local BPM override (falls back to master BPM)
+  const bpm = store.scenePlayback.effectiveBpm || store.masterSpeed;
+  const msPerBeat = (60 / bpm) * 1000;
   
   store.nodes.forEach((node) => {
     if (node.type !== 'source') return;

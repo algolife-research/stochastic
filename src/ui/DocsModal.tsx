@@ -316,7 +316,7 @@ const NODE_DOCS: DocSection[] = [
         </p>
         <h4>Properties</h4>
         <ul>
-          <li><strong>Target Scene</strong> - Scene to switch to (-1 = next)</li>
+          <li><strong>Target Scene</strong> - Index of the scene to switch to (-1 = off)</li>
           <li><strong>Behavior</strong> - Jump instantly or crossfade</li>
         </ul>
       </>
@@ -385,6 +385,8 @@ const KEYBOARD_SHORTCUTS: DocSection = {
       </ul>
       <h4>Editing</h4>
       <ul>
+        <li><strong>Ctrl+Z</strong> - Undo canvas edit</li>
+        <li><strong>Ctrl+Y / Ctrl+Shift+Z</strong> - Redo</li>
         <li><strong>Delete / Backspace</strong> - Delete selection</li>
         <li><strong>Ctrl+A</strong> - Select all nodes</li>
         <li><strong>Ctrl+C / Ctrl+V</strong> - Copy / Paste nodes</li>
@@ -392,6 +394,7 @@ const KEYBOARD_SHORTCUTS: DocSection = {
         <li><strong>Ctrl+G</strong> - Group selection into a Tunnel</li>
         <li><strong>Escape</strong> - Cancel linking / Deselect</li>
       </ul>
+      <p><em>Undo history covers canvas edits on the current scene and pauses while the transport is running.</em></p>
       <h4>Tools</h4>
       <ul>
         <li><strong>1-7</strong> - Node tools (Source, Speaker, Pitch, Filter, Gate, Delay, Gain), then click the canvas to place</li>
@@ -404,6 +407,7 @@ const KEYBOARD_SHORTCUTS: DocSection = {
         <li><strong>Scroll</strong> - Zoom in/out</li>
         <li><strong>Middle Mouse Drag</strong> - Pan canvas</li>
         <li><strong>Left Drag (empty canvas)</strong> - Box-select</li>
+        <li><strong>Long-press (touch)</strong> - Open the context menu</li>
       </ul>
     </>
   ),

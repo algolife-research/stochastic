@@ -36,6 +36,7 @@ export const createEdgeActions = (
       timingMode: options.timingMode ?? defaultMode,
       durationBeats: options.durationBeats ?? defaultDuration,
       targetParam: options.targetParam ?? null,
+      weight: options.weight ?? 1,
     };
     
     set(state => {

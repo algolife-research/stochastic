@@ -92,6 +92,7 @@ export interface SerializedScene {
     timingMode: 'physical' | 'fixed';
     durationBeats: number | null;
     targetParam: string | null;
+    weight?: number;
   }>;
   annotations?: Array<{
     id: string;
@@ -327,6 +328,7 @@ export function serializeScene(scene: Scene): SerializedScene {
       timingMode: edge.timingMode,
       durationBeats: edge.durationBeats,
       targetParam: edge.targetParam,
+      weight: edge.weight ?? 1,
     })),
     annotations: scene.annotations?.map(a => ({
       id: a.id,
@@ -395,6 +397,7 @@ export function deserializeScene(data: SerializedScene): Scene {
       timingMode: e.timingMode,
       durationBeats: e.durationBeats,
       targetParam: e.targetParam,
+      weight: e.weight ?? 1,
     })),
     annotations: data.annotations?.map(a => ({
       id: a.id as AnnotationId,

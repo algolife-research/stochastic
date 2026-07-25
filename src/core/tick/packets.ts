@@ -118,7 +118,9 @@ function createPacketMetadata(parentPacket?: Packet, edgeId?: string): {
  */
 export function updatePackets(deltaTime: number): void {
   const store = getGraphStore();
-  const { globalSettings, masterSpeed } = store;
+  const { globalSettings } = store;
+  // Honor the playing scene's local BPM override (falls back to master BPM)
+  const effectiveBpm = store.scenePlayback.effectiveBpm || store.masterSpeed;
   const now = performance.now();
   
   const packetsToDelete: PacketId[] = [];
@@ -152,7 +154,7 @@ export function updatePackets(deltaTime: number): void {
     }
     
     // Calculate speed based on edge timing mode
-    const secondsPerBeat = 60 / masterSpeed;
+    const secondsPerBeat = 60 / effectiveBpm;
     let traverseTime: number;
     
     if (edge.timingMode === 'fixed' && edge.durationBeats !== null) {
