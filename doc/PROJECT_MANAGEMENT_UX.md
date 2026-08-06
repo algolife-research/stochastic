@@ -825,9 +825,1114 @@ class AutoSaveManager {
 
 ---
 
-### Phase 2: Auto-Save & Recovery (1 week)
+## Detailed Implementation Steps
 
-**Goals:** Eliminate manual save, prevent data loss
+This section breaks down each phase into concrete, actionable development tasks.
+
+---
+
+### Phase 1: Foundation - Unified Storage Architecture (2 weeks)
+
+**Objective:** Establish single source of truth for project metadata and storage state.
+
+#### 1.1 Update Project Data Model
+- **File:** `src/core/types.ts`
+- **Action:** Extend `ProjectMetadata` interface:
+  ```typescript
+  interface ProjectMetadata {
+    id: string;  // Unique identifier
+    name: string;
+    description?: string;
+    created: number;  // timestamp
+    modified: number;
+    storage: {
+      type: 'cloud' | 'temporary';
+      cloudId?: string;
+      cloudUserId?: string;
+      lastSyncedAt?: number;
+    };
+    syncStatus: 'synced' | 'pending' | 'offline' | 'conflict';
+    isDirty: boolean;
+    tags?: string[];
+    starred?: boolean;
+    archived?: boolean;
+  }
+  ```
+- **Checklist:**
+  - [ ] Update interface
+  - [ ] Add unit test for type validation
+  - [ ] Update any type guards that check ProjectMetadata
+
+#### 1.2 Create Unified Project Manager Module
+- **File:** `src/core/store/projectManager.ts` (NEW)
+- **Responsibilities:**
+  - Single source of truth for current project
+  - Track storage mode and dirty state
+  - Sync status management
+- **Functions to Export:**
+  ```typescript
+  export const projectManager = {
+    init(project: ProjectMetadata): void;
+    getCurrent(): ProjectMetadata;
+    setCurrent(metadata: ProjectMetadata): void;
+    getStorageMode(): 'cloud' | 'temporary';
+    isDirty(): boolean;
+    setDirty(dirty: boolean): void;
+    getSyncStatus(): SyncStatus;
+    setSyncStatus(status: SyncStatus): void;
+  };
+  ```
+- **Checklist:**
+  - [ ] Implement all getter/setter functions
+  - [ ] Add state management (Zustand atom or React Context)
+  - [ ] Write unit tests for each function
+  - [ ] Ensure thread-safe (if applicable)
+
+#### 1.3 Update StatusBar Component
+- **File:** `src/ui/StatusBar.tsx`
+- **Changes:**
+  - Import `projectManager`
+  - Add storage mode indicator:
+    ```tsx
+    const mode = projectManager.getStorageMode();
+    <span className={styles.modeIndicator}>
+      {mode === 'cloud' ? '☁️ Cloud' : '💾 Temporary'}
+    </span>
+    ```
+  - Add dirty/unsaved indicator:
+    ```tsx
+    {projectManager.isDirty() && (
+      <span className={styles.unsavedBadge}>● Unsaved</span>
+    )}
+    ```
+  - Add sync status:
+    ```tsx
+    const syncStatus = projectManager.getSyncStatus();
+    {syncStatus === 'pending' && <span>⟳ Syncing...</span>}
+    {syncStatus === 'conflict' && <span>⚡ Conflict</span>}
+    ```
+- **File:** `src/ui/StatusBar.module.css`
+- **Additions:**
+  ```css
+  .modeIndicator {
+    padding: 0 8px;
+    color: #666;
+    font-size: 11px;
+  }
+  
+  .unsavedBadge {
+    color: #ff9800;
+    font-weight: bold;
+    margin-left: 4px;
+  }
+  ```
+- **Checklist:**
+  - [ ] Indicator displays correctly for both modes
+  - [ ] Unsaved badge shows/hides on dirty changes
+  - [ ] Sync status updates in real-time
+  - [ ] No layout shift when badge appears
+
+#### 1.4 Integrate projectManager into ProjectsPanel
+- **File:** `src/ui/ProjectsPanel.tsx`
+- **Changes:**
+  - Replace local `currentProjectId` state with `projectManager.getCurrent().id`
+  - When user selects project:
+    ```typescript
+    const handleSelectProject = async (project: ProjectMetadata) => {
+      // Check for unsaved changes first
+      if (projectManager.isDirty()) {
+        const result = await showUnsavedChangesDialog();
+        if (result === 'cancel') return;
+      }
+      
+      // Load new project
+      projectManager.setCurrent(project);
+      // ... load project data
+    };
+    ```
+  - Show storage mode in project list (cloud vs temp icon)
+- **Checklist:**
+  - [ ] Project selection uses projectManager
+  - [ ] Unsaved changes dialog works
+  - [ ] Storage mode indicators show correctly
+
+#### 1.5 Refactor File I/O Layer
+- **File:** `src/io/file-io.ts`
+- **Changes:**
+  - Update export function:
+    ```typescript
+    export async function exportProject(
+      project: Project,
+      metadata: ProjectMetadata,
+      options?: { includeMetadata?: boolean; generateThumbnail?: boolean }
+    ): Promise<Blob> {
+      const data = {
+        project,
+        metadata,
+        version: 3,
+        exportedAt: Date.now()
+      };
+      return new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    }
+    ```
+  - Update import function to validate version and preserve storage info:
+    ```typescript
+    export async function importProject(
+      file: File
+    ): Promise<{ project: Project; metadata: ProjectMetadata }> {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      
+      // Validate version and migrate if needed
+      if (data.version < 3) {
+        return migrateFromV2(data);
+      }
+      
+      return {
+        project: data.project,
+        metadata: {
+          ...data.metadata,
+          modified: Date.now(),
+          isDirty: false,
+          syncStatus: 'pending'
+        }
+      };
+    }
+    ```
+- **Checklist:**
+  - [ ] Exports include full metadata
+  - [ ] Imports validate file format
+  - [ ] Version migration works (V2 → V3)
+  - [ ] Edge cases handled (corrupt files, version mismatch)
+
+#### 1.6 Create Unit Tests
+- **File:** `src/core/store/projectManager.test.ts` (NEW)
+- **Test Cases:**
+  ```typescript
+  describe('projectManager', () => {
+    test('setCurrent and getCurrent work correctly', () => {});
+    test('isDirty returns correct state', () => {});
+    test('getStorageMode identifies cloud vs temporary', () => {});
+    test('setSyncStatus updates status', () => {});
+    test('Multiple rapid updates dont cause race conditions', () => {});
+  });
+  ```
+- **File:** `src/io/file-io.test.ts` (NEW or extend)
+- **Test Cases:**
+  ```typescript
+  test('exportProject includes metadata', () => {});
+  test('importProject with v2 file migrates correctly', () => {});
+  test('importProject preserves storage type on import', () => {});
+  test('importProject rejects corrupt files', () => {});
+  ```
+- **Checklist:**
+  - [ ] All new functions have tests
+  - [ ] Edge cases covered (null, undefined, invalid)
+  - [ ] Tests pass locally
+  - [ ] Coverage >85%
+
+#### Phase 1 Completion Checklist
+- [ ] Types updated and backward compatible
+- [ ] projectManager module complete and tested
+- [ ] StatusBar displays mode, dirty state, sync status
+- [ ] ProjectsPanel uses projectManager
+- [ ] File I/O preserves metadata
+- [ ] All unit tests passing
+- [ ] Code review approved
+- [ ] No console errors/warnings
+
+---
+
+### Phase 2: Auto-Save & Crash Recovery (2 weeks)
+
+**Objective:** Prevent data loss through automatic saves and recovery.
+
+#### 2.1 Implement Local Cache Layer
+- **File:** `src/io/localCache.ts` (NEW)
+- **Functions:**
+  ```typescript
+  export const localCache = {
+    save(project: Project, metadata: ProjectMetadata): void;
+    load(): { project: Project; metadata: ProjectMetadata } | null;
+    clear(): void;
+    hasCache(): boolean;
+    getCacheTimestamp(): number | null;
+  };
+  ```
+- **Implementation:**
+  - Use `localStorage` with key: `stochastic_v3_cache`
+  - Store both project and metadata
+  - Include timestamp and project name for UI
+  - Limit cache size (prune if >5MB)
+- **Checklist:**
+  - [ ] localStorage integration works
+  - [ ] Can save/load large projects
+  - [ ] Cache expires appropriately
+  - [ ] Handles quota exceeded errors
+
+#### 2.2 Create Auto-Save Hook
+- **File:** `src/ui/hooks/useAutoSave.ts` (NEW)
+- **Implementation:**
+  ```typescript
+  export function useAutoSave(
+    project: Project,
+    metadata: ProjectMetadata,
+    options?: { delayMs?: number; enabled?: boolean }
+  ): void {
+    const { delayMs = 30000, enabled = true } = options || {};
+    
+    useEffect(() => {
+      if (!enabled || metadata.storage.type !== 'cloud') return;
+      if (!projectManager.isDirty()) return;
+      
+      const timer = setTimeout(async () => {
+        projectManager.setSyncStatus('pending');
+        try {
+          await cloudStorage.saveProject(project, metadata);
+          projectManager.setDirty(false);
+          projectManager.setSyncStatus('synced');
+          localCache.save(project, metadata);
+        } catch (error) {
+          projectManager.setSyncStatus('offline');
+          // Queue for later sync
+        }
+      }, delayMs);
+      
+      return () => clearTimeout(timer);
+    }, [project, metadata, enabled, delayMs]);
+  }
+  ```
+- **Usage in App:**
+  ```tsx
+  function App() {
+    const { graph, projectMeta } = useGraphStore();
+    useAutoSave(graph, projectMeta, { enabled: isLoggedIn });
+    // ...
+  }
+  ```
+- **Checklist:**
+  - [ ] Debouncing works correctly
+  - [ ] Only saves in cloud mode
+  - [ ] Handles network errors
+  - [ ] Doesn't block UI
+
+#### 2.3 Implement Crash Recovery
+- **File:** `src/ui/RecoveryModal.tsx` (NEW)
+- **Features:**
+  - Show last cache timestamp
+  - Display project name and size
+  - Options: "Recover", "Discard", "View Details"
+- **File:** `src/ui/App.tsx`
+- **Integration:**
+  ```typescript
+  useEffect(() => {
+    const cached = localCache.load();
+    const currentProjectEmpty = graph.nodes.size === 0 && graph.edges.size === 0;
+    
+    if (cached && currentProjectEmpty) {
+      setShowRecoveryModal(true);
+      setRecoveryData(cached);
+    }
+  }, []);
+  ```
+- **Checklist:**
+  - [ ] Recovery modal displays on crash
+  - [ ] Recover button restores state
+  - [ ] Discard button clears cache
+  - [ ] Works even if app is partially broken
+
+#### 2.4 Unsaved Changes Warning
+- **File:** `src/ui/App.tsx`
+- **Implementation:**
+  ```typescript
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (projectManager.isDirty() && 
+          projectManager.getStorageMode() === 'cloud') {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure?';
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+  ```
+- **Checklist:**
+  - [ ] Warning shows on page close with unsaved work
+  - [ ] Only for cloud mode (temporary mode always loses data)
+  - [ ] Doesn't trigger on normal navigation away
+
+#### 2.5 Sync Status Display
+- **Already done in Phase 1.3** - Update StatusBar to show sync status:
+  - Synced ✓
+  - Syncing ⟳
+  - Offline ⚠️
+  - Conflict ⚡
+
+#### 2.6 Unit Tests
+- **File:** `src/io/localCache.test.ts`
+  ```typescript
+  test('save and load preserves data', () => {});
+  test('cache handles large projects', () => {});
+  test('load returns null when no cache', () => {});
+  ```
+- **File:** `src/ui/hooks/useAutoSave.test.ts`
+  ```typescript
+  test('auto-save triggers after delay', () => {});
+  test('auto-save skips temporary mode', () => {});
+  test('auto-save handles network errors', () => {});
+  ```
+- **Checklist:**
+  - [ ] All new functions tested
+  - [ ] Integration tests for recovery flow
+  - [ ] Performance tests (auto-save doesn't lag UI)
+
+#### Phase 2 Completion Checklist
+- [ ] Local cache persists to localStorage
+- [ ] Auto-save works in cloud mode
+- [ ] Crash recovery modal appears and works
+- [ ] Unsaved changes warning displays
+- [ ] Sync status updates correctly
+- [ ] All tests passing
+- [ ] Performance acceptable (<100ms auto-save latency)
+- [ ] Code review approved
+
+---
+
+### Phase 3: Conflict Resolution & Offline Support (2 weeks)
+
+**Objective:** Handle multi-device sync and offline scenarios without data loss.
+
+#### 3.1 Implement Conflict Detection
+- **File:** `src/io/conflictDetection.ts` (NEW)
+- **Functions:**
+  ```typescript
+  export interface ConflictInfo {
+    exists: boolean;
+    local: { data: Project; timestamp: number };
+    remote: { data: Project; timestamp: number };
+    lastKnownSync: number;
+  }
+  
+  export function detectConflict(
+    local: { data: Project; timestamp: number },
+    remote: { data: Project; timestamp: number },
+    lastSync: number
+  ): ConflictInfo;
+  ```
+- **Logic:**
+  - If both modified after lastSync → conflict
+  - If only one modified → no conflict (use newer)
+  - If neither modified → no conflict
+- **Checklist:**
+  - [ ] Conflict detection logic correct
+  - [ ] Handles edge cases (deleted files, etc.)
+  - [ ] Unit tests comprehensive
+
+#### 3.2 Create Conflict Resolution Modal
+- **File:** `src/ui/ConflictResolutionModal.tsx` (NEW)
+- **Features:**
+  - Side-by-side diff view
+  - Timestamps for each version
+  - Three options:
+    - "Keep Cloud" (discard local)
+    - "Keep Local" (discard cloud)
+    - "Merge" (if applicable)
+  - Preview button to see full content
+- **Checklist:**
+  - [ ] Modal appears on conflict detection
+  - [ ] User choice updates project correctly
+  - [ ] No data loss occurs
+  - [ ] Clear messaging about consequences
+
+#### 3.3 Offline Mode
+- **File:** `src/io/offlineManager.ts` (NEW)
+- **Functionality:**
+  ```typescript
+  export const offlineManager = {
+    isOnline(): boolean;
+    onConnectionChange(callback: (online: boolean) => void): void;
+    queueChange(project: Project, metadata: ProjectMetadata): void;
+    getQueueSize(): number;
+    flushQueue(): Promise<SyncResult>;
+  };
+  ```
+- **Implementation:**
+  - Listen to `navigator.onLine`
+  - Queue changes when offline
+  - Sync when connection restored
+- **Checklist:**
+  - [ ] Offline detection works
+  - [ ] Changes persist in queue
+  - [ ] Queue flushes automatically when online
+  - [ ] No race conditions in queue handling
+
+#### 3.4 Update Cloud Storage for Offline
+- **File:** `src/io/cloud-storage.ts`
+- **Changes:**
+  ```typescript
+  export async function saveProject(
+    project: Project,
+    metadata: ProjectMetadata
+  ): Promise<{ synced: boolean; queued?: boolean }> {
+    if (!offlineManager.isOnline()) {
+      offlineManager.queueChange(project, metadata);
+      projectManager.setSyncStatus('offline');
+      return { synced: false, queued: true };
+    }
+    
+    // Detect conflicts before save
+    const remote = await fetchRemoteVersion(metadata.storage.cloudId!);
+    const conflict = detectConflict(
+      { data: project, timestamp: Date.now() },
+      { data: remote, timestamp: remote.modified },
+      metadata.storage.lastSyncedAt || 0
+    );
+    
+    if (conflict.exists) {
+      projectManager.setSyncStatus('conflict');
+      showConflictModal(conflict);
+      return { synced: false };
+    }
+    
+    // Save to cloud
+    const result = await supabase
+      .from('projects')
+      .upsert({ ...project, ...metadata });
+    
+    metadata.storage.lastSyncedAt = Date.now();
+    projectManager.setSyncStatus('synced');
+    return { synced: true };
+  }
+  ```
+- **Checklist:**
+  - [ ] Offline save queues correctly
+  - [ ] Conflict detection works before save
+  - [ ] Sync status updates appropriately
+
+#### 3.5 Offline Indicator in UI
+- **File:** `src/ui/StatusBar.tsx`
+- **Addition:**
+  ```tsx
+  {!offlineManager.isOnline() && (
+    <span className={styles.offlineWarning}>
+      📴 Offline (Changes saved locally)
+    </span>
+  )}
+  ```
+- **Checklist:**
+  - [ ] Appears when connection lost
+  - [ ] Disappears when connection restored
+  - [ ] Non-intrusive but visible
+
+#### 3.6 Unit Tests
+- **File:** `src/io/conflictDetection.test.ts`
+  ```typescript
+  test('detects conflict when both sides modified', () => {});
+  test('no conflict when only one side modified', () => {});
+  test('handles equal timestamps', () => {});
+  ```
+- **File:** `src/io/offlineManager.test.ts`
+  ```typescript
+  test('queues changes when offline', () => {});
+  test('flushes queue on reconnect', () => {});
+  test('handles partial syncs', () => {});
+  ```
+- **Checklist:**
+  - [ ] All scenarios tested
+  - [ ] Edge cases covered
+  - [ ] Integration test for full offline→online flow
+
+#### Phase 3 Completion Checklist
+- [ ] Conflicts detected and resolved correctly
+- [ ] Offline mode works transparently
+- [ ] Queue flushes on reconnect
+- [ ] Conflict modal is user-friendly
+- [ ] No data loss in any scenario
+- [ ] All tests passing
+- [ ] Code review approved
+
+---
+
+### Phase 4: Project Organization & Search (2 weeks)
+
+**Objective:** Enable users to manage libraries of 50+ projects comfortably.
+
+#### 4.1 Extend Project Metadata
+- **File:** `src/core/types.ts`
+- **Additions:**
+  ```typescript
+  interface ProjectMetadata {
+    // ... existing fields
+    tags: string[];
+    starred: boolean;
+    archived: boolean;
+    thumbnail?: string;  // base64 preview image
+    description?: string;
+    category?: string;  // e.g., 'experimental', 'client-work', 'finished'
+  }
+  ```
+- **Checklist:**
+  - [ ] Fields added to interface
+  - [ ] Backward compatible with existing projects
+  - [ ] Unit tests updated
+
+#### 4.2 Database Schema Migration
+- **File:** `supabase/migrations/20250112_add_project_metadata.sql` (NEW)
+- **SQL:**
+  ```sql
+  ALTER TABLE projects ADD COLUMN (
+    tags TEXT[],
+    starred BOOLEAN DEFAULT false,
+    archived BOOLEAN DEFAULT false,
+    thumbnail TEXT,
+    category VARCHAR(50),
+    description TEXT
+  );
+  
+  CREATE INDEX idx_projects_tags ON projects USING GIN(tags);
+  CREATE INDEX idx_projects_starred ON projects(starred);
+  CREATE INDEX idx_projects_archived ON projects(archived);
+  CREATE INDEX idx_projects_modified ON projects(modified);
+  ```
+- **Checklist:**
+  - [ ] Migration runs without errors
+  - [ ] Indexes created for performance
+  - [ ] Backward compatibility maintained
+
+#### 4.3 Implement Search
+- **File:** `src/io/projectSearch.ts` (NEW)
+- **Functions:**
+  ```typescript
+  export interface SearchOptions {
+    query?: string;
+    tags?: string[];
+    starred?: boolean;
+    archived?: boolean;
+    dateRange?: { start: number; end: number };
+    sort?: 'name' | 'modified' | 'created';
+    order?: 'asc' | 'desc';
+  }
+  
+  export function searchProjects(
+    projects: ProjectMetadata[],
+    options: SearchOptions
+  ): ProjectMetadata[];
+  ```
+- **Implementation:**
+  - Fuzzy match on name (use fuzzy-search library)
+  - Filter by tags (exact match, allow multiple)
+  - Filter by starred/archived boolean
+  - Filter by date range
+  - Sort results
+- **Checklist:**
+  - [ ] Search <100ms for 100+ projects
+  - [ ] Fuzzy matching works correctly
+  - [ ] All filters combine properly
+  - [ ] Results sorted as expected
+
+#### 4.4 Project Manager Modal/Dialog
+- **File:** `src/ui/ProjectManagerModal.tsx` (NEW)
+- **Features:**
+  - Search bar with real-time results
+  - Filter pill buttons (tags, starred, archived)
+  - Grid/list view toggle
+  - Thumbnail previews (if available)
+  - Action menu per project (open, rename, export, duplicate, archive, delete)
+  - Bulk actions (select multiple, delete all, export all)
+  - Right-click context menu
+- **Layout:**
+  ```
+  ┌─────────────────────────────────────────┐
+  │ Projects                          [Close]│
+  ├─────────────────────────────────────────┤
+  │ 🔍 [Search...] [⭐ Starred] [#Tags ▼]    │
+  ├─────────────────────────────────────────┤
+  │ Grid view (with thumbnails):            │
+  │ ┌──────┐ ┌──────┐ ┌──────┐             │
+  │ │thumb │ │thumb │ │thumb │             │
+  │ │Name  │ │Name  │ │Name  │             │
+  │ │Time  │ │Time  │ │Time  │             │
+  │ └──────┘ └──────┘ └──────┘             │
+  │                                         │
+  │ [★] [↓] [⋮ Menu]  [★] [↓] [⋮ Menu]   │
+  └─────────────────────────────────────────┘
+  ```
+- **Checklist:**
+  - [ ] All search/filter combinations work
+  - [ ] UI responsive and fast
+  - [ ] Context menu functions correctly
+  - [ ] Keyboard shortcuts (enter to open, del to delete)
+
+#### 4.5 Thumbnail Generation
+- **File:** `src/canvas/thumbnail.ts` (NEW)
+- **Function:**
+  ```typescript
+  export async function generateThumbnail(
+    canvas: HTMLCanvasElement,
+    size: number = 200
+  ): Promise<string>;  // base64 data URL
+  ```
+- **Implementation:**
+  - Capture current canvas state
+  - Resize to square (200x200px)
+  - Convert to base64 PNG
+  - Store in project metadata
+  - Cache in localStorage temporarily
+- **Performance:**
+  - Async operation (doesn't block UI)
+  - Debounced (only generate after 5s of inactivity)
+  - Cached (don't regenerate if unchanged)
+- **Checklist:**
+  - [ ] Thumbnails generate without blocking
+  - [ ] Saved in cloud with project
+  - [ ] Displayed in project manager
+  - [ ] Update when project changes
+
+#### 4.6 Tag Management UI
+- **File:** `src/ui/TagInput.tsx` (NEW)
+- **Features:**
+  - Type to add tags
+  - Show existing tags as pills
+  - Remove tag with X button
+  - Suggest popular tags (autocomplete)
+  - Auto-save to cloud
+- **Checklist:**
+  - [ ] Add/remove tags smoothly
+  - [ ] Tags persist to cloud
+  - [ ] Autocomplete suggestions helpful
+  - [ ] No lag on typing
+
+#### 4.7 Unit Tests
+- **File:** `src/io/projectSearch.test.ts`
+  ```typescript
+  test('fuzzy search finds projects', () => {});
+  test('tag filters work', () => {});
+  test('multiple filters combine correctly', () => {});
+  test('sorting works all directions', () => {});
+  test('search performance is acceptable', () => {});
+  ```
+- **File:** `src/canvas/thumbnail.test.ts`
+  ```typescript
+  test('generates valid base64 image', () => {});
+  test('thumbnail is square', () => {});
+  test('generation is non-blocking', () => {});
+  ```
+
+#### Phase 4 Completion Checklist
+- [ ] Search/filter working and fast
+- [ ] Project manager modal complete
+- [ ] Thumbnails generating and caching
+- [ ] Tags system functional
+- [ ] Cloud schema updated
+- [ ] All tests passing
+- [ ] Code review approved
+
+---
+
+### Phase 5: Import/Export UI & File Collaboration (1.5 weeks)
+
+**Objective:** Make file-based collaboration discoverable and seamless.
+
+#### 5.1 Enhance Export Modal
+- **File:** `src/ui/ExportModal.tsx` (enhance)
+- **New Features:**
+  - Filename suggestion: `[ProjectName]_[Date].sto`
+  - Checkbox: "Include Project Metadata"
+  - Checkbox: "Include Thumbnail"
+  - Checkbox: "Generate Backup .zip" (exports last 5 versions)
+  - Preview estimated file size
+  - Recently used export settings dropdown
+  - Keyboard shortcut indicator: (Ctrl+Shift+E)
+- **Checklist:**
+  - [ ] All options work correctly
+  - [ ] File size estimation accurate
+  - [ ] Keyboard shortcuts responsive
+
+#### 5.2 Create Import Modal/Workflow
+- **File:** `src/ui/ImportModal.tsx` (NEW or enhance)
+- **Features:**
+  - Drag-and-drop zone (large, obvious)
+  - "Click to browse" fallback
+  - Show import preview before confirming:
+    - Project name
+    - Number of scenes
+    - Number of nodes
+    - File size
+  - On conflict with cloud project:
+    - "Replace Existing Cloud Project"
+    - "Save as New Project"
+    - "Load into Temporary Session"
+  - Progress indicator for large files
+- **Checklist:**
+  - [ ] Drag-and-drop works smoothly
+  - [ ] Preview shows correct info
+  - [ ] Conflict resolution options clear
+  - [ ] Large files handled gracefully
+
+#### 5.3 Add Quick Export Keyboard Shortcut
+- **File:** `src/ui/App.tsx`
+- **Implementation:**
+  ```typescript
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
+        e.preventDefault();
+        // Export current project immediately with last settings
+        quickExportProject();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+  ```
+- **Checklist:**
+  - [ ] Shortcut works on both Windows and Mac
+  - [ ] No conflicts with other shortcuts
+  - [ ] Toast notification confirms export
+
+#### 5.4 Create Collaboration Guide
+- **File:** `doc/COLLABORATION.md` (NEW)
+- **Sections:**
+  1. **File-Based Collaboration Steps**
+     - Create project
+     - Export .sto file
+     - Share via email/cloud
+     - Collaborator imports and edits
+     - Export new version
+     - Original user imports and updates
+  2. **Conflict Handling**
+     - What happens if both edit simultaneously
+     - How to resolve (keep local/remote/merge)
+  3. **Best Practices**
+     - Naming conventions
+     - Version control (use dates)
+     - Backup strategy
+  4. **Examples**
+     - Step-by-step screenshots
+- **Checklist:**
+  - [ ] Document is clear and complete
+  - [ ] Screenshots are helpful
+  - [ ] Examples are realistic
+
+#### 5.5 Export/Import History
+- **File:** `src/core/store/importExportHistory.ts` (NEW)
+- **Functionality:**
+  ```typescript
+  export interface ImportExportEvent {
+    type: 'export' | 'import';
+    projectName: string;
+    timestamp: number;
+    filename: string;
+    settings?: Record<string, unknown>;
+  }
+  
+  export const importExportHistory = {
+    add(event: ImportExportEvent): void;
+    getRecent(limit?: number): ImportExportEvent[];
+    getForProject(projectId: string): ImportExportEvent[];
+  };
+  ```
+- **UI in ProjectsPanel:**
+  - Show "Export Again" button (uses last settings)
+  - Show "Reimport Last" for quick iteration
+- **Checklist:**
+  - [ ] History persists locally
+  - [ ] Buttons appear contextually
+  - [ ] Reexport uses stored settings
+
+#### 5.6 Unit Tests
+- **File:** `src/ui/ImportModal.test.ts`
+  ```typescript
+  test('accepts .sto files', () => {});
+  test('shows preview correctly', () => {});
+  test('detects conflicts', () => {});
+  test('handles drag-and-drop', () => {});
+  ```
+- **File:** `src/core/store/importExportHistory.test.ts`
+  ```typescript
+  test('records exports', () => {});
+  test('records imports', () => {});
+  test('retrieves recent items', () => {});
+  ```
+
+#### Phase 5 Completion Checklist
+- [ ] Export modal is complete and intuitive
+- [ ] Import modal with conflict detection works
+- [ ] Quick export keyboard shortcut functional
+- [ ] Collaboration guide is thorough
+- [ ] Import/export history tracking
+- [ ] All tests passing
+- [ ] Code review approved
+
+---
+
+### Phase 6: Polish, Testing & Documentation (1.5 weeks)
+
+**Objective:** Optimize performance, ensure robustness, and document for users/developers.
+
+#### 6.1 Performance Profiling & Optimization
+- **Tasks:**
+  - [ ] Profile auto-save latency (target <100ms) using Chrome DevTools
+  - [ ] Profile search performance (target <100ms for 100+ projects)
+  - [ ] Profile thumbnail generation (target <500ms non-blocking)
+  - [ ] Identify hot paths using flame graphs
+  - [ ] Optimize any >200ms operations
+  - [ ] Add performance monitoring/logging
+- **Tools:**
+  - Chrome DevTools Performance tab
+  - React Profiler
+  - Performance.mark/measure API
+- **Deliverable:**
+  - Performance report documenting all metrics
+
+#### 6.2 Error Handling & Recovery
+- **File:** `src/io/errorHandler.ts` (create/enhance)
+- **Coverage:**
+  - Network errors (with exponential backoff retry)
+  - Storage quota exceeded (handle gracefully)
+  - Corrupt file detection (validate on import)
+  - Version mismatch (offer migration)
+  - Conflict resolution failures
+  - Thumbnail generation failures
+- **Implementation:**
+  ```typescript
+  export function handleError(
+    error: Error,
+    context: ErrorContext
+  ): { userMessage: string; recoveryOptions: string[] };
+  ```
+- **User-friendly Messages:**
+  - "Network error. Your changes are saved locally and will sync when you're back online."
+  - "File is corrupted or from a newer version. Try exporting from the current version."
+- **Checklist:**
+  - [ ] All error paths handled
+  - [ ] No generic "Error" messages to users
+  - [ ] Recovery options clear
+
+#### 6.3 Accessibility Audit
+- **Tasks:**
+  - [ ] WCAG 2.1 AA compliance check
+  - [ ] Screen reader testing (NVDA/JAWS on Windows, VoiceOver on Mac)
+  - [ ] Keyboard-only navigation (no mouse required)
+  - [ ] Color contrast verification (4.5:1 minimum)
+  - [ ] Focus indicators visible
+  - [ ] Modal/dialog management correct
+  - [ ] Add ARIA labels and descriptions
+- **Tools:**
+  - Lighthouse (Chrome DevTools)
+  - axe DevTools
+  - Screen readers
+  - Keyboard testing
+- **Deliverable:**
+  - Accessibility report + fixes applied
+
+#### 6.4 User Testing
+- **Test Scenarios:**
+  1. **First-Time User Onboarding**
+     - Does user understand temporary vs. cloud?
+     - Can they export work?
+     - Can they create and save project?
+  2. **Cross-Device Sync**
+     - Edit on device A, see on device B
+     - Detect conflicts
+     - Resolve conflicts
+  3. **Large Project Library**
+     - Manage 50+ projects
+     - Search for specific project
+     - Tag organization
+     - Star favorites
+  4. **File-Based Collaboration**
+     - Export project
+     - Send to teammate
+     - Teammate imports and edits
+     - Reimport updated version
+     - Handle conflicts
+  5. **Offline Scenario**
+     - Edit while offline
+     - See offline indicator
+     - Go back online
+     - Verify sync
+- **Collect Data:**
+  - Task completion time
+  - Error rates
+  - User satisfaction (1-5 scale)
+  - Open-ended feedback
+  - Confusion points
+- **Minimum:** 5 users per scenario
+
+#### 6.5 Documentation Suite
+- **File:** `doc/PROJECT_MANAGEMENT.md` (user guide)
+  - Getting started
+  - Cloud vs. temporary modes explained
+  - Auto-save and recovery
+  - Search and organization
+  - File export/import
+  - Troubleshooting
+  - FAQ
+- **File:** `doc/DEVELOPER_GUIDE.md` (architecture)
+  - Module overview
+  - Data flow diagrams
+  - API documentation
+  - Extension points
+  - Performance considerations
+  - Testing strategy
+- **Inline Docs:**
+  - JSDoc comments on all public functions
+  - Explain "why" not just "what"
+  - Include examples for complex logic
+  - Keep TypeScript types as documentation
+- **Checklist:**
+  - [ ] All major features documented
+  - [ ] Code examples provided
+  - [ ] Troubleshooting section complete
+  - [ ] Architecture clear
+
+#### 6.6 Migration Guide for v2 Users
+- **File:** `doc/MIGRATION_v2_to_v3.md`
+- **Content:**
+  1. **What's Changing**
+     - New unified storage model
+     - Cloud vs. temporary distinction
+     - Auto-save behavior
+  2. **How to Migrate**
+     - Automatic migration on first load
+     - Manual export/import if needed
+     - What happens to old projects
+  3. **New Features**
+     - Auto-save and crash recovery
+     - Offline support
+     - Project search and tagging
+     - File-based collaboration
+  4. **FAQ**
+     - Where are my old projects?
+     - Will I lose work?
+     - How do I export backups?
+     - What if something breaks?
+  5. **Support**
+     - Contact info
+     - Bug reporting
+     - Feature requests
+- **Checklist:**
+  - [ ] Migration path clear
+  - [ ] No data loss occurs
+  - [ ] FAQ addresses common concerns
+
+#### 6.7 Comprehensive Test Suite
+- **Unit Tests:**
+  - [ ] 85%+ coverage on new modules
+  - [ ] All edge cases covered
+  - [ ] Error scenarios tested
+- **Integration Tests:**
+  - [ ] End-to-end workflows tested
+  - [ ] Auto-save → Cloud save → Load
+  - [ ] Offline → Online sync
+  - [ ] Export → Import → Conflict
+- **E2E Tests (if using Playwright/Cypress):**
+  - [ ] First-time user flow
+  - [ ] Project management workflow
+  - [ ] File collaboration workflow
+- **Regression Tests:**
+  - [ ] No existing features broken
+  - [ ] Backward compatibility verified
+- **Cross-Browser:**
+  - [ ] Chrome/Chromium (latest 2 versions)
+  - [ ] Firefox (latest 2 versions)
+  - [ ] Safari (latest 2 versions)
+  - [ ] Edge (latest 2 versions)
+- **Platforms:**
+  - [ ] Desktop (Windows, Mac, Linux)
+  - [ ] Mobile (iOS Safari, Android Chrome)
+  - [ ] Tablet
+- **Test Report:**
+  - [ ] All test results documented
+  - [ ] Coverage metrics
+  - [ ] Performance benchmarks
+
+#### 6.8 Release Preparation
+- **PR Checklist:**
+  - [ ] All code merged and tested
+  - [ ] Documentation complete
+  - [ ] No breaking changes (or migration provided)
+  - [ ] Version bumped appropriately (semver)
+- **Create Release:**
+  - [ ] Tag commit with version number
+  - [ ] Generate CHANGELOG entry
+  - [ ] Write release notes (for users)
+  - [ ] Update package.json version
+  - [ ] Build production bundle
+- **Deploy:**
+  - [ ] Deploy to staging environment
+  - [ ] Run smoke tests
+  - [ ] Deploy to production
+  - [ ] Monitor for issues
+- **Communication:**
+  - [ ] Announce release to users
+  - [ ] Share migration guide if needed
+  - [ ] Provide support contact info
+  - [ ] Gather feedback
+
+#### Phase 6 Completion Checklist
+- [ ] Performance acceptable on all metrics
+- [ ] All error scenarios handled gracefully
+- [ ] WCAG 2.1 AA compliance achieved
+- [ ] User testing completed (5+ users per scenario)
+- [ ] Documentation comprehensive
+- [ ] Migration guide clear
+- [ ] 85%+ test coverage
+- [ ] Cross-browser testing passed
+- [ ] Release notes ready
+- [ ] Code review approved
+- [ ] Ready for production deployment
+
+---
+
+## Implementation Summary Table
+
+| Phase | Duration | FTE | Key Deliverables | Success Criteria |
+|-------|----------|-----|------------------|-----------------|
+| 1 | 2w | 1 | Unified types, projectManager, StatusBar | Mode indicator visible, no data loss |
+| 2 | 2w | 1 | Auto-save, crash recovery, local cache | 100% crash recovery, <30s auto-save |
+| 3 | 2w | 1.5 | Conflict detection, offline support | Seamless offline→online, clean conflicts |
+| 4 | 2w | 1 | Search, tagging, organization | <100ms search for 100+ projects |
+| 5 | 1.5w | 1 | Export/import UI, collaboration guide | File sharing intuitive, no data loss |
+| 6 | 1.5w | 1.5 | Testing, polish, documentation | WCAG AA, 85% coverage, <5% perf loss |
+| **Total** | **10.5w** | **7.5 FTE-weeks** | **Complete feature** | **Production ready** |
+
+---
+
+## Progress Tracking During Implementation
+
+Use this template to track progress on each phase:
+
+```markdown
+### Phase X Progress
+
+**Start Date:** YYYY-MM-DD  
+**Target End:** YYYY-MM-DD  
+**Status:** In Progress / Complete
+
+#### Step X.1: [Task Name]
+- [ ] Implementation complete
+- [ ] Tests written and passing
+- [ ] Code review approved
+- [ ] Merged to main
+
+#### Step X.2: [Task Name]
+- [ ] Implementation complete
+- [ ] Tests written and passing
+- [ ] Code review approved
+- [ ] Merged to main
+
+#### Blockers
+- (List any blockers here)
+
+#### Notes
+- (Any important notes)
+```
+
+---
 - **File Export Success Rate:** 100%
 - **File Import Success Rate:** 99%+ (with version migration)
 
