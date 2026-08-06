@@ -54,7 +54,7 @@ export function StatusBar({ isAudioReady }: StatusBarProps): React.ReactElement 
       {/* Audio status */}
       <div className={styles.section}>
         <span className={`${styles.status} ${isAudioReady ? styles.ready : styles.notReady}`}>
-          {isAudioReady ? '🔊 Audio Ready' : '🔇 Audio Suspended'}
+          {isAudioReady ? '🔊 Audio Ready' : '🔇 Click anywhere to enable audio'}
         </span>
       </div>
       

@@ -23,8 +23,19 @@ export const createProjectActions = (
       if (ctx.root !== undefined) {
         newContext.root = ctx.root;
       }
-      
-      state.musicalContext = newContext as any;
+
+      state.musicalContext = newContext;
+
+      // Cascade to the effective key like setMasterSpeed does for BPM, so a
+      // key change is heard immediately unless the scene overrides it
+      const sceneId = state.scenePlayback.currentSceneId;
+      const scene = sceneId ? state.scenes.get(sceneId) : null;
+      if (ctx.root !== undefined && (!scene || scene.localRoot === null)) {
+        state.scenePlayback.effectiveRoot = newContext.root;
+      }
+      if (ctx.scaleName !== undefined && (!scene || scene.localScale === null)) {
+        state.scenePlayback.effectiveScale = newContext.scaleName;
+      }
     });
   },
   

@@ -13,7 +13,20 @@ import type {
   FeatureType,
   LicenseTier,
 } from './types';
-import { FEATURE_CREDIT_COSTS, SIGNUP_BONUS_CREDITS } from './types';
+import { FEATURE_CREDIT_COSTS } from './types';
+
+/**
+ * Translate low-level network failures into an actionable message.
+ * A paused/offline backend or a dropped connection surfaces from fetch as a
+ * cryptic browser-specific string ("Failed to fetch", "Load failed", ...).
+ */
+function describeAuthError(error: unknown, fallback: string): string {
+  const message = error instanceof Error ? error.message : fallback;
+  if (/failed to fetch|networkerror|load failed|fetch failed/i.test(message)) {
+    return 'Could not reach the sign-in server. Check your internet connection — or the backend may be paused or waking up; try again in a minute.';
+  }
+  return message;
+}
 
 // ============================================================================
 // INITIAL STATE
@@ -165,7 +178,7 @@ export const useAuthStore = create<AuthStore>()(
           email: data.user?.email,
         };
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Signup failed';
+        const message = describeAuthError(error, 'Signup failed');
         set({ isLoading: false, error: message });
         return { error: message };
       }
@@ -204,7 +217,7 @@ export const useAuthStore = create<AuthStore>()(
 
         return {};
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Sign in failed';
+        const message = describeAuthError(error, 'Sign in failed');
         set({ isLoading: false, error: message });
         return { error: message };
       }
@@ -263,7 +276,7 @@ export const useAuthStore = create<AuthStore>()(
 
         return { success: true };
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to resend verification email';
+        const message = describeAuthError(error, 'Failed to resend verification email');
         return { error: message };
       }
     },
@@ -377,29 +390,18 @@ export const useAuthStore = create<AuthStore>()(
           .single();
 
         if (error) {
-          // If no credits record exists, create one
+          // If no credits record exists, ask the server to create it
+          // (credit tables are server-managed; see migration 003)
           if (error.code === 'PGRST116') {
-            const { data: newData, error: createError } = await supabase!
-              .from('credit_balances')
-              .insert({
-                user_id: user.id,
-                balance: SIGNUP_BONUS_CREDITS,
-                lifetime_purchased: 0,
-                lifetime_used: 0,
-              })
-              .select()
+            const { data, error: createError } = await supabase!
+              .rpc('ensure_credit_balance')
               .single();
 
-            if (!createError && newData) {
-              // Also record the signup bonus transaction
-              await supabase!.from('credit_transactions').insert({
-                user_id: user.id,
-                amount: SIGNUP_BONUS_CREDITS,
-                balance_after: SIGNUP_BONUS_CREDITS,
-                type: 'signup_bonus',
-                description: 'Welcome bonus credits',
-              });
-
+            if (!createError && data) {
+              const newData = data as {
+                id: string; user_id: string; balance: number;
+                lifetime_purchased: number; lifetime_used: number; updated_at: string;
+              };
               const credits: CreditBalance = {
                 id: newData.id,
                 userId: newData.user_id,
@@ -442,48 +444,28 @@ export const useAuthStore = create<AuthStore>()(
       }
 
       try {
-        // Deduct credits atomically using a Supabase function
-        // or direct update (less safe but simpler)
-        const newBalance = credits.balance - creditCost;
-        const newLifetimeUsed = credits.lifetimeUsed + creditCost;
-
-        const { error } = await supabase!
-          .from('credit_balances')
-          .update({
-            balance: newBalance,
-            lifetime_used: newLifetimeUsed,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', user.id)
-          .gte('balance', creditCost); // Ensure enough credits
+        // Deduct atomically server-side (ledger + usage rows included);
+        // clients cannot write credit tables directly (migration 003)
+        const { data: newBalance, error } = await supabase!
+          .rpc('consume_ai_credits', {
+            p_cost: creditCost,
+            p_feature: feature,
+            p_metadata: { feature },
+          });
 
         if (error) {
-          return { success: false, error: error.message };
+          const message = error.message.includes('insufficient')
+            ? 'Insufficient credits'
+            : error.message;
+          return { success: false, error: message };
         }
 
-        // Record the transaction
-        await supabase!.from('credit_transactions').insert({
-          user_id: user.id,
-          amount: -creditCost,
-          balance_after: newBalance,
-          type: 'usage',
-          description: `Used for ${feature}`,
-          metadata: { feature },
-        });
-
-        // Record feature usage
-        await supabase!.from('feature_usage').insert({
-          user_id: user.id,
-          feature,
-          credits_used: creditCost,
-        });
-
-        // Update local state
+        // Update local state from the authoritative balance
         set({
           credits: {
             ...credits,
-            balance: newBalance,
-            lifetimeUsed: newLifetimeUsed,
+            balance: newBalance as number,
+            lifetimeUsed: credits.lifetimeUsed + creditCost,
             updatedAt: new Date().toISOString(),
           },
         });

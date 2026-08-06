@@ -139,7 +139,7 @@ export class SpectralRenderer extends VizRenderer {
   }
   
   /** Render linear spectrum bars */
-  private renderLinear(cfg: SpectralVizConfig, data: VizMusicalData): void {
+  private renderLinear(cfg: SpectralVizConfig, _data: VizMusicalData): void {
     const ctx = this.ctx;
     const barCount = this.bins.length;
     const gap = 2;

@@ -13,28 +13,58 @@ import { DEFAULT_CONFIGS, EXECUTION_CONFIGS } from './types';
 import { aiAgent } from './agent';
 import { applyOperations } from './operations';
 import { useAuthStore } from '@auth/store';
+import { isSupabaseConfigured } from '@auth/supabase';
 import type { CompositionPlan, CompositionPhase } from './planner';
 
 // ============================================================================
 // ENVIRONMENT CONFIGURATION
 // ============================================================================
 
-// Read config from environment (set in .env file)
-const ENV_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY as string | undefined;
+// SECURITY: every VITE_* variable is compiled into the public JS bundle and
+// readable by any visitor. An owner's API key must therefore NEVER be set in
+// production — the env key is honored in dev builds only. In production each
+// user brings their own key, stored in their browser's localStorage.
+const ENV_API_KEY = import.meta.env.DEV
+  ? (import.meta.env.VITE_OPENROUTER_API_KEY as string | undefined)
+  : undefined;
 const ENV_PLANNING_MODEL = import.meta.env.VITE_AI_PLANNING_MODEL as string | undefined;
 const ENV_EXECUTION_MODEL = import.meta.env.VITE_AI_EXECUTION_MODEL as string | undefined;
 
-// Check if AI is pre-configured via environment
+// User-provided key, kept in this browser only
+const API_KEY_STORAGE = 'stochastic-ai-api-key';
+
+function readStoredApiKey(): string | null {
+  try {
+    return localStorage.getItem(API_KEY_STORAGE);
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredApiKey(apiKey: string | null): void {
+  try {
+    if (apiKey) {
+      localStorage.setItem(API_KEY_STORAGE, apiKey);
+    } else {
+      localStorage.removeItem(API_KEY_STORAGE);
+    }
+  } catch {
+    // Private browsing: the key just won't survive a reload
+  }
+}
+
+// Check if AI is pre-configured (user's stored key, or env key in dev)
 function getEnvConfig(): { planning: AIAgentConfig; execution: AIAgentConfig } | null {
-  if (!ENV_API_KEY) return null;
-  
+  const initialKey = readStoredApiKey() ?? ENV_API_KEY;
+  if (!initialKey) return null;
+
   const planningDefaults = DEFAULT_CONFIGS['openrouter'];
   const executionDefaults = EXECUTION_CONFIGS['openrouter'];
   
   return {
     planning: {
       provider: 'openrouter',
-      apiKey: ENV_API_KEY,
+      apiKey: initialKey,
       model: ENV_PLANNING_MODEL || planningDefaults.model || 'anthropic/claude-sonnet-4',
       maxTokens: planningDefaults.maxTokens || 4096,
       temperature: planningDefaults.temperature || 0.7,
@@ -42,7 +72,7 @@ function getEnvConfig(): { planning: AIAgentConfig; execution: AIAgentConfig } |
     },
     execution: {
       provider: 'openrouter',
-      apiKey: ENV_API_KEY,
+      apiKey: initialKey,
       model: ENV_EXECUTION_MODEL || executionDefaults.model || 'openai/gpt-4o-mini',
       maxTokens: executionDefaults.maxTokens || 1000,
       temperature: executionDefaults.temperature || 0.3,
@@ -132,6 +162,14 @@ if (envTieredConfig) {
   aiAgent.configureTiered(envTieredConfig.planning, envTieredConfig.execution);
 }
 
+
+/** After a cloud-proxied generation, refresh the visible credit balance. */
+function refreshCloudCredits(): void {
+  if (useAIStore.getState().config?.provider === 'stochastic-cloud') {
+    useAuthStore.getState().fetchCredits();
+  }
+}
+
 // ============================================================================
 // STORE CREATION
 // ============================================================================
@@ -172,6 +210,7 @@ export const useAIStore = create<AIStoreState>()(
         baseUrl: executionDefaults.baseUrl,
       };
       
+      writeStoredApiKey(apiKey);
       aiAgent.configureTiered(planningConfig, executionConfig);
       set({
         config: planningConfig,
@@ -181,6 +220,7 @@ export const useAIStore = create<AIStoreState>()(
     },
     
     clearConfig: () => {
+      writeStoredApiKey(null);
       aiAgent.clearConfig();
       set({
         config: null,
@@ -321,6 +361,7 @@ export const useAIStore = create<AIStoreState>()(
           content: `Error: ${error}`,
         });
       } finally {
+        refreshCloudCredits();
         set({ isGenerating: false });
       }
     },
@@ -398,6 +439,7 @@ export const useAIStore = create<AIStoreState>()(
         const error = e instanceof Error ? e.message : 'Unknown error';
         set({ lastError: error });
       } finally {
+        refreshCloudCredits();
         set({ isGenerating: false });
       }
     },
@@ -442,6 +484,7 @@ export const useAIStore = create<AIStoreState>()(
         const error = e instanceof Error ? e.message : 'Unknown error';
         set({ lastError: error });
       } finally {
+        refreshCloudCredits();
         set({ isGenerating: false, isPlanExecuting: false, currentPhase: null });
       }
     },
@@ -541,6 +584,7 @@ export const useAIStore = create<AIStoreState>()(
           content: `Error: ${error}`,
         });
       } finally {
+        refreshCloudCredits();
         set({ isGenerating: false });
       }
     },
@@ -573,6 +617,7 @@ export const selectMaxNodesPerPhase = (state: AIStoreState) => state.maxNodesPer
  */
 export function useAIPanel() {
   const isConfigured = useAIStore(selectIsConfigured);
+  const provider = useAIStore(state => state.config?.provider ?? null);
   const isGenerating = useAIStore(selectIsGenerating);
   const messages = useAIStore(selectMessages);
   const streamingText = useAIStore(selectStreamingText);
@@ -587,6 +632,8 @@ export function useAIPanel() {
   const isPlanExecuting = useAIStore(selectIsPlanExecuting);
   const maxNodesPerPhase = useAIStore(selectMaxNodesPerPhase);
   
+  const setApiKey = useAIStore(state => state.setApiKey);
+  const clearConfig = useAIStore(state => state.clearConfig);
   const sendMessage = useAIStore(state => state.sendMessage);
   const sendMessageWithPlanning = useAIStore(state => state.sendMessageWithPlanning);
   const applyPreview = useAIStore(state => state.applyPreview);
@@ -603,6 +650,9 @@ export function useAIPanel() {
   
   return {
     isConfigured,
+    provider,
+    setApiKey,
+    clearConfig,
     isGenerating,
     messages,
     streamingText,
@@ -628,3 +678,49 @@ export function useAIPanel() {
     clearPlan,
   };
 }
+
+// ============================================================================
+// CLOUD AUTO-CONFIGURATION
+// ============================================================================
+// Signed-in users automatically use the server-side AI proxy (the provider
+// key lives on the backend; usage is metered in credits). A user-provided
+// key (BYO, stored locally) takes precedence because it configures the store
+// at init, before auth resolves.
+
+function buildCloudConfig(): { planning: AIAgentConfig; execution: AIAgentConfig } {
+  const planningDefaults = DEFAULT_CONFIGS['stochastic-cloud'];
+  const executionDefaults = EXECUTION_CONFIGS['stochastic-cloud'];
+  return {
+    planning: {
+      provider: 'stochastic-cloud',
+      apiKey: 'supabase-session',
+      model: ENV_PLANNING_MODEL || planningDefaults.model || 'anthropic/claude-sonnet-4',
+      maxTokens: planningDefaults.maxTokens || 4096,
+      temperature: planningDefaults.temperature || 0.7,
+    },
+    execution: {
+      provider: 'stochastic-cloud',
+      apiKey: 'supabase-session',
+      model: ENV_EXECUTION_MODEL || executionDefaults.model || 'openai/gpt-4o-mini',
+      maxTokens: executionDefaults.maxTokens || 1000,
+      temperature: executionDefaults.temperature || 0.3,
+    },
+  };
+}
+
+useAuthStore.subscribe(
+  state => state.user,
+  user => {
+    const { isConfigured, config } = useAIStore.getState();
+    if (user && !isConfigured && isSupabaseConfigured()) {
+      const tiered = buildCloudConfig();
+      aiAgent.configureTiered(tiered.planning, tiered.execution);
+      useAIStore.setState({ config: tiered.planning, isConfigured: true, lastError: null });
+    } else if (!user && config?.provider === 'stochastic-cloud') {
+      // Signed out: the proxy is unusable; leave any stored personal key alone
+      aiAgent.clearConfig();
+      useAIStore.setState({ config: null, isConfigured: false });
+    }
+  },
+  { fireImmediately: true }
+);

@@ -1,5 +1,8 @@
 // Stochastic v2/v3 - File I/O for Save/Load
 
+/** Current .sto file format version (also stamped into projectMeta). */
+export const FILE_FORMAT_VERSION = '3.0.0';
+
 import type { 
   GraphNode,
   GraphEdge,
@@ -19,6 +22,46 @@ import type {
   VizConfig,
   VizTransition
 } from '@core/types';
+import { getDefaultProps } from '@core/constants';
+import { isValidNodeType } from '@core/type-guards';
+
+// ============================================================================
+// NODE PROPS NORMALIZATION (load-time)
+// ============================================================================
+
+/** Legacy prop names migrated when loading older files. */
+const LEGACY_PROP_RENAMES: Record<string, Record<string, string>> = {
+  gate: { prob: 'probability' },
+};
+
+/**
+ * Migrate a CV edge's targetParam saved under a legacy prop name
+ * (e.g. an LFO writing 'prob' on a gate would silently modulate nothing).
+ */
+function normalizeTargetParam(targetType: string | undefined, param: string | null | undefined): string | null {
+  if (!param) return null;
+  const renames = targetType ? LEGACY_PROP_RENAMES[targetType] : undefined;
+  return renames?.[param] ?? param;
+}
+
+/**
+ * Normalize node props on load: migrate legacy names and merge over the
+ * type's defaults, so nodes saved by older versions never surface undefined
+ * props (e.g. gates showing NaN% probability).
+ */
+function normalizeNodeProps(type: string, raw: Record<string, unknown> | undefined): GraphNode['props'] {
+  const props = raw ?? {};
+  if (!isValidNodeType(type)) {
+    return props as unknown as GraphNode['props'];
+  }
+  const renames = LEGACY_PROP_RENAMES[type];
+  const migrated: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(props)) {
+    migrated[renames?.[key] ?? key] = value;
+  }
+  return { ...getDefaultProps(type), ...migrated } as GraphNode['props'];
+}
+
 
 // ============================================================================
 // V2 FORMAT (Legacy - single graph)
@@ -92,6 +135,7 @@ export interface SerializedScene {
     timingMode: 'physical' | 'fixed';
     durationBeats: number | null;
     targetParam: string | null;
+    weight?: number;
   }>;
   annotations?: Array<{
     id: string;
@@ -225,7 +269,7 @@ export function deserializeGraph(data: SerializedGraph): {
       type: n.type as GraphNode['type'],
       x: n.x,
       y: n.y,
-      props: n.props as unknown as GraphNode['props'],
+      props: normalizeNodeProps(n.type, n.props as Record<string, unknown>),
     })),
     edges: data.graph.edges.map(e => ({
       id: e.id as EdgeId,
@@ -327,6 +371,7 @@ export function serializeScene(scene: Scene): SerializedScene {
       timingMode: edge.timingMode,
       durationBeats: edge.durationBeats,
       targetParam: edge.targetParam,
+      weight: edge.weight ?? 1,
     })),
     annotations: scene.annotations?.map(a => ({
       id: a.id,
@@ -354,6 +399,8 @@ export function serializeScene(scene: Scene): SerializedScene {
 }
 
 export function deserializeScene(data: SerializedScene): Scene {
+  const nodeTypesById = new Map(data.nodes.map(n => [n.id as string, n.type]));
+
   return {
     id: data.id as SceneId,
     name: data.name,
@@ -382,7 +429,7 @@ export function deserializeScene(data: SerializedScene): Scene {
       type: n.type as GraphNode['type'],
       x: n.x,
       y: n.y,
-      props: n.props as unknown as GraphNode['props'],
+      props: normalizeNodeProps(n.type, n.props as Record<string, unknown>),
       timer: 0,
       lastTrigger: 0,
       flash: 0,
@@ -394,7 +441,8 @@ export function deserializeScene(data: SerializedScene): Scene {
       to: e.to as NodeId,
       timingMode: e.timingMode,
       durationBeats: e.durationBeats,
-      targetParam: e.targetParam,
+      targetParam: normalizeTargetParam(nodeTypesById.get(e.to), e.targetParam),
+      weight: e.weight ?? 1,
     })),
     annotations: data.annotations?.map(a => ({
       id: a.id as AnnotationId,
@@ -432,7 +480,7 @@ export function serializeComposition(
 ): SerializedComposition {
   return {
     meta: {
-      version: '3.0.0',
+      version: FILE_FORMAT_VERSION,
       created: projectMeta.created,
       modified: Date.now(),
       name: projectMeta.name,
@@ -528,7 +576,7 @@ export function migrateV2ToV3(v2Data: SerializedGraph): SerializedComposition {
   
   return {
     meta: {
-      version: '3.0.0',
+      version: FILE_FORMAT_VERSION,
       created: v2Data.meta.created,
       modified: Date.now(),
       name: v2Data.meta.name,

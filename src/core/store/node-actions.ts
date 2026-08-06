@@ -2,8 +2,8 @@
 // Operations for creating, updating, and deleting nodes
 
 import type { GraphStore, ImmerSet } from './types';
-import type { 
-  NodeId, EdgeId, GraphNode, NodeType, AudioPayload
+import type {
+  NodeId, EdgeId, GraphNode, NodeType, AudioPayload, PropsForNodeType
 } from '../types';
 import { createNodeId, createEdgeId } from '../types';
 import { getDefaultProps } from '../constants';
@@ -75,6 +75,46 @@ export const createNodeActions = (
     });
   },
   
+  // Hot path: LFOs/CV write modulated props every frame. One store update per
+  // frame, and deliberately NOT marking the project dirty — modulation is
+  // runtime state, not an edit.
+  batchMergeNodeProps: (entries: Array<[NodeId, Record<string, unknown>]>): void => {
+    if (entries.length === 0) return;
+    set(state => {
+      for (const [id, props] of entries) {
+        const node = state.nodes.get(id);
+        if (node) {
+          node.props = { ...node.props, ...props };
+        }
+      }
+    });
+  },
+
+  // Runtime bookkeeping write (gate density windows): does not mark dirty —
+  // playback state is not an edit. Store nodes are frozen outside actions,
+  // so engine code must come through here instead of mutating in place.
+  setNodeRuntime: (id: NodeId, runtime: { timer?: number; lastTrigger?: number }): void => {
+    set(state => {
+      const node = state.nodes.get(id);
+      if (node) {
+        if (runtime.timer !== undefined) node.timer = runtime.timer;
+        if (runtime.lastTrigger !== undefined) node.lastTrigger = runtime.lastTrigger;
+      }
+    });
+  },
+
+  // Hot path: per-frame visual flash decay for all nodes in one update.
+  decayNodeFlashes: (deltaTime: number): void => {
+    set(state => {
+      state.nodes.forEach(node => {
+        if (node.flash > 0) {
+          const newFlash = node.flash * Math.pow(0.1, deltaTime * 5);
+          node.flash = newFlash < 0.01 ? 0 : newFlash;
+        }
+      });
+    });
+  },
+
   deleteNode: (id: NodeId): void => {
     set(state => {
       // Delete connected edges
@@ -123,7 +163,8 @@ export const createNodeActions = (
   },
   
   holdPacketAtNode: (id: NodeId, payload: AudioPayload, delayBeats: number): void => {
-    const bpm = get().masterSpeed;
+    // Honor the playing scene's BPM override for held-packet timing
+    const bpm = get().scenePlayback.effectiveBpm || get().masterSpeed;
     const delayMs = (delayBeats * 60 / bpm) * 1000;
     const releaseTime = performance.now() + delayMs;
     
@@ -282,13 +323,14 @@ export const createNodeActions = (
       const newId = createNodeId();
       newNodeIds.push(newId);
       
-      // Use JSON for deep copy to maintain type compatibility
+      // Use JSON for deep copy to maintain type compatibility. Clipboard props
+      // are stored untyped; they originated from a node of the same type.
       const newNode = createTypedNode(
         clipNode.type,
         newId,
         pasteX + clipNode.relX,
         pasteY + clipNode.relY,
-        JSON.parse(JSON.stringify(clipNode.props)) as any
+        JSON.parse(JSON.stringify(clipNode.props)) as PropsForNodeType<typeof clipNode.type>
       );
       
       set(s => {

@@ -20,6 +20,16 @@ export default defineConfig({
     minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
     // Produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
+    rollupOptions: {
+      output: {
+        // Split stable third-party code from app code for better caching
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          state: ['zustand', 'immer'],
+          supabase: ['@supabase/supabase-js'],
+        },
+      },
+    },
   },
   
   // Prevent vite from obscuring rust errors

@@ -2,6 +2,7 @@
 // Default values for the GraphState
 
 import type { GraphState } from './types';
+import { FILE_FORMAT_VERSION } from '../../io/file-io';
 import { 
   DEFAULT_SPEED, SCALES,
   INITIAL_SCENE_PLAYBACK_STATE
@@ -41,7 +42,7 @@ export const initialState: GraphState = {
     author: 'Anonymous',
     created: Date.now(),
     modified: Date.now(),
-    version: '2.0.0',
+    version: FILE_FORMAT_VERSION,
     rootNote: 0,
     scale: 'major',
     gravity: 0,

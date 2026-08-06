@@ -13,6 +13,8 @@ interface DocSection {
   id: string;
   title: string;
   icon: string;
+  /** Extra search terms beyond the title (searched case-insensitively) */
+  keywords?: string;
   content: React.ReactNode;
 }
 
@@ -177,6 +179,7 @@ const NODE_DOCS: DocSection[] = [
     id: 'mutator',
     title: 'Mutator',
     icon: '🧬',
+    keywords: 'genetic evolution random variation',
     content: (
       <>
         <p>Applies genetic mutations to packet properties.</p>
@@ -187,6 +190,152 @@ const NODE_DOCS: DocSection[] = [
         </ul>
         <h4>Targets</h4>
         <p>Can mutate pitch, gain, cutoff, wave type, and timbre.</p>
+      </>
+    ),
+  },
+  {
+    id: 'delay',
+    title: 'Delay',
+    icon: '⏱️',
+    keywords: 'echo hold time beats',
+    content: (
+      <>
+        <p>Holds each packet for a fixed number of beats before releasing it, creating echoes and canons.</p>
+        <h4>Properties</h4>
+        <ul>
+          <li><strong>Delay Time</strong> - Beats to hold the packet</li>
+        </ul>
+        <h4>Tip</h4>
+        <p>Split a signal, delay one branch, and pitch-shift it for instant counterpoint.</p>
+      </>
+    ),
+  },
+  {
+    id: 'gain',
+    title: 'Gain',
+    icon: '📶',
+    keywords: 'volume amplitude',
+    content: (
+      <>
+        <p>Scales the loudness of passing packets.</p>
+        <h4>Properties</h4>
+        <ul>
+          <li><strong>Value</strong> - Gain multiplier applied to the packet</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'modulator',
+    title: 'Modulator',
+    icon: '🎻',
+    keywords: 'vibrato lfo pitch wobble expression',
+    content: (
+      <>
+        <p>Adds vibrato to passing packets - periodic pitch variation like a string player&apos;s finger.</p>
+        <h4>Properties</h4>
+        <ul>
+          <li><strong>Rate</strong> - Vibrato speed (Hz)</li>
+          <li><strong>Depth</strong> - Pitch variation (cents)</li>
+          <li><strong>Delay</strong> - Seconds before vibrato fades in</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'tunnel',
+    title: 'Tunnel',
+    icon: '🚇',
+    keywords: 'group subgraph instrument preset encapsulate',
+    content: (
+      <>
+        <p>
+          Encapsulates a chain of processing nodes into a single node - Stochastic&apos;s
+          &quot;instrument&quot; abstraction. Packets are processed by every sub-node in
+          sequence during one hop.
+        </p>
+        <h4>Usage</h4>
+        <ul>
+          <li>Select nodes and press <strong>Ctrl+G</strong> to group them into a tunnel</li>
+          <li>Edit sub-nodes from the tunnel&apos;s property panel</li>
+          <li>Choose a preset (Thick, Dark, Voice, Shimmer) or build your own</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'teleporter',
+    title: 'Teleporter',
+    icon: '🌀',
+    keywords: 'wormhole portal channel wireless',
+    content: (
+      <>
+        <p>
+          Transports packets instantly between distant parts of the graph without a
+          visible edge. An entry teleporter re-emits packets from every exit teleporter
+          on the same channel.
+        </p>
+        <h4>Properties</h4>
+        <ul>
+          <li><strong>Channel</strong> - Letter (A-Z) pairing entries with exits</li>
+          <li><strong>Entry / Exit</strong> - Direction of this teleporter</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'crossover',
+    title: 'Crossover',
+    icon: '🧫',
+    keywords: 'breed genetic reproduction parents combine',
+    content: (
+      <>
+        <p>
+          Waits for two packets ("parents"), then emits a child that inherits properties
+          from both - genetic recombination for melodies.
+        </p>
+        <h4>Properties</h4>
+        <ul>
+          <li><strong>Inheritance</strong> - How pitch/wave/gain are combined</li>
+          <li><strong>Timeout</strong> - Beats to wait for a second parent</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'scene_trigger',
+    title: 'Scene Trigger',
+    icon: '🎬',
+    keywords: 'jump crossfade arrangement jam navigation',
+    content: (
+      <>
+        <p>
+          Jumps to another scene when a packet arrives - lets the music navigate its own
+          structure in Jam mode.
+        </p>
+        <h4>Properties</h4>
+        <ul>
+          <li><strong>Target Scene</strong> - Index of the scene to switch to (-1 = off)</li>
+          <li><strong>Behavior</strong> - Jump instantly, or queue the switch at the next bar</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'midi',
+    title: 'MIDI Out / MIDI CC',
+    icon: '🎛️',
+    keywords: 'hardware daw external control change',
+    content: (
+      <>
+        <p>
+          Send notes (<strong>MIDI Out</strong>) or control-change values
+          (<strong>MIDI CC</strong>) to external hardware and DAWs.
+        </p>
+        <p>
+          <em>Status: experimental - these nodes are placeholders while MIDI routing is
+          being built out. They do not emit MIDI yet.</em>
+        </p>
       </>
     ),
   },
@@ -225,30 +374,66 @@ const KEYBOARD_SHORTCUTS: DocSection = {
   id: 'shortcuts',
   title: 'Keyboard Shortcuts',
   icon: '⌨️',
+  keywords: 'keys hotkeys bindings',
   content: (
     <>
-      <h4>General</h4>
+      <h4>Playback</h4>
       <ul>
-        <li><strong>Space</strong> - Play/Pause</li>
-        <li><strong>Ctrl+N</strong> - New project</li>
-        <li><strong>Ctrl+O</strong> - Open file</li>
-        <li><strong>Ctrl+S</strong> - Save file</li>
-        <li><strong>Ctrl+Z</strong> - Undo</li>
-        <li><strong>Ctrl+Y</strong> - Redo</li>
+        <li><strong>Space</strong> - Play / Pause</li>
+        <li><strong>M</strong> - Mute / Unmute</li>
       </ul>
-      <h4>Canvas</h4>
+      <h4>Editing</h4>
       <ul>
-        <li><strong>Delete</strong> - Delete selection</li>
-        <li><strong>Ctrl+A</strong> - Select all</li>
-        <li><strong>Ctrl+D</strong> - Duplicate</li>
-        <li><strong>Escape</strong> - Deselect</li>
+        <li><strong>Ctrl+Z</strong> - Undo canvas edit</li>
+        <li><strong>Ctrl+Y / Ctrl+Shift+Z</strong> - Redo</li>
+        <li><strong>Delete / Backspace</strong> - Delete selection</li>
+        <li><strong>Ctrl+A</strong> - Select all nodes</li>
+        <li><strong>Ctrl+C / Ctrl+V</strong> - Copy / Paste nodes</li>
+        <li><strong>Ctrl+D</strong> - Duplicate selection</li>
+        <li><strong>Ctrl+G</strong> - Group selection into a Tunnel</li>
+        <li><strong>Escape</strong> - Cancel linking / Deselect</li>
+      </ul>
+      <p><em>Undo history covers canvas edits on the current scene and pauses while the transport is running.</em></p>
+      <h4>Tools</h4>
+      <ul>
+        <li><strong>1-7</strong> - Node tools (Source, Speaker, Pitch, Filter, Gate, Delay, Gain), then click the canvas to place</li>
+        <li><strong>0</strong> - Select tool</li>
+        <li><strong>A</strong> - Annotation tool</li>
+        <li><strong>R</strong> - Region tool</li>
       </ul>
       <h4>Navigation</h4>
       <ul>
-        <li><strong>Scroll</strong> - Pan canvas</li>
-        <li><strong>Ctrl+Scroll</strong> - Zoom</li>
-        <li><strong>Middle Mouse</strong> - Pan canvas</li>
+        <li><strong>Scroll</strong> - Zoom in/out</li>
+        <li><strong>Middle Mouse Drag</strong> - Pan canvas</li>
+        <li><strong>Left Drag (empty canvas)</strong> - Box-select</li>
+        <li><strong>Long-press (touch)</strong> - Open the context menu</li>
       </ul>
+    </>
+  ),
+};
+
+const SPACE_IS_TIME: DocSection = {
+  id: 'concept',
+  title: 'Space is Time',
+  icon: '🌌',
+  keywords: 'concept distance rhythm tempo pixels beat physical model philosophy',
+  content: (
+    <>
+      <p>
+        Stochastic&apos;s core idea: <strong>the canvas is a temporal landscape</strong>.
+        Packets (musical events) travel along edges at constant speed, so the
+        <em> distance</em> between nodes determines the <em>rhythm</em>.
+      </p>
+      <ul>
+        <li><strong>200 px = 1 beat</strong> (default) - a longer edge means a longer wait</li>
+        <li>Moving a node re-times every path through it - <em>arranging is composing</em></li>
+        <li>Parallel paths of different lengths create polyrhythms naturally</li>
+        <li>Set an edge to <strong>Fixed</strong> timing to pin its duration in beats, independent of distance</li>
+      </ul>
+      <p>
+        Melody works the same way: the <em>topology</em> of the graph - how paths split,
+        merge, loop and interleave - decides which notes happen and in what order.
+      </p>
     </>
   ),
 };
@@ -257,23 +442,32 @@ const QUICK_START: DocSection = {
   id: 'quickstart',
   title: 'Quick Start',
   icon: '🚀',
+  keywords: 'begin first sound tutorial getting started',
   content: (
     <>
-      <h4>Basic Chain</h4>
+      <h4>Hear something immediately</h4>
       <ol>
-        <li>Add a <strong>Source</strong> node (right-click → Add Node)</li>
-        <li>Add an <strong>Oscillator</strong> for sound generation</li>
-        <li>Add a <strong>Speaker</strong> for audio output</li>
-        <li>Connect them with edges (drag from node to node)</li>
-        <li>Press <strong>Space</strong> to play!</li>
+        <li>Press <strong>Space</strong> - a new project starts with a Source already wired to a Speaker</li>
+        <li>Drag the Speaker further away - the pulse slows down (<em>distance is rhythm</em>)</li>
       </ol>
-      <h4>Adding Variation</h4>
+      <h4>Build your own chain</h4>
+      <ol>
+        <li><strong>Right-click</strong> the canvas → Add Node → pick an <strong>Oscillator</strong></li>
+        <li>Hover a node and <strong>drag from its edge</strong> to another node to connect them</li>
+        <li>Insert the Oscillator between Source and Speaker to shape the sound</li>
+        <li>Select any node to edit its properties in the right panel</li>
+      </ol>
+      <h4>Adding variation</h4>
       <ul>
         <li>Use <strong>Gate</strong> for probabilistic patterns</li>
         <li>Use <strong>Quantizer</strong> to stay in key</li>
         <li>Use <strong>LFO</strong> with CV edges for movement</li>
         <li>Use <strong>Splitter</strong> to create parallel paths</li>
       </ul>
+      <p>
+        Or open <strong>Examples</strong> in the toolbar - start with
+        <em> Tutorials → Tutorial: Learn Stochastic</em>, ten guided scenes.
+      </p>
     </>
   ),
 };
@@ -293,12 +487,14 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps): React.ReactEleme
 
   if (!isOpen) return null;
 
-  const allSections = [QUICK_START, KEYBOARD_SHORTCUTS, EDGE_DOCS, ...NODE_DOCS];
-  
-  const filteredSections = searchQuery
-    ? allSections.filter(s => 
-        s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.id.toLowerCase().includes(searchQuery.toLowerCase())
+  const allSections = [QUICK_START, SPACE_IS_TIME, KEYBOARD_SHORTCUTS, EDGE_DOCS, ...NODE_DOCS];
+
+  const query = searchQuery.trim().toLowerCase();
+  const filteredSections = query
+    ? allSections.filter(s =>
+        s.title.toLowerCase().includes(query) ||
+        s.id.toLowerCase().includes(query) ||
+        (s.keywords ?? '').toLowerCase().includes(query)
       )
     : allSections;
 
@@ -348,7 +544,7 @@ export function DocsModal({ isOpen, onClose }: DocsModalProps): React.ReactEleme
         </div>
         
         <div className={styles.footer}>
-          <a href="https://github.com/your-repo/stochastic" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
+          <a href="https://github.com/algolife-research/stochastic" target="_blank" rel="noopener noreferrer" className={styles.footerLink}>
             📖 Full Documentation
           </a>
         </div>

@@ -214,17 +214,24 @@ function processGate(payload: AudioPayload, node: GraphNode): AudioPayload {
   // Check density fitness (is there room for more packets?)
   if (survives && (mode === 'density' || mode === 'all')) {
     const now = performance.now();
-    const msPerBeat = (60 / store.masterSpeed) * 1000;
-    
-    // Use node's timer to track packets per beat window
-    if (now - node.lastTrigger > msPerBeat) {
-      node.timer = 0;
-      node.lastTrigger = now;
+    const bpm = store.scenePlayback.effectiveBpm || store.masterSpeed;
+    const msPerBeat = (60 / bpm) * 1000;
+
+    // Track packets per beat window. Canvas nodes are frozen store state, so
+    // the counter write goes through the store; virtual-channel nodes are
+    // plain mutable copies and take the direct write.
+    const windowExpired = now - node.lastTrigger > msPerBeat;
+    const timer = (windowExpired ? 0 : node.timer) + 1;
+    const lastTrigger = windowExpired ? now : node.lastTrigger;
+
+    if (store.nodes.has(node.id)) {
+      store.setNodeRuntime(node.id, { timer, lastTrigger });
+    } else {
+      node.timer = timer;
+      node.lastTrigger = lastTrigger;
     }
-    
-    node.timer += 1;
-    
-    if (node.timer > props.densityThreshold) {
+
+    if (timer > props.densityThreshold) {
       survives = false;
     }
   }
@@ -313,8 +320,9 @@ function processQuantizer(payload: AudioPayload, node: GraphNode): AudioPayload 
     
     const interval = scale[selectedIndex] ?? 0;
     const chroma = (root + interval) % 12;
+    // Standard octave naming: octave n starts at MIDI (n+1)*12, so C4 = 60
     const octave = props.defaultPitch;
-    const quantized = octave * 12 + chroma;
+    const quantized = (octave + 1) * 12 + chroma;
     
     return {
       ...payload,
@@ -477,12 +485,13 @@ function processLFO(payload: AudioPayload, node: GraphNode): AudioPayload {
     case 'sawtooth':
       value = t % 1;
       break;
-    case 'random':
+    case 'random': {
       // Sample and Hold: stable random value for each cycle
       const cycle = Math.floor(t);
       // Simple hash function for deterministic random per cycle
       value = Math.abs(Math.sin(cycle * 12.9898 + 78.233) * 43758.5453) % 1;
       break;
+    }
     case 'noise':
       // Pure white noise
       value = Math.random();

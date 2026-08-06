@@ -190,7 +190,7 @@ export function Toolbar({ onShowSettings, onShowExport }: ToolbarProps): React.R
   
   return (
     <div className={styles['toolbar']}>
-      <FileDropdown onShowSettings={onShowSettings} onShowExport={onShowExport} />
+      <FileDropdown onShowExport={onShowExport} />
       
       {/* Project name with dirty indicator, cloud status, and inline editing */}
       <div style={{ 

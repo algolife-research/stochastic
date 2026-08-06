@@ -46,10 +46,6 @@ export function MobileWarning(): React.ReactElement | null {
     setShowWarning(false);
   };
 
-  const handleContinue = () => {
-    handleDismiss();
-  };
-
   if (!showWarning || dismissed) {
     return null;
   }
@@ -76,17 +72,11 @@ export function MobileWarning(): React.ReactElement | null {
         </div>
 
         <div className={styles.actions}>
-          <button 
+          <button
             className={styles.continueButton}
-            onClick={handleContinue}
-          >
-            Continue Anyway
-          </button>
-          <button 
-            className={styles.dismissButton}
             onClick={handleDismiss}
           >
-            Close
+            Continue Anyway
           </button>
         </div>
 

@@ -48,7 +48,7 @@ export function updateScenePlayback(dt: number): void {
  * Update arrangement mode - multi-channel scene playback
  * Multiple scenes can play simultaneously on different channels
  */
-function updateArrangementMode(deltaBeats: number): void {
+function updateArrangementMode(_deltaBeats: number): void {
   const store = getGraphStore();
   const { scenePlayback, scenes, arrangement, arrangementChannels } = store;
   
@@ -128,6 +128,19 @@ function updateArrangementMode(deltaBeats: number): void {
       const primarySlot = activeSlots[0];
       setCanvasChannelIndex(primarySlot.channelIndex);
       store.loadSceneToCanvas(primarySlot.sceneId);
+
+      // Re-resolve the effective musical context for the new canvas scene —
+      // scene overrides and per-slot instanceBpm apply on slot transitions,
+      // not only at play start
+      const scene = store.scenes.get(primarySlot.sceneId);
+      if (scene) {
+        const slotRecord = store.arrangement.find(s => s.id === primarySlot.slotId);
+        store.setScenePlayback({
+          effectiveBpm: slotRecord?.instanceBpm ?? getEffectiveBpm(scene, store.masterSpeed),
+          effectiveRoot: getEffectiveRoot(scene, store.musicalContext.root),
+          effectiveScale: getEffectiveScale(scene, store.musicalContext.scaleName),
+        });
+      }
     }
     
     // Update virtual channel scenes (for non-canvas channels)
@@ -301,10 +314,11 @@ function checkQueueTrigger(
       // Trigger on bar boundary (4 beats)
       return Math.floor(currentBeat / 4) > Math.floor(prevBeat / 4);
       
-    case 'phrase':
+    case 'phrase': {
       // Trigger on phrase boundary (custom phrase length, default to scene duration)
       const pLen = phraseLength > 0 ? phraseLength : sceneDuration;
       return Math.floor(currentBeat / pLen) > Math.floor(prevBeat / pLen);
+    }
       
     default:
       return false;

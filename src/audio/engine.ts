@@ -29,6 +29,7 @@ export class AudioEngine {
   private audioContext: AudioContext | null = null;
   private synthNode: AudioWorkletNode | null = null;
   private masterGain: GainNode | null = null;
+  private lastMasterGain = 0.9;
   private reverbNode: ConvolverNode | null = null;
   private reverbGain: GainNode | null = null;
   private isInitialized: boolean = false;
@@ -57,8 +58,8 @@ export class AudioEngine {
     // Create worklet node
     this.synthNode = new AudioWorkletNode(this.audioContext, 'phonon-synth-processor', {
       numberOfInputs: 0,
-      numberOfOutputs: 1,
-      outputChannelCount: [2], // Stereo output
+      numberOfOutputs: 2,           // 0: dry bus, 1: reverb send bus
+      outputChannelCount: [2, 2],   // Both stereo
     });
     
     // Listen for voice updates from worklet
@@ -73,21 +74,23 @@ export class AudioEngine {
     this.masterGain = this.audioContext.createGain();
     this.masterGain.gain.value = 0.9;
     
-    // Create simple reverb (convolution)
+    // Create simple reverb (convolution). Wet level is controlled per voice
+    // in the worklet (each speaker's reverb prop = that voice's send level),
+    // so the master wet trim stays at unity.
     this.reverbNode = this.audioContext.createConvolver();
     this.reverbGain = this.audioContext.createGain();
-    this.reverbGain.gain.value = 0.3;
-    
+    this.reverbGain.gain.value = 1.0;
+
     // Generate impulse response
     await this.generateImpulseResponse();
-    
+
     // Connect nodes
-    // Synth -> Master Gain -> Destination
-    // Synth -> Reverb -> Reverb Gain -> Destination
-    this.synthNode.connect(this.masterGain);
+    // Synth out 0 (dry) -> Master Gain -> Destination
+    // Synth out 1 (per-voice reverb send) -> Reverb -> Reverb Gain -> Destination
+    this.synthNode.connect(this.masterGain, 0);
     this.masterGain.connect(this.audioContext.destination);
-    
-    this.synthNode.connect(this.reverbNode);
+
+    this.synthNode.connect(this.reverbNode, 1);
     this.reverbNode.connect(this.reverbGain);
     this.reverbGain.connect(this.audioContext.destination);
     
@@ -143,16 +146,7 @@ export class AudioEngine {
    */
   playNote(payload: AudioPayload, options?: { reverb?: number; pan?: number }, id?: string): void {
     if (!this.synthNode || this.isMuted) return;
-    
-    // Apply reverb level if specified
-    if (options?.reverb !== undefined && this.reverbGain) {
-      this.reverbGain.gain.setTargetAtTime(
-        options.reverb,
-        this.audioContext?.currentTime ?? 0,
-        0.01
-      );
-    }
-    
+
     const noteId = id ?? crypto.randomUUID();
     
     // Prepare layers with all properties including unison/mode
@@ -204,6 +198,7 @@ export class AudioEngine {
       vibratoDelay: payload.vibratoDelay,
       filterEnv: payload.filterEnv,
       pan: options?.pan ?? 0,
+      reverbSend: options?.reverb ?? 0.3,
     });
   }
   
@@ -223,6 +218,7 @@ export class AudioEngine {
    * Set master gain
    */
   setMasterGain(value: number): void {
+    this.lastMasterGain = value;
     if (this.masterGain) {
       this.masterGain.gain.setTargetAtTime(
         value,
@@ -256,10 +252,10 @@ export class AudioEngine {
    */
   setMuted(muted: boolean): void {
     this.isMuted = muted;
-    
+
     if (this.masterGain) {
       this.masterGain.gain.setTargetAtTime(
-        muted ? 0 : 0.5,
+        muted ? 0 : this.lastMasterGain,
         this.audioContext?.currentTime ?? 0,
         0.01
       );

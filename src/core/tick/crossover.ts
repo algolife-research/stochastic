@@ -47,11 +47,12 @@ export function performCrossover(parentA: AudioPayload, parentB: AudioPayload, p
       offspring.midiNote = parentB.midiNote;
       offspring.freq = parentB.freq;
       break;
-    case 'average':
+    case 'average': {
       const avgMidi = Math.round((parentA.midiNote + parentB.midiNote) / 2) as typeof parentA.midiNote;
       offspring.midiNote = avgMidi;
       offspring.freq = midiToFreq(avgMidi);
       break;
+    }
     case 'random':
       if (Math.random() < 0.5) {
         offspring.midiNote = parentB.midiNote;

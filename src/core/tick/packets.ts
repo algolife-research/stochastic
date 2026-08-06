@@ -118,10 +118,13 @@ function createPacketMetadata(parentPacket?: Packet, edgeId?: string): {
  */
 export function updatePackets(deltaTime: number): void {
   const store = getGraphStore();
-  const { globalSettings, masterSpeed } = store;
+  const { globalSettings } = store;
+  // Honor the playing scene's local BPM override (falls back to master BPM)
+  const effectiveBpm = store.scenePlayback.effectiveBpm || store.masterSpeed;
   const now = performance.now();
   
   const packetsToDelete: PacketId[] = [];
+  const positionUpdates: Array<[PacketId, number]> = [];
   const packetsToSpawn: Packet[] = [];
   const arrivals: Array<{ packet: Packet; node: GraphNode; edge: GraphEdge }> = [];
   
@@ -152,7 +155,7 @@ export function updatePackets(deltaTime: number): void {
     }
     
     // Calculate speed based on edge timing mode
-    const secondsPerBeat = 60 / masterSpeed;
+    const secondsPerBeat = 60 / effectiveBpm;
     let traverseTime: number;
     
     if (edge.timingMode === 'fixed' && edge.durationBeats !== null) {
@@ -167,16 +170,18 @@ export function updatePackets(deltaTime: number): void {
     
     // If traverseTime is 0 or very small, arrive immediately
     const speed = traverseTime > 0.0001 ? deltaTime / traverseTime : 1;
-    
-    // Update position
+
+    // Update position (batched: one store update per frame, not per packet)
     const newT = packet.t + speed;
-    store.updatePacket(packet.id, { t: newT });
-    
+    positionUpdates.push([packet.id, newT]);
+
     // Check if arrived
     if (newT >= 1) {
       arrivals.push({ packet, node: toNode, edge });
     }
   });
+
+  store.batchUpdatePacketPositions(positionUpdates);
   
   // Create set of arriving packet IDs for entanglement sync
   const arrivingPacketIds = new Set(arrivals.map(a => a.packet.id));
@@ -208,25 +213,30 @@ export function updatePackets(deltaTime: number): void {
     
     // Process node type
     const processedPayload = processNodeArrival(packet, node, edge);
-    
-    // Handle special node types
-    if (node.type === 'gate') {
-      const props = node.props as { probability: number };
-      if (Math.random() > props.probability) {
-        // Gate blocked - don't propagate
-        return;
-      }
+
+    // Gates mark blocked packets with a negative-gain sentinel (see processGate,
+    // which handles the probability roll AND all fitness modes). Tunnels forward
+    // the sentinel when an internal sub-gate blocks. Drop both here — rolling
+    // again would square the pass probability, and a negative-gain packet
+    // reaching a speaker renders as a phase-inverted note.
+    if ((node.type === 'gate' || node.type === 'tunnel') && processedPayload.gain < 0) {
+      return;
     }
-    
+
     if (node.type === 'speaker') {
       // Trigger audio playback with speaker settings
-      const speakerProps = node.props as { volume?: number; reverb?: number; pan?: number };
-      // Apply speaker volume to payload gain
+      const speakerProps = node.props as {
+        volume?: number; reverb?: number; pan?: number;
+        holdTime?: number; releaseTime?: number;
+      };
+      // Apply speaker volume and envelope tail to the payload
       const finalPayload = {
         ...processedPayload,
         gain: processedPayload.gain * (speakerProps.volume ?? 1),
+        holdTime: speakerProps.holdTime ?? processedPayload.holdTime,
+        releaseTime: speakerProps.releaseTime ?? processedPayload.releaseTime,
       };
-      
+
       audioEngine.playNote(finalPayload, {
         reverb: speakerProps.reverb ?? 0.3,
         pan: speakerProps.pan ?? 0,
@@ -437,18 +447,8 @@ export function updatePackets(deltaTime: number): void {
  * Update node flash decay
  */
 export function updateNodeFlash(deltaTime: number): void {
-  const store = getGraphStore();
-  
-  store.nodes.forEach((node) => {
-    if (node.flash > 0) {
-      const newFlash = node.flash * Math.pow(0.1, deltaTime * 5);
-      if (newFlash < 0.01) {
-        store.updateNode(node.id, { flash: 0 } as Partial<GraphNode>);
-      } else {
-        store.updateNode(node.id, { flash: newFlash } as Partial<GraphNode>);
-      }
-    }
-  });
+  // Batched: one store update decays every node's flash for the frame
+  getGraphStore().decayNodeFlashes(deltaTime);
 }
 
 /**
@@ -456,9 +456,11 @@ export function updateNodeFlash(deltaTime: number): void {
  */
 export function updateDelayNodes(now: number): void {
   const store = getGraphStore();
-  
+
   store.nodes.forEach((node) => {
-    if (node.type !== 'delay') return;
+    // Crossover: a parent whose wait expired passes through unchanged instead
+    // of silently vanishing (the timeout promises pass-through semantics)
+    if (node.type !== 'delay' && node.type !== 'crossover') return;
     
     const heldPackets = node.heldPackets ?? [];
     const toRelease: number[] = [];

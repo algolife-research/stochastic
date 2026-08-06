@@ -676,3 +676,145 @@
   color: var(--text-secondary, #666);
   font-style: italic;
 }
+
+/* API key setup (bring your own key) */
+.apiKeySetup {
+  margin: 8px 12px;
+  padding: 12px;
+  background: #1c2a33;
+  border: 1px solid #2c495c;
+  border-radius: 8px;
+}
+
+.apiKeyTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cfe8f7;
+  margin-bottom: 4px;
+}
+
+.apiKeyHint {
+  font-size: 11.5px;
+  color: #8fa8b8;
+  line-height: 1.45;
+  margin: 0 0 8px;
+}
+
+.apiKeyHint a {
+  color: #4fc3f7;
+}
+
+.apiKeyRow {
+  display: flex;
+  gap: 8px;
+}
+
+.apiKeyInput {
+  flex: 1;
+  padding: 7px 10px;
+  background: #12191e;
+  border: 1px solid #2c495c;
+  border-radius: 6px;
+  color: #dfe9ef;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.apiKeySave {
+  padding: 7px 14px;
+  background: #2c667f;
+  border: 1px solid #3a80a0;
+  border-radius: 6px;
+  color: #eaf6fc;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.apiKeySave:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.apiKeyRemove {
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid #5c3a3a;
+  border-radius: 6px;
+  color: #d99;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.apiKeyRemove:hover {
+  background: rgba(150, 60, 60, 0.15);
+}
+
+/* Credits balance + purchase */
+.creditsBar {
+  margin: 6px 12px 0;
+  padding: 8px 12px;
+  background: #16211a;
+  border: 1px solid #2b4a35;
+  border-radius: 8px;
+}
+
+.creditsRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.creditsBalance {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #a8dbb8;
+  flex: 1;
+}
+
+.creditsNotice {
+  font-size: 11px;
+  color: #e0c060;
+}
+
+.creditsBuy {
+  padding: 5px 12px;
+  background: #275c3a;
+  border: 1px solid #35804f;
+  border-radius: 6px;
+  color: #dff5e6;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.creditsPacks {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.creditsPack {
+  flex: 1;
+  padding: 7px 4px;
+  background: #1d2f24;
+  border: 1px solid #2b4a35;
+  border-radius: 6px;
+  color: #cfeeda;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.creditsPack:hover {
+  background: #24402e;
+}
+
+.creditsPack:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.creditsError {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: #ff8a8a;
+}

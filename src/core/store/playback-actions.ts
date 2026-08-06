@@ -5,7 +5,7 @@ import type { GraphStore, ImmerSet } from './types';
 
 export const createPlaybackActions = (
   set: ImmerSet,
-  get: () => GraphStore
+  _get: () => GraphStore
 ) => ({
   setIsRunning: (running: boolean): void => {
     set(state => {

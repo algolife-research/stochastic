@@ -95,7 +95,7 @@ export class VideoEncoderPipeline {
     const bitrate = Math.floor(baseBitrate * (0.5 + quality * 1.5));
     
     this.encoder = new VideoEncoder({
-      output: (chunk, metadata) => {
+      output: (chunk) => {
         this.encodedChunks.push(chunk);
       },
       error: (e) => {

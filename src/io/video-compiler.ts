@@ -130,11 +130,9 @@ export function compileVideoFrames(
           // Fixed
           midiNote = props.midiNote ?? 60;
         } else {
-          // Scale index
-          const scale = musicalContext.scale;
-          const octave = Math.floor(noteIndex / scale.length);
-          const degree = noteIndex % scale.length;
-          midiNote = musicalContext.root + octave * 12 + (scale[degree] || 0);
+          // Chromatic offset from MIDI 36, matching the live engine
+          // (tick/sources.ts) and the audio compiler
+          midiNote = 36 + Math.min(36, noteIndex);
         }
         
         const freq = 440 * Math.pow(2, (midiNote - 69) / 12) as Frequency;
@@ -339,7 +337,7 @@ function processVideoArrival(
   // Flash the node
   nodeFlashes.set(node.id, 1);
   
-  let payload = { ...packet.payload };
+  const payload = { ...packet.payload };
   
   switch (node.type) {
     case 'speaker': {

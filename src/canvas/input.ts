@@ -2,6 +2,7 @@
 // Mouse and keyboard input handling for the canvas
 
 import { getGraphStore } from '@core/store';
+import { undo as undoHistory, redo as redoHistory } from '@core/store/history';
 import type { NodeId, NodeType, Tool, EdgeId, AnnotationId, RegionId, TunnelProps, GraphNode } from '@core/types';
 import { 
   NODE_RADIUS, MIN_ZOOM, MAX_ZOOM, dist, HANDLE_RADIUS,
@@ -164,7 +165,6 @@ export class CanvasInputHandler {
     window.addEventListener('mouseup', this.handleMouseUp);
     this.canvas.addEventListener('dblclick', this.handleDoubleClick);
     this.canvas.addEventListener('wheel', this.handleWheel, { passive: false });
-    this.canvas.addEventListener('dblclick', this.handleDoubleClick);
     this.canvas.addEventListener('contextmenu', this.handleContextMenu);
     
     // Touch events
@@ -1031,11 +1031,27 @@ export class CanvasInputHandler {
     const store = getGraphStore();
     
     // Ignore if typing in input
-    if ((e.target as HTMLElement).tagName === 'INPUT' || 
+    if ((e.target as HTMLElement).tagName === 'INPUT' ||
         (e.target as HTMLElement).tagName === 'TEXTAREA') {
       return;
     }
-    
+
+    // Undo / Redo (Ctrl+Z, Ctrl+Y or Ctrl+Shift+Z)
+    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        redoHistory();
+      } else {
+        undoHistory();
+      }
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyY') {
+      e.preventDefault();
+      redoHistory();
+      return;
+    }
+
     switch (e.code) {
       case 'Space':
         e.preventDefault();
@@ -1163,7 +1179,7 @@ export class CanvasInputHandler {
   /**
    * Handle key up
    */
-  private handleKeyUp = (e: KeyboardEvent): void => {
+  private handleKeyUp = (_e: KeyboardEvent): void => {
     // Nothing special for now
   };
 
@@ -1848,15 +1864,18 @@ export class CanvasInputHandler {
    * Handle long-press (equivalent to right-click context menu)
    */
   private handleLongPress(screenX: number, screenY: number, worldX: number, worldY: number): void {
-    // Show context menu at long-press location
-    // This would require implementing a touch-friendly context menu
-    // For now, we'll just log it
-    console.log('Long press detected at', { screenX, screenY, worldX, worldY });
+    // Long-press acts as right-click: dispatch a contextmenu event at the
+    // touch point so the regular ContextMenu component picks it up.
+    const store = getGraphStore();
+    store.setMouse(screenX, screenY, worldX, worldY);
 
-    // Could trigger context menu for:
-    // - Nodes (delete, duplicate, copy, etc.)
-    // - Edges (delete)
-    // - Empty space (paste, etc.)
+    const rect = this.canvas.getBoundingClientRect();
+    this.canvas.dispatchEvent(new MouseEvent('contextmenu', {
+      bubbles: true,
+      cancelable: true,
+      clientX: rect.left + screenX,
+      clientY: rect.top + screenY,
+    }));
   }
 }
 

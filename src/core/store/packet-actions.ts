@@ -82,6 +82,20 @@ export const createPacketActions = (
       }
     });
   },
+
+  // Hot path: the tick loop moves every packet every frame. One store update
+  // for the whole frame instead of one per packet.
+  batchUpdatePacketPositions: (entries: Array<[PacketId, number]>): void => {
+    if (entries.length === 0) return;
+    set(state => {
+      for (const [id, t] of entries) {
+        const packet = state.packets.get(id);
+        if (packet) {
+          packet.t = t;
+        }
+      }
+    });
+  },
   
   deletePacket: (id: PacketId): void => {
     set(state => {

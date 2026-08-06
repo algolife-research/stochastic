@@ -2,6 +2,7 @@
 // Coordinates AI generation, parsing, validation, and execution
 
 import { useGraphStore } from '@core/store';
+import { supabase, getSupabaseConfig } from '@auth/supabase';
 import type { 
   AIAgentConfig, 
   GenerationResponse,
@@ -502,6 +503,8 @@ Original request: ${prompt}`;
     this.abortController = new AbortController();
     
     switch (this.config.provider) {
+      case 'stochastic-cloud':
+        return this.callCloudProxy(prompt);
       case 'openai':
         return this.callOpenAI(prompt);
       case 'anthropic':
@@ -650,6 +653,65 @@ Original request: ${prompt}`;
     return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
   }
   
+  /**
+   * Call the server-side AI proxy (Supabase edge function). The provider key
+   * lives on the backend; usage is metered against the user's credits.
+   */
+  private async callCloudProxy(prompt: string): Promise<string> {
+    if (!this.config) throw new Error('Not configured');
+    if (!supabase) throw new Error('Cloud AI requires the backend to be configured');
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+    if (!accessToken) {
+      throw new Error('Sign in to use cloud AI, or add your own API key in the AI panel.');
+    }
+
+    const messages = [
+      { role: 'system', content: getSystemPrompt() },
+      ...this.conversationHistory.slice(-10).map(m => ({
+        role: m.role,
+        content: m.content,
+      })),
+      { role: 'user', content: prompt },
+    ];
+
+    const response = await fetch(`${getSupabaseConfig().url}/functions/v1/ai-chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        model: this.config.model,
+        messages,
+        max_tokens: this.config.maxTokens,
+        temperature: this.config.temperature,
+      }),
+      signal: this.abortController?.signal,
+    });
+
+    if (!response.ok) {
+      if (response.status === 402) {
+        throw new Error('You are out of AI credits.');
+      }
+      if (response.status === 401) {
+        throw new Error('Your session expired — sign in again to use cloud AI.');
+      }
+      if (response.status === 404) {
+        throw new Error(
+          'Cloud AI is not deployed on this backend yet. ' +
+          'You can use your own API key instead (Advanced Settings → Disconnect API key, then enter yours).'
+        );
+      }
+      const error = await response.text();
+      throw new Error(`Cloud AI error: ${error.slice(0, 300)}`);
+    }
+
+    const data = await response.json();
+    return data.content || '';
+  }
+
   private async callOpenRouter(prompt: string): Promise<string> {
     if (!this.config) throw new Error('Not configured');
     
@@ -681,6 +743,15 @@ Original request: ${prompt}`;
     
     if (!response.ok) {
       const error = await response.text();
+      // Free-tier models rotate; a retired slug returns a 404 with a
+      // migration hint. Make the fix obvious instead of surfacing raw JSON.
+      if (error.includes('free period has ended') || (response.status === 404 && error.includes('model'))) {
+        throw new Error(
+          `The configured model is no longer available on OpenRouter. ` +
+          `Pick a current model (e.g. a :free one from https://openrouter.ai/models) ` +
+          `in the AI settings. Details: ${error}`
+        );
+      }
       throw new Error(`OpenRouter API error: ${error}`);
     }
     

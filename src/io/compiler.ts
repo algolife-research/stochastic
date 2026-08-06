@@ -10,6 +10,15 @@ import type {
   MidiNote,
   WaveOrNoiseType,
   MusicalContext,
+  SpeakerProps,
+  PitchProps,
+  OscillatorProps,
+  ModulatorProps,
+  FilterProps,
+  GainProps,
+  GateProps,
+  QuantizerProps,
+  LfoProps,
   GlobalSettings,
   PropsForNodeType
 } from '@core/types';
@@ -52,6 +61,8 @@ interface SimPacket {
   edgeId: EdgeId;
   t: number;
   spawnTime: number;
+  /** Entangled packets share payload changes (live: Packet.entanglementGroupId) */
+  entanglementGroupId?: string;
   payload: {
     freq: Frequency;
     midiNote: MidiNote;
@@ -79,8 +90,23 @@ interface SimPacket {
     vibratoRate?: number;
     vibratoDepth?: number;
     vibratoDelay?: number;
+    modulationValue?: number;
     filterEnv?: { attack: number; decay: number; mod: number };
   };
+}
+
+/**
+ * Modulation state for the simulation - mirrors what the live engine keeps in
+ * the store: LFO edges continuously rewrite target node props (tick/lfo.ts) and
+ * packets arriving over a targetParam edge write CV values (tick/packets.ts).
+ */
+interface SimModState {
+  /** target nodeId -> LFO modulation edges pointing at it */
+  lfoTargets: Map<NodeId, Array<{ lfoNode: GraphNode; param: string }>>;
+  /** nodeId -> prop overrides written by packet-based CV (targetParam edges) */
+  cvOverrides: Map<NodeId, Record<string, unknown>>;
+  /** gate nodeId -> density-fitness counter (sim-time beat windows) */
+  gateDensity: Map<NodeId, { windowStart: number; count: number }>;
 }
 
 /**
@@ -104,7 +130,25 @@ export function compileGraph(
   const simPackets: SimPacket[] = [];
   const nodeTimers = new Map<NodeId, { lastEmit: number; interval: number }>();
   const heldPackets = new Map<NodeId, Array<{ payload: SimPacket['payload']; releaseTime: number }>>();
-  
+
+  // Wire up LFO modulation targets (edges with a targetParam whose source is an
+  // LFO node). The live engine rewrites the target prop every frame; the sim
+  // computes the LFO value lazily whenever a packet arrives at the target.
+  const lfoTargets = new Map<NodeId, Array<{ lfoNode: GraphNode; param: string }>>();
+  for (const edge of edges.values()) {
+    if (!edge.targetParam) continue;
+    const lfoNode = nodes.get(edge.from);
+    if (!lfoNode || lfoNode.type !== 'lfo') continue;
+    const list = lfoTargets.get(edge.to) ?? [];
+    list.push({ lfoNode, param: edge.targetParam });
+    lfoTargets.set(edge.to, list);
+  }
+  const simState: SimModState = {
+    lfoTargets,
+    cvOverrides: new Map(),
+    gateDensity: new Map(),
+  };
+
   // Initialize source node timers
   for (const node of nodes.values()) {
     if (node.type === 'source') {
@@ -125,11 +169,19 @@ export function compileGraph(
       
       const timer = nodeTimers.get(node.id);
       if (!timer) continue;
-      
-      if (currentBeat - timer.lastEmit >= timer.interval) {
+
+      // Live engine reads source props every frame, so LFO/CV modulation of
+      // interval/intensity applies (tick/sources.ts)
+      const props = getEffectiveProps(node, simState, currentTime) as PropsForNodeType<'source'>;
+
+      // Manual-trigger sources never auto-emit in the live engine
+      if (props.autoTrigger === false) continue;
+
+      const interval = props.interval || 2;
+
+      if (currentBeat - timer.lastEmit >= interval) {
         timer.lastEmit = currentBeat;
-        
-        const props = node.props as PropsForNodeType<'source'>;
+
         const noteIndex = props.noteIndex ?? -1;
         const intensity = props.intensity ?? 0.5;
         
@@ -201,24 +253,30 @@ export function compileGraph(
       heldPackets.set(node.id, held.filter(h => h.releaseTime > currentTime));
     }
     
-    // 3. Move packets and process arrivals
+    // 3. Move packets and collect arrivals. Mirrors the live engine's two-phase
+    //    structure (tick/packets.ts:135-187): every packet moves first, then
+    //    arrivals are processed - so entanglement sync from one arrival never
+    //    rewrites a sibling that is itself arriving in the same tick (live
+    //    excludes the whole arrivingPacketIds set, tick/packets.ts:183-184).
+    const arrivals: Array<{ packet: SimPacket; node: GraphNode; edge: GraphEdge }> = [];
+
     for (let i = simPackets.length - 1; i >= 0; i--) {
       const p = simPackets[i];
       if (!p) continue;
-      
+
       const edge = edges.get(p.edgeId);
       if (!edge) {
         simPackets.splice(i, 1);
         continue;
       }
-      
+
       const fromNode = nodes.get(edge.from);
       const toNode = nodes.get(edge.to);
       if (!fromNode || !toNode) {
         simPackets.splice(i, 1);
         continue;
       }
-      
+
       // Calculate travel time
       let edgeDuration: number;
       if (edge.timingMode === 'fixed' && edge.durationBeats !== null) {
@@ -231,15 +289,43 @@ export function compileGraph(
         const steps = Math.max(0.1, dist / pixelsPerBeat);
         edgeDuration = steps * beatDuration;
       }
-      
+
       p.t += tickDuration / Math.max(0.001, edgeDuration);
-      
+
       if (p.t >= 1.0) {
-        // Process arrival at destination node
-        processArrival(p, toNode, nodes, edges, currentTime, beatDuration, events, simPackets, heldPackets, musicalContext);
+        arrivals.push({ packet: p, node: toNode, edge });
         simPackets.splice(i, 1);
       }
     }
+
+    // Backward iteration collected arrivals newest-first; restore insertion
+    // order to match the live store's iteration order (tick/packets.ts:187).
+    arrivals.reverse();
+
+    // Packets spawned by arrivals join the pool only after every arrival this
+    // tick is processed (live's packetsToSpawn buffer, tick/packets.ts:421),
+    // so entanglement sync never touches same-tick spawns.
+    const spawnedThisTick: SimPacket[] = [];
+
+    for (const arrival of arrivals) {
+      const { packet, node, edge } = arrival;
+
+      if (edge.targetParam) {
+        // Modulation edge (CV routing): write the value to the target node's
+        // prop and consume the packet - modulation packets never forward and
+        // never sync entangled siblings (tick/packets.ts:194-209)
+        const value = packet.payload.modulationValue ?? packet.payload.gain;
+        const overrides = simState.cvOverrides.get(node.id) ?? {};
+        overrides[edge.targetParam] = value;
+        simState.cvOverrides.set(node.id, overrides);
+        continue;
+      }
+
+      // Process arrival at destination node
+      processArrival(packet, node, nodes, edges, currentTime, beatDuration, events, spawnedThisTick, simPackets, heldPackets, musicalContext, simState);
+    }
+
+    simPackets.push(...spawnedThisTick);
   }
   
   return events.sort((a, b) => a.time - b.time);
@@ -253,19 +339,26 @@ function processArrival(
   currentTime: number,
   beatDuration: number,
   events: AudioEvent[],
-  simPackets: SimPacket[],
+  spawnedPackets: SimPacket[],
+  inFlightPackets: SimPacket[],
   heldPackets: Map<NodeId, Array<{ payload: SimPacket['payload']; releaseTime: number }>>,
-  musicalContext: MusicalContext
+  musicalContext: MusicalContext,
+  simState: SimModState
 ): void {
   let payload = { ...packet.payload };
-  
+
+  // Static props overlaid with packet-CV writes and current LFO modulation -
+  // in the live engine both write directly into node.props
+  const effectiveProps = getEffectiveProps(node, simState, currentTime);
+
   switch (node.type) {
     case 'speaker': {
-      const props = node.props as PropsForNodeType<'speaker'>;
+      const props = effectiveProps as PropsForNodeType<'speaker'>;
       const volume = props.volume ?? 1.0;
       const pan = props.pan ?? 0;
-      const reverb = props.reverb ?? 0;
-      
+      // Live engine defaults reverb to 0.3 (tick/packets.ts playNote options)
+      const reverb = props.reverb ?? 0.3;
+
       events.push({
         time: currentTime,
         freq: payload.freq,
@@ -276,8 +369,9 @@ function processArrival(
         cutoff: payload.cutoff,
         filterType: payload.filterType,
         filterResonance: payload.filterResonance,
-        holdTime: payload.holdTime,
-        releaseTime: payload.releaseTime,
+        // Speaker hold/release override the payload's (tick/packets.ts)
+        holdTime: props.holdTime ?? payload.holdTime,
+        releaseTime: props.releaseTime ?? payload.releaseTime,
         pan,
         reverb,
         waves: payload.waves,
@@ -286,22 +380,29 @@ function processArrival(
         vibratoDelay: payload.vibratoDelay,
         filterEnv: payload.filterEnv,
       });
+      // Live engine still propagates the (unchanged) payload past a speaker
+      // if it has outgoing edges (tick/packets.ts falls through to propagation).
+      // No entanglement sync at speakers (tick/packets.ts:392 excludes them),
+      // but the group id is preserved on forwarded packets.
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
-    
+
     case 'pitch': {
-      const props = node.props as PropsForNodeType<'pitch'>;
-      // Compiler only supports shift mode for now
-      const semitones = props.shift ?? 0;
-      const newMidi = Math.max(0, Math.min(127, payload.midiNote + semitones));
-      payload.midiNote = newMidi as MidiNote;
-      payload.freq = (440 * Math.pow(2, (newMidi - 69) / 12)) as Frequency;
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      const props = effectiveProps as PropsForNodeType<'pitch'>;
+      // Live engine: mode defaults to 'shift'; 'set' jumps to fixedMidiNote
+      const newMidi = (props.mode ?? 'shift') === 'set'
+        ? clampMidi(props.fixedMidiNote ?? 60)
+        : clampMidi(payload.midiNote + (props.shift ?? 0));
+      payload.midiNote = newMidi;
+      payload.freq = midiToFreq(newMidi);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
     
     case 'oscillator': {
-      const props = node.props as PropsForNodeType<'oscillator'>;
+      const props = effectiveProps as PropsForNodeType<'oscillator'>;
       const wave = props.wave ?? 'sawtooth';
       const attack = props.attack ?? 0.01;
       const decay = props.decay ?? 0.4;
@@ -331,91 +432,58 @@ function processArrival(
         detune,
         stereoSpread,
       }];
-      
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
-    
+
     case 'modulator': {
-      const props = node.props as PropsForNodeType<'modulator'>;
+      const props = effectiveProps as PropsForNodeType<'modulator'>;
       payload.vibratoRate = props.rate ?? 5;
       payload.vibratoDepth = props.depth ?? 20;
       payload.vibratoDelay = props.delay ?? 0.2;
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
-    
+
     case 'filter': {
-      const props = node.props as PropsForNodeType<'filter'>;
+      const props = effectiveProps as PropsForNodeType<'filter'>;
       payload.cutoff = (props.cutoff ?? 20000) as Frequency;
       payload.filterType = props.type ?? 'lowpass';
       payload.filterResonance = props.resonance ?? 0;
       const mod = props.mod ?? 0;
-      if (mod !== 0) {
-        payload.filterEnv = {
-          attack: props.attack ?? 0,
-          decay: props.decay ?? 0,
-          mod,
-        };
-      }
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      // Live engine replaces filterEnv unconditionally (clears it when mod = 0)
+      payload.filterEnv = mod !== 0
+        ? { attack: props.attack ?? 0, decay: props.decay ?? 0, mod }
+        : undefined;
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
-    
+
     case 'gate': {
-      const props = node.props as PropsForNodeType<'gate'>;
-      const mode = props.mode ?? 'probability';
-      
-      // Probability mode - simple random gate
-      if (mode === 'probability') {
-        const probability = props.probability ?? 1.0;
-        if (Math.random() < probability) {
-          forwardPacket(node.id, payload, edges, simPackets, currentTime);
-        }
-        break;
-      }
-      
-      // Fitness modes - criteria-based selection
-      let survives = true;
-      
-      // Harmonic fitness
-      if (mode === 'harmonic' || mode === 'all') {
-        const threshold = props.harmonicThreshold ?? 0.5;
-        const scale = musicalContext.scale;
-        const root = musicalContext.root;
-        const chroma = payload.midiNote % 12;
-        const relativeToRoot = (chroma - root + 12) % 12;
-        const inScale = scale.includes(relativeToRoot);
-        
-        if (!inScale) {
-          let minDist = 12;
-          for (const interval of scale) {
-            const scaleChroma = (root + interval) % 12;
-            const d = Math.min(Math.abs(chroma - scaleChroma), 12 - Math.abs(chroma - scaleChroma));
-            minDist = Math.min(minDist, d);
-          }
-          const consonance = 1 - (minDist / 6);
-          if (consonance < threshold) survives = false;
-        }
-      }
-      
-      // Energy fitness
-      if (survives && (mode === 'energy' || mode === 'all')) {
-        const threshold = props.energyThreshold ?? 0.2;
-        if (payload.gain < threshold) survives = false;
-      }
-      
-      if (survives) {
-        forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      const props = effectiveProps as PropsForNodeType<'gate'>;
+      // Single authority for the roll (mirrors processGate in engine.ts: one
+      // probability roll / fitness evaluation; live marks blocked packets with
+      // gain: -1 and the pipeline drops them - the sim just drops them here)
+      if (gateSurvives(payload, props, musicalContext, simState.gateDensity, node.id, currentTime, beatDuration)) {
+        // Passed packets sync their (unchanged) payload to entangled siblings;
+        // blocked packets are dropped before the sync in live (tick/packets.ts:219)
+        syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+        forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       }
       break;
     }
     
     case 'delay': {
-      const props = node.props as PropsForNodeType<'delay'>;
+      // Live returns before the entanglement sync (tick/packets.ts:275-280),
+      // and delay-released packets spawn without a group (tick/packets.ts:485)
+      const props = effectiveProps as PropsForNodeType<'delay'>;
       const delayBeats = props.delayTime ?? 1;
       const delaySeconds = delayBeats * beatDuration;
-      
+
       if (!heldPackets.has(node.id)) {
         heldPackets.set(node.id, []);
       }
@@ -425,39 +493,45 @@ function processArrival(
       });
       break;
     }
-    
+
     case 'gain': {
-      const props = node.props as PropsForNodeType<'gain'>;
+      const props = effectiveProps as PropsForNodeType<'gain'>;
       const gainMult = props.value ?? 1.0;
       payload.gain *= gainMult;
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
-    
+
     case 'quantizer': {
-      // Snap to scale - simplified version (just pass through for now)
-      // const props = node.props as any;
-      // Proper quantization would need scale info
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      const props = effectiveProps as PropsForNodeType<'quantizer'>;
+      applyQuantizer(payload, props, musicalContext);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
     
     case 'tunnel': {
-      const props = node.props as PropsForNodeType<'tunnel'>;
+      const props = effectiveProps as PropsForNodeType<'tunnel'>;
       const subNodes = props.subNodes ?? [];
-      
-      let currentPayload = { ...payload };
-      
+
+      const currentPayload = { ...payload };
+      // A speaker sub-node stops further sub-processing, but the packet still
+      // leaves the tunnel in the live engine (processTunnel returns early and
+      // packets.ts propagates normally)
+      let speakerTerminus = false;
+
       for (const subNode of subNodes) {
         // Process each sub-node (subNode.props is Record<string, unknown>)
         switch (subNode.type) {
           case 'speaker': {
             // Speaker inside tunnel - emit event
-            const subProps = subNode.props as any; // SubNode type limitation
+            const subProps = subNode.props as Partial<SpeakerProps>;
             const volume = subProps.volume ?? 1.0;
             const pan = subProps.pan ?? 0;
-            const reverb = subProps.reverb ?? 0;
-            
+            // Live engine defaults tunnel speaker reverb to 0.3 (tick/packets.ts)
+            const reverb = subProps.reverb ?? 0.3;
+
             events.push({
               time: currentTime,
               freq: currentPayload.freq,
@@ -478,20 +552,27 @@ function processArrival(
               vibratoDelay: currentPayload.vibratoDelay,
               filterEnv: currentPayload.filterEnv,
             });
-            return; // Speaker is terminus
-          }
-          
-          case 'pitch': {
-            const subProps = subNode.props as any; // SubNode type limitation
-            const semitones = subProps.semitones ?? subProps.shift ?? 0;
-            const newMidi = Math.max(0, Math.min(127, currentPayload.midiNote + semitones));
-            currentPayload.midiNote = newMidi as MidiNote;
-            currentPayload.freq = (440 * Math.pow(2, (newMidi - 69) / 12)) as Frequency;
+            speakerTerminus = true;
             break;
           }
           
+          case 'pitch': {
+            // `semitones` is a legacy alias for `shift`
+            const subProps = subNode.props as Partial<PitchProps> & { semitones?: number };
+            let newMidi: MidiNote;
+            if ((subProps.mode ?? 'shift') === 'set') {
+              newMidi = clampMidi(subProps.fixedMidiNote ?? 60);
+            } else {
+              const semitones = subProps.semitones ?? subProps.shift ?? 0;
+              newMidi = clampMidi(currentPayload.midiNote + semitones);
+            }
+            currentPayload.midiNote = newMidi;
+            currentPayload.freq = midiToFreq(newMidi);
+            break;
+          }
+
           case 'oscillator': {
-            const subProps = subNode.props as any; // SubNode type limitation
+            const subProps = subNode.props as Partial<OscillatorProps>;
             const attack = subProps.attack ?? 0.01;
             const decay = subProps.decay ?? 0.4;
             const mix = subProps.mix ?? 1.0;
@@ -499,6 +580,9 @@ function processArrival(
             const mode = subProps.mode ?? 'additive';
             const modulationIndex = subProps.modulationIndex ?? 2;
             const feedback = subProps.feedback ?? 0;
+            const unison = subProps.unison ?? 1;
+            const detune = subProps.detune ?? 0;
+            const stereoSpread = subProps.stereoSpread ?? 0.5;
             const existingWaves = currentPayload.waves ?? [];
             currentPayload.wave = subProps.wave ?? 'sawtooth';
             currentPayload.timbre = 0.8;
@@ -511,12 +595,15 @@ function processArrival(
               mode,
               modulationIndex,
               feedback,
+              unison,
+              detune,
+              stereoSpread,
             }];
             break;
           }
           
           case 'modulator': {
-            const subProps = subNode.props as any; // SubNode type limitation
+            const subProps = subNode.props as Partial<ModulatorProps>;
             currentPayload.vibratoRate = subProps.rate ?? 5;
             currentPayload.vibratoDepth = subProps.depth ?? 20;
             currentPayload.vibratoDelay = subProps.delay ?? 0.2;
@@ -524,72 +611,101 @@ function processArrival(
           }
           
           case 'filter': {
-            const subProps = subNode.props as any; // SubNode type limitation
+            const subProps = subNode.props as Partial<FilterProps>;
             currentPayload.cutoff = (subProps.cutoff ?? 20000) as Frequency;
+            currentPayload.filterType = subProps.type ?? 'lowpass';
+            currentPayload.filterResonance = subProps.resonance ?? 0;
             const mod = subProps.mod ?? 0;
-            if (mod !== 0) {
-              currentPayload.filterEnv = {
-                attack: subProps.attack ?? 0,
-                decay: subProps.decay ?? 0,
-                mod,
-              };
-            }
+            // Live engine replaces filterEnv unconditionally (clears when mod = 0)
+            currentPayload.filterEnv = mod !== 0
+              ? { attack: subProps.attack ?? 0, decay: subProps.decay ?? 0, mod }
+              : undefined;
             break;
           }
-          
+
           case 'gain': {
-            const subProps = subNode.props as any; // SubNode type limitation
+            const subProps = subNode.props as Partial<GainProps>;
             currentPayload.gain *= subProps.value ?? 1.0;
             break;
           }
-          
+
           case 'gate': {
-            const subProps = subNode.props as any; // SubNode type limitation
-            if (Math.random() > (subProps.probability ?? 0.5)) {
+            const subProps = subNode.props as Partial<GateProps>;
+            // Live routes tunnel sub-gates through processGate too (all modes,
+            // single roll). Density counters never persist for tunnel sub-gates
+            // in the live engine (it rolls on a copied node), so pass a null
+            // key to use an ephemeral per-packet count.
+            if (!gateSurvives(currentPayload, subProps, musicalContext, simState.gateDensity, null, currentTime, beatDuration)) {
               return; // Gate blocked
             }
             break;
           }
+
+          case 'quantizer': {
+            const subProps = subNode.props as Partial<QuantizerProps>;
+            applyQuantizer(currentPayload, subProps, musicalContext);
+            break;
+          }
+
+          case 'lfo': {
+            // Live processLFO stamps the current LFO value on the payload
+            const subProps = subNode.props as Partial<LfoProps>;
+            currentPayload.modulationValue = computeLfoValue(subProps, currentTime, true);
+            break;
+          }
         }
+
+        if (speakerTerminus) break;
       }
-      
-      // Forward processed payload
+
+      // Forward processed payload. Tunnels are regular nodes for entanglement:
+      // the fully sub-processed payload syncs to siblings (tick/packets.ts:391;
+      // a blocked sub-gate returned above, before the sync, like live :219)
       payload = currentPayload;
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
-    
+
     case 'teleporter': {
-      const props = node.props as PropsForNodeType<'teleporter'>;
+      const props = effectiveProps as PropsForNodeType<'teleporter'>;
       const channel = props.channel;
       const isEntry = props.isEntry ?? true;
-      
+
       if (isEntry) {
-        // Find exit teleporters
+        // Entry teleporters return before the entanglement sync in live
+        // (tick/packets.ts:243-272), but teleported packets keep their group
+        // (tick/packets.ts:264)
         for (const n of nodes.values()) {
           if (n.type === 'teleporter' && n.id !== node.id) {
             const nProps = n.props as PropsForNodeType<'teleporter'>;
             if (nProps.channel === channel && !nProps.isEntry) {
-              forwardPacket(n.id, payload, edges, simPackets, currentTime);
+              forwardPacket(n.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
             }
           }
         }
+      } else {
+        // A direct-edge arrival at an exit teleporter falls through to the
+        // entanglement sync in live (tick/packets.ts:391)
+        syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
       }
       break;
     }
     
     case 'mutator': {
-      const props = node.props as PropsForNodeType<'mutator'>;
+      const props = effectiveProps as PropsForNodeType<'mutator'>;
       const probability = props.probability ?? 0.5;
       const mode = props.mode ?? 'drift';
       const targets = props.targets ?? ['pitch'];
-      
-      // Check probability
+
+      // Check probability (live syncs the pass-through payload even when the
+      // mutation roll fails - the sync at tick/packets.ts:391 is unconditional)
       if (Math.random() > probability) {
-        forwardPacket(node.id, payload, edges, simPackets, currentTime);
+        syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+        forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
         break;
       }
-      
+
       if (mode === 'drift') {
         if (targets.includes('pitch')) {
           const drift = (Math.random() - 0.5) * 2 * (props.pitchDrift ?? 2);
@@ -605,6 +721,10 @@ function processArrival(
           const ratio = 1 + (Math.random() - 0.5) * 2 * (props.cutoffDrift ?? 0.2);
           payload.cutoff = Math.max(20, Math.min(20000, payload.cutoff * ratio)) as Frequency;
         }
+        if (targets.includes('timbre')) {
+          const drift = (Math.random() - 0.5) * 0.2;
+          payload.timbre = Math.max(0, Math.min(1, payload.timbre + drift));
+        }
       } else {
         // Radiation mode
         if (targets.includes('pitch')) {
@@ -619,66 +739,164 @@ function processArrival(
         if (targets.includes('cutoff')) {
           payload.cutoff = (200 + Math.random() * 19800) as Frequency;
         }
+        if (targets.includes('wave') && props.waveChange) {
+          const waveTypes: WaveOrNoiseType[] = ['sine', 'square', 'sawtooth', 'triangle'];
+          const randomWave = waveTypes[Math.floor(Math.random() * waveTypes.length)];
+          if (randomWave) {
+            payload.wave = randomWave;
+          }
+        }
+        if (targets.includes('timbre')) {
+          payload.timbre = Math.random();
+        }
       }
-      
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
     }
     
     case 'crossover': {
-      // Crossover waits for two parents - simplified: just pass through with slight variation
-      // For proper crossover simulation, we'd need to track packet pairs per node
-      const props = node.props as PropsForNodeType<'crossover'>;
+      // Crossover waits for two parents (first parent held until timeout)
+      const props = effectiveProps as PropsForNodeType<'crossover'>;
       const held = heldPackets.get(node.id) || [];
-      
+
       if (held.length === 0) {
-        // First parent - hold it
+        // First parent - hold it (live returns before the entanglement sync,
+        // tick/packets.ts:290-293)
         const timeout = (props.timeout ?? 2) * beatDuration;
         heldPackets.set(node.id, [{ payload, releaseTime: currentTime + timeout }]);
       } else {
-        // Second parent - perform crossover
-        const firstParent = held[0]!.payload;
-        const offspring = { ...payload };
-        
-        // Crossover logic
-        const pitchFrom = props.pitchFrom ?? 'average';
-        if (pitchFrom === 'average') {
-          const avgMidi = Math.round((firstParent.midiNote + payload.midiNote) / 2);
-          offspring.midiNote = avgMidi as MidiNote;
-          offspring.freq = (440 * Math.pow(2, (avgMidi - 69) / 12)) as Frequency;
-        } else if (pitchFrom === 'b') {
-          offspring.midiNote = payload.midiNote;
-          offspring.freq = payload.freq;
-        } else if (pitchFrom === 'random') {
-          if (Math.random() < 0.5) {
-            offspring.midiNote = firstParent.midiNote;
-            offspring.freq = firstParent.freq;
-          }
+        const firstHeld = held[0]!;
+
+        if (currentTime >= firstHeld.releaseTime) {
+          // First parent timed out - discard it and pass the new packet
+          // through unchanged (matches tick/packets.ts). This path falls
+          // through to the entanglement sync in live (tick/packets.ts:391)
+          heldPackets.set(node.id, []);
+          syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+          forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
+          break;
         }
-        // pitchFrom === 'a' keeps offspring as-is (already copied from payload)
-        
-        // Clear held and forward offspring
+
+        // Second parent - perform crossover with the live engine's genetics
+        const offspring = performCrossover(
+          firstHeld.payload as unknown as AudioPayload,
+          payload as unknown as AudioPayload,
+          props
+        );
+        const offspringPayload: SimPacket['payload'] = {
+          ...payload,
+          ...offspring,
+          vibratoRate: offspring.vibratoRate,
+          filterType: offspring.filterType ?? payload.filterType,
+          filterResonance: offspring.filterResonance ?? payload.filterResonance,
+          waves: offspring.waves ? [...offspring.waves] : undefined,
+        };
+
+        // Clear held and forward offspring. Live returns before the
+        // entanglement sync (tick/packets.ts:337) and offspring spawn without
+        // a group id (tick/packets.ts:327-333)
         heldPackets.set(node.id, []);
-        forwardPacket(node.id, offspring, edges, simPackets, currentTime);
+        forwardPacket(node.id, offspringPayload, edges, spawnedPackets, currentTime, undefined);
       }
       break;
     }
-    
-    case 'lfo':
-      // LFO nodes don't process packets - they modulate other nodes
-      // Skip packet forwarding
+
+    case 'lfo': {
+      // Continuous modulation is handled via getEffectiveProps; packets that
+      // physically pass through an LFO node get stamped with the current LFO
+      // value and keep going (engine.ts processLFO + normal propagation)
+      const props = effectiveProps as PropsForNodeType<'lfo'>;
+      payload.modulationValue = computeLfoValue(props, currentTime, true);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
-    
+    }
+
     case 'scene_trigger':
       // Scene triggers are not relevant during offline export
       // Just pass through
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
-    
-    case 'splitter':
+
+    case 'splitter': {
+      const props = effectiveProps as PropsForNodeType<'splitter'>;
+      const behavior = props.behavior ?? 'broadcast';
+      const outgoing = Array.from(edges.values()).filter(e => e.from === node.id);
+      let targetEdges = outgoing;
+
+      // Entangled splitters mint a fresh group for the packets split here,
+      // replacing any inherited group; non-entangled splitters pass the
+      // inherited group through (tick/packets.ts:343-351). Live does this for
+      // every behavior - random/weighted just produce a one-packet group.
+      // No entanglement sync happens at splitters (tick/packets.ts:392).
+      const entanglementGroupId = props.entangled
+        ? crypto.randomUUID()
+        : packet.entanglementGroupId;
+
+      if (behavior === 'random' && outgoing.length > 0) {
+        // Pick one random edge (tick/packets.ts)
+        const selected = outgoing[Math.floor(Math.random() * outgoing.length)];
+        if (selected) {
+          targetEdges = [selected];
+        }
+      } else if (behavior === 'weighted' && outgoing.length > 0) {
+        // Pick one edge based on weights (edge.weight ?? 1, tick/packets.ts)
+        let totalWeight = 0;
+        for (const e of outgoing) {
+          totalWeight += (e.weight ?? 1);
+        }
+
+        let r = Math.random() * totalWeight;
+        let selected = outgoing[0];
+
+        for (const e of outgoing) {
+          r -= (e.weight ?? 1);
+          if (r <= 0) {
+            selected = e;
+            break;
+          }
+        }
+
+        if (selected) {
+          targetEdges = [selected];
+        }
+      }
+      // 'broadcast' is default (all edges)
+
+      spawnOnEdges(targetEdges, payload, spawnedPackets, currentTime, entanglementGroupId);
+      break;
+    }
+
     default:
-      forwardPacket(node.id, payload, edges, simPackets, currentTime);
+      syncEntangled(packet.entanglementGroupId, payload, inFlightPackets);
+      forwardPacket(node.id, payload, edges, spawnedPackets, currentTime, packet.entanglementGroupId);
       break;
+  }
+}
+
+/**
+ * Mirror of syncEntangledPayloads (tick/crossover.ts:16-28): replace the
+ * entire payload of every same-group packet with a shallow copy of the
+ * arriving packet's processed payload - the live sync copies the whole
+ * payload object and nothing else (not t, edge, or hop metadata).
+ * Exclusions are structural here, matching live: packets arriving this tick
+ * were already spliced out of the in-flight pool (live skips the whole
+ * arrivingPacketIds set), and same-tick spawns sit in a separate buffer until
+ * all arrivals are processed (live's packetsToSpawn is outside store.packets).
+ */
+function syncEntangled(
+  groupId: string | undefined,
+  newPayload: SimPacket['payload'],
+  inFlightPackets: SimPacket[]
+): void {
+  if (!groupId) return;
+  for (const p of inFlightPackets) {
+    if (p.entanglementGroupId === groupId) {
+      p.payload = { ...newPayload };
+    }
   }
 }
 
@@ -686,24 +904,298 @@ function forwardPacket(
   nodeId: NodeId,
   payload: SimPacket['payload'],
   edges: Map<EdgeId, GraphEdge>,
-  simPackets: SimPacket[],
-  currentTime: number
+  spawnedPackets: SimPacket[],
+  currentTime: number,
+  entanglementGroupId: string | undefined
 ): void {
   const outgoing = Array.from(edges.values()).filter(e => e.from === nodeId);
-  for (const edge of outgoing) {
-    simPackets.push({
+  spawnOnEdges(outgoing, payload, spawnedPackets, currentTime, entanglementGroupId);
+}
+
+function spawnOnEdges(
+  targetEdges: GraphEdge[],
+  payload: SimPacket['payload'],
+  spawnedPackets: SimPacket[],
+  currentTime: number,
+  entanglementGroupId: string | undefined
+): void {
+  for (const edge of targetEdges) {
+    spawnedPackets.push({
       id: crypto.randomUUID(),
       edgeId: edge.id,
       t: 0,
       spawnTime: currentTime,
+      // Propagate entanglement to spawned packets (tick/packets.ts:410)
+      entanglementGroupId,
       payload: { ...payload },
     });
   }
 }
 
+/**
+ * Effective props for a node at the current sim time: static props overlaid
+ * with packet-CV writes and the current value of any LFOs modulating the node.
+ * Mirrors the live engine, where tick/lfo.ts and tick/packets.ts write these
+ * values directly into node.props.
+ */
+function getEffectiveProps(
+  node: GraphNode,
+  simState: SimModState,
+  currentTime: number
+): GraphNode['props'] {
+  const overrides = simState.cvOverrides.get(node.id);
+  const lfoMods = simState.lfoTargets.get(node.id);
+  if (!overrides && !lfoMods) return node.props;
+
+  const merged: Record<string, unknown> = { ...node.props, ...(overrides ?? {}) };
+
+  if (lfoMods) {
+    for (const mod of lfoMods) {
+      // The LFO's own props may have been retuned by packet CV
+      const lfoOverrides = simState.cvOverrides.get(mod.lfoNode.id);
+      const lfoProps = (lfoOverrides
+        ? { ...mod.lfoNode.props, ...lfoOverrides }
+        : mod.lfoNode.props) as Partial<LfoProps>;
+      merged[mod.param] = computeLfoValue(lfoProps, currentTime, false);
+    }
+  }
+
+  return merged as unknown as GraphNode['props'];
+}
+
+/**
+ * LFO waveform math, with t = simTimeSeconds * rate + phase.
+ * Matches tick/lfo.ts (continuous modulation - only the four deterministic
+ * shapes; 'random'/'noise' fall back to 0.5 there) and engine.ts processLFO
+ * (packet stamping - all six shapes), selected via allowStochastic.
+ */
+function computeLfoValue(
+  props: Partial<LfoProps>,
+  timeSeconds: number,
+  allowStochastic: boolean
+): number {
+  const rate = props.rate ?? 1;
+  const shape = props.shape ?? 'sine';
+  const min = props.min ?? 0;
+  const max = props.max ?? 1;
+  const phase = props.phase ?? 0;
+
+  const t = timeSeconds * rate + phase;
+
+  let value: number;
+  switch (shape) {
+    case 'sine':
+      value = (Math.sin(t * Math.PI * 2) + 1) / 2;
+      break;
+    case 'triangle':
+      value = 1 - Math.abs((t % 1) * 2 - 1);
+      break;
+    case 'square':
+      value = (t % 1) < 0.5 ? 1 : 0;
+      break;
+    case 'sawtooth':
+      value = t % 1;
+      break;
+    case 'random':
+      // Sample & hold: stable pseudo-random value per cycle (engine.ts)
+      value = allowStochastic
+        ? Math.abs(Math.sin(Math.floor(t) * 12.9898 + 78.233) * 43758.5453) % 1
+        : 0.5;
+      break;
+    case 'noise':
+      value = allowStochastic ? Math.random() : 0.5;
+      break;
+    default:
+      value = 0.5;
+  }
+
+  return min + value * (max - min);
+}
+
+/**
+ * Resolve scale/root for key-aware nodes (gate/quantizer), matching the live
+ * engine: useGlobalKey resolves to the effective scene key (the compiler
+ * receives it as musicalContext - compileArrangement already folds in the
+ * scene's local scale/root), otherwise the node's own scale/root props.
+ * Returns an undefined scale for invalid props (live passes through then).
+ */
+function resolveNodeKey(
+  props: { useGlobalKey?: boolean; scale?: ScaleName; root?: number },
+  musicalContext: MusicalContext
+): { root: number; scale: ScaleIntervals | undefined } {
+  if (props.useGlobalKey) {
+    return { root: musicalContext.root, scale: musicalContext.scale };
+  }
+  return {
+    root: props.root ?? musicalContext.root,
+    scale: props.scale ? SCALES[props.scale] : undefined,
+  };
+}
+
+/**
+ * Gate logic ported from processGate (engine.ts) - the single authority for
+ * the probability roll and the harmonic/energy/density fitness modes. Returns
+ * false when the packet is blocked (live marks it with gain: -1 and the
+ * pipeline drops it; the sim simply does not forward it).
+ * densityKey null = ephemeral count (tunnel sub-gates, where live operates on
+ * a copied node so the counter never persists).
+ */
+function gateSurvives(
+  payload: SimPacket['payload'],
+  props: Partial<GateProps>,
+  musicalContext: MusicalContext,
+  gateDensity: Map<NodeId, { windowStart: number; count: number }>,
+  densityKey: NodeId | null,
+  currentTime: number,
+  beatDuration: number
+): boolean {
+  const mode = props.mode ?? 'probability';
+
+  // Probability mode - simple random gate (single roll)
+  if (mode === 'probability') {
+    return Math.random() < (props.probability ?? 1.0);
+  }
+
+  // Fitness modes - criteria-based selection
+  const { root, scale } = resolveNodeKey(props, musicalContext);
+  if (!scale) return true;
+
+  let survives = true;
+
+  // Harmonic fitness (is the note consonant with the scale?)
+  if (mode === 'harmonic' || mode === 'all') {
+    const threshold = props.harmonicThreshold ?? 0.5;
+    const chroma = payload.midiNote % 12;
+    const relativeToRoot = (chroma - root + 12) % 12;
+    const inScale = scale.includes(relativeToRoot);
+
+    if (!inScale) {
+      let minDist = 12;
+      for (const interval of scale) {
+        const scaleChroma = (root + interval) % 12;
+        const d = Math.min(Math.abs(chroma - scaleChroma), 12 - Math.abs(chroma - scaleChroma));
+        minDist = Math.min(minDist, d);
+      }
+      const consonance = 1 - (minDist / 6);
+      if (consonance < threshold) survives = false;
+    }
+  }
+
+  // Energy fitness (is the packet loud enough?)
+  if (survives && (mode === 'energy' || mode === 'all')) {
+    if (payload.gain < (props.energyThreshold ?? 0.1)) survives = false;
+  }
+
+  // Density fitness (packets per beat window, sim-time windows)
+  if (survives && (mode === 'density' || mode === 'all')) {
+    const threshold = props.densityThreshold ?? 8;
+    let count = 1;
+    if (densityKey !== null) {
+      let counter = gateDensity.get(densityKey);
+      if (!counter || currentTime - counter.windowStart > beatDuration) {
+        counter = { windowStart: currentTime, count: 0 };
+        gateDensity.set(densityKey, counter);
+      }
+      counter.count += 1;
+      count = counter.count;
+    }
+    if (count > threshold) survives = false;
+  }
+
+  return survives;
+}
+
+/**
+ * Quantizer ported from processQuantizer (engine.ts): strength roll, nearest
+ * or weighted-random mode, defaultPitch = target octave in random mode.
+ * Mutates the payload's pitch in place.
+ */
+function applyQuantizer(
+  payload: SimPacket['payload'],
+  props: Partial<QuantizerProps>,
+  musicalContext: MusicalContext
+): void {
+  // Strength roll - failing it passes the note through unquantized
+  if (Math.random() > (props.strength ?? 1)) return;
+
+  const { root, scale } = resolveNodeKey(props, musicalContext);
+
+  // Safety check: if scale is undefined (e.g. invalid prop), pass through
+  if (!scale) return;
+
+  let quantized: number;
+
+  if ((props.mode ?? 'nearest') === 'random') {
+    // Weighted random scale-degree selection
+    const weights = props.weights ?? {};
+    const indices = Object.keys(weights).map(Number);
+
+    let selectedIndex = 0;
+
+    // Filter indices to only those valid for the current scale
+    const validIndices = indices.filter(i => i < scale.length);
+
+    if (validIndices.length === 0) {
+      // Uniform random if no weights
+      selectedIndex = Math.floor(Math.random() * scale.length);
+    } else {
+      let totalWeight = 0;
+      for (const i of validIndices) {
+        totalWeight += (weights[i] || 0);
+      }
+
+      if (totalWeight <= 0) {
+        const idx = Math.floor(Math.random() * validIndices.length);
+        selectedIndex = validIndices[idx] ?? 0;
+      } else {
+        let r = Math.random() * totalWeight;
+        for (const i of validIndices) {
+          r -= (weights[i] || 0);
+          if (r <= 0) {
+            selectedIndex = i;
+            break;
+          }
+        }
+      }
+    }
+
+    const interval = scale[selectedIndex] ?? 0;
+    const chroma = (root + interval) % 12;
+    // Standard octave naming: octave n starts at MIDI (n+1)*12, so C4 = 60
+    const octave = props.defaultPitch ?? 4;
+    quantized = (octave + 1) * 12 + chroma;
+  } else {
+    // Nearest scale degree
+    const midiNote = payload.midiNote;
+    const chroma = midiNote % 12;
+    const octave = Math.floor(midiNote / 12);
+
+    let minDist = 12;
+    let nearestChroma = chroma;
+
+    for (const interval of scale) {
+      const scaleChroma = (root + interval) % 12;
+      const d = Math.min(Math.abs(chroma - scaleChroma), 12 - Math.abs(chroma - scaleChroma));
+      if (d < minDist) {
+        minDist = d;
+        nearestChroma = scaleChroma;
+      }
+    }
+
+    quantized = octave * 12 + nearestChroma;
+    if (nearestChroma > chroma + 6) quantized -= 12;
+    else if (nearestChroma < chroma - 6) quantized += 12;
+  }
+
+  const newMidi = clampMidi(quantized);
+  payload.midiNote = newMidi;
+  payload.freq = midiToFreq(newMidi);
+}
+
 // Import Scene and ArrangementSlot types for arrangement compilation
-import type { Scene, ArrangementSlot, SceneId, ScaleName } from '@core/types';
-import { SCALES } from '@core/constants';
+import type { Scene, ArrangementSlot, SceneId, ScaleName, ScaleIntervals, AudioPayload } from '@core/types';
+import { SCALES, midiToFreq, clampMidi } from '@core/constants';
+import { performCrossover } from '@core/tick/crossover';
 
 /**
  * Compile an arrangement (multi-channel scenes) into timed audio events.

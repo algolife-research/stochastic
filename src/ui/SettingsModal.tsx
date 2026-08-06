@@ -158,21 +158,6 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps): React.R
               <p>New edges default to this timing mode. Fixed = 1 beat duration, Physical = based on edge length.</p>
             </div>
             
-            <div className={styles.row}>
-              <label>Gravity Constant</label>
-              <input
-                type="number"
-                value={gravity}
-                onChange={e => setGravity(parseFloat(e.target.value))}
-                min={0}
-                max={10}
-                step={0.1}
-              />
-            </div>
-            
-            <div className={styles.info}>
-              <p>Affects packet speed when Gain nodes have mass &gt; 1.</p>
-            </div>
           </section>
           
           {/* UI Settings */}

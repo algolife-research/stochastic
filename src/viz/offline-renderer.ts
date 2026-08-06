@@ -723,7 +723,7 @@ interface KaleidoElement {
 }
 
 /** Extended offline state for kaleidoscope */
-let kaleidoElements: KaleidoElement[] = [];
+const kaleidoElements: KaleidoElement[] = [];
 let kaleidoGlobalRotation = 0;
 
 /** Render kaleidoscope mode frame */
@@ -1007,7 +1007,7 @@ const EDITOR_NODE_ICONS: Record<string, string> = {
   speaker:       '🔊',
   pitch:         '♪',
   oscillator:    '∿',
-  filter:        '⋈',
+  filter:        '▼',
   gate:          '⊡',
   delay:         '⏱',
   gain:          '◐',

@@ -2,7 +2,7 @@
 // Handles LFO node updates and modulation
 
 import { getGraphStore } from '../store';
-import type { GraphNode } from '../types';
+import type { GraphNode, NodeId } from '../types';
 
 // ============================================================================
 // LFO MODULATION
@@ -15,13 +15,18 @@ import type { GraphNode } from '../types';
  */
 export function updateLFOs(now: number): void {
   const store = getGraphStore();
-  
+
+  // Collect all modulation writes and apply them in one store update
+  // (also deliberately does NOT mark the project dirty — modulation is
+  // runtime state, not an edit)
+  const propWrites: Array<[NodeId, Record<string, unknown>]> = [];
+
   store.nodes.forEach((node) => {
     if (node.type !== 'lfo') return;
     
     const props = node.props as {
       rate: number;
-      shape: 'sine' | 'triangle' | 'square' | 'sawtooth';
+      shape: 'sine' | 'triangle' | 'square' | 'sawtooth' | 'random' | 'noise';
       min: number;
       max: number;
       phase: number;
@@ -50,6 +55,16 @@ export function updateLFOs(now: number): void {
       case 'sawtooth':
         value = t % 1;
         break;
+      case 'random': {
+        // Sample and Hold: stable random value for each cycle
+        // (same hash as the per-packet LFO path in engine.ts)
+        const cycle = Math.floor(t);
+        value = Math.abs(Math.sin(cycle * 12.9898 + 78.233) * 43758.5453) % 1;
+        break;
+      }
+      case 'noise':
+        value = Math.random();
+        break;
       default:
         value = 0.5;
     }
@@ -62,22 +77,21 @@ export function updateLFOs(now: number): void {
     
     outgoingEdges.forEach(edge => {
       if (edge.targetParam === null) return; // Skip audio edges
-      
+
       const targetNode = store.nodes.get(edge.to);
       if (!targetNode) return;
-      
-      // Directly update the target node's property
-      const currentProps = { ...targetNode.props } as Record<string, unknown>;
-      currentProps[edge.targetParam] = modulationValue;
-      store.updateNode(edge.to, { props: currentProps } as unknown as Partial<GraphNode>);
+
+      propWrites.push([edge.to, { [edge.targetParam]: modulationValue }]);
     });
     
     // Subtle visual feedback for LFO activity (every ~100ms)
     if (now - node.lastTrigger > 100) {
-      store.updateNode(node.id, { 
+      store.updateNode(node.id, {
         lastTrigger: now,
-        flash: 0.2 
+        flash: 0.2
       } as Partial<GraphNode>);
     }
   });
+
+  store.batchMergeNodeProps(propWrites);
 }

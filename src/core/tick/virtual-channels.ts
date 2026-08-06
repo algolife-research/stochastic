@@ -4,7 +4,7 @@
 import { getGraphStore } from '../store';
 import type { Packet, GraphEdge, GraphNode, NodeId, MidiNote, Frequency, PacketId } from '../types';
 import { createPacketId } from '../types';
-import { dist, midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS } from '../constants';
+import { dist, midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS, getEffectiveBpm } from '../constants';
 import { processNodeArrival } from '../engine';
 import { audioEngine } from '@audio/engine';
 import { getActiveChannelScenes, getCanvasChannelIndex } from './state';
@@ -24,25 +24,29 @@ export function updateVirtualChannelScenes(now: number, dt: number): void {
   
   // Only process in arrangement mode
   if (scenePlayback.mode !== 'arrangement') return;
-  
-  const msPerBeat = (60 / masterSpeed) * 1000;
+
   const activeChannelScenes = getActiveChannelScenes();
   const canvasChannelIndex = getCanvasChannelIndex();
-  
+
   // Process each active virtual channel scene
   for (const [channelIndex, channelScene] of activeChannelScenes) {
     // Skip if this channel is the one on canvas (already processed by main loop)
     if (channelIndex === canvasChannelIndex) continue;
-    
+
     // Get channel settings for volume
     const channel = arrangementChannels[channelIndex];
     const channelVolume = channel?.volume ?? 1;
-    
+
+    // Each channel's scene may override the master BPM
+    const scene = store.scenes.get(channelScene.sceneId);
+    const channelBpm = scene ? getEffectiveBpm(scene, masterSpeed) : masterSpeed;
+    const msPerBeat = (60 / channelBpm) * 1000;
+
     // Update sources - trigger auto-sources and spawn packets
     updateVirtualSources(channelScene, now, msPerBeat);
-    
+
     // Update packets - move them and process arrivals
-    updateVirtualPackets(channelScene, dt, channelVolume);
+    updateVirtualPackets(channelScene, dt, channelVolume, channelBpm);
   }
 }
 
@@ -146,16 +150,17 @@ function spawnVirtualPacket(
 function updateVirtualPackets(
   channelScene: ChannelSceneState,
   dt: number,
-  channelVolume: number
+  channelVolume: number,
+  channelBpm: number
 ): void {
   const store = getGraphStore();
-  const { globalSettings, masterSpeed } = store;
+  const { globalSettings } = store;
   const { nodes, edges, packets } = channelScene;
-  
+
   const packetsToDelete: PacketId[] = [];
   const packetsToSpawn: Packet[] = [];
-  
-  const secondsPerBeat = 60 / masterSpeed;
+
+  const secondsPerBeat = 60 / channelBpm;
   
   packets.forEach((packet) => {
     const edge = edges.get(packet.edgeId);
@@ -273,15 +278,20 @@ function processVirtualArrival(
   
   // Handle speaker nodes - this triggers audio!
   if (node.type === 'speaker') {
-    const props = node.props as { volume?: number; pan?: number; reverb?: number };
+    const props = node.props as {
+      volume?: number; pan?: number; reverb?: number;
+      holdTime?: number; releaseTime?: number;
+    };
     const volume = (props.volume ?? 1) * channelVolume;
     const pan = props.pan ?? 0;
     const reverb = props.reverb ?? 0.3;
-    
-    // Apply speaker volume to processed payload
+
+    // Apply speaker volume and envelope tail to processed payload
     const finalPayload = {
       ...processedPayload,
       gain: processedPayload.gain * volume,
+      holdTime: props.holdTime ?? processedPayload.holdTime,
+      releaseTime: props.releaseTime ?? processedPayload.releaseTime,
     };
     
     audioEngine.playNote(finalPayload, { pan, reverb });

@@ -92,6 +92,9 @@ export interface GraphActions {
   // Node operations
   addNode: (type: NodeType, x: number, y: number) => NodeId;
   updateNode: <T extends NodeType>(id: NodeId, updates: Partial<GraphNode<T>>) => void;
+  batchMergeNodeProps: (entries: Array<[NodeId, Record<string, unknown>]>) => void;
+  setNodeRuntime: (id: NodeId, runtime: { timer?: number; lastTrigger?: number }) => void;
+  decayNodeFlashes: (deltaTime: number) => void;
   updateNodeProps: (id: NodeId, props: Record<string, unknown>) => void;
   deleteNode: (id: NodeId) => void;
   moveNode: (id: NodeId, x: number, y: number) => void;
@@ -125,6 +128,7 @@ export interface GraphActions {
   addPacket: (packet: Packet) => void;
   spawnPacket: (sourceNodeId: NodeId) => void;
   updatePacket: (id: PacketId, updates: Partial<Packet>) => void;
+  batchUpdatePacketPositions: (entries: Array<[PacketId, number]>) => void;
   deletePacket: (id: PacketId) => void;
   clearPackets: () => void;
   

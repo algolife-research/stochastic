@@ -11,6 +11,8 @@ import { buildCanvasContext } from '@ai/context-builder';
 import { applyOperations, createSimplePatch } from '@ai/operations';
 import { COMPOSITION_TEMPLATES } from '@ai/templates';
 import type { ChatMessage, CanvasOperation } from '@ai/types';
+import { CREDIT_PACKS, startCreditCheckout, getCheckoutResult } from '../io/checkout';
+import type { CreditPack } from '../io/checkout';
 import type { CompositionPlan } from '@ai/planner';
 import styles from './AIPanel.module.css';
 
@@ -25,6 +27,9 @@ interface AIPanelProps {
 export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement {
   const {
     isConfigured,
+    provider,
+    setApiKey,
+    clearConfig,
     isGenerating,
     messages,
     hasPreview,
@@ -103,10 +108,14 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
     }
   };
   
-  // Get suggestions based on current context (memoized to avoid expensive buildCanvasContext on every render)
+  // Get suggestions based on current context (memoized to avoid expensive
+  // buildCanvasContext on every render). nodeCount/edgeCount are proxy deps:
+  // buildCanvasContext reads the store directly, so we recompute when the
+  // graph's shape changes.
   const suggestions = useMemo(() => {
     const context = buildCanvasContext();
     return getContextSuggestions(context);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodeCount, edgeCount]);
   
   return (
@@ -189,6 +198,14 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
         />
       )}
       
+      {/* Credits + purchase (cloud AI is metered) */}
+      {user && provider === 'stochastic-cloud' && <CreditsBar />}
+
+      {/* API key setup — the key stays in this browser only */}
+      {user && !isConfigured && (
+        <ApiKeySetup onSave={setApiKey} />
+      )}
+
       {/* Input Container (for absolute positioning of templates) */}
       <div className={styles.inputContainer}>
         {/* Templates Panel */}
@@ -242,9 +259,12 @@ export function AIPanel({ embedded = false }: AIPanelProps): React.ReactElement 
       <QuickActions />
       
       {/* Advanced Settings */}
-      <AdvancedSettings 
+      <AdvancedSettings
         maxNodesPerPhase={maxNodesPerPhase}
         onChangeMaxNodes={setMaxNodesPerPhase}
+        isConfigured={isConfigured}
+        isCloud={provider === 'stochastic-cloud'}
+        onClearApiKey={clearConfig}
       />
     </div>
   );
@@ -482,12 +502,118 @@ function TemplatesPanel({ onSelect, onClose }: TemplatesPanelProps): React.React
 // ADVANCED SETTINGS
 // ============================================================================
 
+/**
+ * Credit balance + purchase bar, shown when the cloud AI provider is active.
+ * Packs open Stripe Checkout; the webhook grants credits after payment.
+ */
+function CreditsBar(): React.ReactElement | null {
+  const credits = useAuthStore(state => state.credits);
+  const [showPacks, setShowPacks] = useState(false);
+  const [busyPack, setBusyPack] = useState<CreditPack | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const checkoutResult = getCheckoutResult();
+
+  const handleBuy = async (pack: CreditPack) => {
+    setBusyPack(pack);
+    setError(null);
+    const failure = await startCreditCheckout(pack);
+    if (failure) {
+      setError(failure);
+      setBusyPack(null);
+    }
+    // On success the page navigates to Stripe — no state to reset
+  };
+
+  return (
+    <div className={styles.creditsBar}>
+      <div className={styles.creditsRow}>
+        <span className={styles.creditsBalance}>
+          ◈ {credits ? credits.balance : '—'} credits
+        </span>
+        {checkoutResult === 'success' && (
+          <span className={styles.creditsNotice}>Payment received — balance updating…</span>
+        )}
+        <button className={styles.creditsBuy} onClick={() => setShowPacks(!showPacks)}>
+          {showPacks ? 'Close' : 'Buy credits'}
+        </button>
+      </div>
+      {showPacks && (
+        <div className={styles.creditsPacks}>
+          {(Object.keys(CREDIT_PACKS) as CreditPack[]).map(pack => (
+            <button
+              key={pack}
+              className={styles.creditsPack}
+              disabled={busyPack !== null}
+              onClick={() => handleBuy(pack)}
+            >
+              {busyPack === pack ? '⏳' : `${CREDIT_PACKS[pack].credits} for ${CREDIT_PACKS[pack].priceLabel}`}
+            </button>
+          ))}
+        </div>
+      )}
+      {error && <div className={styles.creditsError}>{error}</div>}
+    </div>
+  );
+}
+
+interface ApiKeySetupProps {
+  onSave: (apiKey: string) => void;
+}
+
+/**
+ * Bring-your-own-key setup. The key is stored in this browser's localStorage
+ * only — it is never sent anywhere except directly to the AI provider.
+ */
+function ApiKeySetup({ onSave }: ApiKeySetupProps): React.ReactElement {
+  const [draft, setDraft] = useState('');
+
+  const handleSave = () => {
+    const key = draft.trim();
+    if (key) onSave(key);
+  };
+
+  return (
+    <div className={styles.apiKeySetup}>
+      <div className={styles.apiKeyTitle}>Connect your AI provider</div>
+      <p className={styles.apiKeyHint}>
+        Paste an{' '}
+        <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">
+          OpenRouter API key
+        </a>{' '}
+        to enable Iannis. It is stored only in this browser and sent only to
+        OpenRouter. Free models are available.
+      </p>
+      <div className={styles.apiKeyRow}>
+        <input
+          type="password"
+          className={styles.apiKeyInput}
+          placeholder="sk-or-v1-..."
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
+          autoComplete="off"
+        />
+        <button
+          className={styles.apiKeySave}
+          onClick={handleSave}
+          disabled={!draft.trim()}
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+}
+
 interface AdvancedSettingsProps {
   maxNodesPerPhase: number;
   onChangeMaxNodes: (value: number) => void;
+  isConfigured: boolean;
+  isCloud: boolean;
+  onClearApiKey: () => void;
 }
 
-function AdvancedSettings({ maxNodesPerPhase, onChangeMaxNodes }: AdvancedSettingsProps): React.ReactElement {
+function AdvancedSettings({ maxNodesPerPhase, onChangeMaxNodes, isConfigured, isCloud, onClearApiKey }: AdvancedSettingsProps): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false);
   
   if (!isOpen) {
@@ -521,6 +647,11 @@ function AdvancedSettings({ maxNodesPerPhase, onChangeMaxNodes }: AdvancedSettin
       <p className={styles.advancedHint}>
         Higher values allow larger compositions but may hit API limits.
       </p>
+      {isConfigured && (
+        <button className={styles.apiKeyRemove} onClick={onClearApiKey}>
+          {isCloud ? 'Use my own API key instead' : 'Disconnect API key'}
+        </button>
+      )}
     </div>
   );
 }

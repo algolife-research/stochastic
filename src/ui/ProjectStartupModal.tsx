@@ -53,7 +53,7 @@ export function ProjectStartupModal(): React.ReactElement | null {
     if (content) {
       try {
         const data = JSON.parse(content);
-        const nodesWithRuntime = data.nodes.map((n: any) => ({
+        const nodesWithRuntime = data.nodes.map((n: Record<string, unknown>) => ({
           ...n,
           timer: 0,
           lastTrigger: 0,

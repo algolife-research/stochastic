@@ -105,6 +105,7 @@ export function validateEdge(
 
   // Validate durationBeats if present
   if (edge.durationBeats !== null && !isValidNumber(edge.durationBeats)) {
+    return null;
   }
 
   return { edge, fromNode, toNode };
@@ -131,8 +132,10 @@ export function validatePacket(
     return null;
   }
 
-  // Clamp t to valid range
+  // Clamp t to valid range for rendering (packets can momentarily exceed 1
+  // between position update and arrival processing)
   if (packet.t < 0 || packet.t > 1) {
+    packet = { ...packet, t: Math.max(0, Math.min(1, packet.t)) };
   }
 
   const edge = edges.get(packet.edgeId);
@@ -251,6 +254,7 @@ export function safeCanvasOp<T>(
   try {
     return operation();
   } catch (error) {
+    console.error(errorMessage, error);
     return fallback;
   }
 }
