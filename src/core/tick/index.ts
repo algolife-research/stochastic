@@ -10,7 +10,8 @@ import {
   getLastTime, setLastTime, 
   getTickInterval, setTickInterval, 
   setBeatAccumulator,
-  clearActiveChannelScenes
+  clearActiveChannelScenes,
+  getFilamentRoom
 } from './state';
 import { updateScenePlayback } from './scene-playback';
 import { updateSources } from './sources';
@@ -47,7 +48,13 @@ export function tick(currentTime: number): void {
     
     // Update scene playback (beat tracking and scene transitions)
     updateScenePlayback(dt);
-    
+
+    // A new frame on the filaments: forget packets no longer in flight
+    const room = getFilamentRoom();
+    room.beginFrame();
+    const { packets } = getGraphStore();
+    room.sync(id => packets.has(id));
+
     // Update sources (emit packets)
     updateSources(currentTime);
     
@@ -112,7 +119,8 @@ export function stopTick(): void {
 export function resetTick(resetPosition: boolean = false): void {
   setLastTime(performance.now());
   setBeatAccumulator(0);
-  
+  getFilamentRoom().clear();
+
   // Reset all node timers
   const store = getGraphStore();
   const now = performance.now();

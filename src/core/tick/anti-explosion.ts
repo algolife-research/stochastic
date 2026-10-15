@@ -1,10 +1,11 @@
 // Anti-Explosion Module
 // Pure functions for packet explosion prevention - separated for testability
+// (loops are held by the room on a filament: see room.ts)
 
 import type { Packet } from '../types';
-import { 
-  MAX_PACKET_HOPS, MAX_EDGE_VISITS, 
-  MAX_PACKET_AGE_MS, EDGE_SPAWN_COOLDOWN_MS 
+import {
+  MAX_PACKET_HOPS,
+  MAX_PACKET_AGE_MS, EDGE_SPAWN_COOLDOWN_MS
 } from '../constants';
 
 // ============================================================================
@@ -59,23 +60,6 @@ export function shouldExpirePacket(
   }
   
   return { expired: false };
-}
-
-/**
- * Check if a packet has visited an edge too many times (loop detection)
- * @param visitedEdges - Array of edge IDs the packet has visited
- * @param edgeId - Edge ID to check
- * @param maxVisits - Maximum allowed visits (defaults to MAX_EDGE_VISITS)
- */
-export function hasExceededEdgeVisits(
-  visitedEdges: string[] | undefined, 
-  edgeId: string,
-  maxVisits: number = MAX_EDGE_VISITS
-): boolean {
-  if (!visitedEdges) return false;
-  
-  const visitCount = visitedEdges.filter(id => id === edgeId).length;
-  return visitCount >= maxVisits;
 }
 
 export interface PacketMetadata {

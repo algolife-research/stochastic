@@ -5,7 +5,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   canSpawnOnEdge,
   shouldExpirePacket,
-  hasExceededEdgeVisits,
   createPacketMetadata,
   createEdgeSpawnTracker,
 } from './anti-explosion';
@@ -160,52 +159,6 @@ describe('shouldExpirePacket', () => {
       expect(result.expired).toBe(true);
       expect(result.reason).toBe('max_age');
     });
-  });
-});
-
-// ============================================================================
-// hasExceededEdgeVisits Tests
-// ============================================================================
-
-describe('hasExceededEdgeVisits', () => {
-  it('should return false for undefined visitedEdges', () => {
-    expect(hasExceededEdgeVisits(undefined, 'edge-1')).toBe(false);
-  });
-
-  it('should return false for empty visitedEdges', () => {
-    expect(hasExceededEdgeVisits([], 'edge-1')).toBe(false);
-  });
-
-  it('should return false when edge not visited', () => {
-    const visited = ['edge-2', 'edge-3', 'edge-4'];
-    expect(hasExceededEdgeVisits(visited, 'edge-1')).toBe(false);
-  });
-
-  it('should return false when visits below max', () => {
-    const visited = ['edge-1', 'edge-2', 'edge-1', 'edge-3']; // 2 visits
-    expect(hasExceededEdgeVisits(visited, 'edge-1', 4)).toBe(false);
-  });
-
-  it('should return true when visits equal max', () => {
-    const visited = ['edge-1', 'edge-1', 'edge-1', 'edge-1']; // 4 visits
-    expect(hasExceededEdgeVisits(visited, 'edge-1', 4)).toBe(true);
-  });
-
-  it('should return true when visits exceed max', () => {
-    const visited = ['edge-1', 'edge-1', 'edge-1', 'edge-1', 'edge-1']; // 5 visits
-    expect(hasExceededEdgeVisits(visited, 'edge-1', 4)).toBe(true);
-  });
-
-  it('should only count specific edge visits', () => {
-    const visited = ['edge-1', 'edge-2', 'edge-1', 'edge-3', 'edge-1']; // 3 visits to edge-1
-    expect(hasExceededEdgeVisits(visited, 'edge-1', 4)).toBe(false);
-    expect(hasExceededEdgeVisits(visited, 'edge-2', 4)).toBe(false);
-  });
-
-  it('should respect custom max visits', () => {
-    const visited = ['edge-1', 'edge-1'];
-    expect(hasExceededEdgeVisits(visited, 'edge-1', 2)).toBe(true);
-    expect(hasExceededEdgeVisits(visited, 'edge-1', 3)).toBe(false);
   });
 });
 
@@ -450,21 +403,20 @@ describe('Anti-Explosion Integration', () => {
     expect(result.reason).toBe('max_hops');
   });
 
-  it('should detect loop by excessive edge visits', () => {
+  it('should end a loop by hops, not by edge visits', () => {
+    // A loop with no delay: the room on a filament holds it (room.ts), and a
+    // line goes round until its packets run out of hops
     const loopEdges = ['edge-A', 'edge-B', 'edge-C'];
-    const visitedEdges: string[] = [];
-    
-    // Simulate packet going through loop multiple times
-    for (let loop = 0; loop < 5; loop++) {
+    let metadata = createPacketMetadata(0, undefined, 'edge-A');
+    let laps = 0;
+    while (!shouldExpirePacket(createTestPacket(metadata), 0).expired) {
       for (const edge of loopEdges) {
-        visitedEdges.push(edge);
+        metadata = createPacketMetadata(0, metadata, edge);
       }
+      laps += 1;
     }
-    
-    // Each edge visited 5 times - should exceed limit of 4
-    expect(hasExceededEdgeVisits(visitedEdges, 'edge-A', 4)).toBe(true);
-    expect(hasExceededEdgeVisits(visitedEdges, 'edge-B', 4)).toBe(true);
-    expect(hasExceededEdgeVisits(visitedEdges, 'edge-C', 4)).toBe(true);
+    expect(laps).toBe(22);  // 64 hops at three a lap: well past a fourth lap
+    expect(shouldExpirePacket(createTestPacket(metadata), 0).reason).toBe('max_hops');
   });
 
   it('should correctly combine spawn tracking with expiration', () => {

@@ -5,6 +5,7 @@ import { getGraphStore } from '../store';
 import type { Packet, NodeId, MidiNote, Frequency } from '../types';
 import { createPacketId } from '../types';
 import { midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS, EDGE_SPAWN_COOLDOWN_MS } from '../constants';
+import { getFilamentRoom, removeMadeWay } from './state';
 
 // Track edge spawn times for source emissions
 const sourceEdgeSpawnTimes = new Map<string, number>();
@@ -85,7 +86,10 @@ export function spawnPacketFromSource(
   
   // Get outgoing edges
   const outgoingEdges = store.getOutgoingEdges(sourceNodeId);
-  
+  // Down two edges or more, the emission is a chord, kept or lost whole
+  const room = getFilamentRoom();
+  const chord = room.chordFor(outgoingEdges.length);
+
   // Create packets for each outgoing edge
   outgoingEdges.forEach(edge => {
     // Anti-explosion check: edge cooldown
@@ -113,8 +117,8 @@ export function spawnPacketFromSource(
       birthTime: now,
     };
     
-    // Add packet to store
-    store.addPacket(packet);
+    // Add packet to store, if it finds room on its edge
+    if (room.enter(packet, chord, removeMadeWay)) store.addPacket(packet);
     recordSourceEdgeSpawn(edge.id, now);
   });
   

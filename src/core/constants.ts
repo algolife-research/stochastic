@@ -57,8 +57,8 @@ export const MAX_PACKETS = 1000;
 /** Maximum number of nodes a packet can visit before expiring (TTL) */
 export const MAX_PACKET_HOPS = 64;
 
-/** Maximum times a packet can visit the same edge (loop detection) */
-export const MAX_EDGE_VISITS = 4;
+/** Fronts an edge holds per beat of its length (the room on a filament, plus one leaving) */
+export const FRONTS_PER_BEAT = 4;
 
 /** Maximum packet age in milliseconds before forced expiry */
 export const MAX_PACKET_AGE_MS = 30000; // 30 seconds

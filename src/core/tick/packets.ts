@@ -5,12 +5,14 @@ import { getGraphStore } from '../store';
 import type { Packet, GraphNode, GraphEdge, PacketId, CrossoverProps } from '../types';
 import { createPacketId } from '../types';
 import { 
-  dist, MAX_PACKETS, MAX_PACKET_HOPS, MAX_EDGE_VISITS, 
+  dist, MAX_PACKETS, MAX_PACKET_HOPS, 
   MAX_PACKET_AGE_MS, EDGE_SPAWN_COOLDOWN_MS 
 } from '../constants';
 import { processNodeArrival, getTeleporterExits, consumePendingTunnelSpeakers } from '../engine';
 import { audioEngine } from '@audio/engine';
 import { syncEntangledPayloads, performCrossover } from './crossover';
+import { getFilamentRoom, removeMadeWay } from './state';
+import type { MadeWay } from './room';
 
 // ============================================================================
 // EDGE SPAWN RATE LIMITING
@@ -70,16 +72,6 @@ function shouldExpirePacket(packet: Packet, now: number): { expired: boolean; re
 }
 
 /**
- * Check if a packet has visited an edge too many times (loop detection)
- */
-function hasExceededEdgeVisits(packet: Packet, edgeId: string): boolean {
-  if (!packet.visitedEdges) return false;
-  
-  const visitCount = packet.visitedEdges.filter(id => id === edgeId).length;
-  return visitCount >= MAX_EDGE_VISITS;
-}
-
-/**
  * Create packet metadata for a new/spawned packet
  */
 function createPacketMetadata(parentPacket?: Packet, edgeId?: string): {
@@ -127,7 +119,21 @@ export function updatePackets(deltaTime: number): void {
   const positionUpdates: Array<[PacketId, number]> = [];
   const packetsToSpawn: Packet[] = [];
   const arrivals: Array<{ packet: Packet; node: GraphNode; edge: GraphEdge }> = [];
-  
+
+  // Room on a filament: a front entering a full one makes the oldest fade.
+  // Those in flight leave at once; those spawned this frame never fly.
+  const room = getFilamentRoom();
+  let madeWayInFlight = 0;
+  let spawnGone = 0;
+  const madeWay: MadeWay = (id, edgeId) => {
+    if (getGraphStore().packets.has(id)) {
+      removeMadeWay(id, edgeId);
+      madeWayInFlight += 1;
+    } else {
+      spawnGone += 1;
+    }
+  };
+
   // Periodically clean up edge spawn records
   if (Math.random() < 0.01) { // ~1% of frames
     cleanupEdgeSpawnRecords();
@@ -138,19 +144,22 @@ export function updatePackets(deltaTime: number): void {
     const expiry = shouldExpirePacket(packet, now);
     if (expiry.expired) {
       packetsToDelete.push(packet.id);
+      room.leave(packet.id);
       return;
     }
-    
+
     const edge = store.getEdge(packet.edgeId);
     if (!edge) {
       packetsToDelete.push(packet.id);
+      room.leave(packet.id);
       return;
     }
-    
+
     const fromNode = store.getNode(edge.from);
     const toNode = store.getNode(edge.to);
     if (!fromNode || !toNode) {
       packetsToDelete.push(packet.id);
+      room.leave(packet.id);
       return;
     }
     
@@ -178,6 +187,7 @@ export function updatePackets(deltaTime: number): void {
     // Check if arrived
     if (newT >= 1) {
       arrivals.push({ packet, node: toNode, edge });
+      room.leave(packet.id);  // off its filament: it no longer takes room there
     }
   });
 
@@ -247,29 +257,31 @@ export function updatePackets(deltaTime: number): void {
       const props = node.props as { channel: string; isEntry: boolean };
       if (props.isEntry) {
         // Find exit teleporters
-        const exits = getTeleporterExits(props.channel);
+        const exits = getTeleporterExits(props.channel)
+          .filter(exitId => store.getNode(exitId) !== undefined);
+        // Every exit's edges are one split: a chord kept or lost whole
+        let ways = 0;
+        exits.forEach(exitId => { ways += store.getOutgoingEdges(exitId).length; });
+        const chord = room.chordFor(ways, packet.id);
         exits.forEach(exitId => {
-          const exitNode = store.getNode(exitId);
-          if (exitNode) {
-            const exitEdges = store.getOutgoingEdges(exitId);
-            exitEdges.forEach(outEdge => {
-              // Anti-explosion checks
-              if (store.packets.size >= MAX_PACKETS) return;
-              if (!canSpawnOnEdge(outEdge.id, now)) return;
-              if (hasExceededEdgeVisits(packet, outEdge.id)) return;
-              
-              const metadata = createPacketMetadata(packet, outEdge.id);
-              packetsToSpawn.push({
-                id: createPacketId(),
-                edgeId: outEdge.id,
-                t: 0,
-                payload: { ...processedPayload },
-                entanglementGroupId: packet.entanglementGroupId,  // Preserve entanglement
-                ...metadata,
-              });
-              recordEdgeSpawn(outEdge.id, now);
-            });
-          }
+          const exitEdges = store.getOutgoingEdges(exitId);
+          exitEdges.forEach(outEdge => {
+            // Anti-explosion checks (only packets already in flight count here)
+            if (store.packets.size - madeWayInFlight >= MAX_PACKETS) return;
+            if (!canSpawnOnEdge(outEdge.id, now)) return;
+
+            const metadata = createPacketMetadata(packet, outEdge.id);
+            const through: Packet = {
+              id: createPacketId(),
+              edgeId: outEdge.id,
+              t: 0,
+              payload: { ...processedPayload },
+              entanglementGroupId: packet.entanglementGroupId,  // Preserve entanglement
+              ...metadata,
+            };
+            recordEdgeSpawn(outEdge.id, now);
+            if (room.enter(through, chord, madeWay)) packetsToSpawn.push(through);
+          });
         });
         return; // Don't propagate normally
       }
@@ -318,23 +330,24 @@ export function updatePackets(deltaTime: number): void {
           // Clear held packets
           store.releaseHeldPackets(node.id, [0]);
           
-          // Spawn offspring on outgoing edges
+          // Spawn offspring on outgoing edges (new: no parent's chord)
           const outgoingEdges = store.getOutgoingEdges(node.id);
+          const brood = room.chordFor(outgoingEdges.length);
           outgoingEdges.forEach(outEdge => {
             // Anti-explosion checks
-            if (store.packets.size + packetsToSpawn.length >= MAX_PACKETS) return;
+            if (store.packets.size - madeWayInFlight + packetsToSpawn.length - spawnGone >= MAX_PACKETS) return;
             if (!canSpawnOnEdge(outEdge.id, now)) return;
-            if (hasExceededEdgeVisits(packet, outEdge.id)) return;
-            
+
             const metadata = createPacketMetadata(packet, outEdge.id);
-            packetsToSpawn.push({
+            const child: Packet = {
               id: createPacketId(),
               edgeId: outEdge.id,
               t: 0,
               payload: offspring,
               ...metadata,
-            });
+            };
             recordEdgeSpawn(outEdge.id, now);
+            if (room.enter(child, brood, madeWay)) packetsToSpawn.push(child);
           });
           
           return; // Don't propagate the parents
@@ -390,7 +403,10 @@ export function updatePackets(deltaTime: number): void {
       }
       // 'broadcast' is default (all edges)
     }
-    
+
+    // Two edges or more make a new chord; one keeps the parent's
+    const chord = room.chordFor(targetEdges.length, packet.id);
+        
     // Sync payload to entangled packets (if this packet is entangled)
     if (packet.entanglementGroupId && node.type !== 'speaker' && node.type !== 'splitter') {
       syncEntangledPayloads(packet.entanglementGroupId, processedPayload, store, arrivingPacketIds);
@@ -399,29 +415,32 @@ export function updatePackets(deltaTime: number): void {
     // Propagate to outgoing edges
     targetEdges.forEach(outEdge => {
       // Anti-explosion checks
-      if (store.packets.size + packetsToSpawn.length >= MAX_PACKETS) return;
+      if (store.packets.size - madeWayInFlight + packetsToSpawn.length - spawnGone >= MAX_PACKETS) return;
       if (!canSpawnOnEdge(outEdge.id, now)) return;
-      if (hasExceededEdgeVisits(packet, outEdge.id)) return;
-      
+
       const metadata = createPacketMetadata(packet, outEdge.id);
       const newPayload = { ...processedPayload };
-      packetsToSpawn.push({
+      const spawned: Packet = {
         id: createPacketId(),
         edgeId: outEdge.id,
         t: 0,
         payload: newPayload,
         entanglementGroupId,  // Propagate entanglement
         ...metadata,
-      });
+      };
       recordEdgeSpawn(outEdge.id, now);
+      if (room.enter(spawned, chord, madeWay)) packetsToSpawn.push(spawned);
     });
   });
   
   // Delete processed packets
   packetsToDelete.forEach(id => store.deletePacket(id));
   
-  // Spawn new packets
-  packetsToSpawn.forEach(packet => store.addPacket(packet));
+  // Spawn new packets (not those whose chord made way before they flew)
+  packetsToSpawn.forEach(packet => {
+    if (spawnGone > 0 && !room.onFilament(packet.id)) return;
+    store.addPacket(packet);
+  });
   
   // Process any speakers that were triggered inside tunnels
   const tunnelSpeakers = consumePendingTunnelSpeakers();
@@ -456,6 +475,7 @@ export function updateNodeFlash(deltaTime: number): void {
  */
 export function updateDelayNodes(now: number): void {
   const store = getGraphStore();
+  const room = getFilamentRoom();
 
   store.nodes.forEach((node) => {
     // Crossover: a parent whose wait expired passes through unchanged instead
@@ -469,15 +489,16 @@ export function updateDelayNodes(now: number): void {
       if (now >= hp.releaseTime) {
         toRelease.push(index);
         
-        // Spawn packets on outgoing edges
+        // Spawn packets on outgoing edges (a release renews: a chord of its own)
         const outgoingEdges = store.getOutgoingEdges(node.id);
+        const chord = room.chordFor(outgoingEdges.length);
         outgoingEdges.forEach(edge => {
           // Anti-explosion checks
           if (store.packets.size >= MAX_PACKETS) return;
           if (!canSpawnOnEdge(edge.id, now)) return;
-          
+
           // Delay-released packets start fresh (no inherited hop count or history)
-          store.addPacket({
+          const released: Packet = {
             id: createPacketId(),
             edgeId: edge.id,
             t: 0,
@@ -485,7 +506,8 @@ export function updateDelayNodes(now: number): void {
             hopCount: 0,
             visitedEdges: [edge.id],
             birthTime: now,
-          });
+          };
+          if (room.enter(released, chord, removeMadeWay)) store.addPacket(released);
           recordEdgeSpawn(edge.id, now);
         });
         

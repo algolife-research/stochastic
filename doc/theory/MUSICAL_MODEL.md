@@ -94,11 +94,21 @@ These bounds are part of the temporal behavior — they cap feedback loops and s
 |---|---|---|
 | `MAX_PACKETS` | 1000 | global live-packet cap; spawns beyond it are dropped |
 | `MAX_PACKET_HOPS` | 64 | a packet lineage expires after 64 node arrivals |
-| `MAX_EDGE_VISITS` | 4 | a lineage may traverse the same edge at most 4 times |
 | `MAX_PACKET_AGE_MS` | 30000 | lineage expires after 30 s |
 | `EDGE_SPAWN_COOLDOWN_MS` | 10 | at most one spawn per edge per 10 ms |
+| `FRONTS_PER_BEAT` | 4 | an edge holds one front per quarter beat of its length (the room on a filament, below) |
 
-Cycles in the graph are allowed; these limits are what make them safe.
+Cycles in the graph are allowed; these limits are what make them safe. A loop without a delay lives until its packets run out of hops or age; the room on a filament keeps it from crowding.
+
+**The room on a filament** (`src/core/tick/room.ts`; it replaced `MAX_EDGE_VISITS`, the lap fade, under which a lineage died on its fourth traversal of one edge). No random draws.
+
+- A **front** is the packets that entered one edge on one frame: they count as one and are never thinned apart. A second packet of the same `midiNote` (truncated to an integer) in a front does not enter: a unison collapses to its first packet.
+- An edge holds `floor(beats × 4 + 1e-6) + 1` fronts, where `beats` is the length its traversal time comes from (a fixed edge's `durationBeats`, else its distance over `pixelsPerBeat`): one per quarter beat, plus the one leaving as the next enters.
+- A packet leaves its edge's room when it arrives, expires or is removed. A new front entering a **full** edge first makes the **oldest** front on it fade: the most hops among its packets (a packet spawned by hand counts 0), and among fronts equally old the last entered, so a stream denser than the room is thinned at its tail while its head still arrives. Its packets are removed at once; nothing is merged or moved.
+- A **chord** is the packets one split put on two edges or more on one frame: a source's emission or a manual spawn down several edges, the edges of a node with several outgoing edges (a broadcast splitter, or any node that clones), a teleporter's exits, a delay's release, a crossover's offspring. A packet passed on along one edge keeps its parent's chord; a delay's release and a crossover's offspring start fresh. When a front fades, every chord in it fades whole, wherever its packets are, and a packet of that chord spawned later in the same frame does not enter.
+- Every spawn enters the room: source emissions (1.4), manual spawns, arrivals' clones in arrival order (a teleporter's exits, a crossover's offspring, the outgoing edges), then delay releases (1.5). The spawn cooldown is recorded whether or not the packet entered. `MAX_PACKETS` counts packets that faded as gone.
+
+The parallel simulation of non-canvas arrangement channels (section 6) has no room: it keeps only `MAX_PACKETS`.
 
 ### 1.7 Bars and meter
 
