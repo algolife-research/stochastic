@@ -8,8 +8,9 @@ import type {
   MutatorProps, GateProps, WaveType, WaveLayer
 } from './types';
 import { 
-  dist, midiToFreq, clampMidi, SCALES 
+  dist, midiToFreq, clampMidi, SCALES, getDefaultProps 
 } from './constants';
+import { isValidNodeType } from './type-guards';
 
 // ============================================================================
 // PACKET PROCESSING
@@ -438,10 +439,16 @@ function processTunnel(payload: AudioPayload, node: GraphNode): AudioPayload {
       return result;
     }
     
+    // An organ inside a tunnel is read over its type's defaults, as a node on
+    // its own is on load (file-io's normalizeNodeProps): a sub-node saved
+    // without a prop (a quantizer without useGlobalKey) would otherwise read
+    // it as undefined, and a quantizer would pass every note unsieved.
     const fakeNode = {
       ...node,
       type: subNode.type,
-      props: subNode.props,
+      props: isValidNodeType(subNode.type)
+        ? { ...getDefaultProps(subNode.type), ...subNode.props }
+        : subNode.props,
     } as unknown as GraphNode;
     
     result = processNodeArrival({ ...{ id: '' as never, edgeId: '' as never, t: 1, payload: result } }, fakeNode, { targetParam: null } as GraphEdge);
