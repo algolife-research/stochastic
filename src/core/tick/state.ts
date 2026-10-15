@@ -2,6 +2,10 @@
 // Manages tick system state variables
 
 import type { ChannelSceneState } from './types';
+import type { EdgeId, GraphEdge } from '../types';
+import { getGraphStore } from '../store/getters';
+import { dist } from '../constants';
+import { createRoom, filamentCapacity, type FilamentRoom, type MadeWay } from './room';
 
 // ============================================================================
 // TICK STATE
@@ -20,6 +24,31 @@ const activeChannelScenes: Map<number, ChannelSceneState> = new Map();
 
 /** Which channel is currently displayed on canvas (-1 for none/jam mode) */
 let canvasChannelIndex: number = 0;
+
+// ============================================================================
+// ROOM ON A FILAMENT
+// ============================================================================
+
+/** The fronts on every edge of the canvas scene (see room.ts) */
+const filamentRoom: FilamentRoom = createRoom((edgeId) => {
+  const edge = getGraphStore().getEdge(edgeId as EdgeId);
+  return edge ? filamentCapacity(edgeBeats(edge)) : undefined;
+});
+
+/** A packet that made way on a full filament leaves flight at once */
+export const removeMadeWay: MadeWay = (id) => {
+  getGraphStore().deletePacket(id);
+};
+
+/** An edge's length in beats, as the tick times it */
+export function edgeBeats(edge: GraphEdge): number {
+  if (edge.timingMode === 'fixed' && edge.durationBeats !== null) return edge.durationBeats;
+  const store = getGraphStore();
+  const fromNode = store.getNode(edge.from);
+  const toNode = store.getNode(edge.to);
+  if (!fromNode || !toNode) return 0;
+  return dist(fromNode.x, fromNode.y, toNode.x, toNode.y) / store.globalSettings.pixelsPerBeat;
+}
 
 // ============================================================================
 // STATE ACCESSORS
@@ -75,4 +104,8 @@ export function getCanvasChannelIndex(): number {
 
 export function setCanvasChannelIndex(index: number): void {
   canvasChannelIndex = index;
+}
+
+export function getFilamentRoom(): FilamentRoom {
+  return filamentRoom;
 }

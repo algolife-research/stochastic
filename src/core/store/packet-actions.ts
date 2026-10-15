@@ -5,6 +5,7 @@ import type { GraphStore, ImmerSet } from './types';
 import type { NodeId, PacketId, Packet, Frequency, MidiNote } from '../types';
 import { createPacketId } from '../types';
 import { MAX_PACKETS, LEGACY_SCALE_OFFSET, midiToFreq } from '../constants';
+import { getFilamentRoom } from '../tick/state';
 
 export const createPacketActions = (
   set: ImmerSet,
@@ -38,26 +39,36 @@ export const createPacketActions = (
     
     // Spawn packet for each outgoing edge
     const outgoingEdges = state.getOutgoingEdges(sourceNodeId);
-    
+
+    // Each packet enters its edge's room (a front entering a full edge makes
+    // the oldest fade); down two edges or more, they are one chord
+    const room = getFilamentRoom();
+    const chord = room.chordFor(outgoingEdges.length);
+    const entered: Packet[] = [];
+    const madeWay: PacketId[] = [];
+    outgoingEdges.forEach(edge => {
+      const packet: Packet = {
+        id: createPacketId(),
+        edgeId: edge.id,
+        t: 0,
+        payload: {
+          freq,
+          midiNote,
+          wave: 'sine',
+          timbre: 0,
+          cutoff: 20000 as Frequency,
+          gain: intensity,
+          holdTime: 0,
+          releaseTime: 0.1,
+        },
+      };
+      if (room.enter(packet, chord, id => madeWay.push(id))) entered.push(packet);
+    });
+
     set(stateToUpdate => {
-      outgoingEdges.forEach(edge => {
-        const packetId = createPacketId();
-        const packet: Packet = {
-          id: packetId,
-          edgeId: edge.id,
-          t: 0,
-          payload: {
-            freq,
-            midiNote,
-            wave: 'sine',
-            timbre: 0,
-            cutoff: 20000 as Frequency,
-            gain: intensity,
-            holdTime: 0,
-            releaseTime: 0.1,
-          },
-        };
-        stateToUpdate.packets.set(packetId, packet);
+      madeWay.forEach(id => stateToUpdate.packets.delete(id));
+      entered.forEach(packet => {
+        if (room.onFilament(packet.id)) stateToUpdate.packets.set(packet.id, packet);
       });
       
       // Flash source node
