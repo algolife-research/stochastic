@@ -203,7 +203,7 @@ function innerSpeakers(at: number): void {
     const volume = (speakerProps.volume as number) ?? 1;
     const reverb = (speakerProps.reverb as number) ?? 0.3;
     const pan = (speakerProps.pan as number) ?? 0;
-    audioEngine.playNote({ ...payload, gain: payload.gain * volume }, { reverb, pan, at: secondsOf(at, bpmNow()) });
+    audioEngine.playNote({ ...payload, gain: payload.gain * volume }, { reverb, pan, at: secondsOf(at, bpmNow()), late: secondsOf(windowEnd - at, bpmNow()) });
   });
 }
 
@@ -249,7 +249,7 @@ function arrive(id: PacketId, at: number): void {
       holdTime: speakerProps.holdTime ?? processedPayload.holdTime,
       releaseTime: speakerProps.releaseTime ?? processedPayload.releaseTime,
     };
-    audioEngine.playNote(finalPayload, { reverb: speakerProps.reverb ?? 0.3, pan: speakerProps.pan ?? 0, at: secondsOf(at, bpmNow()) });
+    audioEngine.playNote(finalPayload, { reverb: speakerProps.reverb ?? 0.3, pan: speakerProps.pan ?? 0, at: secondsOf(at, bpmNow()), late: secondsOf(windowEnd - at, bpmNow()) });
   }
 
   if (node.type === 'teleporter') {

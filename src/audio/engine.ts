@@ -144,9 +144,11 @@ export class AudioEngine {
   /**
    * Play a note with the given payload
    */
-  // `at`: the note's exact time in seconds of the tick's clock (exact time,
-  // 16 Oct 2026); the engine starts it then (scheduleAt), else at once.
-  playNote(payload: AudioPayload, options?: { reverb?: number; pan?: number; at?: number }, id?: string): void {
+  // `at`: the note's exact time in seconds of the tick's clock; `late`: how
+  // far behind the tick's clock it is now (exact time, 16 Oct 2026). A note
+  // with `late` starts NOTE_LOOKAHEAD_S after its exact time on the audio
+  // clock (at once if it is later than that); one without starts at once.
+  playNote(payload: AudioPayload, options?: { reverb?: number; pan?: number; at?: number; late?: number }, id?: string): void {
     if (!this.synthNode || this.isMuted) return;
 
     const noteId = id ?? crypto.randomUUID();
@@ -193,7 +195,7 @@ export class AudioEngine {
       filterType: payload.filterType ?? 'lowpass',
       filterResonance: payload.filterResonance ?? 0,
       timbre: payload.timbre,
-      startTime: this.getCurrentTime(),
+      startTime: this.getCurrentTime() + (options?.late === undefined ? 0 : Math.max(0, NOTE_LOOKAHEAD_S - options.late)),
       layers,
       vibratoRate: payload.vibratoRate as number | undefined,
       vibratoDepth: payload.vibratoDepth,
@@ -297,6 +299,13 @@ export class AudioEngine {
     this.isInitialized = false;
   }
 }
+
+/**
+ * How far behind the tick a note sounds (exact time): a frame's window is
+ * handled at its end, so a note due inside it is up to a frame late; each
+ * starts this long after its exact time, the same for every note.
+ */
+export const NOTE_LOOKAHEAD_S = 0.05;
 
 // ============================================================================
 // SINGLETON INSTANCE

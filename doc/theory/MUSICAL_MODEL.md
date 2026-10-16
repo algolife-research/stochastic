@@ -10,16 +10,31 @@ Conventions: `B` is the effective tempo in BPM, `n` is a MIDI note number, `pc` 
 
 *Source: `src/core/tick/index.ts`, `src/core/tick/packets.ts`, `src/core/tick/sources.ts`, `src/core/tick/scene-playback.ts`.*
 
-### 1.1 The clock
+### 1.1 The clock: exact time in beat units
 
-The engine runs on `requestAnimationFrame`. Each frame:
+*Since 16 Oct 2026 (the branch `tacet-time-and-turning`; the old rules are under History, below).*
+
+Every time and length the tick reads is a **whole number of beat units**, `PPQ = 2 822 400` to a beat (2^8 · 3^2 · 5^2 · 7^2: every division from a quarter to a 256th, triplets, quintuplets and septuplets is whole). A sum of lengths is exact, and "at the same time" is the equality of two integers. Beats (an edge's length, an interval, a hold) become units once, alike on every side:
 
 ```
-dt   = min(elapsed_seconds, 0.1)      // clamped to avoid jumps after a stall
-Δbeat = dt · B / 60                   // added to the scene/arrangement beat counters
+toUnits(x)      = floor(x · PPQ + 0.5)
+secondsOf(u, B) = u / PPQ · 60 / B
 ```
 
-There is no audio-clock scheduler and no lookahead: every musical event is decided on the frame in which its condition becomes true, so all timing is quantized to the frame rate (~16.7 ms at 60 fps). There is **no swing, no groove grid, and no timing quantization of any kind** — rhythm comes only from edge traversal times and source intervals.
+The engine still runs on `requestAnimationFrame`, but a frame no longer decides when anything happens; it only says how far the **beat clock** has come (`tick/state.ts`, `advanceClock`):
+
+```
+dt     = min(elapsed_seconds, 0.1)                       // clamped after a stall
+total  = rem + floor(B · 100 + 0.5) · PPQ · round(dt · 1e6)
+units  = floor(total / 6·10^9);  rem = total − units · 6·10^9
+beatNow += units                                          // integers only
+```
+
+A frame's **window** is (start, end] of the clock. Every event due in it is queued and handled **in order of exact time** (`tick/packets.ts`, `runEvents`); events at one time keep the old order by kind: source releases, expiries, arrivals (in the order their packets entered), then delay and crossover releases. What an event sets going inside the window (a clone arriving before `end`) joins the queue; one packet's line takes at most `MAX_HOPS_PER_STEP` (8) hops in a window, and the rest wait for the next with their exact times. A packet's place `t` is derived for drawing only: `(end − depart) / length`, clamped.
+
+A hit carries its exact time (`playNote(..., { at })`), so an offline render puts each onset on its sample. There is still **no swing, no groove grid and no quantization**: rhythm comes from edge lengths and source intervals, now kept exactly.
+
+The paths timed in milliseconds (an LFO's phase, the gate's density window) read `performance.now()` as before.
 
 ### 1.2 Tempo resolution
 
@@ -31,36 +46,32 @@ B = scenePlayback.effectiveBpm, falling back to masterSpeed if 0/unset
 
 `effectiveBpm` is computed as `scene.localBpm ?? masterSpeed` and is **re-resolved only at these moments**:
 
-- when playback (re)starts (`resetTick`),
+- when playback (re)starts (`resetTick`, which also resets the beat clock),
 - on a jam-mode scene change (queued or immediate),
 - when the user changes `masterSpeed` while no scene overrides it.
 
 In arrangement mode, crossing into a new slot mid-playback loads the scene onto the canvas but does *not* re-resolve `effectiveBpm`/`effectiveRoot`/`effectiveScale` for the canvas channel; only non-canvas ("virtual") channels re-read `localBpm` per tick. Per-slot `instanceBpm` is honored only by the offline compilers (audio/video export), never by the live engine.
 
-Two subsystems ignore the effective tempo entirely and always use `masterSpeed`:
-
-- delay/crossover hold durations (`holdPacketAtNode`, `src/core/store/node-actions.ts`),
-- the gate's density window (`src/core/engine.ts`).
+The tempo sets only how fast the beat clock runs: lengths, intervals and holds are in beats, so a change of tempo moves every packet in flight along with it.
 
 ### 1.3 Space is time: edge traversal
 
-A packet on an edge has a normalized position `t ∈ [0, 1]`. Per frame, `t += dt / T`, and the packet arrives when `t ≥ 1`. The traversal time `T` depends on the edge's timing mode:
+A packet entering an edge at `at` takes the edge's length then, in units, and keeps it: `depart = at`, `length = toUnits(beats)`, `arrive = depart + length`. It arrives at exactly `arrive`, and its clones depart from the next node at that same time: **the overshoot is kept** (a walk of sixteenths lands every step on its sixteenth). `beats` depends on the edge's timing mode:
 
 **Physical** (`timingMode: 'physical'`) — the edge's on-screen length is its duration:
 
 ```
-L        = euclidean distance between endpoint node centers (pixels)
-beats    = L / pixelsPerBeat            // pixelsPerBeat: global setting, default 200
-T        = beats · 60 / B               // seconds
+L      = euclidean distance between endpoint node centers (pixels)
+beats  = L / pixelsPerBeat            // pixelsPerBeat: global setting, default 200
 ```
 
 **Fixed** (`timingMode: 'fixed'`, with `durationBeats ≠ null`) — the edge lasts a set number of beats regardless of length:
 
 ```
-T = durationBeats · 60 / B
+beats = durationBeats
 ```
 
-If `T ≤ 0.1 ms`, arrival is immediate (same frame). A fixed edge with `durationBeats: null` falls back to physical behavior.
+An edge of length 0 is arrived at the moment it is entered. A fixed edge with `durationBeats: null` falls back to physical behavior. Moving a node changes the length of packets entering its physical edges afterwards, not of those already on them.
 
 **Default:** new edges are created with the global `defaultEdgeBehaviour`, which defaults to **`'fixed'` with `durationBeats: 1`**. "Space is time" is therefore an opt-in geometry: out of the box, dragging nodes around does not change rhythm until an edge is switched to physical mode (or the global default is changed).
 
@@ -68,7 +79,7 @@ If `T ≤ 0.1 ms`, arrival is immediate (same frame). A fixed edge with `duratio
 
 *Source: `src/core/tick/sources.ts`.*
 
-An auto-triggering source emits when `now − lastTrigger ≥ interval · (60000 / B)`, then sets `lastTrigger = now`. Because the trigger time is reset to the *actual* (frame-quantized) firing time rather than the ideal grid time, each emission's lateness accumulates as phase drift; sources are periodic but not phase-locked to a beat grid, and independent sources drift relative to each other.
+An auto-triggering source releases at `lastRelease + interval`, in units (`intervalUnits`: `max(toUnits(interval), 1)`), for every such time in the window, and sets `lastRelease` to it: **origin + n × interval**, phase-locked, with no drift between sources. A source releases first at one interval after playback starts (its `lastRelease` is 0 at the start); one whose next release is already past (its interval turned down) releases at the window's start.
 
 The emitted pitch is controlled by `noteIndex` (legacy encoding, still authoritative):
 
@@ -85,7 +96,7 @@ The spawned payload is: `freq`/`midiNote` as above, `wave: 'sine'`, `timbre: 0`,
 
 ### 1.5 Delays and held packets
 
-A `delay` node holds an arriving packet's payload and re-emits it on all outgoing edges after `delayTime` beats, converted to wall-clock using `masterSpeed` (not the scene tempo). Released packets start with fresh anti-explosion metadata (hop count 0).
+A `delay` node holds an arriving packet's payload and re-emits it on all outgoing edges at **arrival + `delayTime` beats**, in units (`releaseAt`), whatever the tempo. Released packets start with fresh anti-explosion metadata (hop count 0). A crossover's parent whose wait ran out is released in the same way. Each held packet also keeps a wall-clock `releaseTime` for drawing.
 
 ### 1.6 Flow limits (anti-explosion)
 
@@ -94,22 +105,31 @@ These bounds are part of the temporal behavior — they cap feedback loops and s
 | Constant | Value | Meaning |
 |---|---|---|
 | `MAX_PACKETS` | 1000 | global live-packet cap; spawns beyond it are dropped |
-| `MAX_PACKET_HOPS` | 64 | a packet lineage expires after 64 node arrivals |
-| `MAX_PACKET_AGE_MS` | 30000 | lineage expires after 30 s |
-| `EDGE_SPAWN_COOLDOWN_MS` | 10 | at most one spawn per edge per 10 ms |
+| `MAX_PACKET_HOPS` | 64 | a packet lineage expires after 64 node arrivals (at its departure on the 65th edge) |
+| `MAX_PACKET_AGE_BEATS` | 50 | a lineage expires 50 beats after its birth, at its exact time |
+| `MAX_HOPS_PER_STEP` | 8 | hops one packet's line takes in one window (1.1) |
 | `FRONTS_PER_BEAT` | 4 | an edge holds one front per quarter beat of its length (the room on a filament, below) |
 
 Cycles in the graph are allowed; these limits are what make them safe. A loop without a delay lives until its packets run out of hops or age; the room on a filament keeps it from crowding.
 
 **The room on a filament** (`src/core/tick/room.ts`; it replaced `MAX_EDGE_VISITS`, the lap fade, under which a lineage died on its fourth traversal of one edge). No random draws.
 
-- A **front** is the packets that entered one edge on one frame: they count as one and are never thinned apart. A second packet of the same `midiNote` (truncated to an integer) in a front does not enter: a unison collapses to its first packet.
-- An edge holds `floor(beats × 4 + 1e-6) + 1` fronts, where `beats` is the length its traversal time comes from (a fixed edge's `durationBeats`, else its distance over `pixelsPerBeat`): one per quarter beat, plus the one leaving as the next enters.
-- A packet leaves its edge's room when it arrives, expires or is removed. A new front entering a **full** edge first makes the **oldest** front on it fade: the most hops among its packets (a packet spawned by hand counts 0), and among fronts equally old the last entered, so a stream denser than the room is thinned at its tail while its head still arrives. Its packets are removed at once; nothing is merged or moved.
-- A **chord** is the packets one split put on two edges or more on one frame: a source's emission or a manual spawn down several edges, the edges of a node with several outgoing edges (a broadcast splitter, or any node that clones), a teleporter's exits, a delay's release, a crossover's offspring. A packet passed on along one edge keeps its parent's chord; a delay's release and a crossover's offspring start fresh. When a front fades, every chord in it fades whole, wherever its packets are, and a packet of that chord spawned later in the same frame does not enter.
-- Every spawn enters the room: source emissions (1.4), manual spawns, arrivals' clones in arrival order (a teleporter's exits, a crossover's offspring, the outgoing edges), then delay releases (1.5). The spawn cooldown is recorded whether or not the packet entered. `MAX_PACKETS` counts packets that faded as gone.
+- A **front** is the packets that entered one edge **at one exact time**: they count as one and are never thinned apart. A second packet of the same `midiNote` (truncated to an integer) in a front does not enter: a unison collapses to its first packet. A front leaves the room at its exact exit, `entry + length`.
+- An edge holds `max(1, ceil(4 × length))` fronts (`filamentCapacity`, the length in units): one per quarter beat, rounded up.
+- A packet leaves its edge's room when it arrives, expires or is removed. A new front entering a **full** edge first makes the **oldest** front on it fade: the most hops among its packets (a packet spawned by hand counts 0), and among fronts equally old the last entered, so a stream denser than the room is thinned at its tail while its head still arrives. Its packets are removed at once; nothing is merged or moved. A packet arriving at the fade's own time has arrived and is spared.
+- A **chord** is the packets one split put on two edges or more at one time: a source's emission or a manual spawn down several edges, the edges of a node with several outgoing edges (a broadcast splitter, or any node that clones), a teleporter's exits, a delay's release, a crossover's offspring. A packet passed on along one edge keeps its parent's chord; a delay's release and a crossover's offspring start fresh. When a front fades, every chord in it fades whole, wherever its packets are, and a packet of that chord spawned later does not enter.
+- Every spawn enters the room, in order of exact time (1.1). `MAX_PACKETS` counts packets that faded as gone. Copies of many lines reaching an edge at one instant ride as one front, so a loop that doubles its packets is held by their age under `MAX_PACKETS`, not by its count of fronts.
 
-The parallel simulation of non-canvas arrangement channels (section 6) has no room: it keeps only `MAX_PACKETS`.
+The parallel simulation of non-canvas arrangement channels (section 6) keeps its own tick: frame-quantized, as below, with no room; it keeps only `MAX_PACKETS`.
+
+#### History: frame time (until 16 Oct 2026)
+
+- Every musical event was decided on the frame in which its condition became true, so all timing was quantized to the frame rate (~16.7 ms at 60 fps).
+- A packet's `t` advanced by `dt / T` a frame, `T = beats · 60 / B` seconds; it arrived when `t ≥ 1`, the overshoot dropped; `T ≤ 0.1 ms` arrived the same frame.
+- A source emitted when `now − lastTrigger ≥ interval · 60000 / B` and set `lastTrigger = now`: each emission's lateness accumulated as phase drift, and independent sources drifted relative to each other.
+- A delay's hold was converted to wall-clock at `masterSpeed` (not the scene tempo) when the packet arrived.
+- Limits: `MAX_PACKET_AGE_MS` 30 000 (a lineage expired after 30 s); `EDGE_SPAWN_COOLDOWN_MS` 10 (at most one spawn per edge per 10 ms, recorded whether or not the packet entered); the order of a frame was sources, then packets, then delays.
+- The room: a front was the packets entering an edge on one frame; an edge held `floor(beats × 4 + 1e-6) + 1` fronts, the "+1" for the one leaving as the next entered.
 
 ### 1.7 Bars and meter
 
