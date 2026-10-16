@@ -144,7 +144,9 @@ export class AudioEngine {
   /**
    * Play a note with the given payload
    */
-  playNote(payload: AudioPayload, options?: { reverb?: number; pan?: number }, id?: string): void {
+  // `at`: the note's exact time in seconds of the tick's clock (exact time,
+  // 16 Oct 2026); the engine starts it then (scheduleAt), else at once.
+  playNote(payload: AudioPayload, options?: { reverb?: number; pan?: number; at?: number }, id?: string): void {
     if (!this.synthNode || this.isMuted) return;
 
     const noteId = id ?? crypto.randomUUID();

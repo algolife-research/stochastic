@@ -1,76 +1,46 @@
 // Source Emission Module
-// Handles source node timing and packet spawning
+// When a source releases, and the note it releases. Exact time (beat units):
+// a source releases at its last release + its interval, so its releases are
+// origin + n x interval, never counted from the frame they fell on. The
+// packets themselves are made by the step's events (packets.ts).
 
 import { getGraphStore } from '../store';
-import type { Packet, NodeId, MidiNote, Frequency } from '../types';
-import { createPacketId } from '../types';
-import { midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS, EDGE_SPAWN_COOLDOWN_MS, NOTE_INDEX_KEY, keyNotes } from '../constants';
-import { getFilamentRoom, removeMadeWay } from './state';
+import type { NodeId, MidiNote, AudioPayload, Frequency, GraphNode } from '../types';
+import { midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, NOTE_INDEX_KEY, keyNotes, toUnits } from '../constants';
 
-// Track edge spawn times for source emissions
-const sourceEdgeSpawnTimes = new Map<string, number>();
+type SourceProps = { interval: number; autoTrigger: boolean; noteIndex: number; midiNote: MidiNote; intensity: number };
 
-function canSpawnOnEdgeFromSource(edgeId: string, now: number): boolean {
-  const lastSpawn = sourceEdgeSpawnTimes.get(edgeId);
-  if (!lastSpawn) return true;
-  return now - lastSpawn >= EDGE_SPAWN_COOLDOWN_MS;
+/** A source's interval in beat units (at least one) */
+export function intervalUnits(node: GraphNode): number {
+  return Math.max(toUnits((node.props as SourceProps).interval ?? 1), 1);
 }
-
-function recordSourceEdgeSpawn(edgeId: string, now: number): void {
-  sourceEdgeSpawnTimes.set(edgeId, now);
-}
-
-// ============================================================================
-// SOURCE EMISSION
-// ============================================================================
 
 /**
- * Update source nodes and emit packets based on their intervals
+ * Every release due in this step's window (start, end], node by node: a
+ * source releases at its last release + its interval, and again while that
+ * is due; one whose next release is already past (its pace turned down, or
+ * set to release at once) releases at the window's start.
  */
-export function updateSources(now: number): void {
+export function gatherSources(start: number, end: number, release: (nodeId: NodeId, at: number) => void): void {
   const store = getGraphStore();
-  // Honor the playing scene's local BPM override (falls back to master BPM)
-  const bpm = store.scenePlayback.effectiveBpm || store.masterSpeed;
-  const msPerBeat = (60 / bpm) * 1000;
-  
   store.nodes.forEach((node) => {
     if (node.type !== 'source') return;
-    
-    const props = node.props as {
-      interval: number;
-      autoTrigger: boolean;
-      noteIndex: number;
-      midiNote: MidiNote;
-      intensity: number;
-    };
-    
-    // Skip manual trigger sources
-    if (props.autoTrigger === false) return;
-    
-    const intervalMs = props.interval * msPerBeat;
-    
-    if (now - node.lastTrigger >= intervalMs) {
-      // Spawn packets
-      spawnPacketFromSource(node.id, props);
-      
-      // Update last trigger time
-      store.updateNode(node.id, { lastTrigger: now });
+    if ((node.props as SourceProps).autoTrigger === false) return;
+    const step = intervalUnits(node);
+    let due = Math.max((node.lastRelease ?? 0) + step, start);
+    let last = node.lastRelease ?? 0;
+    while (due <= end) {
+      release(node.id, due);
+      last = due;
+      due += step;
     }
+    if (last !== (node.lastRelease ?? 0)) getGraphStore().setNodeRuntime(node.id, { lastRelease: last });
   });
 }
 
-/**
- * Spawn a packet from a source node
- */
-export function spawnPacketFromSource(
-  sourceNodeId: NodeId, 
-  props: { noteIndex: number; midiNote: MidiNote; intensity: number }
-): void {
+/** The note a source releases (sources.ts spawnPacketFromSource's payload) */
+export function sourcePayload(props: SourceProps): AudioPayload {
   const store = getGraphStore();
-  const now = performance.now();
-  if (store.packets.size >= MAX_PACKETS) return;
-  
-  // Determine MIDI note
   let midiNote: MidiNote;
   if (props.noteIndex >= 0) {
     midiNote = clampMidi(LEGACY_SCALE_OFFSET + Math.min(36, props.noteIndex)) as MidiNote;
@@ -85,48 +55,16 @@ export function spawnPacketFromSource(
   } else {
     midiNote = props.midiNote ?? (60 as MidiNote);
   }
-  
-  const freq = midiToFreq(midiNote);
-  const intensity = props.intensity ?? 0.5;
-  
-  // Get outgoing edges
-  const outgoingEdges = store.getOutgoingEdges(sourceNodeId);
-  // Down two edges or more, the emission is a chord, kept or lost whole
-  const room = getFilamentRoom();
-  const chord = room.chordFor(outgoingEdges.length);
-
-  // Create packets for each outgoing edge
-  outgoingEdges.forEach(edge => {
-    // Anti-explosion check: edge cooldown
-    if (!canSpawnOnEdgeFromSource(edge.id, now)) return;
-    if (store.packets.size >= MAX_PACKETS) return;
-    
-    const packetId = createPacketId();
-    const packet: Packet = {
-      id: packetId,
-      edgeId: edge.id,
-      t: 0,
-      payload: {
-        freq,
-        midiNote,
-        wave: 'sine',
-        timbre: 0,
-        cutoff: 20000 as Frequency,
-        gain: intensity,
-        holdTime: 0,
-        releaseTime: 0.1,
-      },
-      // Initialize anti-explosion metadata for new packets
-      hopCount: 0,
-      visitedEdges: [edge.id],
-      birthTime: now,
-    };
-    
-    // Add packet to store, if it finds room on its edge
-    if (room.enter(packet, chord, removeMadeWay)) store.addPacket(packet);
-    recordSourceEdgeSpawn(edge.id, now);
-  });
-  
-  // Flash node
-  store.flashNode(sourceNodeId);
+  return {
+    freq: midiToFreq(midiNote),
+    midiNote,
+    wave: 'sine',
+    timbre: 0,
+    cutoff: 20000 as Frequency,
+    gain: props.intensity ?? 0.5,
+    holdTime: 0,
+    releaseTime: 0.1,
+  };
 }
+
+export type { SourceProps };

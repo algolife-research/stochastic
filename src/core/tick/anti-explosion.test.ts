@@ -1,12 +1,11 @@
 // Anti-Explosion Module Tests
-// Unit tests for packet explosion prevention mechanisms
+// Unit tests for packet explosion prevention mechanisms (the edge cooldowns
+// and their tracker went with exact time, 16 Oct 2026)
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
-  canSpawnOnEdge,
   shouldExpirePacket,
   createPacketMetadata,
-  createEdgeSpawnTracker,
 } from './anti-explosion';
 import type { Packet } from '../types';
 import type { PacketId, EdgeId, MidiNote, Frequency } from '../types';
@@ -30,40 +29,6 @@ function createTestPacket(overrides: Partial<Packet> = {}): Packet {
     ...overrides,
   };
 }
-
-// ============================================================================
-// canSpawnOnEdge Tests
-// ============================================================================
-
-describe('canSpawnOnEdge', () => {
-  it('should allow spawn when no previous spawn recorded', () => {
-    expect(canSpawnOnEdge(undefined, 1000, 50)).toBe(true);
-  });
-
-  it('should block spawn within cooldown period', () => {
-    const lastSpawn = 1000;
-    const now = 1030; // 30ms later, cooldown is 50ms
-    expect(canSpawnOnEdge(lastSpawn, now, 50)).toBe(false);
-  });
-
-  it('should allow spawn after cooldown expires', () => {
-    const lastSpawn = 1000;
-    const now = 1050; // exactly at cooldown
-    expect(canSpawnOnEdge(lastSpawn, now, 50)).toBe(true);
-  });
-
-  it('should allow spawn well after cooldown', () => {
-    const lastSpawn = 1000;
-    const now = 2000; // 1 second later
-    expect(canSpawnOnEdge(lastSpawn, now, 50)).toBe(true);
-  });
-
-  it('should respect custom cooldown values', () => {
-    const lastSpawn = 1000;
-    expect(canSpawnOnEdge(lastSpawn, 1050, 100)).toBe(false); // 100ms cooldown
-    expect(canSpawnOnEdge(lastSpawn, 1100, 100)).toBe(true);
-  });
-});
 
 // ============================================================================
 // shouldExpirePacket Tests
@@ -238,115 +203,6 @@ describe('createPacketMetadata', () => {
 });
 
 // ============================================================================
-// EdgeSpawnTracker Tests
-// ============================================================================
-
-describe('EdgeSpawnTracker', () => {
-  let tracker: ReturnType<typeof createEdgeSpawnTracker>;
-
-  beforeEach(() => {
-    tracker = createEdgeSpawnTracker();
-  });
-
-  describe('canSpawn', () => {
-    it('should allow spawn on fresh edge', () => {
-      expect(tracker.canSpawn('edge-1', 1000)).toBe(true);
-    });
-
-    it('should block spawn within cooldown', () => {
-      tracker.recordSpawn('edge-1', 1000);
-      expect(tracker.canSpawn('edge-1', 1030, 50)).toBe(false);
-    });
-
-    it('should allow spawn after cooldown', () => {
-      tracker.recordSpawn('edge-1', 1000);
-      expect(tracker.canSpawn('edge-1', 1050, 50)).toBe(true);
-    });
-
-    it('should track multiple edges independently', () => {
-      tracker.recordSpawn('edge-1', 1000);
-      tracker.recordSpawn('edge-2', 1020);
-      
-      // At time 1040: edge-1 is past cooldown, edge-2 is not
-      expect(tracker.canSpawn('edge-1', 1050, 50)).toBe(true);
-      expect(tracker.canSpawn('edge-2', 1050, 50)).toBe(false);
-    });
-  });
-
-  describe('recordSpawn', () => {
-    it('should update spawn time', () => {
-      tracker.recordSpawn('edge-1', 1000);
-      expect(tracker.canSpawn('edge-1', 1030, 50)).toBe(false);
-      
-      tracker.recordSpawn('edge-1', 1100); // Update to later time
-      expect(tracker.canSpawn('edge-1', 1130, 50)).toBe(false);
-      expect(tracker.canSpawn('edge-1', 1150, 50)).toBe(true);
-    });
-  });
-
-  describe('cleanup', () => {
-    it('should remove stale records', () => {
-      tracker.recordSpawn('edge-1', 1000);
-      tracker.recordSpawn('edge-2', 4000);
-      tracker.recordSpawn('edge-3', 6000);
-      
-      // At time 6500 with 5000ms threshold:
-      // edge-1 (5500ms old) - stale
-      // edge-2 (2500ms old) - keep
-      // edge-3 (500ms old) - keep
-      const removed = tracker.cleanup(6500, 5000);
-      
-      expect(removed).toBe(1);
-      expect(tracker.size).toBe(2);
-    });
-
-    it('should keep recent records', () => {
-      tracker.recordSpawn('edge-1', 1000);
-      tracker.recordSpawn('edge-2', 1100);
-      
-      const removed = tracker.cleanup(1200, 5000);
-      
-      expect(removed).toBe(0);
-      expect(tracker.size).toBe(2);
-    });
-
-    it('should handle empty tracker', () => {
-      const removed = tracker.cleanup(1000, 5000);
-      expect(removed).toBe(0);
-    });
-  });
-
-  describe('size', () => {
-    it('should return correct count', () => {
-      expect(tracker.size).toBe(0);
-      
-      tracker.recordSpawn('edge-1', 1000);
-      expect(tracker.size).toBe(1);
-      
-      tracker.recordSpawn('edge-2', 1000);
-      expect(tracker.size).toBe(2);
-      
-      // Re-recording same edge doesn't increase size
-      tracker.recordSpawn('edge-1', 2000);
-      expect(tracker.size).toBe(2);
-    });
-  });
-
-  describe('clear', () => {
-    it('should remove all records', () => {
-      tracker.recordSpawn('edge-1', 1000);
-      tracker.recordSpawn('edge-2', 1000);
-      tracker.recordSpawn('edge-3', 1000);
-      
-      tracker.clear();
-      
-      expect(tracker.size).toBe(0);
-      expect(tracker.canSpawn('edge-1', 1000)).toBe(true);
-    });
-  });
-});
-
-// ============================================================================
 // Integration Tests
 // ============================================================================
 
@@ -419,30 +275,4 @@ describe('Anti-Explosion Integration', () => {
     expect(shouldExpirePacket(createTestPacket(metadata), 0).reason).toBe('max_hops');
   });
 
-  it('should correctly combine spawn tracking with expiration', () => {
-    const tracker = createEdgeSpawnTracker();
-    const now = 10000;
-    
-    // Simulate rapid spawn attempts every 20ms with 50ms cooldown
-    const spawnAttempts: boolean[] = [];
-    for (let i = 0; i < 5; i++) {
-      const canSpawn = tracker.canSpawn('loop-edge', now + i * 20, 50);
-      if (canSpawn) {
-        tracker.recordSpawn('loop-edge', now + i * 20);
-      }
-      spawnAttempts.push(canSpawn);
-    }
-    
-    // First attempt succeeds (at now+0), then blocked until cooldown
-    // At now+20, now+40, now+60, now+80 - all within 50ms of last spawn
-    expect(spawnAttempts[0]).toBe(true);  // now+0: first spawn
-    expect(spawnAttempts[1]).toBe(false); // now+20: 20ms since last (blocked)
-    expect(spawnAttempts[2]).toBe(false); // now+40: 40ms since last (blocked)
-    // spawnAttempts[3] at now+60: 60ms since spawn at now+0, should be allowed
-    expect(spawnAttempts[3]).toBe(true);  // now+60: allowed and recorded
-    expect(spawnAttempts[4]).toBe(false); // now+80: 20ms since spawn at now+60 (blocked)
-    
-    // At now+150, should be allowed (90ms since last spawn at now+60)
-    expect(tracker.canSpawn('loop-edge', now + 150, 50)).toBe(true);
-  });
 });

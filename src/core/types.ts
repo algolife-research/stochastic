@@ -317,7 +317,9 @@ export interface SubNode {
 /** Held packet data for delay nodes */
 export interface HeldPacket {
   payload: AudioPayload;
-  releaseTime: number;
+  releaseTime: number;      // in performance.now() ms, for the views
+  releaseAt?: number;       // exact release (beat units): what the tick reads
+  heldId?: number;          // this hold, to release it by
 }
 
 /** Base node structure */
@@ -331,6 +333,7 @@ export interface GraphNode<T extends NodeType = NodeType> {
   // Runtime state (mutable for performance)
   timer: number;
   lastTrigger: number;
+  lastRelease?: number;     // a source's last release (beat units): it releases at lastRelease + interval
   flash: number;
   heldPackets: HeldPacket[];
 }
@@ -401,14 +404,20 @@ export interface WaveLayer {
 export interface Packet {
   readonly id: PacketId;
   readonly edgeId: EdgeId;
-  t: number;                // 0-1 progress along edge
+  t: number;                // 0-1 progress along edge (derived each step for the views)
   payload: AudioPayload;
   entanglementGroupId?: string;  // Entangled packets share payload changes
-  
+
+  // Exact time (beat units, PPQ a beat): it arrives at depart + length
+  depart?: number;          // when it entered its edge
+  length?: number;          // its edge's length as it entered
+  arrive?: number;          // depart + length
+  stepHops?: number;        // hops its line took inside the current step
+
   // Anti-explosion mechanisms
   hopCount?: number;        // Number of nodes visited (TTL)
   visitedEdges?: string[];  // Edge IDs visited (loop detection)
-  birthTime?: number;       // Creation timestamp for age-based expiry
+  birthTime?: number;       // When its line was born (beat units), for age-based expiry
 }
 
 // ============================================================================

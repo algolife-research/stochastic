@@ -57,14 +57,32 @@ export const MAX_PACKETS = 1000;
 /** Maximum number of nodes a packet can visit before expiring (TTL) */
 export const MAX_PACKET_HOPS = 64;
 
-/** Fronts an edge holds per beat of its length (the room on a filament, plus one leaving) */
+/** Fronts an edge holds per beat of its length (the room on a filament) */
 export const FRONTS_PER_BEAT = 4;
 
-/** Maximum packet age in milliseconds before forced expiry */
-export const MAX_PACKET_AGE_MS = 30000; // 30 seconds
+/**
+ * Exact time: every time and length the tick reads is a whole number of beat
+ * units, PPQ to a beat (2^8 3^2 5^2 7^2: quarters to 256ths, triplets,
+ * fifths, tenths and sevenths exact). Integers under 2^53, so a sum of
+ * lengths is exact and "the same time" is the equality of two numbers.
+ */
+export const PPQ = 2822400;
 
-/** Cooldown period per edge to limit spawn rate (ms) */
-export const EDGE_SPAWN_COOLDOWN_MS = 10; // Minimum 10ms between spawns on same edge
+/** A packet's age before forced expiry, in beats (it was 30 s whatever the tempo) */
+export const MAX_PACKET_AGE_BEATS = 50;
+
+/** The most hops a packet's line takes inside one step; more wait for the next, their exact times kept */
+export const MAX_HOPS_PER_STEP = 8;
+
+/** Beats (a length, an interval, a hold) to beat units: floor(x * PPQ + 0.5), alike on every side */
+export function toUnits(beats: number): number {
+  return Math.floor(beats * PPQ + 0.5);
+}
+
+/** Beat units to seconds at a tempo, in this order of operations on every side */
+export function secondsOf(at: number, bpm: number): number {
+  return at / PPQ * (60 / bpm);
+}
 
 // ============================================================================
 // MIDI CONSTANTS

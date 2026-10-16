@@ -142,9 +142,14 @@ export function createTypedRegion(region: Region): Region {
  */
 export function createTypedHeldPacket(
   payload: AudioPayload,
-  releaseTime: number
+  releaseTime: number,
+  releaseAt?: number,
+  heldId?: number
 ): HeldPacket {
-  return { payload: { ...payload }, releaseTime };
+  const held: HeldPacket = { payload: { ...payload }, releaseTime };
+  if (releaseAt !== undefined) held.releaseAt = releaseAt;
+  if (heldId !== undefined) held.heldId = heldId;
+  return held;
 }
 
 /**
