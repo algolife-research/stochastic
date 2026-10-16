@@ -4,7 +4,7 @@
 import { getGraphStore } from './store';
 import type { 
   Packet, GraphNode, GraphEdge, AudioPayload, 
-  NodeId, MidiNote, Frequency, QuantizerProps, SceneTriggerProps,
+  NodeId, MidiNote, Frequency, QuantizerProps, SceneTriggerProps, PitchProps,
   MutatorProps, GateProps, WaveType, WaveLayer
 } from './types';
 import { 
@@ -65,9 +65,88 @@ export function processNodeArrival(
   }
 }
 
+// ============================================================================
+// THE TURNING CRYSTAL (pitch, mode 'sequence')
+// ============================================================================
+
+/** Where a turning crystal is: the next note's index, and what it gave last (at, to which chord) */
+interface Turn {
+  index: number;
+  length: number;
+  at: number;
+  chord: object | null;
+  note: number | null;
+}
+
+/** Every turning crystal's place: a node's id, or a tunnel's id and its organ's position; never saved */
+const turns = new Map<string, Turn>();
+
+/** The arrival being processed: its exact time (beat units) and chord; null outside the tick (a look, not a turn) */
+let moment: { at: number; chord: object | null; scope: string } | null = null;
+
+/** The organ of a tunnel being processed (-1: the node itself) */
+let organ = -1;
+
+/**
+ * The arrival processNodeArrival is called for next: a turning crystal turns
+ * once for it, and once for every packet of a chord arriving at one time.
+ * `scope` keeps apart the turns of a virtual channel's scene.
+ */
+export function setArrivalMoment(at: number, chord: object | null, scope = ''): void {
+  moment = { at, chord, scope };
+}
+
+export function clearArrivalMoment(): void {
+  moment = null;
+}
+
+/** Every turning crystal back to its first note (playback reset, a load) */
+export function resetTurns(): void {
+  turns.clear();
+}
+
+/** The index of the note a turning crystal gives next (organ: a tunnel's organ position) */
+export function getTurnIndex(nodeId: string, organIndex = -1): number {
+  return turns.get(organIndex < 0 ? nodeId : `${nodeId}/${organIndex}`)?.index ?? 0;
+}
+
+/**
+ * A turning crystal: the packet takes notes[index], and the index advances,
+ * wrapping; a null is a rest, and the packet goes no further (the gain -1
+ * sentinel). Packets of one chord arriving at one exact time take one note
+ * and turn it once. Every packet shares the one index, so two lines through
+ * it interleave. A change of the notes' count starts it again from the first.
+ */
+function processSequence(payload: AudioPayload, node: GraphNode): AudioPayload {
+  const notes = (node.props as PitchProps).notes ?? [60];
+  if (notes.length === 0) return { ...payload };
+  const key = `${moment?.scope ?? ''}${organ < 0 ? node.id : `${node.id}/${organ}`}`;
+  let turn = turns.get(key);
+  if (!turn || turn.length !== notes.length) {
+    turn = { index: 0, length: notes.length, at: -1, chord: null, note: null };
+    if (moment) turns.set(key, turn);
+  }
+  let note: number | null;
+  if (!moment) {
+    note = notes[turn.index] ?? null;  // a look: the note it gives next
+  } else if (moment.chord !== null && turn.chord === moment.chord && turn.at === moment.at) {
+    note = turn.note;  // the same chord at the same time: the same note, no turn
+  } else {
+    note = notes[turn.index] ?? null;
+    turn.at = moment.at;
+    turn.chord = moment.chord;
+    turn.note = note;
+    turn.index = (turn.index + 1) % turn.length;
+  }
+  if (note === null) return { ...payload, gain: -1 };
+  const midi = clampMidi(note);
+  return { ...payload, midiNote: midi, freq: midiToFreq(midi) };
+}
+
 function processPitch(payload: AudioPayload, node: GraphNode): AudioPayload {
-  const props = node.props as { mode: 'shift' | 'set'; shift: number; fixedMidiNote: MidiNote };
-  
+  const props = node.props as { mode: 'shift' | 'set' | 'sequence'; shift: number; fixedMidiNote: MidiNote };
+
+  if (props.mode === 'sequence') return processSequence(payload, node);
   if (props.mode === 'set') {
     const newMidi = clampMidi(props.fixedMidiNote);
     return {
@@ -427,7 +506,7 @@ function processTunnel(payload: AudioPayload, node: GraphNode): AudioPayload {
   
   // Process through each sub-node in sequence
   let result = payload;
-  for (const subNode of props.subNodes) {
+  for (const [position, subNode] of props.subNodes.entries()) {
     // Special handling for speaker inside tunnel
     if (subNode.type === 'speaker') {
       // Queue this for audio playback
@@ -451,7 +530,9 @@ function processTunnel(payload: AudioPayload, node: GraphNode): AudioPayload {
         : subNode.props,
     } as unknown as GraphNode;
     
+    organ = position;
     result = processNodeArrival({ ...{ id: '' as never, edgeId: '' as never, t: 1, payload: result } }, fakeNode, { targetParam: null } as GraphEdge);
+    organ = -1;
     
     // Check if gate blocked
     if (result.gain < 0) break;

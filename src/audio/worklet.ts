@@ -83,6 +83,8 @@ interface Voice {
   state: 'attack' | 'hold' | 'decay' | 'release' | 'dead';
   envelope: number;
   time: number;
+  /** Samples of silence before the note starts (its startTime on the audio clock) */
+  wait: number;
   
   // Multi-layer oscillators
   layers: Array<{
@@ -223,6 +225,7 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
       state: 'attack',
       envelope: 0,
       time: 0,
+      wait: typeof currentTime === 'number' ? Math.max(0, Math.round((msg.startTime - currentTime) * this.sampleRate)) : 0,
       
       layers: layers.map(l => {
         const unison = l.unison ?? 1;
@@ -310,6 +313,10 @@ class PhononSynthProcessor extends AudioWorkletProcessor {
     
     this.voices.forEach((voice, id) => {
       for (let i = 0; i < bufferSize; i++) {
+        if (voice.wait > 0) {  // not yet: the note starts on its exact time
+          voice.wait--;
+          continue;
+        }
         // Update envelope state
         this.updateEnvelope(voice, dt);
         

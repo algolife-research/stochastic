@@ -93,14 +93,15 @@ export interface GraphActions {
   addNode: (type: NodeType, x: number, y: number) => NodeId;
   updateNode: <T extends NodeType>(id: NodeId, updates: Partial<GraphNode<T>>) => void;
   batchMergeNodeProps: (entries: Array<[NodeId, Record<string, unknown>]>) => void;
-  setNodeRuntime: (id: NodeId, runtime: { timer?: number; lastTrigger?: number }) => void;
+  setNodeRuntime: (id: NodeId, runtime: { timer?: number; lastTrigger?: number; lastRelease?: number }) => void;
   decayNodeFlashes: (deltaTime: number) => void;
   updateNodeProps: (id: NodeId, props: Record<string, unknown>) => void;
   deleteNode: (id: NodeId) => void;
   moveNode: (id: NodeId, x: number, y: number) => void;
   flashNode: (id: NodeId) => void;
-  holdPacketAtNode: (id: NodeId, payload: AudioPayload, delayBeats: number) => void;
+  holdPacketAtNode: (id: NodeId, payload: AudioPayload, delayBeats: number, at?: number) => number;
   releaseHeldPackets: (id: NodeId, indices: number[]) => void;
+  releaseHeldById: (id: NodeId, heldId: number) => void;
   duplicateNode: (id: NodeId) => NodeId | null;
   duplicateSelectedNodes: () => void;
   copySelectedNodes: () => void;

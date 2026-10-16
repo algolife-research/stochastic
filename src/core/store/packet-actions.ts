@@ -4,8 +4,8 @@
 import type { GraphStore, ImmerSet } from './types';
 import type { NodeId, PacketId, Packet, Frequency, MidiNote } from '../types';
 import { createPacketId } from '../types';
-import { MAX_PACKETS, LEGACY_SCALE_OFFSET, midiToFreq } from '../constants';
-import { getFilamentRoom } from '../tick/state';
+import { MAX_PACKETS, LEGACY_SCALE_OFFSET, midiToFreq, NOTE_INDEX_KEY, keyNotes } from '../constants';
+import { getFilamentRoom, getBeatNow, edgeUnits } from '../tick/state';
 
 export const createPacketActions = (
   set: ImmerSet,
@@ -30,6 +30,10 @@ export const createPacketActions = (
       midiNote = (LEGACY_SCALE_OFFSET + Math.min(36, props.noteIndex)) as MidiNote;
     } else if (props.noteIndex === -1) {
       midiNote = (36 + Math.floor(Math.random() * 49)) as MidiNote;
+    } else if (props.noteIndex === NOTE_INDEX_KEY) {
+      const notes = keyNotes(state.scenePlayback.effectiveRoot ?? state.musicalContext.root,
+        state.scenePlayback.effectiveScale ?? state.musicalContext.scaleName);
+      midiNote = notes[Math.floor(Math.random() * notes.length)] as MidiNote;
     } else {
       midiNote = props.midiNote ?? (60 as MidiNote);
     }
@@ -46,11 +50,18 @@ export const createPacketActions = (
     const chord = room.chordFor(outgoingEdges.length);
     const entered: Packet[] = [];
     const madeWay: PacketId[] = [];
+    // Exact time: it leaves at the beat clock's time (between frames), its
+    // edge's length taken as it enters
+    const at = getBeatNow();
     outgoingEdges.forEach(edge => {
+      const length = edgeUnits(edge);
       const packet: Packet = {
         id: createPacketId(),
         edgeId: edge.id,
         t: 0,
+        depart: at,
+        length,
+        arrive: at + length,
         payload: {
           freq,
           midiNote,
@@ -62,7 +73,7 @@ export const createPacketActions = (
           releaseTime: 0.1,
         },
       };
-      if (room.enter(packet, chord, id => madeWay.push(id))) entered.push(packet);
+      if (room.enter(packet, chord, id => madeWay.push(id), at)) entered.push(packet);
     });
 
     set(stateToUpdate => {

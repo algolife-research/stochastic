@@ -1,7 +1,7 @@
 // Crossover Module
 // Handles genetic crossover (sexual reproduction) between packets
 
-import type { AudioPayload, Frequency, CrossoverProps, PacketId } from '../types';
+import type { AudioPayload, Frequency, CrossoverProps } from '../types';
 import { midiToFreq } from '../constants';
 import { getGraphStore } from '../store';
 
@@ -16,12 +16,12 @@ import { getGraphStore } from '../store';
 export function syncEntangledPayloads(
   groupId: string, 
   newPayload: AudioPayload, 
-  store: ReturnType<typeof getGraphStore>,
-  arrivingPacketIds: Set<PacketId>
+  at: number
 ): void {
+  const store = getGraphStore();
   store.packets.forEach((packet) => {
-    if (packet.entanglementGroupId === groupId && !arrivingPacketIds.has(packet.id)) {
-      // Only sync to packets that are still traveling (not arriving this tick)
+    if (packet.entanglementGroupId === groupId && (packet.arrive ?? 0) > at) {
+      // Only sync to packets still in flight (not arriving at this same time)
       store.updatePacket(packet.id, { payload: { ...newPayload } });
     }
   });

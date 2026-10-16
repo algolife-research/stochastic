@@ -6,8 +6,11 @@ import type {
   NodeId, EdgeId, GraphNode, NodeType, AudioPayload, PropsForNodeType
 } from '../types';
 import { createNodeId, createEdgeId } from '../types';
-import { getDefaultProps } from '../constants';
+import { getDefaultProps, NOTE_INDEX_KEY, toUnits } from '../constants';
 import { createTypedNode, createTypedEdge, createTypedHeldPacket, cloneNode } from '../type-guards';
+
+/** Each hold's id (a release finds its hold by it) */
+let nextHeldId = 1;
 
 export const createNodeActions = (
   set: ImmerSet,
@@ -16,6 +19,9 @@ export const createNodeActions = (
   addNode: (type: NodeType, x: number, y: number): NodeId => {
     const id = createNodeId();
     const props = getDefaultProps(type);
+    // A new seed plays any note of the key (16 Oct 2026); the load-time default
+    // stays -1 (any note at all), so a file without noteIndex plays as before.
+    if (type === 'source') (props as { noteIndex: number }).noteIndex = NOTE_INDEX_KEY;
     
     // Special handling for teleporter channel assignment
     let finalProps = props;
@@ -93,12 +99,13 @@ export const createNodeActions = (
   // Runtime bookkeeping write (gate density windows): does not mark dirty —
   // playback state is not an edit. Store nodes are frozen outside actions,
   // so engine code must come through here instead of mutating in place.
-  setNodeRuntime: (id: NodeId, runtime: { timer?: number; lastTrigger?: number }): void => {
+  setNodeRuntime: (id: NodeId, runtime: { timer?: number; lastTrigger?: number; lastRelease?: number }): void => {
     set(state => {
       const node = state.nodes.get(id);
       if (node) {
         if (runtime.timer !== undefined) node.timer = runtime.timer;
         if (runtime.lastTrigger !== undefined) node.lastTrigger = runtime.lastTrigger;
+        if (runtime.lastRelease !== undefined) node.lastRelease = runtime.lastRelease;
       }
     });
   },
@@ -162,16 +169,30 @@ export const createNodeActions = (
     });
   },
   
-  holdPacketAtNode: (id: NodeId, payload: AudioPayload, delayBeats: number): void => {
+  // Exact time: released at `at` + the hold in beat units (the tick's own
+  // release); releaseTime (ms) is kept for the views. Returns the hold's id.
+  holdPacketAtNode: (id: NodeId, payload: AudioPayload, delayBeats: number, at: number = 0): number => {
     // Honor the playing scene's BPM override for held-packet timing
     const bpm = get().scenePlayback.effectiveBpm || get().masterSpeed;
     const delayMs = (delayBeats * 60 / bpm) * 1000;
     const releaseTime = performance.now() + delayMs;
+    const heldId = nextHeldId++;
     
     set(state => {
       const node = state.nodes.get(id);
       if (node) {
-        node.heldPackets.push(createTypedHeldPacket(payload, releaseTime));
+        node.heldPackets.push(createTypedHeldPacket(payload, releaseTime, at + toUnits(delayBeats), heldId));
+      }
+    });
+    return heldId;
+  },
+
+  releaseHeldById: (id: NodeId, heldId: number): void => {
+    set(state => {
+      const node = state.nodes.get(id);
+      if (node) {
+        const index = node.heldPackets.findIndex(h => h.heldId === heldId);
+        if (index >= 0) node.heldPackets.splice(index, 1);
       }
     });
   },

@@ -5,7 +5,7 @@ import { getGraphStore } from '../store';
 import type { Packet, GraphEdge, GraphNode, NodeId, MidiNote, Frequency, PacketId } from '../types';
 import { createPacketId } from '../types';
 import { dist, midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS, getEffectiveBpm } from '../constants';
-import { processNodeArrival } from '../engine';
+import { processNodeArrival, setArrivalMoment, clearArrivalMoment } from '../engine';
 import { audioEngine } from '@audio/engine';
 import { getActiveChannelScenes, getCanvasChannelIndex } from './state';
 import type { ChannelSceneState } from './types';
@@ -265,13 +265,15 @@ function processVirtualArrival(
   channelVolume: number
 ): void {
   // Use the same processing as the main canvas
+  setArrivalMoment(-1, null, `channel:${channelScene.channelIndex}:`);
   const processedPayload = processNodeArrival(packet, node, edge);
+  clearArrivalMoment();
   
   // Update packet payload with processed result
   packet.payload = processedPayload;
   
   // Handle gate - check if packet was blocked (gain set to -1 by processNodeArrival)
-  if (node.type === 'gate' && processedPayload.gain < 0) {
+  if ((node.type === 'gate' || node.type === 'pitch') && processedPayload.gain < 0) {
     // Gate blocked - mark packet for deletion by setting gain to indicate blocked
     return;
   }

@@ -10,6 +10,7 @@ import {
   dist,
   getDefaultProps,
   getEffectiveBpm,
+  keyNotes,
   getEffectiveRoot,
   getEffectiveScale,
   calculateArrangementDuration,
@@ -476,5 +477,19 @@ describe('Core Constants', () => {
     SCENE_COLORS.forEach(color => {
       expect(color).toMatch(/^#[0-9a-fA-F]{6}$/);
     });
+  });
+});
+
+describe('keyNotes', () => {
+  it('lists the notes of a key from MIDI 36 to 84, low to high', () => {
+    const cMajor = keyNotes(0, 'major');
+    expect(cMajor[0]).toBe(36);
+    expect(cMajor[cMajor.length - 1]).toBe(84);
+    expect(cMajor.every(m => [0, 2, 4, 5, 7, 9, 11].includes(m % 12))).toBe(true);
+    expect(cMajor.length).toBe(29);
+  });
+  it('takes the root, and reads an unknown scale as chromatic', () => {
+    expect(keyNotes(2, 'minorPentatonic').slice(0, 3)).toEqual([36, 38, 41]);
+    expect(keyNotes(0, 'nonsense').length).toBe(49);
   });
 });

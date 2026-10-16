@@ -57,14 +57,32 @@ export const MAX_PACKETS = 1000;
 /** Maximum number of nodes a packet can visit before expiring (TTL) */
 export const MAX_PACKET_HOPS = 64;
 
-/** Fronts an edge holds per beat of its length (the room on a filament, plus one leaving) */
+/** Fronts an edge holds per beat of its length (the room on a filament) */
 export const FRONTS_PER_BEAT = 4;
 
-/** Maximum packet age in milliseconds before forced expiry */
-export const MAX_PACKET_AGE_MS = 30000; // 30 seconds
+/**
+ * Exact time: every time and length the tick reads is a whole number of beat
+ * units, PPQ to a beat (2^8 3^2 5^2 7^2: quarters to 256ths, triplets,
+ * fifths, tenths and sevenths exact). Integers under 2^53, so a sum of
+ * lengths is exact and "the same time" is the equality of two numbers.
+ */
+export const PPQ = 2822400;
 
-/** Cooldown period per edge to limit spawn rate (ms) */
-export const EDGE_SPAWN_COOLDOWN_MS = 10; // Minimum 10ms between spawns on same edge
+/** A packet's age before forced expiry, in beats (it was 30 s whatever the tempo) */
+export const MAX_PACKET_AGE_BEATS = 50;
+
+/** The most hops a packet's line takes inside one step; more wait for the next, their exact times kept */
+export const MAX_HOPS_PER_STEP = 8;
+
+/** Beats (a length, an interval, a hold) to beat units: floor(x * PPQ + 0.5), alike on every side */
+export function toUnits(beats: number): number {
+  return Math.floor(beats * PPQ + 0.5);
+}
+
+/** Beat units to seconds at a tempo, in this order of operations on every side */
+export function secondsOf(at: number, bpm: number): number {
+  return at / PPQ * (60 / bpm);
+}
 
 // ============================================================================
 // MIDI CONSTANTS
@@ -168,6 +186,26 @@ export const DEFAULT_SOURCE_PROPS: SourceProps = {
   autoTrigger: true,
   intensity: 1,
 };
+
+/** A source's noteIndex: any note of the key (-3, 16 Oct 2026), drawn over
+ * the same range as a random note (-1): MIDI 36 to 84. */
+export const NOTE_INDEX_KEY = -3;
+export const RANDOM_NOTE_LOW = 36;
+export const RANDOM_NOTE_COUNT = 49;
+
+/**
+ * The notes of a key from RANDOM_NOTE_LOW, RANDOM_NOTE_COUNT of them at most,
+ * low to high: what a seed of the key draws from (one draw, as -1 draws).
+ * An unknown scale reads as chromatic.
+ */
+export function keyNotes(root: number, scaleName: string): number[] {
+  const scale = SCALES[scaleName as ScaleName] ?? SCALES.chromatic;
+  const notes: number[] = [];
+  for (let m = RANDOM_NOTE_LOW; m < RANDOM_NOTE_LOW + RANDOM_NOTE_COUNT; m++) {
+    if (scale.includes((((m - root) % 12) + 12) % 12)) notes.push(m);
+  }
+  return notes;
+}
 
 export const DEFAULT_SPEAKER_PROPS: SpeakerProps = {
   volume: 1.0,

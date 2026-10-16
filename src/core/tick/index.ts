@@ -2,6 +2,7 @@
 // Handles source timers, packet movement, scene playback, and game loop
 
 import { getGraphStore } from '../store';
+import { resetTurns } from '../engine';
 import type { GraphNode } from '../types';
 import { getEffectiveBpm, getEffectiveRoot, getEffectiveScale } from '../constants';
 
@@ -11,12 +12,12 @@ import {
   getTickInterval, setTickInterval, 
   setBeatAccumulator,
   clearActiveChannelScenes,
-  getFilamentRoom
+  getFilamentRoom,
+  advanceClock, resetClock, getBeatNow
 } from './state';
 import { updateScenePlayback } from './scene-playback';
-import { updateSources } from './sources';
 import { updateLFOs } from './lfo';
-import { updatePackets, updateNodeFlash, updateDelayNodes, cleanupEdgeSpawnRecords } from './packets';
+import { runEvents, updateNodeFlash } from './packets';
 import { updateVirtualChannelScenes } from './virtual-channels';
 
 // Re-export types for external use
@@ -49,34 +50,28 @@ export function tick(currentTime: number): void {
     // Update scene playback (beat tracking and scene transitions)
     updateScenePlayback(dt);
 
-    // A new frame on the filaments: forget packets no longer in flight
+    // Forget packets no longer in flight on the filaments
     const room = getFilamentRoom();
-    room.beginFrame();
     const { packets } = getGraphStore();
     room.sync(id => packets.has(id));
 
-    // Update sources (emit packets)
-    updateSources(currentTime);
-    
-    // Update LFOs (emit modulation packets)
+    // The beat clock (exact time, beat units): this frame's window of the tempo
+    const bpm = getGraphStore().scenePlayback.effectiveBpm || getGraphStore().masterSpeed;
+    const start = advanceClock(dt, bpm);
+    const end = getBeatNow();
+
+    // Breathers write their value before anything moves
     updateLFOs(currentTime);
-    
-    // Update packets (movement and arrival)
-    updatePackets(dt);
-    
+
+    // Every event due in the window, in order of exact time: releases,
+    // expiries, arrivals, delays' and crossovers' releases
+    runEvents(start, end);
+
     // Update node flash (visual decay)
     updateNodeFlash(dt);
-    
-    // Update delay nodes
-    updateDelayNodes(currentTime);
-    
+
     // Update virtual channel scenes (multi-channel audio)
     updateVirtualChannelScenes(currentTime, dt);
-    
-    // Periodically cleanup stale edge spawn records (every ~5s worth of frames)
-    if (Math.random() < 0.003) {
-      cleanupEdgeSpawnRecords();
-    }
   } catch (error) {
     console.error('Tick error:', error);
   }
@@ -120,14 +115,16 @@ export function resetTick(resetPosition: boolean = false): void {
   setLastTime(performance.now());
   setBeatAccumulator(0);
   getFilamentRoom().clear();
+  resetClock();
+  resetTurns();
 
-  // Reset all node timers
+  // Reset all node timers: a source releases first one interval in
   const store = getGraphStore();
   const now = performance.now();
   
   store.nodes.forEach((node) => {
     if (node.type === 'source') {
-      store.updateNode(node.id, { lastTrigger: now } as Partial<GraphNode>);
+      store.updateNode(node.id, { lastTrigger: now, lastRelease: 0 } as Partial<GraphNode>);
     }
   });
   
