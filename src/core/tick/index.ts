@@ -2,6 +2,7 @@
 // Handles source timers, packet movement, scene playback, and game loop
 
 import { getGraphStore } from '../store';
+import { resetTurns } from '../engine';
 import type { GraphNode } from '../types';
 import { getEffectiveBpm, getEffectiveRoot, getEffectiveScale } from '../constants';
 
@@ -115,6 +116,7 @@ export function resetTick(resetPosition: boolean = false): void {
   setBeatAccumulator(0);
   getFilamentRoom().clear();
   resetClock();
+  resetTurns();
 
   // Reset all node timers: a source releases first one interval in
   const store = getGraphStore();

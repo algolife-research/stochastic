@@ -123,9 +123,10 @@ export interface SpeakerProps {
 }
 
 export interface PitchProps {
-  readonly mode: 'shift' | 'set';  // Relative or absolute
+  readonly mode: 'shift' | 'set' | 'sequence';  // Relative, absolute, or turning through notes
   readonly shift: number;          // Semitones (shift mode)
   readonly fixedMidiNote: MidiNote; // Target note (set mode)
+  readonly notes?: readonly (number | null)[];  // Sequence mode: a note each arrival, null a rest; [60] if absent
 }
 
 // ============================================================================

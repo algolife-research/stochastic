@@ -212,7 +212,7 @@ A **speaker** triggers a note (applying its `volume` multiplier and overriding `
 
 Writing `p` for the incoming payload and `p'` for the outgoing one:
 
-- **pitch** — `mode:'shift'`: `n' = clampMidi(n + shift)`. `mode:'set'`: `n' = clampMidi(fixedMidiNote)`. `freq' = f(n')`.
+- **pitch** — `mode:'shift'`: `n' = clampMidi(n + shift)`. `mode:'set'`: `n' = clampMidi(fixedMidiNote)`. `freq' = f(n')`. `mode:'sequence'` (the turning crystal, 16 Oct 2026): `n' = clampMidi(notes[i])`, then `i = (i + 1) mod len(notes)`; `notes` is a list of MIDI notes or `null`, `[60]` if absent. A `null` is a rest: the packet gets the gain −1 sentinel and goes no further (like a blocked gate, and inside a tunnel it ends the chain). Every packet shares the one index, so two lines through one node interleave. Packets of one chord (1.6) arriving at one exact time take one note and turn it once; packets of no chord each turn it. The index is runtime (`engine.ts`, `turns`, never saved), reset when playback restarts and when the count of `notes` changes; a tunnel's organs each keep their own. Read outside the tick (no arrival moment), the node gives its next note without turning.
 - **gain** — `p'.gain = p.gain · value`. Nothing else; the node's `mass` prop is stored but read by nothing in the live engine (see Design horizon).
 - **oscillator** — appends one layer `{wave, attack, decay, gain: mix, ratio, mode, modulationIndex, feedback, unison, detune, stereoSpread}` to `p.waves`, and sets `p'.wave = wave`, `p'.timbre = 0.8`. Layers accumulate; nothing removes them.
 - **filter** — sets `cutoff`, `filterType` (default lowpass), `filterResonance`; sets `filterEnv = {attack, decay, mod}` iff `mod ≠ 0`, else clears it. Overwrites, does not compose.

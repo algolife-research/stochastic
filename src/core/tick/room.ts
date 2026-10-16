@@ -168,6 +168,11 @@ export function createRoom(capacityOf: (edgeId: string) => number | undefined) {
       return parentId !== undefined ? motes.get(parentId)?.chord ?? null : null;
     },
 
+    /** The chord a packet entered its filament with (null: none), until the room forgets it */
+    chordOf(id: PacketId): Chord | null {
+      return motes.get(id)?.chord ?? null;
+    },
+
     /**
      * A packet enters its filament at `at` (every spawn). Fronts whose exit is
      * past by then have left. It joins the front that entered at that same

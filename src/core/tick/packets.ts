@@ -12,7 +12,7 @@ import { createPacketId } from '../types';
 import {
   MAX_PACKETS, MAX_PACKET_HOPS, MAX_PACKET_AGE_BEATS, MAX_HOPS_PER_STEP, PPQ, secondsOf,
 } from '../constants';
-import { processNodeArrival, getTeleporterExits, consumePendingTunnelSpeakers } from '../engine';
+import { processNodeArrival, getTeleporterExits, consumePendingTunnelSpeakers, setArrivalMoment, clearArrivalMoment } from '../engine';
 import { audioEngine } from '@audio/engine';
 import { syncEntangledPayloads, performCrossover } from './crossover';
 import { getFilamentRoom, removeMadeWay, edgeUnits } from './state';
@@ -232,7 +232,9 @@ function arrive(id: PacketId, at: number): void {
     return;
   }
 
+  setArrivalMoment(at, room.chordOf(id));
   const processedPayload = processNodeArrival(packet, node, edge);
+  clearArrivalMoment();
 
   // Gates mark blocked packets with a negative-gain sentinel; tunnels forward
   // it when an internal sub-gate blocks. Both are dropped here.
@@ -240,6 +242,8 @@ function arrive(id: PacketId, at: number): void {
     innerSpeakers(at);
     return;
   }
+  // A turning crystal's rest: the packet goes no further
+  if (node.type === 'pitch' && processedPayload.gain < 0) return;
 
   if (node.type === 'speaker') {
     const speakerProps = node.props as { volume?: number; reverb?: number; pan?: number; holdTime?: number; releaseTime?: number };
