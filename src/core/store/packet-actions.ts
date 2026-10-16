@@ -4,7 +4,7 @@
 import type { GraphStore, ImmerSet } from './types';
 import type { NodeId, PacketId, Packet, Frequency, MidiNote } from '../types';
 import { createPacketId } from '../types';
-import { MAX_PACKETS, LEGACY_SCALE_OFFSET, midiToFreq } from '../constants';
+import { MAX_PACKETS, LEGACY_SCALE_OFFSET, midiToFreq, NOTE_INDEX_KEY, keyNotes } from '../constants';
 import { getFilamentRoom } from '../tick/state';
 
 export const createPacketActions = (
@@ -30,6 +30,10 @@ export const createPacketActions = (
       midiNote = (LEGACY_SCALE_OFFSET + Math.min(36, props.noteIndex)) as MidiNote;
     } else if (props.noteIndex === -1) {
       midiNote = (36 + Math.floor(Math.random() * 49)) as MidiNote;
+    } else if (props.noteIndex === NOTE_INDEX_KEY) {
+      const notes = keyNotes(state.scenePlayback.effectiveRoot ?? state.musicalContext.root,
+        state.scenePlayback.effectiveScale ?? state.musicalContext.scaleName);
+      midiNote = notes[Math.floor(Math.random() * notes.length)] as MidiNote;
     } else {
       midiNote = props.midiNote ?? (60 as MidiNote);
     }

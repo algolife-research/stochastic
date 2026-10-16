@@ -6,7 +6,7 @@ import type {
   NodeId, EdgeId, GraphNode, NodeType, AudioPayload, PropsForNodeType
 } from '../types';
 import { createNodeId, createEdgeId } from '../types';
-import { getDefaultProps } from '../constants';
+import { getDefaultProps, NOTE_INDEX_KEY } from '../constants';
 import { createTypedNode, createTypedEdge, createTypedHeldPacket, cloneNode } from '../type-guards';
 
 export const createNodeActions = (
@@ -16,6 +16,9 @@ export const createNodeActions = (
   addNode: (type: NodeType, x: number, y: number): NodeId => {
     const id = createNodeId();
     const props = getDefaultProps(type);
+    // A new seed plays any note of the key (16 Oct 2026); the load-time default
+    // stays -1 (any note at all), so a file without noteIndex plays as before.
+    if (type === 'source') (props as { noteIndex: number }).noteIndex = NOTE_INDEX_KEY;
     
     // Special handling for teleporter channel assignment
     let finalProps = props;

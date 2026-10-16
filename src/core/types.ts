@@ -109,7 +109,7 @@ export type NodeType =
 export interface SourceProps {
   readonly interval: number;       // Beats between triggers
   readonly midiNote: MidiNote;     // Base note
-  readonly noteIndex: number;      // Legacy (-1 = random)
+  readonly noteIndex: number;      // -1 any note, -3 any note of the key, -2 or other negatives midiNote, >= 0 legacy
   readonly autoTrigger: boolean;   // Auto-emit packets
   readonly intensity: number;      // 0-1 velocity
 }

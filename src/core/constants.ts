@@ -169,6 +169,26 @@ export const DEFAULT_SOURCE_PROPS: SourceProps = {
   intensity: 1,
 };
 
+/** A source's noteIndex: any note of the key (-3, 16 Oct 2026), drawn over
+ * the same range as a random note (-1): MIDI 36 to 84. */
+export const NOTE_INDEX_KEY = -3;
+export const RANDOM_NOTE_LOW = 36;
+export const RANDOM_NOTE_COUNT = 49;
+
+/**
+ * The notes of a key from RANDOM_NOTE_LOW, RANDOM_NOTE_COUNT of them at most,
+ * low to high: what a seed of the key draws from (one draw, as -1 draws).
+ * An unknown scale reads as chromatic.
+ */
+export function keyNotes(root: number, scaleName: string): number[] {
+  const scale = SCALES[scaleName as ScaleName] ?? SCALES.chromatic;
+  const notes: number[] = [];
+  for (let m = RANDOM_NOTE_LOW; m < RANDOM_NOTE_LOW + RANDOM_NOTE_COUNT; m++) {
+    if (scale.includes((((m - root) % 12) + 12) % 12)) notes.push(m);
+  }
+  return notes;
+}
+
 export const DEFAULT_SPEAKER_PROPS: SpeakerProps = {
   volume: 1.0,
   reverb: 0,

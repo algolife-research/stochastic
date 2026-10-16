@@ -74,11 +74,12 @@ The emitted pitch is controlled by `noteIndex` (legacy encoding, still authorita
 
 | `noteIndex` | Behavior |
 |---|---|
-| `-1` **(the default)** | random note: `n = 36 + ⌊U(0,1)·49⌋`, i.e. uniform over MIDI 36–84 (C2–C6) |
-| `≤ -2` | fixed pitch: use `props.midiNote` |
+| `-1` **(the default on load)** | random note: `n = 36 + ⌊U(0,1)·49⌋`, i.e. uniform over MIDI 36–84 (C2–C6) |
+| `-2`, and any other negative but `−3` | fixed pitch: use `props.midiNote` |
+| `−3` | any note of the key: one draw among the notes of the scene's key (else the project's) from MIDI 36 to 84, `keyNotes(root, scale)` low to high |
 | `≥ 0` | legacy chromatic offset: `n = 36 + min(36, noteIndex)` (MIDI 36–72); despite the name, this is *not* a scale-degree index in the live engine |
 
-Note the default: a freshly created source plays **random pitches**, not its `midiNote` (60). The UI writes `noteIndex: -2` when a fixed note is chosen.
+A source created in the editor plays **any note of the key** (`noteIndex: -3`, since 16 Oct 2026), not its `midiNote` (60). The default merged on load stays `−1`, so a file saved without `noteIndex` plays random pitches as before. The UI writes `noteIndex: -2` when a fixed note is chosen.
 
 The spawned payload is: `freq`/`midiNote` as above, `wave: 'sine'`, `timbre: 0`, `cutoff: 20000`, `gain: intensity`, `holdTime: 0`, `releaseTime: 0.1`.
 

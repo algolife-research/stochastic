@@ -4,7 +4,7 @@
 import { getGraphStore } from '../store';
 import type { Packet, NodeId, MidiNote, Frequency } from '../types';
 import { createPacketId } from '../types';
-import { midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS, EDGE_SPAWN_COOLDOWN_MS } from '../constants';
+import { midiToFreq, clampMidi, LEGACY_SCALE_OFFSET, MAX_PACKETS, EDGE_SPAWN_COOLDOWN_MS, NOTE_INDEX_KEY, keyNotes } from '../constants';
 import { getFilamentRoom, removeMadeWay } from './state';
 
 // Track edge spawn times for source emissions
@@ -77,6 +77,11 @@ export function spawnPacketFromSource(
   } else if (props.noteIndex === -1) {
     // Random note
     midiNote = (36 + Math.floor(Math.random() * 49)) as MidiNote;
+  } else if (props.noteIndex === NOTE_INDEX_KEY) {
+    // Any note of the key (the scene's, else the project's), one draw
+    const notes = keyNotes(store.scenePlayback.effectiveRoot ?? store.musicalContext.root,
+      store.scenePlayback.effectiveScale ?? store.musicalContext.scaleName);
+    midiNote = notes[Math.floor(Math.random() * notes.length)] as MidiNote;
   } else {
     midiNote = props.midiNote ?? (60 as MidiNote);
   }
