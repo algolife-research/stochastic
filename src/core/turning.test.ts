@@ -4,7 +4,7 @@
 // tunnel's organs turning apart.
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { processNodeArrival, setArrivalMoment, clearArrivalMoment, resetTurns, getTurnIndex } from './engine';
+import { processNodeArrival, setArrivalMoment, clearArrivalMoment, resetTurns, getTurnIndex, consumeStack } from './engine';
 import type { Packet, PacketId, EdgeId, MidiNote, Frequency, GraphNode, GraphEdge, AudioPayload } from './types';
 
 const EDGE = { targetParam: null } as GraphEdge;
@@ -27,7 +27,7 @@ function packet(midiNote = 60): Packet {
   };
 }
 
-function crystal(notes: (number | null)[] | undefined, id = 'turning'): GraphNode {
+function crystal(notes: (number | null | number[])[] | undefined, id = 'turning'): GraphNode {
   return { id, type: 'pitch', x: 0, y: 0, props: { mode: 'sequence', shift: 0, fixedMidiNote: 60, notes } } as unknown as GraphNode;
 }
 
@@ -95,5 +95,64 @@ describe('the turning crystal', () => {
     expect(arrive(tunnel, 3).midiNote).toBe(72);
     expect(getTurnIndex('spine', 0)).toBe(1);
     expect(getTurnIndex('spine', 1)).toBe(0);
+  });
+});
+
+describe('stacked steps', () => {
+  beforeEach(() => {
+    resetTurns();
+    consumeStack();
+  });
+
+  it('gives a stack to the tick, the packet taking its first note', () => {
+    const node = crystal([[64, 60, 67], 62]);
+    const out = arrive(node, 1);
+    expect(out.midiNote).toBe(64);
+    expect(consumeStack()).toEqual([64, 60, 67]);
+    expect(consumeStack()).toBeNull();  // taken once
+    expect(arrive(node, 2).midiNote).toBe(62);
+    expect(consumeStack()).toBeNull();  // one note: no stack
+  });
+
+  it('reads a one-note list as one note, and an empty list as a rest', () => {
+    const node = crystal([[65], [], 67]);
+    expect(arrive(node, 1).midiNote).toBe(65);
+    expect(consumeStack()).toBeNull();
+    expect(arrive(node, 2).gain).toBe(-1);
+    expect(consumeStack()).toBeNull();
+    expect(arrive(node, 3).midiNote).toBe(67);
+  });
+
+  it('clamps every note of a stack', () => {
+    arrive(crystal([[130, -4]]), 1);
+    expect(consumeStack()).toEqual([127, 0]);
+  });
+
+  it('gives one chord at one time the same stack, turning once', () => {
+    const node = crystal([[60, 64], 67]);
+    const chord = {};
+    arrive(node, 5, chord);
+    expect(consumeStack()).toEqual([60, 64]);
+    arrive(node, 5, chord);
+    expect(consumeStack()).toEqual([60, 64]);
+    expect(getTurnIndex('turning')).toBe(1);
+    expect(arrive(node, 6, chord).midiNote).toBe(67);
+  });
+
+  it('looks at a stack without giving it', () => {
+    const node = crystal([[67, 60]]);
+    expect(processNodeArrival(packet(), node, EDGE).midiNote).toBe(67);
+    expect(consumeStack()).toBeNull();
+    expect(getTurnIndex('turning')).toBe(0);
+  });
+
+  it("gives a tunnel's organ the stack's lowest note", () => {
+    const tunnel = {
+      id: 'spine', type: 'tunnel', x: 0, y: 0,
+      props: { subNodes: [{ type: 'pitch', props: { mode: 'sequence', notes: [[67, 60, 64], 72] } }] },
+    } as unknown as GraphNode;
+    expect(arrive(tunnel, 1).midiNote).toBe(60);
+    expect(consumeStack()).toBeNull();
+    expect(arrive(tunnel, 2).midiNote).toBe(72);
   });
 });

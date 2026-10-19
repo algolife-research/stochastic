@@ -10,9 +10,11 @@ import { getGraphStore } from '../store';
 import type { Packet, GraphNode, GraphEdge, PacketId, NodeId, CrossoverProps, AudioPayload } from '../types';
 import { createPacketId } from '../types';
 import {
-  MAX_PACKETS, MAX_PACKET_HOPS, MAX_PACKET_AGE_BEATS, MAX_HOPS_PER_STEP, PPQ, secondsOf,
+  MAX_PACKETS, MAX_PACKET_HOPS, MAX_PACKET_AGE_BEATS, MAX_HOPS_PER_STEP, PPQ, secondsOf, midiToFreq,
 } from '../constants';
-import { processNodeArrival, getTeleporterExits, consumePendingTunnelSpeakers, setArrivalMoment, clearArrivalMoment } from '../engine';
+import {
+  processNodeArrival, getTeleporterExits, consumePendingTunnelSpeakers, setArrivalMoment, clearArrivalMoment, consumeStack,
+} from '../engine';
 import { audioEngine } from '@audio/engine';
 import { syncEntangledPayloads, performCrossover } from './crossover';
 import { getFilamentRoom, removeMadeWay, edgeUnits } from './state';
@@ -235,6 +237,7 @@ function arrive(id: PacketId, at: number): void {
   setArrivalMoment(at, room.chordOf(id));
   const processedPayload = processNodeArrival(packet, node, edge);
   clearArrivalMoment();
+  const stack = consumeStack();  // a turning crystal's stacked step: one packet per note
 
   // Gates mark blocked packets with a negative-gain sentinel; tunnels forward
   // it when an internal sub-gate blocks. Both are dropped here.
@@ -334,18 +337,22 @@ function arrive(id: PacketId, at: number): void {
     }
   }
 
-  // Two edges or more make a new chord; one keeps the parent's
-  const chord = room.chordFor(targetEdges.length, packet.id);
+  // Two packets or more make a new chord (two edges, or a stack down one); one keeps the parent's
+  const chord = room.chordFor(targetEdges.length * (stack?.length ?? 1), packet.id);
 
-  // The twins still in flight take this payload
+  // The twins still in flight take this payload (a stack's first note)
   if (packet.entanglementGroupId && node.type !== 'speaker' && node.type !== 'splitter') {
     syncEntangledPayloads(packet.entanglementGroupId, processedPayload, at);
   }
 
+  // Down each edge, the packet, or a stack's packets in its order
+  const given = stack ?? [processedPayload.midiNote];
   targetEdges.forEach(outEdge => {
-    if (getGraphStore().packets.size >= MAX_PACKETS) return;
-    addPacket(outEdge.id, { ...processedPayload }, createPacketMetadata(at, packet, outEdge.id), chord, at, hops,
-      entanglementGroupId);
+    for (const note of given) {
+      if (getGraphStore().packets.size >= MAX_PACKETS) return;
+      const payload = stack ? { ...processedPayload, midiNote: note, freq: midiToFreq(note) } : { ...processedPayload };
+      addPacket(outEdge.id, payload, createPacketMetadata(at, packet, outEdge.id), chord, at, hops, entanglementGroupId);
+    }
   });
   innerSpeakers(at);
 }
