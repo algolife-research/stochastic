@@ -126,7 +126,7 @@ export interface PitchProps {
   readonly mode: 'shift' | 'set' | 'sequence';  // Relative, absolute, or turning through notes
   readonly shift: number;          // Semitones (shift mode)
   readonly fixedMidiNote: MidiNote; // Target note (set mode)
-  readonly notes?: readonly (number | null)[];  // Sequence mode: a note each arrival, null a rest; [60] if absent
+  readonly notes?: readonly (number | null | readonly number[])[];  // Sequence mode: a step each arrival: a note, null a rest, a list a stack (empty: a rest); [60] if absent
 }
 
 // ============================================================================

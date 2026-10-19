@@ -69,13 +69,16 @@ export function processNodeArrival(
 // THE TURNING CRYSTAL (pitch, mode 'sequence')
 // ============================================================================
 
-/** Where a turning crystal is: the next note's index, and what it gave last (at, to which chord) */
+/** A step of a turning crystal's row: a note, a rest (null), or a stack of notes (an empty one a rest) */
+export type TurnStep = number | null | readonly number[];
+
+/** Where a turning crystal is: the next step's index, and what it gave last (at, to which chord) */
 interface Turn {
   index: number;
   length: number;
   at: number;
   chord: object | null;
-  note: number | null;
+  step: TurnStep;
 }
 
 /** Every turning crystal's place: a node's id, or a tunnel's id and its organ's position; never saved */
@@ -87,6 +90,9 @@ let moment: { at: number; chord: object | null; scope: string } | null = null;
 /** The organ of a tunnel being processed (-1: the node itself) */
 let organ = -1;
 
+/** The stack the arrival's turning crystal gave (two notes or more), until the tick takes it */
+let stack: MidiNote[] | null = null;
+
 /**
  * The arrival processNodeArrival is called for next: a turning crystal turns
  * once for it, and once for every packet of a chord arriving at one time.
@@ -94,6 +100,25 @@ let organ = -1;
  */
 export function setArrivalMoment(at: number, chord: object | null, scope = ''): void {
   moment = { at, chord, scope };
+  stack = null;
+}
+
+/**
+ * The stacked step the arrival just processed gave: its notes, clamped, in
+ * order, taken once. The tick sends the packet on as one packet per note.
+ * Null for anything else: one note, a rest, a look, a tunnel's organ.
+ */
+export function consumeStack(): MidiNote[] | null {
+  const taken = stack;
+  stack = null;
+  return taken;
+}
+
+/** A step's notes: a number is one, a list its numbers in order; null and an empty list none (a rest) */
+export function stepNotes(step: TurnStep | undefined): number[] {
+  if (typeof step === 'number') return [step];
+  if (Array.isArray(step)) return step.filter((n): n is number => typeof n === 'number');
+  return [];
 }
 
 export function clearArrivalMoment(): void {
@@ -112,10 +137,14 @@ export function getTurnIndex(nodeId: string, organIndex = -1): number {
 
 /**
  * A turning crystal: the packet takes notes[index], and the index advances,
- * wrapping; a null is a rest, and the packet goes no further (the gain -1
- * sentinel). Packets of one chord arriving at one exact time take one note
- * and turn it once. Every packet shares the one index, so two lines through
- * it interleave. A change of the notes' count starts it again from the first.
+ * wrapping; a null (or an empty list) is a rest, and the packet goes no
+ * further (the gain -1 sentinel). A step may be a stack of notes: the packet
+ * takes its first, and the stack is kept for the tick, which sends the packet
+ * on as one packet per note (consumeStack); a tunnel's organ, passing one
+ * packet along, gives the stack's lowest note. Packets of one chord arriving
+ * at one exact time take one step and turn it once. Every packet shares the
+ * one index, so two lines through it interleave. A change of the steps' count
+ * starts it again from the first.
  */
 function processSequence(payload: AudioPayload, node: GraphNode): AudioPayload {
   const notes = (node.props as PitchProps).notes ?? [60];
@@ -123,23 +152,25 @@ function processSequence(payload: AudioPayload, node: GraphNode): AudioPayload {
   const key = `${moment?.scope ?? ''}${organ < 0 ? node.id : `${node.id}/${organ}`}`;
   let turn = turns.get(key);
   if (!turn || turn.length !== notes.length) {
-    turn = { index: 0, length: notes.length, at: -1, chord: null, note: null };
+    turn = { index: 0, length: notes.length, at: -1, chord: null, step: null };
     if (moment) turns.set(key, turn);
   }
-  let note: number | null;
+  let step: TurnStep;
   if (!moment) {
-    note = notes[turn.index] ?? null;  // a look: the note it gives next
+    step = notes[turn.index] ?? null;  // a look: the step it gives next
   } else if (moment.chord !== null && turn.chord === moment.chord && turn.at === moment.at) {
-    note = turn.note;  // the same chord at the same time: the same note, no turn
+    step = turn.step;  // the same chord at the same time: the same step, no turn
   } else {
-    note = notes[turn.index] ?? null;
+    step = notes[turn.index] ?? null;
     turn.at = moment.at;
     turn.chord = moment.chord;
-    turn.note = note;
+    turn.step = step;
     turn.index = (turn.index + 1) % turn.length;
   }
-  if (note === null) return { ...payload, gain: -1 };
-  const midi = clampMidi(note);
+  const given = stepNotes(step).map(clampMidi);
+  if (given.length === 0) return { ...payload, gain: -1 };
+  const midi = organ < 0 ? given[0]! : (Math.min(...given) as MidiNote);
+  if (given.length >= 2 && organ < 0 && moment) stack = given;
   return { ...payload, midiNote: midi, freq: midiToFreq(midi) };
 }
 
