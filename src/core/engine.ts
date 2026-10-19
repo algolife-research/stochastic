@@ -195,7 +195,14 @@ function processPitch(payload: AudioPayload, node: GraphNode): AudioPayload {
   }
 }
 
-function processOscillator(payload: AudioPayload, node: GraphNode): AudioPayload {
+/**
+ * An oscillator adds its layer to the packet's `waves`. Inside a tunnel the
+ * first oscillator of the chain dresses the packet instead (`dress`): its
+ * layer replaces the packet's `waves`, as if it came with none, so a tunnel
+ * is a voice (a packet looping through one does not pile up layers, and one
+ * passing two wears the second's). Later oscillators in the chain still add.
+ */
+function processOscillator(payload: AudioPayload, node: GraphNode, dress = false): AudioPayload {
   const props = node.props as { 
     wave: WaveType; 
     ratio: number; 
@@ -224,8 +231,8 @@ function processOscillator(payload: AudioPayload, node: GraphNode): AudioPayload
     stereoSpread: props.stereoSpread ?? 0.5,
   };
   
-  // Add to existing waves array
-  const existingWaves = payload.waves ?? [];
+  // Add to existing waves array (none when the oscillator dresses the packet)
+  const existingWaves = dress ? [] : payload.waves ?? [];
   
   return {
     ...payload,
@@ -537,6 +544,8 @@ function processTunnel(payload: AudioPayload, node: GraphNode): AudioPayload {
   
   // Process through each sub-node in sequence
   let result = payload;
+  // A tunnel is a voice: its first oscillator replaces the waves the packet came with
+  let voiced = false;
   for (const [position, subNode] of props.subNodes.entries()) {
     // Special handling for speaker inside tunnel
     if (subNode.type === 'speaker') {
@@ -562,7 +571,12 @@ function processTunnel(payload: AudioPayload, node: GraphNode): AudioPayload {
     } as unknown as GraphNode;
     
     organ = position;
-    result = processNodeArrival({ ...{ id: '' as never, edgeId: '' as never, t: 1, payload: result } }, fakeNode, { targetParam: null } as GraphEdge);
+    if (subNode.type === 'oscillator' && !voiced) {
+      result = processOscillator({ ...result }, fakeNode, true);
+      voiced = true;
+    } else {
+      result = processNodeArrival({ ...{ id: '' as never, edgeId: '' as never, t: 1, payload: result } }, fakeNode, { targetParam: null } as GraphEdge);
+    }
     organ = -1;
     
     // Check if gate blocked
